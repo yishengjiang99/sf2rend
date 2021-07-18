@@ -1,0 +1,22 @@
+{
+  "name": "sf2-service",
+  "version": "1.0.1",
+  "description": "fast",
+  "main": "index.js",
+  "scripts": {
+    "build": "make",
+    "test": "make check",
+    "postinstall": "curl -O 'https://grep32bit.blob.core.windows.net/sf2/GeneralUserGS.sf2' file.sf2"
+  },
+  "keywords": [],
+  "author": "Yisheng Jiang",
+  "license": "do not use",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yishengjiang99/sf2-service.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yishengjiang99/sf2-service/issues"
+  },
+  "homepage": "https://github.com/yishengjiang99/sf2-service#readme"
+}
