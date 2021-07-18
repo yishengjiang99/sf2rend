@@ -1,0 +1,15 @@
+{
+  "name": "fft-64bit",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx mocha"
+  },
+  "keywords": [],
+  "author": "Yisheng Jiang",
+  "license": "ISC",
+  "devDependencies": {
+    "mocha": "^9.0.1"
+  }
+}

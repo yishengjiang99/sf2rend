@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Mocha</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/mocha/8.3.2/mocha.min.js"
+      integrity="sha512-TfAL33PtGUxii1awTCbr3qbzQT5fYi7ItCGUfzWlnMJ4cK5BA8JNY4gJzEs+tQVbyElVbtcI2Jlaf9EFVMvyeg=="crossorigin="anonymous"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/mocha/8.3.2/mocha.min.css"
+      crossorigin="anonymous"
+      />
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/chai/4.3.4/chai.min.js"
+      crossorigin="anonymous"></script>
+  </head>
+  <body>
+    <div id="mocha">
+      <canvas></canvas> <button>play</button> <canvas></canvas>
+    </div>
+    <script type="module">
+ import Module from './upsample.js'
+mocha.setup("bdd");
+const expect = globalThis.chai.expect;
+
+describe('load module',()=>{
+  
+  it('just do it', ()=>{     
+   
+    const mem = new WebAssembly.Memory({initial:10,maximum:10});
+    const upsample = Module();
+  
+
+    fetch("https://dsp.grepawk.com/render/file.sf2", {
+      headers: {
+        range: "bytes=22775130-22806917",
+      },
+    }).then(res=>res.arrayBuffer()).then(ab=>{
+      console.log(upsample(ab,69, 44100))
+    })
+  });
+});
+mocha.run();
+    </script>
+  </body>
+</html>

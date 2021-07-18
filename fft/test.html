@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Mocha</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/mocha/8.3.2/mocha.min.js"
+      integrity="sha512-TfAL33PtGUxii1awTCbr3qbzQT5fYi7ItCGUfzWlnMJ4cK5BA8JNY4gJzEs+tQVbyElVbtcI2Jlaf9EFVMvyeg=="
+      crossorigin="anonymous"
+    ></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/mocha/8.3.2/mocha.min.css"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/chai/4.3.4/chai.min.js"
+      crossorigin="anonymous"
+    ></script>
+  </head>
+  <body>
+    <div id="mocha">
+    </div>
+    <script src='chart.js'></script>
+    <script type="module">
+      import {fftmod} from './FFT.js';
+      mocha.setup('bdd');
+      const expect=chai.expect;
+      describe('loading module', () => {
+        it('checking basic functions are imported',async () => {
+          const {FFT,stblRef,stbl,complexRef,complex,instance,heap,module,getFloatFrequencyData,inputPCM}=await fftmod(5);
+          expect(stbl[0]).eq(0)  
+          expect(stbl[1]).gt(0)
+          expect(heap instanceof ArrayBuffer);
+          expect(complexRef instanceof ArrayBuffer);
+          expect(FFT).exist
+        });
+        it("checking it has pulse",async ()=>{
+          const {FFT,iFFT,stblRef,stbl,complexRef,complex,instance,heap,module,getFloatFrequencyData,inputPCM}=await fftmod(5);
+
+          inputPCM([1]);
+          console.log(new Float64Array(heap,complexRef,30));
+            expect(complex[0]).eq(1);
+           for(let i=1;i<32;i++) expect(complex[i]).eq(0);
+          const freqbin= getFloatFrequencyData();
+           expect(freqbin[0]).exist
+        
+        })
+        it('enterin to sequence of signals sequentially',async ()=>{
+          const {FFT,iFFT,stblRef,stbl,complexRef,complex,instance,heap,module,getFloatFrequencyData,inputPCM}=await fftmod(5);
+          inputPCM([1,0,0,0]);
+          inputPCM([1,0,0,0]) ;
+          const freqbin= getFloatFrequencyData();
+          console.log(freqbin);
+          expect(freqbin[3]).not.eq(0)
+
+          
+        })
+        it('get wavform',async ()=>{
+          const {FFT,iFFT,stblRef,getWaveForm,stbl,complexRef,complex,bit_reverse,instance,heap,module,getFloatFrequencyData,inputPCM}=await fftmod(5);
+          complex.set(new Float64Array(32).fill(0));
+       complex[5]= 11.1;  
+          bit_reverse(complexRef, 5);
+          const r=getWaveForm();
+          chart(mkcanvas(), r[0]);
+          console.log(r[0]);
+          console.log(r[0]);document.body.style.backgroundColor='black';
+          expect(true)
+        })
+      });
+      mocha.run();
+
+    </script>
+    <script type='modle'>        import {fftmod} from './FFT.js';
+      const {FFT,iFFT,stblRef,getWaveForm,stbl,complexRef,complex,instance,heap,module,getFloatFrequencyData,inputPCM}=await fftmod(5);
+
+      complex.set(new Float64Array(64).fill(0));
+      complex[1]= 1.;
+      const r=getWaveForm();
+      chart(mkcanvas(), r[0]);
+    </script>
+  </body>
+</html>
