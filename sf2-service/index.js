@@ -28,20 +28,29 @@ export async function load(url) {
     const range =
       "bytes=" + (sdtaStart + start * 2) + "-" + (sdtaStart + end * 2 + 1);
     const loops = [startloop - start, endloop - start];
-    return { range, loops, sampleRate, originalPitch };
+    return { range, loops, sampleRate, originalPitch, url };
     //		return [start, end, startloop, endloop, sampleRate, originalPitch, pitchCorrection];
   }
   const chmap = {};
   function* zoneSampleHeaders(zref) {
     let lastSampleId;
+    const shdrMap = new WeakMap();
     for (
       let zoneProxy = zref2Zone(zref);
       zoneProxy.SampleId >= 0;
       zoneProxy = zref2Zone((zref += 120))
     ) {
-      if (zoneProxy.SampleId != lastSampleId) {
-        yield getShdr(zoneProxy.SampleId);
-      }
+      const mapKey = { sid: zoneProxy.SampleId };
+      yield {
+        zone: zoneProxy,
+        get shdr() {
+          if (!shdrMap.has(mapKey)) {
+            shdrMap.set(mapKey, getShdr(zoneProxy.SampleId));
+            return shdrMap.get(mapKey);
+          }
+          return null;
+        },
+      };
     }
     return;
   }

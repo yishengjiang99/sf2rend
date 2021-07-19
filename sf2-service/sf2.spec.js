@@ -1,4 +1,5 @@
 import {load} from "./index.js";
+import { s16ArrayBuffer2f32 } from "../s16tof32.js";
 import { mkcanvas, chart, resetCanvas } from "../chart.js";
 document.body.id = "mocha";
 mocha.setup("bdd");
@@ -21,19 +22,13 @@ describe("pdtaquery", () => {
       ({ zoneSampleHeaders, setProgram, noteOn, zref2Zone }) => {
         const sf = setProgram(0, 2);
         const iter = zoneSampleHeaders(sf);
-        for (const sh of iter) {
-          expect(sh.range).exists;
-          fetch("../file.sf2", { headers: { Range: sh.range } })
-            .then((res) => res.arrayBuffer())
-            .then((ab) => {
-              const b16 = new Int16Array(ab);
-              const f32 = new Float32Array(ab.byteLength / 2);
-              for (let i = 0; i < b16.length; i++) {
-                //} of b16){
-                f32[i] = b16[i] / 0xffff;
-              }
-              chart(mkcanvas(), f32);
-            });
+        for (const { shdr, zone } of iter) {
+          if (shdr != null) {
+            fetch(shdr.url, { headers: { Range: shdr.range } })
+              .then((res) => res.arrayBuffer())
+              .then((ab) => s16ArrayBuffer2f32(ab))
+              .then((fl) => chart(mkcanvas(), fl));
+          }
         }
         const zref = noteOn(2, 45, 22);
       }

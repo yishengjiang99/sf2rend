@@ -354,7 +354,7 @@ var Module = (function () {
     function isDataURI(filename) {
       return hasPrefix(filename, dataURIPrefix);
     }
-    var wasmBinaryFile = "sf2-service/pdta.wasm";
+    var wasmBinaryFile = "pdta.wasm";
     if (!isDataURI(wasmBinaryFile)) {
       wasmBinaryFile = locateFile(wasmBinaryFile);
     }
