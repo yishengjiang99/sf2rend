@@ -16,24 +16,20 @@ export function mkdiv(type, attr = {}, children = "") {
 }
 //
 
-export function logdiv({ container, containerID } = {}) {
-    const logs = [];
-    const errPanel = mkdiv("div");
-    const infoPanel = mkdiv("pre", { style: "height:200px;overflow-y:scroll" });
-    const stderr = (str) => (errPanel.innerHTML = str);
-    const stdout = (log) => {
-        logs.push(performance.now() / 1e6 + ":" + log);
-        if (logs.length > 100)
-            logs.shift();
-        infoPanel.innerHTML = logs.join("\n");
-    };
-    ((containerID && document.getElementById(containerID)) ||
-        container ||
-        document.body).append(mkdiv("div", {}, [errPanel, infoPanel]));
-    return {
-        stderr,
-        stdout,
-    };
+export function logdiv(infodiv, errdiv) {
+  const logs = [];
+  const errPanel = document.querySelector(errdiv);
+  const infoPanel = document.querySelector(infodiv);
+  const stderr = (str) => (errPanel.innerHTML = str);
+  const stdout = (log) => {
+    logs.push(performance.now() / 1e6 + ":" + log);
+    if (logs.length > 100) logs.shift();
+    infoPanel.innerHTML = logs.join("\n");
+  };
+  return {
+    stderr,
+    stdout,
+  };
 }
 
 // export { logdiv, mkdiv };

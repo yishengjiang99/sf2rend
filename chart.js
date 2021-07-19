@@ -1,4 +1,4 @@
-export const WIDTH = 320; // / 2,
+export const WIDTH = 720; // / 2,
 export const HEIGHT = 400;
 
 export function resetCanvas(canvasCtx) {

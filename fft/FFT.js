@@ -19,11 +19,8 @@ export async function fftmod(n = 12) {
     stbl[i] = Math.sin((2 * Math.PI * i) / N);
   }
 
-  const complexRef = instance.exports.malloc(N * 10 * sizeof_double);
-  const complex = new Float64Array(heap, complexRef, N * 10);
-
-  const outputRef = complexRef + 8 * N * sizeof_double;
-  const outputArray = new Float64Array(heap, outputRef, N * 2);
+  const complexRef = instance.exports.malloc(N * 2 * sizeof_double);
+  const complex = new Float64Array(heap, complexRef, 2 * N);
 
   let wptr = 0,
     rptr = 0;
@@ -35,38 +32,29 @@ export async function fftmod(n = 12) {
   }
 
   const inputPCM = (arr) => {
+    bzeroArray(complexRef, N);
     wptr = 0;
     arr.forEach((v) => {
       complex[wptr] = v;
       complex[wptr + 1] = 0;
       wptr += 2;
-      // if (wptr >= rptr + 2 * N) {
-      //   // bzeroArray(rptr, 2 * N);
-      //   rptr += 2 * N;
-      //   if (rptr >= 10 * N) rptr = 0;
-      // }
-      // if (wptr >= 10 * N) {
-      //   wptr = 0;
-      // }
     });
   };
   function getFloatFrequencyData() {
     FFT(complexRef + rptr, n, stblRef);
     bit_reverse(complexRef + rptr, n);
-    complex.copyWithin(8 * N, rptr, rptr + 2 * N); //,complexRef+8*N*sizeof_double)
-    bit_reverse(complexRef + rptr, n);
 
     return [
-      outputArray.filter((v, idx) => idx % 2 == 0),
-      outputArray.filter((v, idx) => idx % 2 == 1),
+      complex.filter((v, idx) => idx % 2 == 0),
+      complex.filter((v, idx) => idx % 2 == 1),
     ];
   }
   function getWaveForm() {
-    iFFT(complexRef + rptr, n, stblRef);
-    complex.copyWithin(8 * N, rptr, rptr + 2 * N);
+    bit_reverse(complexRef, n);
+    iFFT(complexRef, n, stblRef);
     return [
-      outputArray.filter((v, idx) => idx % 2 == 1),
-      outputArray.filter((v, idx) => idx % 2 == 0),
+      complex.filter((v, idx) => idx % 2 == 1),
+      complex.filter((v, idx) => idx % 2 == 0),
     ];
   }
   function reset() {

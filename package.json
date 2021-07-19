@@ -1,0 +1,23 @@
+{
+	"name": "sf2rend",
+	"version": "1.0.0",
+	"description": "",
+	"type": "module",
+	"main": "ctxemwtf.js",
+	"scripts": {
+		"dev": "emcc -fsanitize=undefined -g4 ctx.c -o build/ctx.wasm --no-entry && node make",
+		"build": "make",
+		"test": "chrome-cli open https://dsp.grepawk.com/ssr-bach/sf2rend/test.html"
+	},
+	"keywords": [],
+	"author": "Yisheng Jiang",
+	"license": "ISC",
+	"dependencies": {
+		"@types/webmidi": "^2.0.6",
+		"mkdiv": "^2.0.2",
+		"parse-sf2": "^2.1.2"
+	},
+	"devDependencies": {
+		"eslint": "^7.31.0"
+	}
+}

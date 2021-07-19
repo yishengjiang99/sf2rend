@@ -1,0 +1,45 @@
+{
+	"files.associations": {
+		"__hash_table": "c",
+		"__split_buffer": "c",
+		"array": "c",
+		"bitset": "c",
+		"hash_map": "c",
+		"initializer_list": "c",
+		"list": "c",
+		"string": "c",
+		"string_view": "c",
+		"unordered_map": "c",
+		"utility": "c",
+		"vector": "c",
+		"wavetable_oscillator.h": "c",
+		"sf2.h": "c",
+		"stdlib.h": "c",
+		"stdio.h": "c",
+		"string.h": "c",
+		"algorithm": "c",
+		"iterator": "c"
+	},
+	"editor.tokenColorCustomizations": {
+		"textMateRules": [
+			{
+				"scope": "googletest.failed",
+				"settings": {
+					"foreground": "#f00"
+				}
+			},
+			{
+				"scope": "googletest.passed",
+				"settings": {
+					"foreground": "#0f0"
+				}
+			},
+			{
+				"scope": "googletest.run",
+				"settings": {
+					"foreground": "#0f0"
+				}
+			}
+		]
+	}
+}

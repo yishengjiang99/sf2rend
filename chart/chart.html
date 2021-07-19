@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>chart</title>
+	<link rel="stylesheet" href="https://dsp.grepawk.com/radio/mini-dark.min.css">
+	<style>main{display:grid;grid-template-columns: 1fr 1fr;} canvas{grid-area: span;}</style>
+</head>
+<body>
+	<h2>fps estimate</h2>
+	<canvas></canvas>
+	<script type='module'>
+
+import {chart,mkcanvas,resetCanvas} from './chart.js';
+	const canvas=mkcanvas();
+	const arr=new Int32Array(255).fill(0);
+		let i=0;
+		function update(){
+			let t=performance.now();
+			t -= ~~t;
+			t=t*0xffff;
+			if(t) t=-0x10000+t;
+			
+			arr[i++ & 0xff]=t-.5;
+			for(let g=0;g<50;g++) arr[i+g & 0xff] =.5;
+
+
+			resetCanvas(canvas);	
+			chart(canvas, arr)	
+			requestAnimationFrame(update);
+
+		}
+	setTimeout(update,50);
+
+	// 		const intnow=(performance.now() - ~~performance.now()) << 24;
+	// 	arr.push(((performance.now() - ~~performance.now()) << 8 )&0xfff);
+	// 	arr.shift();
+	// 	resetCanvas(canvas);
+	// 	chart(canvas,arr);
+	// 	requestAnimationFrame(update)
+	// }
+	//update();
+	</script>
+</body>
+</html>

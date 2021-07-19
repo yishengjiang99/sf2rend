@@ -34,7 +34,7 @@ float hermite4(float frac_pos, float xm1, float x0, float x1, float x2) {
 
 int upsample_wave_table(sampler_iterator *v) {
   v->frac = 0.0f;
-  v->pos = 0;
+  // v->pos = 0;
   for (int i =0; v->pos<v->sampleLength-2 && i< v->output_sample_block; i++) {
     float fm1 = *(v->sample + v->pos - 1);
     float f1 = *(v->sample + v->pos);
