@@ -25,7 +25,6 @@ function skipToSDTA(ab) {
     r.readNString(4),
     r.readNString(4),
   ];
-  console.log(riff == "RIFF" && sig == "sfbk");
   let infosize = r.get32();
   console.log(r.readNString(4), filesize, list, r.offset);
   console.log(infosize, r.offset);

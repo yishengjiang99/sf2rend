@@ -1,14 +1,32 @@
 #include <emscripten.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "sf2.h"
+extern void emitHeader(int type, void *p);
+extern void emitZref(void *ref);
+extern void emitShdr(void *ref, int start, int len);
+extern void emitFilter(int type, uint8_t lo, uint8_t hi);
+int nphdrs, npbags, npgens, npmods, nshdrs, ninsts, nimods, nigens, nibags;
 
+phdr *phdrs;
+pbag *pbags;
+pmod *pmods;
+pgen *pgens;
+inst *insts;
+ibag *ibags;
+imod *imods;
+igen *igens;
+shdr *shdrs;
+short *data;
+char *info;
+int nsamples;
+float *sdta;
+int sdtastart;
+zone_t *presetZones;
 zone_t *root;
 zone_t *presets[0xff];
-
-void loadpdta(void *pdtabuffer) {
-  section_header *sh;
 
 #define read(section)                         \
   sh = (section_header *)pdtabuffer;          \
@@ -16,6 +34,9 @@ void loadpdta(void *pdtabuffer) {
   n##section##s = sh->size / sizeof(section); \
   section##s = (section *)pdtabuffer;         \
   pdtabuffer += sh->size;
+
+void loadpdta(void *pdtabuffer) {
+  section_header *sh;
 
   read(phdr);
   read(pbag);
@@ -26,6 +47,10 @@ void loadpdta(void *pdtabuffer) {
   read(imod);
   read(igen);
   read(shdr);
+
+  // pdtabuffer += 46;
+
+  // nshdrs = sh->size / (sizeof(shdr) - 2);
 
   for (int i = 0; i < nphdrs; i++) {
     if (phdrs[i].bankId == 0) {
@@ -40,11 +65,11 @@ void loadpdta(void *pdtabuffer) {
 zone_t *findByPid(int pid, int bkid) {
   for (int i = 0; i < nphdrs - 1; i++) {
     if (phdrs[i].pid == pid && phdrs[i].bankId == bkid) {
-      return presets[i];
+      return findPresetZones(i, findPresetZonesCount(i));
     }
   }
 
-  return presets[0];
+  return NULL;
 }
 void sanitizedInsert(short *attrs, int i, pgen_t *g) {
   switch (i % 60) {
@@ -68,6 +93,7 @@ int findPresetZonesCount(int i) {
   int nregions = 0;
   int instID = -1, lastSampId = -1;
   phdr phr = phdrs[i];
+  emitHeader(phr.pid, phdrs + i);
   for (int j = phr.pbagNdx; j < phdrs[i + 1].pbagNdx; j++) {
     pbag *pg = pbags + j;
     pgen_t *lastg = pgens + pg[j + 1].pgen_id;
@@ -76,8 +102,15 @@ int findPresetZonesCount(int i) {
     int lastPgenId = j < npbags - 1 ? pbags[j + 1].pgen_id : npgens - 1;
     for (int k = pgenId; k < lastPgenId; k++) {
       pgen *g = pgens + k;
+      if (g->genid == KeyRange) {
+        emitFilter(0, g->val.ranges.lo, g->val.ranges.hi);
+      }
+      if (g->genid == VelRange) {
+        emitFilter(1, g->val.ranges.lo, g->val.ranges.hi);
+      }
       if (g->genid == Instrument) {
-        instID = g->val.shAmount;
+        emitHeader(1, insts + g->val.uAmount);
+        instID = g->val.uAmount;
         lastSampId = -1;
         inst *ihead = insts + instID;
         int ibgId = ihead->ibagNdx;
@@ -90,7 +123,17 @@ int findPresetZonesCount(int i) {
           for (pgen_t *g = igens + ibgg->igen_id; g->genid != 60 && g != lastig;
                g++) {
             if (g->genid == SampleId) {
+              shdrcast *sh = (shdr *)shdrs + g->val.uAmount;
+              emitShdr(sh, sdtastart + sh->start * 2,
+                       sh->end * 2 - sh->start * 2);
+
               nregions++;
+            }
+            if (g->genid == KeyRange) {
+              emitFilter(2, g->val.ranges.lo, g->val.ranges.hi);
+            }
+            if (g->genid == VelRange) {
+              emitFilter(3, g->val.ranges.lo, g->val.ranges.hi);
             }
           }
         }
@@ -226,5 +269,3 @@ zone_t* filterForZone(zone_t *from, uint8_t key, uint8_t vel) {
 
 void *shdrref() { return shdrs; }
 void *presetRef() { return presets; }
-
-// int main(int argc, char **argv) { printf("r"); }
