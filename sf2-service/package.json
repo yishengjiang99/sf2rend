@@ -1,12 +1,12 @@
 {
   "name": "sf2-service",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "fast",
-  "main": "index.js",
+  "main": "read.js",
   "scripts": {
     "build": "make",
     "test": "make check",
-    "postinstall": "curl -O 'https://grep32bit.blob.core.windows.net/sf2/GeneralUserGS.sf2' file.sf2"
+    "postinstall": "curl -O 'https://grep32bit.blob.core.windows.net/sf2/GeneralUserGS.sf2'"
   },
   "keywords": [],
   "author": "Yisheng Jiang",

@@ -1,0 +1,30 @@
+{
+	"files.associations": {
+		"__hash_table": "c",
+		"__split_buffer": "c",
+		"__tree": "c",
+		"array": "c",
+		"bitset": "c",
+		"deque": "c",
+		"initializer_list": "c",
+		"list": "c",
+		"map": "c",
+		"queue": "c",
+		"random": "c",
+		"regex": "c",
+		"set": "c",
+		"stack": "c",
+		"string": "c",
+		"string_view": "c",
+		"unordered_map": "c",
+		"unordered_set": "c",
+		"utility": "c",
+		"valarray": "c",
+		"vector": "c",
+		"*.inc": "c",
+		"sf2.h": "c",
+		"stdlib.h": "c",
+		"stdio.h": "c",
+		"index.h": "c"
+	}
+}

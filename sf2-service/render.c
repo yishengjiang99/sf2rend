@@ -9,6 +9,7 @@ typedef struct voice {
   float fraction;
   float stride;
   int key, vel;
+
 } voice;
 extern float powf(float b, float exp);
 extern float sinf(float x);
@@ -79,8 +80,9 @@ void render(voice *v) {
 
     float gain = hermite4(v->fraction, fm1, f1, f2, f3);
 
-    v->output1[0] += (float)gain;
-    v->output1[1] += (float)gain;
+    v->output1[0] += (float)gain * g_left;
+    ;
+    v->output1[1] += (float)gain * g_right;
 
     v->fraction += v->stride;  // p2over1200(modEG * v->z->ModEnv2Pitch);
     while (v->fraction >= 1.0f) {
