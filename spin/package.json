@@ -1,0 +1,16 @@
+{
+  "name": "spin",
+  "version": "1.0.0",
+  "description": "",
+  "main": "node.js",
+  "scripts": {
+    "build": "make",
+    "test": "mocha "
+  },
+  "keywords": [],
+  "author": "Yisheng Jiang",
+  "license": "ISC",
+  "dependencies": {
+    "read-wasm-sf2": "^1.0.0"
+  }
+}

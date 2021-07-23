@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+</head>
+<body>
+	<script type="module">
+
+		import {SpinNode} from './node.js';
+
+		let state = 0, ctx, spiners, sp;
+		function getCPM(freq, harmonicity) {
+
+			const fl32s = new Float32Array(48200);
+			for (let i = 0;i < 48200;i++) {
+				let g = .8;
+				fl32s[i] = g * Math.sin(2 * 3.1415 * (i - 50) / 48000 * freq / 2); g *= harmonicity;
+				fl32s[i] += g * Math.sin(2 * 3.1415 * (i - 50) / 48000 * freq * 3); g *= harmonicity;
+				fl32s[i] += g * Math.sin(2 * 3.1415 * (i - 50) / 48000 * freq * 5); g *= harmonicity;
+				fl32s[i] += g * Math.sin(2 * 3.1415 * (i - 50) / 48000 * freq * 7); g *= harmonicity;
+
+			}
+			return fl32s;
+		}
+		async function mkspiner(ctx, fl23) {
+			const sb = new SharedArrayBuffer(fl23.byteLength);
+			const sdta = new Float32Array(sb);
+			sdta.set(fl23);
+			sp = await SpinNode.init(ctx, sb, 50, 48050); //then((sp) => {
+			sp.connect(ctx.destination);
+			return sp;
+		}
+		document.onkeydown = async (e) => {
+			if (!ctx) {
+				ctx = new AudioContext();
+				spiners = [
+					await mkspiner(ctx, getCPM(440, .5)),
+					await mkspiner(ctx, getCPM(220, .8)),
+					await mkspiner(ctx, getCPM(220, .8)),
+					await mkspiner(ctx, getCPM(220, .8)),
+					await mkspiner(ctx, getCPM(440, .5)),
+					await mkspiner(ctx, getCPM(220, .8)),
+					await mkspiner(ctx, getCPM(220, .8)),
+					await mkspiner(ctx, getCPM(220, .8)),
+
+				]
+			}
+			switch (e.key) {
+				case 'a': spiners.map(sp => sp.stride *= 14 / 12); break;
+				case 's': spiners.map(sp => sp.stride *= 13 / 12); break;
+				case 'd': spiners.map(sp => sp.stride *= 10 / 12); break;
+				case 'f': spiners.map(sp => sp.stride *= 11 / 12); break;
+				default: break;
+
+			}
+		}
+
+
+	</script>
+</body>
+</html>
