@@ -1,22 +1,16 @@
 import { sfbkstream } from "./skip_to_pdta.js";
-import { newSFZoneMap, newSFZone } from "./zoneProxy.js";
+import { newSFZoneMap } from "./zoneProxy.js";
 import { s16ArrayBuffer2f32 } from "./s16tof32.js";
 
-document.body.innerHTML += "<pre></pre>";
-const pre = document.querySelector("pre");
-
-function decodeasci(uint8arr) {
-  return uint8arr.map((v) => (v >= 65 && v <= 122 ? asci[v - 65] : ""));
-}
-export async function load(url, { onString, onLink } = {}) {
+export async function load(url, { onHeader, onSample, onZone } = {}) {
   const Module = await import("./pdta.js");
   const module = await Module.default();
   const { pdtaBuffer, sdtaStart } = await sfbkstream(url);
   function devnull() {}
-  // const { pdtaBuffer, sdtaStart } = await pdtaLoaded;
   const a = module._malloc(pdtaBuffer.byteLength);
-  module.emitString = onString || devnull;
-  module.emitLink = onLink || devnull;
+  module.onHeader = onHeader || devnull;
+  module.onSample = onSample || devnull;
+  module.onZone = onZone || devnull;
 
   module.HEAPU8.set(pdtaBuffer, a);
   module.ccall("loadpdta", null, ["number"], [a], null);
@@ -35,57 +29,63 @@ export async function load(url, { onString, onLink } = {}) {
       20,
       5
     );
-    const cl = new Uint8Array(46);
-    cl.set(new Uint8Array(dv));
+
     const [originalPitch] = new Uint8Array(dv, 20 + 5 * 4, 1);
     const range =
       "bytes=" + (sdtaStart + start * 2) + "-" + (sdtaStart + end * 2 + 1);
     const loops = [startloop - start, endloop - start];
     return {
-      len: 4 * (end - start),
+      byteLength: 2 * (end - start),
       range,
       loops,
       sampleRate,
       originalPitch,
       url,
       hdrRef,
-      charClone: cl,
     };
   }
   const chmap = {};
+  let aggShdrMap = {};
 
-  function zoneSampleHeaders(zref) {
-    const shdrMap = {};
-    const zMap = {};
-    let zoneProxy;
-    do {
-      const zone = zref2Zone(zref);
-      if (!zref || zone.SampleId == -1) break;
-      zMap[zref] = zone;
+  function loadProgram(pid, bkid = 0) {
+    const rootRef = presetZoneRef(pid, bkid);
+    const zMap = [];
 
-      const mapKey = zMap[zref].SampleId;
-      if (!shdrMap[mapKey]) {
-        shdrMap[mapKey] = getShdr(zMap[zref].SampleId);
+    for (
+      let zref = rootRef, zone = zref2Zone(zref);
+      zone && zone.SampleId != -1;
+      zone = zref2Zone((zref += 120))
+    ) {
+      const mapKey = zone.SampleId;
+      if (!aggShdrMap[mapKey]) {
+        aggShdrMap[mapKey] = getShdr(zone.SampleId);
       }
-      zref += 120;
-    } while (true);
+      zMap.push({
+        ...zone,
+        ...aggShdrMap[mapKey],
+        get pcm() {
+          return fetch(aggShdrMap[mapKey].url, {
+            headers: { Range: aggShdrMap[mapKey].range },
+          })
+            .then((r) => r.arrayBuffer())
+            .then((ab) => s16ArrayBuffer2f32(ab));
+        },
+      });
+    }
+
     return {
       zMap,
-      shdrMap,
+      zref: rootRef,
+      filter: function (key, vel = -1) {
+        return this.zMap.filter(
+          (z) =>
+            (vel == -1 || (z.VelRange.lo <= vel && z.VelRange.hi >= vel)) &&
+            (key == -1 || (z.KeyRange.lo <= key && z.KeyRange.hi >= key))
+        );
+      },
     };
   }
 
-  function setProgram(pid, channelId) {
-    const bkid = channelId == 9 ? 128 : 0;
-    chmap[channelId] = module.ccall(
-      "findByPid",
-      "number",
-      ["u16", "u16"],
-      [pid, bkid],
-      null
-    );
-    return chmap[channelId];
-  }
   /**
    * memset(retval, zone_t*)
    */
@@ -93,18 +93,7 @@ export async function load(url, { onString, onLink } = {}) {
     const zone = new Int16Array(module.HEAPU8.buffer, zref, 60);
     return newSFZoneMap(zref, zone);
   }
-  function noteOn(chid, key, vel) {
-    const zref = chmap[chid];
-    const zz = module.ccall(
-      "filterForZone",
-      "number",
-      ["number", "u8", "u8"],
-      [zref, key, vel],
-      null
-    );
-    return { zref, zone: new Int16Array(module.HEAPU8.buffer, zz, 60) };
-  }
-  let aggShdrMap = {};
+
   function getFont(pid, bkid, key, vel) {
     const zref = module.ccall(
       "findByPid",
@@ -125,7 +114,9 @@ export async function load(url, { onString, onLink } = {}) {
     if (!aggShdrMap[zone.SampleId]) {
       aggShdrMap[zone.SampleId] = fetch(shdr.url, {
         headers: { Range: shdr.range },
-      });
+      })
+        .then((res) => res.arrayBuffer())
+        .then((ab) => s16ArrayBuffer2f32(ab));
     }
     return {
       shdr,
@@ -133,15 +124,11 @@ export async function load(url, { onString, onLink } = {}) {
       zone,
       shdata: aggShdrMap[zone.SampleId],
     };
-
-    //.console.log(zref2Zone(zref2), zref2Zone(zref3));
   }
   return {
-    setProgram,
-    noteOn,
     getShdr,
     getFont,
-    zoneSampleHeaders,
+    loadProgram,
     presetZoneRef,
     readModule: module,
   };

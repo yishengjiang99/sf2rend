@@ -1,0 +1,12 @@
+{
+  "name": "mkdiv",
+  "version": "2.0.2",
+  "description": "",
+  "main": "mkdiv.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Yisheng Jiang",
+  "license": "ISC"
+}

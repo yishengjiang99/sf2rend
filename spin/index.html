@@ -9,7 +9,7 @@
 <body>
 	<script type="module">
 
-		import {SpinNode} from './node.js';
+				import {SpinNode, mkspiner} from './node.js';
 
 		let state = 0, ctx, spiners, sp;
 		function getCPM(freq, harmonicity) {
@@ -21,7 +21,6 @@
 				fl32s[i] += g * Math.sin(2 * 3.1415 * (i - 50) / 48000 * freq * 3); g *= harmonicity;
 				fl32s[i] += g * Math.sin(2 * 3.1415 * (i - 50) / 48000 * freq * 5); g *= harmonicity;
 				fl32s[i] += g * Math.sin(2 * 3.1415 * (i - 50) / 48000 * freq * 7); g *= harmonicity;
-
 			}
 			return fl32s;
 		}
@@ -54,7 +53,6 @@
 				case 'd': spiners.map(sp => sp.stride *= 10 / 12); break;
 				case 'f': spiners.map(sp => sp.stride *= 11 / 12); break;
 				default: break;
-
 			}
 		}
 

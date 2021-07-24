@@ -18,7 +18,23 @@
 		"stdio.h": "c",
 		"string.h": "c",
 		"algorithm": "c",
-		"iterator": "c"
+		"iterator": "c",
+		"emscripten.h": "c",
+		"__node_handle": "c",
+		"regex": "c",
+		"biquad.h": "c",
+		"random": "c",
+		"__functional_base": "c",
+		"__functional_base_03": "c",
+		"__tuple": "c",
+		"chrono": "c",
+		"type_traits": "c",
+		"functional": "c",
+		"limits": "c",
+		"memory": "c",
+		"ratio": "c",
+		"tuple": "c",
+		"future": "c"
 	},
 	"editor.tokenColorCustomizations": {
 		"textMateRules": [
@@ -41,5 +57,10 @@
 				}
 			}
 		]
-	}
+	},
+	"C_Cpp.autocompleteAddParentheses": true,
+	"C_Cpp.commentContinuationPatterns": [
+		"/**"
+	],
+	"C_Cpp.vcFormat.indent.lambdaBracesWhenParameter": false
 }

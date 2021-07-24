@@ -5,8 +5,8 @@
 
 #include "sf2.h"
 extern void emitHeader(int type, void *p);
-extern void emitZref(void *ref);
-extern void emitShdr(void *ref, int start, int len);
+extern void emitZone(int pid, void *ref);
+extern void emitSample(void *ref, int start, int len);
 extern void emitFilter(int type, uint8_t lo, uint8_t hi);
 int nphdrs, npbags, npgens, npmods, nshdrs, ninsts, nimods, nigens, nibags;
 
@@ -27,7 +27,11 @@ int sdtastart;
 zone_t *presetZones;
 zone_t *root;
 zone_t *presets[0xff];
-
+enum {
+  phdrHead = 0x1000,
+  instHead = 0x2000,
+  shdrHead = 0x4000,
+} headertype;
 #define read(section)                         \
   sh = (section_header *)pdtabuffer;          \
   pdtabuffer += 8;                            \
@@ -35,7 +39,7 @@ zone_t *presets[0xff];
   section##s = (section *)pdtabuffer;         \
   pdtabuffer += sh->size;
 
-void loadpdta(void *pdtabuffer) {
+void *loadpdta(void *pdtabuffer) {
   section_header *sh;
 
   read(phdr);
@@ -54,18 +58,22 @@ void loadpdta(void *pdtabuffer) {
 
   for (int i = 0; i < nphdrs; i++) {
     if (phdrs[i].bankId == 0) {
+      emitHeader(phdrs[i].pid, phdrs + i);
       presets[phdrs[i].pid] = findPresetZones(i, findPresetZonesCount(i));
     } else if (phdrs[i].bankId == 128) {
+      emitHeader(phdrs[i].pid, phdrs + i);
+
       presets[phdrs[i].pid | phdrs[i].bankId] =
           findPresetZones(i, findPresetZonesCount(i));
     }
   }
+  return presetZones;
 }
 
 zone_t *findByPid(int pid, int bkid) {
   for (int i = 0; i < nphdrs - 1; i++) {
     if (phdrs[i].pid == pid && phdrs[i].bankId == bkid) {
-      return findPresetZones(i, findPresetZonesCount(i));
+      return presets[phdrs[i].pid | phdrs[i].bankId];
     }
   }
 
@@ -93,7 +101,6 @@ int findPresetZonesCount(int i) {
   int nregions = 0;
   int instID = -1, lastSampId = -1;
   phdr phr = phdrs[i];
-  emitHeader(phr.pid, phdrs + i);
   for (int j = phr.pbagNdx; j < phdrs[i + 1].pbagNdx; j++) {
     pbag *pg = pbags + j;
     pgen_t *lastg = pgens + pg[j + 1].pgen_id;
@@ -109,7 +116,6 @@ int findPresetZonesCount(int i) {
         emitFilter(1, g->val.ranges.lo, g->val.ranges.hi);
       }
       if (g->genid == Instrument) {
-        emitHeader(1, insts + g->val.uAmount);
         instID = g->val.uAmount;
         lastSampId = -1;
         inst *ihead = insts + instID;
@@ -124,8 +130,8 @@ int findPresetZonesCount(int i) {
                g++) {
             if (g->genid == SampleId) {
               shdrcast *sh = (shdr *)shdrs + g->val.uAmount;
-              emitShdr(sh, sdtastart + sh->start * 2,
-                       sh->end * 2 - sh->start * 2);
+              emitSample(sh, sdtastart + sh->start * 2,
+                         sh->end * 2 - sh->start * 2);
 
               nregions++;
             }
@@ -243,6 +249,7 @@ zone_t *findPresetZones(int i, int nregions) {
               zone_t *zz = (zone_t *)zoneattr;
               if (add) {
                 memcpy(zones + found, zoneattr, 60 * sizeof(short));
+                emitZone(phdrs[i].pid, zz);
                 found++;
               }
             }

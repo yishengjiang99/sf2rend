@@ -1,8 +1,14 @@
 import { load } from "../sf2-service/read.js";
-import { mkdiv } from "../node_modules/mkdiv/mkdiv.js";
+import { mkdiv, logdiv } from "../node_modules/mkdiv/mkdiv.js";
+import { newSFZone } from "../sf2-service/zoneProxy.js";
 
-const statusDiv = document.createElement("span");
+const statusDiv = mkdiv("span", { id: "rx1" });
+const pre = mkdiv("pre", { id: "stdout" });
+
+const { stderr, stdout, infoPanel, errPanel } = logdiv("#stdout", "#rx1");
 document.body.append(statusDiv);
+document.body.append(infoPanel);
+document.body.append(errPanel);
 const sf2URL = "file.sf2";
 let ctx, proc, impulse, sf2service;
 const aggShdrMap = {};
@@ -10,44 +16,72 @@ const main = mkdiv("main", {}, "check");
 const startbtn = mkdiv("button", { onclick: start }, "Start");
 main.append(startbtn);
 main.attachTo(document.body);
-const list = mkdiv("li").attachTo(main);
+const cent2sec = (cent) => Math.pow(2, cent / 1200);
 
+var clist;
+const zMap = {},
+  shMap = {};
+const divmap = {};
 const sf2serviceWait = load(sf2URL, {
-  onString: (str) => main.append(mkdiv("div", {}, str)),
-  onLink: function (str, start, len) {
-    main.append(
-      mkdiv(
-        "a",
-        {
-          target: "frame1",
-          href: "#" + sf2URL + ":" + start + ":" + (start + len),
-          start,
-          len,
+  onHeader: (pid, str) => {
+    const loadlink = mkdiv(
+      "a",
+      {
+        href: "#",
+        onclick: (e) => {
+          e.preventDefault();
+          loadProgram(pid, 0).then(({ keyon, keyoff }) => {
+            for (let i = 0x2a; i < 0x6c; i++)
+              e.target.parentElement.appendChild(
+                mkdiv(
+                  "button",
+                  {
+                    midi: i,
+                    onmousedown: (e) => {
+                      keyon(e.target.getAttribute("midi"), 111);
+                      e.target.addEventListener("mouseup", keyoff, {
+                        once: true,
+                      });
+                    },
+                  },
+                  i.toString(16)
+                )
+              );
+          });
         },
-        str
-      )
+        style: "cursor:crosshair",
+      },
+      "load preset"
     );
+    divmap[pid] = mkdiv("summary", { pid: pid }, [str, "&nbsp", loadlink])
+      .wrapWith("details")
+      .attachTo(main);
   },
+  onZone(pid, ref, array) {
+    zMap[pid] = zMap[pid] || {};
+    zMap[pid][ref] = array;
+    divmap[pid].append(mkdiv("div", {}, array));
+  },
+  onSample: function (str, start, len, attrs) {},
 });
 
 function setStatus(str) {
   statusDiv.textContent = str;
 }
-setStatus("press anykey");
+stdout("press anykey");
 
 async function start() {
-  ctx = new AudioContext({ sampleRate: 48000 });
-  sf2service = await sf2serviceWait;
+  if (!ctx) {
+    ctx = new AudioContext();
+    await ctx.audioWorklet.addModule("dist/rend.js");
+  }
+  sf2service = sf2service || (await sf2serviceWait);
+
   setStatus("load");
-  const keyon = await loadProgram(0, 0);
-  keyon(0, 55, 88);
 }
 
 async function loadProgram(pid, aac) {
-  const pref = sf2service.setProgram(pid, aac);
-  if (!pref) return;
-  const { shdrMap, zMap } = sf2service.zoneSampleHeaders(pref);
-
+  const zmap = zMap[pid];
   await ctx.audioWorklet.addModule("dist/rend.js");
   proc = new AudioWorkletNode(ctx, "rendproc5", {
     outputChannelCount: [2],
@@ -95,21 +129,4 @@ async function loadProgram(pid, aac) {
     });
   }
   return keyon;
-}
-
-function getMidi(code) {
-  const keys = ["a", "w", "s", "e", "d", "f", "t", "g", "y", "h", "u", "j"];
-  return keys.indexOf(code) > -1
-    ? Math.pow(2, (56 + keys.indexOf(code) - 69) / 12) * 440
-    : 0;
-}
-function s16ArrayBuffer2f32(ab) {
-  const b16 = new Int16Array(ab);
-
-  const f32 = new Float32Array(ab.byteLength / 2);
-  for (let i = 0; i < b16.length; i++) {
-    //} of b16){
-    f32[i] = b16[i] / 0xffff;
-  }
-  return f32;
 }

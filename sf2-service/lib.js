@@ -1,15 +1,13 @@
+//let Module = Module || {};
 mergeInto(LibraryManager.library, {
-  emitHeader: function (type, offset) {
-    Module.emitString("\n" + type + " " + Module.AsciiToString(offset)); //Module.HEAPU8.subarray(offset, offset + 20)
+  emitHeader: function (pid, offset) {
+    Module.onHeader(pid, Module.AsciiToString(offset));
   },
-  emitShdr: function (shdr, start, len) {
-    Module.emitLink("[" + Module.AsciiToString(shdr) + "]", start, len);
+  emitSample: function (shdr, start, len) {
+    Module.onSample(shdr, start, len);
   },
-  emitZref: function (ref) {
-    const base = new Int16Array(Module.HEAPU8.buffer, (ref += 120), 60);
-    // Module.emitString("\n" + base.join(","));
+  emitZone: function (pid, ref) {
+    Module.onZone(pid, ref, new Int16Array(Module.HEAPU8.buffer, ref, 60));
   },
-  emitFilter: function (type, lo, hi) {
-    // Module.emitString("\n" + [type, lo, hi].join(","));
-  },
+  emitFilter: function (type, lo, hi) {},
 });
