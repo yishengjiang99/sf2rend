@@ -15,7 +15,7 @@
 <body>
 	<div id="mocha">
 		<canvas></canvas> <button>play</button> <canvas></canvas>
-	</div>
+	</div><input type='range' max=10000 />
 	<script type="module">
 		mocha.setup("bdd");
 		import {LPFWorkletNode} from "./lpf-node.js"; //("lpf-node.js").LPFWorkletNode;
@@ -80,17 +80,17 @@
 		});
 		describe('worklet node', () => {
 
-			it('better work', async (done) => {
+			it('better work', async () => {
 				window.onkeydown = async () => {
 					const ctx = new AudioContext();
 					const anal1 = new AnalyserNode(ctx, {fftSize: 32}), anal2 =
 						new AnalyserNode(ctx, {fftSize: 32}), fl1 = new Float32Array(32), fl2 = new Float32Array(32);
 					await LPFWorkletNode.init(ctx);
-					const lpfs = new LPFWorkletNode(ctx, {FilterFC: 6900 * 2, FilterQ: -2});
-					const sq = new OscillatorNode(ctx, {type: "square", frequency: 440});
+					const lpfs = new LPFWorkletNode(ctx, {FilterFC: 6900, FilterQ: 2});
+					const sq = new OscillatorNode(ctx, {type: "square", frequency: 220});
 
 					sq.connect(lpfs).connect(anal1).connect(ctx.destination);
-					sq.connect(anal2).connect(ctx.destination);
+				//	sq.connect(anal2).connect(ctx.destination);
 					sq.connect(ctx.destination);
 					sq.start();
 

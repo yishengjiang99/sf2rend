@@ -9,72 +9,7 @@
 <body>
 	<pre></pre>
 	<main></main><button id=mknoise>mk noise</button>
-	<script type='module'>
-		import {mkdiv} from "./mkdiv/mkdiv.js";
-		import {load} from './sf2-service/read.js';
-		import {SpinNode, mkspinner} from './spin/node.js';
-		import {manySpinners, mkkeyboard, upupdowndown} from './synth/noise.js';
-		let au = new AudioContext(); const aggShdrMap = {};
-		const main = mkdiv("main");
-		main.attachTo(document.body);
-		const cent2sec = (cent) => Math.pow(2, cent / 1200);
-
-		var clist;
-		const zMap = {},
-			shMap = {};
-		const divmap = {};
-		const spins = [], divmapa = {}
-		for (let i = 0;i < 1;i++) {
-			const [preroll, main] = manySpinners(220 * (12 + i) / 12, .41);
-			mkspinner(au, main, preroll).then(a => {
-				spins.push(a);
-			})
-		}
-
-		const sf2 = await load("file.sf2", {
-			onHeader: (pid, str) => {
-				const loadlink = mkdiv(
-					"a",
-					{
-						href: "#",
-						onclick: (e) => {
-							e.preventDefault();
-							const bar = mkdiv("progress", {max: 100, step: 1, min: 0, value: 0}).attachTo(e.target.parentElement);
-
-							const {shMap, zMap} = sf2.loadZone(pid, {onProg: (e) => bar.value++, onLoad: () => bar.value = 100});
-							mkkeyboard(e, {shMap, zMap});
-						},
-						style: "cursor:crosshair",
-					},
-					"load preset"
-				);
-				divmap[pid] = mkdiv("details", {pid: pid}, mkdiv("summary", {}, [str, "&nbsp", loadlink]));
-				divmap[pid]
-					.attachTo(main);
-			},
-			onZone(pid, ref, array) {
-				zMap[pid] = zMap[pid] || {};
-				zMap[pid][ref] = array;
-				divmap[pid].append(mkdiv("div", {}, array));
-			},
-			onSample: function (str, start, len, attrs) {},
-		});
-
-		window.onclick = async (e) => {
-
-
-			if (au.state != 'running') await au.resume();//.then(async () => {
-			if (e.target.id == 'mknoise') {
-				for (let i = 0;i < 1;i++) {
-					const [preroll, main] = manySpinners(220 * (12 + i) / 12, .41);
-					spins.push(await mkspinner(au, main, preroll));
-				}
-				upupdowndown(spins);
-			}
-
-		}
-
-
+	<script type='module' src='./index.js'>
 	</script>
 </body>
 </html>

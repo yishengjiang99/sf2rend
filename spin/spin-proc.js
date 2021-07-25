@@ -1,11 +1,12 @@
+/* eslint-disable no-unused-vars */
 class SpinProcessor extends AudioWorkletProcessor {
   static get parameterDescriptors() {
     return [
       {
         name: "stride",
         type: "a-rate",
-        minValue: 0,
-        maxValue: 20000,
+        minValue: -20,
+        maxValue: 20,
         defaultValue: 1.0,
       },
     ];
@@ -13,41 +14,54 @@ class SpinProcessor extends AudioWorkletProcessor {
   constructor(options) {
     super(options);
     const {
-      processorOptions: { sb, wasm, loopStart, loopEnd },
+      processorOptions: { sb, wasm },
     } = options;
-    this.sb = new Float32Array(sb);
+    this.pcm = new Float32Array(sb, 8);
+    this.pcm_updated = new Uint32Array(sb, 0, 1);
+    this.pcm_meta = new Uint32Array(sb, 0, 4);
 
-    const inst = new WebAssembly.Instance(new WebAssembly.Module(wasm), {
+    this.inst = new WebAssembly.Instance(new WebAssembly.Module(wasm), {
       env: {},
     });
-    this.memory = inst.exports.memory;
-    this.spinner = inst.exports.newSpinner(this.sb.length, loopStart, loopEnd);
-    this.refs = new Uint32Array(this.memory.buffer, this.spinner, 2);
-    this.output = new Float32Array(this.memory.buffer, this.refs[1], 128);
-    this.wasm = inst;
-
-    this.spin = inst.exports.spin;
-    inst.exports.reset();
+    const {
+      exports: { memory, newSpinner },
+    } = this.inst;
+    this.memory = memory;
+    this.spinner = newSpinner(
+      this.pcm.length,
+      this.pcm_meta[1],
+      this.pcm_meta[2]
+    );
+    const refs = new Uint32Array(this.memory.buffer, this.spinner, 2);
+    this.inputArray = new Float32Array(
+      this.memory.buffer,
+      refs[0],
+      this.pcm.length
+    );
+    this.output = new Float32Array(this.memory.buffer, refs[1], 128);
     this.sync();
   }
   sync() {
-    console.log("sets");
-    const inputArray = new Float32Array(
-      this.memory.buffer,
-      this.refs[0],
-      this.sb.length
-    );
-    inputArray.set(this.sb);
-    //     this.wasm.exports.reset();
-    //     console.log("reset");
+    const [_, loopstart, loopend, byteLength] = this.pcm_meta;
+    const loops = new Uint32Array(this.memory.buffer, this.spinner + 16, 2);
+    loops[0] = loopstart;
+    loops[1] = loopend;
+    this.inputArray.set(this.pcm, 0, byteLength);
+    this.pcm_meta[0] = 0;
+    this.inst.exports.reset();
+    console.log("reset");
   }
 
   process(_, [[o]], parameters) {
+    if (this.pcm_meta[0] == 1) {
+      this.sync();
+    }
     for (let i = 0; i < 128; i++) {
       this.output[i] = 0;
     }
     const stride = parseFloat(parameters["stride"][0]);
-    this.spin(this.spinner, stride);
+
+    this.inst.exports.spin(this.spinner, stride);
 
     o.set(this.output);
     return true;

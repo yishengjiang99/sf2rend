@@ -1,18 +1,23 @@
 export class LPFWorkletNode extends AudioWorkletNode {
   static async init(ctx) {
-    await ctx.audioWorklet.addModule("./lpf-proc.js");
+    try {
+      await ctx.audioWorklet.addModule("lpf/lpf-proc.js");
+    } catch (e) {
+      console.trace(e);
+      throw e;
+    }
   }
-  constructor(ctx, { FilterFC, FilterQ }) {
+  constructor(ctx, { FilterFc, FilterQ }) {
     super(ctx, "lpf", {
-      numberOfInputs: 3,
+      numberOfInputs: 1,
       numberOfOutputs: 1,
-      channelCount: [2, 1, 1],
+      channelCount: [1],
       processorOptions: {
-        FilterFC,
+        FilterFc,
         FilterQ,
         sampleRate: ctx.sampleRate,
       },
     });
   }
-  addLFO(freq, delay, ModLFO2FilterFC) {}
+  // addLFO(freq, delay, ModLFO2FilterFC) {}
 }

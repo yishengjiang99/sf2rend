@@ -1,7 +1,7 @@
 import { mkdiv } from "../mkdiv/mkdiv.js";
 export function manySpinners(freq, harmonicity) {
-  const fl32s = new Float32Array(48050);
-  for (let i = 0; i < 48050; i++) {
+  const fl32s = new Float32Array(48100);
+  for (let i = 0; i < 48100; i++) {
     let g = 0.8;
     fl32s[i] = g * Math.sin((((2 * 3.1415 * (i - 50)) / 48000) * freq) / 2);
     g *= harmonicity;
@@ -12,7 +12,7 @@ export function manySpinners(freq, harmonicity) {
     fl32s[i] += g * Math.sin(((2 * 3.1415 * (i - 50)) / 48000) * freq * 7);
     g *= harmonicity;
   }
-  return [fl32s.slice(0, 50), fl32s.slice(50)];
+  return { pcm: fl32s, loops: [50, 48050] };
 }
 
 export function upupdowndown(spiners) {
@@ -35,15 +35,16 @@ export function upupdowndown(spiners) {
     }
   });
 }
-export const mkkeyboard = (e) => {
+export const mkkeyboard = (zMap, target, keyon, keyoff) => {
   for (let i = 0x2a; i < 0x6c; i++)
-    e.target.parentElement.appendChild(
+    target.appendChild(
       mkdiv(
         "button",
         {
           midi: i,
+          vel: 111,
           onmousedown: (e) => {
-            //keyon(e.target.getAttribute("midi"), 111);
+            keyon(i, 111);
             e.target.addEventListener("mouseup", keyoff, {
               once: true,
             });

@@ -9,9 +9,8 @@
 <body>
 	<script type="module">
 
-				import {SpinNode, mkspiner} from './node.js';
+																	import {SpinNode} from './node.js';
 
-		let state = 0, ctx, spiners, sp;
 		function getCPM(freq, harmonicity) {
 
 			const fl32s = new Float32Array(48200);
@@ -24,26 +23,16 @@
 			}
 			return fl32s;
 		}
-		async function mkspiner(ctx, fl23) {
-			const sb = new SharedArrayBuffer(fl23.byteLength);
-			const sdta = new Float32Array(sb);
-			sdta.set(fl23);
-			sp = await SpinNode.init(ctx, sb, 50, 48050); //then((sp) => {
-			sp.connect(ctx.destination);
-			return sp;
-		}
+								let ctx, spiners, sp;
 		document.onkeydown = async (e) => {
 			if (!ctx) {
 				ctx = new AudioContext();
+				await SpinNode.init(ctx)
 				spiners = [
-					await mkspiner(ctx, getCPM(440, .5)),
-					await mkspiner(ctx, getCPM(220, .8)),
-					await mkspiner(ctx, getCPM(220, .8)),
-					await mkspiner(ctx, getCPM(220, .8)),
-					await mkspiner(ctx, getCPM(440, .5)),
-					await mkspiner(ctx, getCPM(220, .8)),
-					await mkspiner(ctx, getCPM(220, .8)),
-					await mkspiner(ctx, getCPM(220, .8)),
+					await new SpinNode(ctx, {pcm: getCPM(440, .5), loops: [50, 44150]}),
+					await new SpinNode(ctx, {pcm: getCPM(220, .9), loops: [50, 44150]}),
+					
+
 
 				]
 			}

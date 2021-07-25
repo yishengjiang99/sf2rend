@@ -28,7 +28,7 @@ extern double sin(double x);
 extern double cos(double x);
 extern double sinh(double x);
 extern double sqrt(double x);
-typedef double smp_type;
+typedef float smp_type;
 #ifndef M_LN2
 #define M_LN2 0.69314718055994530942
 #endif
@@ -36,9 +36,6 @@ typedef double smp_type;
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-
-/* whatever sample type you want */
-typedef double smp_type;
 
 /* this holds the data required to update samples thru a filter */
 typedef struct {
@@ -79,7 +76,7 @@ void BiQuad_new(biquad *b, const int type, const smp_type dbGain,
   sn = sin(omega);
   cs = cos(omega);
   alpha = sn * sinh(M_LN2 / 2 * bandwidth * omega / sn);
-  beta = sqrt(A + A);
+  // beta = sqrt(A + A);
   b0 = (1 - cs) / 2;
   b1 = 1 - cs;
   b2 = (1 - cs) / 2;
@@ -96,6 +93,25 @@ void BiQuad_new(biquad *b, const int type, const smp_type dbGain,
   /* zero initial samples */
   b->x1 = b->x2 = 0;
   b->y1 = b->y2 = 0;
+}
+void setFilterFC(biquad *b, smp_type srate, smp_type freq) {
+  smp_type A, omega, sn, cs, alpha, beta, b0, b1, b2, a0, a1, a2;
+  omega = 2 * M_PI * freq / srate;
+  sn = sin(omega);
+  cs = cos(omega);
+  alpha = sn * sinh(M_LN2 / 2 * 1 * omega / sn);
+  // beta = sqrt(A + A);
+  b0 = (1 - cs) / 2;
+  b1 = 1 - cs;
+  b2 = (1 - cs) / 2;
+  a0 = 1 + alpha;
+  a1 = -2 * cs;
+  a2 = 1 - alpha;
+  b->a0 = b0 / a0;
+  b->a1 = b1 / a0;
+  b->a2 = b2 / a0;
+  b->a3 = a1 / a0;
+  b->a4 = a2 / a0;
 }
 #ifdef debugg
 #include <stdio.h>
