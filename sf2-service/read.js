@@ -35,7 +35,7 @@ export async function load(url, { onHeader, onSample, onZone } = {}) {
     //      "bytes=" + (sdtaStart + start * 2) + "-" + (sdtaStart + end * 2 + 1);
     const loops = [startloop - start, endloop - start];
     return {
-      byteLength: 2 * (end - start),
+      byteLength: 4 * (end - start + 1),
       range,
       loops,
       sampleRate,
@@ -60,7 +60,6 @@ export async function load(url, { onHeader, onSample, onZone } = {}) {
     ) {
       const mapKey = zone.SampleId;
       if (!shdrMap[mapKey]) {
-        const header = getShdr(zone.SampleId);
         shdrMap[mapKey] = getShdr(zone.SampleId);
         shdrMap[mapKey].data = () =>
           shdrMap[mapKey].pcm ||
@@ -86,23 +85,9 @@ export async function load(url, { onHeader, onSample, onZone } = {}) {
       });
     }
     async function preload() {
-      const shdrs = Object.values(shdrMap);
-      const chunks = shdrs.map((shdr) => shdr.range[1] - 1 - shdr.range[0]);
-      const rangeHeader = shdrs.map((shdr) => shdr.range.join("-")).join(", ");
-      const res = await fetch(url, {
-        headers: {
-          Range: "bytes=" + rangeHeader,
-          ContentType: "multipart/byteranges; boundary=String_separator",
-        },
-      });
-      const blob = await res.blob();
-      let offset = 0;
-      const blobs = chunks.map((len) => blob.slice(offset, offset + len)); //(offset += len)))
-      console.assert(blobs.length == Object.values(shdrMap).length);
-      const arrayBffers = await Promise.all(blobs.map((b) => b.arrayBuffer()));
-      arrayBffers.forEach((ab, idx) => {
-        shdrs[idx].pcm = s16ArrayBuffer2f32(ab);
-      });
+      await Promise.all(
+        Object.keys(shdrMap).map((sampleId) => shdrMap[sampleId].data())
+      );
     }
 
     var wkref = zMap;
