@@ -27,7 +27,6 @@ int sdtastart;
 zone_t *presetZones;
 zone_t *root;
 zone_t *presets[0xff];
-
 enum {
   phdrHead = 0x1000,
   instHead = 0x2000,
@@ -68,8 +67,7 @@ void *loadpdta(void *pdtabuffer) {
           findPresetZones(i, findPresetZonesCount(i));
     }
   }
-  int x;
-  return &x;
+  return presetZones;
 }
 
 zone_t *findByPid(int pid, int bkid) {
@@ -278,5 +276,3 @@ zone_t* filterForZone(zone_t *from, uint8_t key, uint8_t vel) {
 
 void *shdrref() { return shdrs; }
 void *presetRef() { return presets; }
-
-void query(char *pdtabuffer) {}

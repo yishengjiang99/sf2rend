@@ -75,9 +75,7 @@ export function newSFZoneMap(ref, attrs) {
   }
   return obj;
 }
-export function semitone2hz(semitone) {
-  return Math.pow(2, (semitone - 6900) / 1200) * 440;
-}
+
 /**
  * proxys comma-separated str of attributes into
  * dot-accessing objects to make beter autocompletes in vscode
