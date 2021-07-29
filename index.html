@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+	<!-- <link rel="stylesheet" href="mini-default.min.css">
+ -->
+	<style>
+		legend {
+			background-color: #000;
+			color: #fff;
+			padding: 3px 6px;
+		}
+
+		a {
+			cursor: crosshair
+		}
+
+		.output {
+			font: 1rem 'Fira Sans', sans-serif;
+		}
+
+
+
+
+		* {
+
+			padding: 0;
+			margin: 0;
+		}
+
+
+
+		aside {
+			max-height: 100vh;
+			width: 30vw;
+			overflow-y: scroll;
+			padding: 0;
+			scrollbar-width: none;
+
+		}
+
+		.row {
+			display: grid;
+			grid-template-columns: 3fr 8fr;
+		}
+
+	</style>
+
+	</script>
+</head>
+
+<body>
+
+	<div class='container row'>
+		<aside class='col-md-3'>
+			<select>
+				<option value='file.sf2'>file.sf2 </option>
+				<option value='sm.sf2'> sm.sf2</option>
+			</select>
+			<div id='sf2list'></div>
+
+		</aside>
+		<div id='channelContainer'>
+		</div>
+	</div>
+	<script type='module' src=index.js>
+
+	</script>
+</body>
+</html>

@@ -1,16 +1,13 @@
 {
-  "name": "spin",
-  "version": "1.0.0",
+  "name": "mkspin",
+  "version": "1.0.2",
   "description": "",
-  "main": "node.js",
+  "main": "spin.js",
   "scripts": {
     "build": "make",
     "test": "mocha "
   },
   "keywords": [],
   "author": "Yisheng Jiang",
-  "license": "ISC",
-  "dependencies": {
-    "read-wasm-sf2": "^1.0.0"
-  }
+  "license": "do-not-use"
 }

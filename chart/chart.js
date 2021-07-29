@@ -27,11 +27,12 @@ export function chart(canvasCtx, dataArray) {
     canvasCtx.lineTo(x, ((dataArray[i] - min) / (max - min)) * HEIGHT);
   }
   canvasCtx.stroke();
-  canvasCtx.restore();
+  canvasCtx.restore();canvasCtx.font = "30px Arial";
+
   canvasCtx.strokeText(
     `rms: ${(sum / dataArray.length).toFixed(2)}`,
-    20,
-    40,
+    30,
+    50,
     100
   );
 }
@@ -44,17 +45,17 @@ export function mkOfflineCanvas(container = document.body) {
   return offline;
 }
 
-export function mkcanvas(container = document.body) {
+export function mkcanvas({container,width,height}={}) {
   const canvas = document.createElement("canvas");
-  canvas.setAttribute("WIDTH", WIDTH);
-  canvas.setAttribute("height", HEIGHT);
+  canvas.setAttribute("WIDTH", width || WIDTH);
+  canvas.setAttribute("height", height || HEIGHT);
 
   const canvasCtx = canvas.getContext("2d");
   canvasCtx.lineWidth = 2;
   canvasCtx.strokeStyle = "white";
   canvasCtx.fillStyle = "black";
   canvasCtx.font = "2em";
-  container.append(canvas);
+  (container && container.append ? cantainer : document.body ).append(canvas);
   canvas.ondblclick = () => resetCanvas(canvasCtx);
   return canvasCtx;
 }

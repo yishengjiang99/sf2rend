@@ -5,19 +5,39 @@
   <title>Mocha</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mocha/8.3.2/mocha.min.js"
-    integrity="sha512-TfAL33PtGUxii1awTCbr3qbzQT5fYi7ItCGUfzWlnMJ4cK5BA8JNY4gJzEs+tQVbyElVbtcI2Jlaf9EFVMvyeg=="
+  <script src="testharness.js"
     crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mocha/8.3.2/mocha.min.css"
-    crossorigin="anonymous" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chai/4.3.4/chai.min.js" crossorigin="anonymous"></script>
+<script src="testharnessreport.js" crossorigin="anonymous"></script>
 </head>
 <body>
-  <div id="mocha">
-    <canvas></canvas> <button>play</button> <canvas></canvas>
-  </div>
-  <script type="module" src='./tests/resolve-pcm.test.js'>
+<script type='module'>
+  import {load} from "./sf2-service/read.js";
 
-  </script>
+  promise_test(async () => {
+    const sf2 = await load("file.sf2");
+    const {shdrMap, zMap, preload, filterKV} = sf2.loadProgram(0, 0);
+    assert_greater_than(zMap.length, 0, "number of zones");
+    assert_greater_than(Object.keys(shdrMap).length, 0, "number of zones");
+  }, "loading program returns more than 0 zones");
+
+  promise_test(async () => {
+    const sf2 = await load("file.sf2");
+    const {shdrMap, zMap, preload, filterKV} = sf2.loadProgram(0, 0);
+    await preload();
+    assert_true(zMap[0].pcm instanceof Float32Array, "pcm data can be accessed synchronously after preload");
+  }, "preload pcm data");
+
+            promise_test(async () => {
+              const times = [];
+              const sf2 = await load("file.sf2", {
+                onHeader(type, str) {
+                  document.body.append(new Text(str))
+                  times.push(performance.now());
+                }
+              }); console.log(times.join("\n"));
+              assert_true(true)
+            }, "stream ui load as file is being parsed");
+</script>
+
 </body>
 </html>

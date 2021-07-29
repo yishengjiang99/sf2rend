@@ -1,0 +1,14 @@
+{
+  "name": "encode-wasm-uint8",
+  "version": "1.0.1",
+  "description": "",
+  "bin": {
+    "encode": "bin/encode.js"
+  },
+  "scripts": {
+    "test": "cat package.json | bin/encode.js"
+  },
+  "keywords": [],
+  "author": "Yisheng Jiang",
+  "license": "do-not-use"
+}

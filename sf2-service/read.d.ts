@@ -7,8 +7,9 @@ declare type Shdr = {
   url: number;
 };
 declare type Zref = number;
+export type ZMap = { [key: string]: { [key: string]: number } };
 export interface LoadZoneResp {
-  zMap: { [key: string]: { [key: string]: number } };
+  zMap: ZMap;
   shdrMap: { [key: string]: ShdrMap };
 }
 
@@ -26,10 +27,15 @@ export interface ShdrMap {
 
 export interface Ab {}
 export declare interface Sf2Service {
-  setProgram: (pid: number, channelId: number) => Zref;
-  noteOn: typeof newSFZoneMap;
-  presetZoneRef: any;
-  loadZone: LoadZoneResp;
+  loadProgram: (
+    presetId: number,
+    bankId: number
+  ) => {
+    shdrMap: any;
+    zMap: ZMap[];
+    preload: () => void;
+    filterKV: (key: number, val: number) => ZMap[];
+  };
   getFont: (
     presetId: number,
     bankId: number,
@@ -42,4 +48,67 @@ export declare interface Sf2Service {
     shdata: Promise<Float32Array>;
   };
 }
-export declare async function load(url: string): Sf2Service;
+export declare function load(url: string): Sf2Service;
+export enum sf_gen_id {
+  startAddrsOffset,
+  endAddrsOffset,
+  startloopAddrsOffset,
+  endloopAddrsOffset,
+  startAddrsCoarseOffset,
+  modLfoToPitch,
+  vibLfoToPitch,
+  modEnvToPitch,
+  initialFilterFc,
+  initialFilterQ,
+  modLfoToFilterFc,
+  modEnvToFilterFc,
+  endAddrsCoarseOffset,
+  modLfoToVolume,
+  unused1,
+  chorusEffectsSend,
+  reverbEffectsSend,
+  pan,
+  unused2,
+  unused3,
+  unused4,
+  delayModLFO,
+  freqModLFO,
+  delayVibLFO,
+  freqVibLFO,
+  delayModEnv,
+  attackModEnv,
+  holdModEnv,
+  decayModEnv,
+  sustainModEnv,
+  releaseModEnv,
+  keynumToModEnvHold,
+  keynumToModEnvDecay,
+  delayVolEnv,
+  attackVolEnv,
+  holdVolEnv,
+  decayVolEnv,
+  sustainVolEnv,
+  releaseVolEnv,
+  keynumToVolEnvHold,
+  keynumToVolEnvDecay,
+  instrument,
+  reserved1,
+  keyRange,
+  velRange,
+  startloopAddrsCoarse,
+  keynum,
+  velocity,
+  initialAttenuation,
+  reserved2,
+  endloopAddrsCoarse,
+  coarseTune,
+  fineTune,
+  sampleID,
+  sampleModes,
+  reserved3,
+  scaleTuning,
+  exclusiveClass,
+  overridingRootKey,
+  unused5,
+  endOper,
+}

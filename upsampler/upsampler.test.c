@@ -8,7 +8,9 @@ int main(){
   sampler_iterator*it= init(output,69,48000,489999);
   float sample[489999];
   for(int i=0;i<489999;i++){
-    sample[i]=sinf((float)(2*M_PI*i*440)/48000.0f);
+    sample[i] =
+        sinf((float)(2 * 3.14159265358979323846264338327950288 * i * 440) /
+             48000.0f);
   }
   it->sample=sample;
   upsample_wave_table(it);

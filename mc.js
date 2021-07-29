@@ -1,3 +1,25 @@
+let checkboxes = Array.from(
+  document.querySelectorAll("input[type='checkbox']")
+);
+let meters = Array.from(document.querySelectorAll("meter"));
+let labels = Array.from(document.querySelectorAll("label"));
+
+let sliders = Array.from(document.querySelectorAll("input[type='range"));
+let dy = new Array(17).fill(0);
+function animloop() {
+  dy.map((vel, ch) => {
+    if (vel != 0)
+      meters[ch * 2 + 1].value = Math.min(
+        parseInt(meters[ch * 2 + 1].value) + dy,
+        127
+      );
+    // if( meters[ch*2+1].value>=127) {
+    //   dy=-dy/4.0;
+    // }
+  });
+
+  requestAnimationFrame(animloop);
+}
 window.addEventListener(
   "keydown",
   () => {
@@ -11,25 +33,19 @@ window.addEventListener(
         vel = c & 0x7f;
       switch (stat) {
         case 0xa: //chan set
-          sliders[ch * 2 + 1].value = key;
+          // channels[ch].setProgram(key);
           break;
         case 0xc: //change porg
-          labels[ch * 2 + 1].value = key;
+          channels[ch].setProgram(key);
           break;
         case 8:
-          checkboxes[ch].removeAttribute("checked");
-          meters[ch * 2].value = "0";
-          dy[ch] = -1 * vel;
+          channels[ch].keyOn(key, vel);
           break;
         case 9:
           if (vel == 0) {
-            checkboxes[ch].removeAttribute("checked");
-            meters[ch * 2].value = 0;
-            dy[ch] = -1 * vel;
+            channels[ch].keyOff(key, vel);
           } else {
-            checkboxes[ch].setAttribute("checked", true);
-            meters[ch * 2].value = key;
-            dy[ch] = vel;
+            channels[ch].keyOn(key, vel);
           }
           break;
         default:
@@ -46,8 +62,9 @@ async function bindMidiAccess(port, tee) {
   midiInputs.forEach((input) => {
     input.onmidimessage = ({ data, timestamp }) => {
       if (port && data[0] & 0x80) port.postMessage(data);
-      if(tee) tee(data)
     };
   });
+  requestAnimationFrame(animloop);
+
   return [midiInputs, midiOutputs];
 }

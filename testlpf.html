@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <style>
+    * {
+      background-color: black;
+      color: lavender;
+
+    }
+
+  </style>
+  <meta charset="utf-8" />
+  <title>Mocha</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <script src="testharness.js" crossorigin="anonymous"></script>
+  <script src="testharnessreport.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <iframe width=0 height=0 id=zones src='w.html#0'></iframe>
+  <script type='module'>
+    import {mkLPF, LowPassFilterNode, getwasm} from "./lpf/lpf.js";
+    import {logdiv} from "./mkdiv/mkdiv.js";
+    import {semitone2hz} from "./sf2-service/zoneProxy.js";
+
+    getwasm().then(a => {
+      const lpf = mkLPF(.1, a);
+      console.log(lpf(1, .001));
+      console.log(lpf(1))
+      console.log(lpf(1))
+      console.log(lpf(1))
+      console.log(lpf(0))
+
+    });
+    promise_test(async () => {
+
+      const lpf = await getwasm().then(a => mkLPF(.1, a));
+      assert_true(lpf(1) > 0, "lpf is a function");
+      const m2 = lpf(1);
+      const m3 = lpf(1);
+      assert_less_than(m2, m3, "signal 3 is bigger than signal 2");
+
+    }, 'load module');
+    promise_test(async () => {
+      const wasm = await getwasm();
+      try {
+        const s = mkLPF(2, wasm);
+        assert_true(false, "should not let fc value 2 mk LPF")
+      }
+      catch (e) {
+        assert_true(true, "error is thrown when fc is greater than .5");
+      }
+
+    }, 'nygquist dogma')
+    promise_test(async () => {
+      const ctx = new OfflineAudioContext(1, 44, 4096);
+      await LowPassFilterNode.init(ctx);
+      const gg = new LowPassFilterNode(ctx, .1);
+      assert_true(true, 'goodjobs')
+
+      const osx = new OscillatorNode(ctx, {frequency: 100});
+      osx.connect(gg).connect(ctx.destination);
+      osx.start(0);
+      const fl = (await ctx.startRendering()).getChannelData(0);
+      console.log(fl);
+      assert_greater_than(fl[1], 0);
+    }, 'audio worklet');
+    promise_test(async () => {
+      const ctx = new OfflineAudioContext(1, 422, 4096);
+      await LowPassFilterNode.init(ctx);
+      const gg = new LowPassFilterNode(ctx, .2);
+      const lfo = new OscillatorNode(ctx, {type: "sine", frequency: 1});
+      lfo.connect(new GainNode(ctx, {gain: 200}));
+      lfo.start();
+      gg.modulate(lfo)
+      assert_true(true, 'goodjobs')
+
+      const osx = new OscillatorNode(ctx, {frequency: 128});
+      osx.connect(gg).connect(ctx.destination);
+      osx.start(0);
+      const fl = (await ctx.startRendering()).getChannelData(0);
+      console.log(fl);
+      assert_greater_than(fl[1], fl[129]);
+    }, 'audio worklet lpf modulated by LFO');
+    test(() => {
+      assert_equals(semitone2hz(6900), 440); assert_equals(semitone2hz(1), 8.18052280646487);
+
+    }, 'unit conversion');
+  </script>
+
+</body>
+</html>
+ModLFO2FilterFc

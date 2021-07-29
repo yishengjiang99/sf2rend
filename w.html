@@ -1,12 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Document</title>
-</head>
-<body>
-	<script src="./dist/index.js" type='module'></script>
-</body>
-</html>
+<script type='module'>
+	import {load} from './sf2-service/read.js'
+	async function mkjson() {
+		const sf2 = await load("file.sf2");
+		const {shdrMap, zMap} = sf2.loadProgram(parseInt(document.location.hash.split("#")) || 0, 0);
+
+		document.write(JSON.stringify({zMap}))
+	}
+	mkjson();
+</script>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+</head>
+<body>
+	<main></main><button id=mknoise>mk noise</button>
+
+	<input type='range' min=0 max=100 stop=.1 />
+	<script type='module'>
+		import {SpinNode, mkspinner} from "./spin/spin.js";
+		import mkEnvelope from "./adsr.js";
+		import {LPFWorkletNode} from "./lpf/lpf-node.js";
+		import {mkLPF} from "./lpf/biquad.js";
+
+		import {manySpinners, upupdowndown} from "./synth/noise.js";
+		// console.log(JSON.stringify((await mkLPF({sampleRate: 4096, FilterFC: 12, FilterQ: 1})).biquad))
+		// console.log(JSON.stringify((await mkLPF({sampleRate: 4096, FilterFC: 665, FilterQ: 4})).biquad))
+
+		let spins = [];
+		let sp, sp2, ctx;
+
+		window.onclick = async (e) => {
+
+
+			if (ctx && ctx.state != "running") await ctx.resume(); //.then(async () => {
+			if (e.target.id == "mknoise") {
+				if (sp) sp.disconnect();
+				if (sp2) sp2.disconnect();
+				ctx = new AudioContext();
+				await SpinNode.init(ctx);
+				await LPFWorkletNode.init(ctx);
+				const g1 = new GainNode(ctx, {value: 0});
+				const g2 = new GainNode(ctx, {value: 1});
+
+				const lpf4000 = new LPFWorkletNode(ctx, {sampleRate: ctx.sampleRate, FilterFC: 6690, FilterQ: 1});
+				const lpf300 = new LPFWorkletNode(ctx, {sampleRate: ctx.sampleRate, FilterFC: 11600, FilterQ: 1});
+				const {pcm, loops} = manySpinners((440 * (12 + 2)) / 12, 0.9999); const {pcm2, loops2} = manySpinners((440 * (12 + 2)) / 12, 0.9999);
+				sp2 = new SpinNode(ctx, {pcm, loops});
+
+				sp = new SpinNode(ctx, {pcm, loops});
+				sp2.connect(lpf300).connect(g1).connect(ctx.destination)
+				sp.connect(lpf4000).connect(g2).connect(ctx.destination)
+				upupdowndown(spins);
+				g1.gain.setValueAtTime(0, 0.00001); g2.gain.setValueAtTime(1, 0.00001);
+
+				g1.gain.linearRampToValueAtTime(1, .4);
+				g2.gain.linearRampToValueAtTime(0, .4);
+				g1.gain.setTargetAtTime(0, .4, 1);
+				//				g2.gain.linearRampToValueAtTime(.0, 2);
+			}
+		};
+		// function crossfade(g1, g2) {
+		// 	window.addEventListener("keydown", (e) => {
+
+
+		// 	});
+		// }
+		export function upupdoawndown(spiners) {
+			window.addEventListener("keydown", (e) => {
+				g1.gain.linearRampToValueAtTime(1, 1);
+				g2.gain.linearRampToValueAtTime(.0, 1);
+				switch (e.key) {
+					case "a":
+						spiners.map((sp) => (sp.stride *= 14 / 12));
+						break;
+					case "s":
+						spiners.map((sp) => (sp.stride *= 13 / 12));
+						break;
+					case "d":
+						spiners.map((sp) => (sp.stride *= 10 / 12));
+						break;
+					case "f":
+						spiners.map((sp) => (sp.stride *= 11 / 12));
+						break;
+					default:
+						break;
+				}
+			});
+		}
+	</script>
+</body>
+</html>
