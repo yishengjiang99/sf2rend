@@ -23,11 +23,11 @@ export default function mkEnvelope(ctx, zone) {
       setZone(zone);
     },
     keyOn() {
-      volumeEnveope.gain.linearRampToValueAtTime(0.4, attack);
+      volumeEnveope.gain.linearRampToValueAtTime(gainMax, attack);
 
       if (sustain > 0) {
         this.sustainTime = delay + attack + hold + decay;
-        volumeEnveope.gain.linearRampToValueAtTime(0.4, this.sustainTime);
+        volumeEnveope.gain.linearRampToValueAtTime(sustain, this.sustainTime);
       }
     },
     keyOff() {

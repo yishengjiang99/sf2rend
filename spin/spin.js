@@ -8,7 +8,7 @@ export class SpinNode extends AudioWorkletNode {
         .then((ab) => new Uint8Array(ab));
   }
 
-  constructor(ctx, { ref, pcm, loops, ...zone }, EGPort) {
+  constructor(ctx, { ref, pcm, loops }) {
     const sb = new SharedArrayBuffer(pcm.byteLength + 1024);
     super(ctx, "spin-proc", {
       numberOfInputs: 0,
@@ -44,6 +44,7 @@ export class SpinNode extends AudioWorkletNode {
   set sample({ pcm, loops, zref }) {
     this._zref = zref;
     this.pcm_meta.set(new Uint32Array([1, loops[0], loops[1], pcm.byteLength]));
+    this.pcm.set(pcm);
   }
   get zref() {
     return this._zref;

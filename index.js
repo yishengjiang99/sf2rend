@@ -66,7 +66,7 @@ async function initAudio(sf2) {
 async function initMidi() {
   await ctx.resume();
   bindMidiAccess(port1);
-  port2.onmessage = nomidimsg;
+  port2.onmessage = (e) => nomidimsg(e.data);
 }
 function nomidimsg(data) {
   const [a, b, c] = data;

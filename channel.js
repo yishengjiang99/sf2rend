@@ -4,6 +4,8 @@ import { SpinNode } from "./spin/spin.js";
 import mkEnvelope from "./adsr.js";
 import { semitone2hz } from "./sf2-service/zoneProxy.js";
 import { EnvelopeGenerator } from "./eg/index.js";
+import { mkcanvas, chart } from "./chart/chart.js";
+
 const { stdout, stderr, infoPanel, errPanel } = logdiv();
 document.body.append(infoPanel);
 const egen = EnvelopeGenerator();
@@ -19,6 +21,7 @@ export function channel(ctx, sf2, id, ui) {
     throw new Error("no sf2");
   }
   const activeNotes = [];
+  const vis = mkcanvas();
   function recycledUints() {
     const pool = [];
     function dequeue(pcm, shdr, zone, ref) {
@@ -61,14 +64,16 @@ export function channel(ctx, sf2, id, ui) {
       new LowPassFilterNode(ctx, semitone2hz(zone.FilterFc)),
     ];
     console.log("filter freq", zone.FilterFc, semitone2hz(zone.FilterFc));
-    spinner.connect(volEG.gainNode).connect(lpf).connect(ctx.destination);
+    spinner.connect(volEG.gainNode).connect(ctx.destination);
+    setTimeout(() => chart(vis, pcm), 12);
     return { spinner, lpf, volEG };
   }
 
   async function keyOn(key, vel) {
+    console.log(ctx.state);
     const { shdr, pcm, ref, ...zone } = filterKV(key, vel)[0]; //.forEach(({ shdr, pcm, ref, ...zone }) => {
     console.log(shdr.sampleRate + "sr");
-    if (pcm.byteLength != shdr.byteLength * 2)
+    if (pcm.byteLength != shdr.byteLength * 1)
       throw "unexpected pcm " + pcm.byteLength + " vs " + shdr.byteLength;
     const { spinner, volEG, lpf } = pool.empty()
       ? mkZoneRoute(pcm, shdr, zone, ref)
@@ -92,7 +97,6 @@ export function channel(ctx, sf2, id, ui) {
       rootkey * 100 + zone.CoarseTune * 100 + zone.FineTune * 1;
     const pitchDiff = (key * 100 - samplePitch) / 1200;
     const r = Math.pow(2, pitchDiff) * (sampleRate / ctx.sampleRate);
-    console.log(r);
     return r;
   }
   function keyOff(key) {

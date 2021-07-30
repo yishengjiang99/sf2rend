@@ -149,6 +149,5 @@ export async function load(url, { onHeader, onSample, onZone } = {}) {
     getFont,
     loadProgram,
     presetZoneRef,
-    readModule: module,
   };
 }

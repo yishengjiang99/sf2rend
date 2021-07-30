@@ -91,3 +91,6 @@ export function newSFZone(attrs) {
     },
   });
 }
+export function semitone2hz(c) {
+  return Math.pow(2, (c - 6900) / 1200) * 440;
+}
