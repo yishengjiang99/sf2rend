@@ -1,4 +1,3 @@
-import { mkdiv, logdiv } from "./mkdiv/mkdiv.js";
 import { LowPassFilterNode } from "./lpf/lpf.js";
 import { SpinNode } from "./spin/spin.js";
 import mkEnvelope from "./adsr.js";
@@ -6,8 +5,6 @@ import { semitone2hz } from "./sf2-service/zoneProxy.js";
 import { EnvelopeGenerator } from "./eg/index.js";
 import { mkcanvas, chart } from "./chart/chart.js";
 
-const { stdout, stderr, infoPanel, errPanel } = logdiv();
-document.body.append(infoPanel);
 const egen = EnvelopeGenerator();
 export async function realCtx() {
   const ctx = new AudioContext({ sampleRate: 48000 });
@@ -34,6 +31,7 @@ export function channel(ctx, sf2, id, ui) {
       volEG.zone = zone;
       // modeg.zone = zone;
       lpf.frequency = semitone2hz(zone.FilterFc);
+
       return { spinner, volEG, lpf };
     }
     function enqueue(unit) {
@@ -103,9 +101,9 @@ export function channel(ctx, sf2, id, ui) {
     for (let i = 0; i < activeNotes.length; i++) {
       if (activeNotes[i].key == key) {
         var unit = activeNotes[i];
-        unit.volEG.keyOff(ctx.currentTime);
+        unit.volEG.keyOff();
         pool.enqueue(activeNotes.splice(i, 1)[0]);
-        console.log(pool);
+        break;
       }
     }
   }

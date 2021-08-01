@@ -9,7 +9,7 @@ export class SpinNode extends AudioWorkletNode {
   }
 
   constructor(ctx, { ref, pcm, loops }) {
-    const sb = new SharedArrayBuffer(pcm.byteLength + 1024);
+    const sb = new SharedArrayBuffer(pcm.byteLength * 2 + 1024);
     super(ctx, "spin-proc", {
       numberOfInputs: 0,
       numberOfOutputs: 1,
@@ -24,7 +24,8 @@ export class SpinNode extends AudioWorkletNode {
     this.pcm = new Float32Array(sb, 4 * Float32Array.BYTES_PER_ELEMENT);
     this.pcm_meta = new Uint32Array(sb, 0, 4);
     this.pcm_meta.set(new Uint32Array([1, loops[0], loops[1], pcm.byteLength]));
-    this.pcm.set(pcm, 4 * Uint32Array.BYTES_PER_ELEMENT);
+    this.pcm.set(pcm);
+    console.log(this.pcm.length, "vs", pcm.length);
     // if(egPortzone.postMessage({});
   }
   reset() {

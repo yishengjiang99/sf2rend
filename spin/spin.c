@@ -12,7 +12,7 @@ spinner* newSpinner(uint32_t size, uint32_t loopstart, uint32_t loopend) {
   x->inputf = malloc(size * sizeof(float));
   x->outputf = malloc(128 * sizeof(float));
   x->fract = 0.0f;
-  x->position = loopstart;
+  x->position = 0;
   x->loopStart = loopstart;
   x->loopEnd = loopend;
   return x;
@@ -35,6 +35,11 @@ float spin(spinner* x, float stride) {
   int position = x->position;
   float fract = x->fract;
   for (int i = 0; i < 128; i++) {
+    x->outputf[i] =
+        position == 0
+            ? lerp(x->inputf[position], x->inputf[position + 1], fract)
+            : hermite4(fract, x->inputf[position - 1], x->inputf[position],
+                       x->inputf[position + 1], x->inputf[position + 2]);
     fract += stride;
 
     while (fract >= 1.0f) {
@@ -43,12 +48,6 @@ float spin(spinner* x, float stride) {
     }
 
     while (position >= x->loopEnd) position -= (x->loopEnd - x->loopStart) + 1;
-
-    x->outputf[i] =
-        position == 0
-            ? lerp(x->inputf[position], x->inputf[position + 1], fract)
-            : hermite4(fract, x->inputf[position - 1], x->inputf[position],
-                       x->inputf[position + 1], x->inputf[position + 2]);
   }
   x->position = position;
   x->fract = fract;

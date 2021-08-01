@@ -15,8 +15,29 @@ export class TrackUI {
     this.polylines = Array.from(container.querySelectorAll("polyline"));
     this.keys = Array.from(keyboard.querySelectorAll("a"));
     this.keys.forEach((k, keyidx) => {
-      k.onmousedown = () => eventWriter.write([0x90 | idx, keyidx, 111]);
-      k.onmouseup = () => eventWriter.write([0x80 | idx, keyidx, 111]);
+      var refcnt = 0;
+
+      k.onmousedown = () => {
+        refcnt++;
+        eventWriter.write([0x90 | idx, keyidx, 111]);
+
+        k.addEventListener(
+          "mouseup",
+          () => refcnt-- > 0 && eventWriter.write([0x80 | idx, keyidx, 111]),
+          { once: true }
+        );
+        k.addEventListener(
+          "mouseleave",
+          () => eventWriter.write([0x80 | idx, keyidx, 111]),
+          { once: true }
+        );
+        setTimeout(() => {
+          eventWriter.write([0x80 | idx, keyidx, 111]);
+        }, 1000);
+      };
+      k.onmouseut = () => {
+        if (refcnt > 0) eventWriter.write([0x80 | idx, keyidx, 111]);
+      };
     });
   }
   set name(id) {

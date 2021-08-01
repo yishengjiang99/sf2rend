@@ -1,4 +1,4 @@
-import { mkdiv } from "./mkdiv/mkdiv.js";
+import { mkdiv, logdiv } from "./mkdiv/mkdiv.js";
 import { load } from "./sf2-service/read.js";
 
 import { realCtx, channel } from "./channel.js";
@@ -6,13 +6,15 @@ import { mkui } from "./ui.js";
 mkdiv("button", { id: "midic" }, "connect to midi").attachTo(document.body);
 
 let ctx, sf2;
-
+const { stdout, stderr, infoPanel, errPanel } = logdiv();
 const flist = document.querySelector("#sf2list");
 const cpanel = document.querySelector("#channelContainer");
 const { controllers, readable } = mkui(cpanel);
 const channels = [],
   programs = {};
 let cid = 0;
+infoPanel.attachTo(cpanel);
+errPanel.attachTo(cpanel);
 const { port1, port2 } = new MessageChannel();
 readable.pipeTo(
   new WritableStream({
@@ -46,22 +48,6 @@ async function initAudio(sf2) {
   for (let i = 0; i < 16; i++) {
     channels[i] = channel(ctx, sf2, i, controllers[i]);
   }
-  // async function* gg() {
-  //   for (let i = 0; i < 16; i++) {
-  //     channels[i] = channel(ctx, sf2, i, controllers[i]);
-
-  //     await channels[i].setProgram(Object.keys(programs)[i], 0);
-  //     controllers[i].name = programs[i];
-  //     yield;
-  //   }
-  // }
-  // (async () => {
-  //   const iterator = gg();
-  //   for await (let thing of iterator) {
-  //     //no infinite loop
-  //     console.log("thing: ", thing);
-  //   }
-  // })();
 }
 async function initMidi() {
   await ctx.resume();
@@ -74,6 +60,8 @@ function nomidimsg(data) {
   const ch = a & 0x0f;
   const key = b & 0x7f,
     vel = c & 0x7f;
+  stdout(data);
+  stderr(data);
   switch (stat) {
     case 0x0b: //chan set
       // channels[ch].setProgram(key);
