@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+</head>
+<body>asdfas
+	<script type='module'>
+		import {init} from "./index.js";
+		const sinwave = new Float32Array(4096 + 10);
+		sinwave.map((v, i) => (sinwave[i] = Math.sin((2 * Math.PI * i) / 4096)));
+		const square = new Float32Array(4096 + 10);
+		square.map((v, i) => (square[i] = i % 4096 < 2048 ? -1 : 1));
+
+		init().then(spinners => {
+			const offsets = spinners[0].loadPCMs([sinwave, square]);
+			console.log(sinwave, offsets);
+			spinners[0].pcmHeader = {
+				pcmRef: offsets[0],
+				loopStart: 0, loopEnd: 4096
+			}
+			spinners[0].spin();
+			console.log(spinners[0].output);
+			console.log(spinners[0].uiInput);
+			console.log(spinners[0].pcmInput);
+			spinners[0].spin();
+			console.log(spinners[0].output); spinners[0].spin();
+			console.log(spinners[0].output); spinners[0].spin();
+			console.log(spinners[0].output); spinners[0].spin();
+			console.log(spinners[0].output);
+		})
+	</script>
+</body>
+</html>
