@@ -1,32 +1,3 @@
-import Module from "./spin.wasm.js";
-const sinwave = new Float32Array(4096 + 10);
-sinwave.map((v, i) => (sinwave[i] = Math.sin((2 * Math.PI * i) / 4096)));
-
-const spinner = Module().then(async (module) => {
-  await module.ready;
-  const ref = module._newSpinner(4096 + 10, 0, 4096);
-  const struct = new Uint32Array(module.HEAPU8.buffer, ref, 8);
-  const uiInput = new Float32Array(module.HEAPU8.buffer, struct[2], 256);
-  for (let i = 0; i < 128; i++) {
-    uiInput[i] = 1.1;
-  }
-  const pcmInput = new Float32Array(module.HEAPU8.buffer, struct[0], 5006);
-  console.log(struct, uiInput, pcmInput);
-  pcmInput.set(sinwave);
-  console.log(pcmInput);
-  const output = new Float32Array(module.HEAPU8.buffer, struct[1], 128);
-  console.log(output);
-  console.log(struct, output);
-
-  module._spin(ref);
-  console.log(struct, new Uint32Array(module.HEAPU8.buffer, ref, 8), output);
-  return {
-    spin: () => module._spin(ref),
-    pcmInput,
-    uiInput,
-  };
-})
-
 /* eslint-disable no-unused-vars */
 class SpinProcessor extends AudioWorkletProcessor {
   static get parameterDescriptors() {
@@ -35,7 +6,7 @@ class SpinProcessor extends AudioWorkletProcessor {
         name: "stride",
         type: "a-rate",
         minValue: -40,
-        maxValue: 4000,
+        maxValue: 40,
         defaultValue: 1.0,
       },
     ];
@@ -46,9 +17,8 @@ class SpinProcessor extends AudioWorkletProcessor {
     const {
       processorOptions: { sb, wasm },
     } = options;
-    this.pcm = new Float32Array(sb, 16 + 128 * 4);
+    this.pcm = new Float32Array(sb, 16);
     this.pcm_meta = new Uint32Array(sb, 0, 4);
-    this.ui_input = new Float32Array(sb, 16, 128);
 
     this.inst = new WebAssembly.Instance(new WebAssembly.Module(wasm), {
       env: {},
@@ -94,6 +64,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     }
     if (this.pcm_meta[0] == 2) {
       this.inst.exports.reset();
+
       this.pcm_meta[0] = 0;
     }
 

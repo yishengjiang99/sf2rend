@@ -1,4 +1,4 @@
-let wasmbin = null;
+let wasmbin;
 export class SpinNode extends AudioWorkletNode {
   static async init(ctx) {
     await ctx.audioWorklet.addModule("./spin/spin-proc.js");
@@ -7,9 +7,7 @@ export class SpinNode extends AudioWorkletNode {
         .then((res) => res.arrayBuffer())
         .then((ab) => new Uint8Array(ab));
   }
-
-  constructor(ctx, { ref, pcm, loops }) {
-    const sb = new SharedArrayBuffer(pcm.byteLength * 2 + 1024);
+  constructor(ctx, { zref, sb }, egPort) {
     super(ctx, "spin-proc", {
       numberOfInputs: 0,
       numberOfOutputs: 1,
@@ -20,13 +18,10 @@ export class SpinNode extends AudioWorkletNode {
       },
     });
     this.sb = sb;
-    this._zref = ref;
+    this._zref = zref;
     this.pcm = new Float32Array(sb, 4 * Float32Array.BYTES_PER_ELEMENT);
     this.pcm_meta = new Uint32Array(sb, 0, 4);
-    this.pcm_meta.set(new Uint32Array([1, loops[0], loops[1], pcm.byteLength]));
-    this.pcm.set(pcm);
-    console.log(this.pcm.length, "vs", pcm.length);
-    // if(egPortzone.postMessage({});
+    this.egPort = egPort;
   }
   reset() {
     this.pcm_meta[0] = 2;
@@ -38,14 +33,12 @@ export class SpinNode extends AudioWorkletNode {
     return this.parameters.get("stride").value;
   }
   set stride(ratio) {
-    this.parameters
-      .get("stride")
-      .setValueAtTime(ratio, this.context.baseLatency);
+    this.parameters.get("stride").linearRampToValueAtTime(ratio, 0.001);
   }
   set sample({ pcm, loops, zref }) {
     this._zref = zref;
-    this.pcm_meta.set(new Uint32Array([1, loops[0], loops[1], pcm.byteLength]));
     this.pcm.set(pcm);
+    this.pcm_meta.set(new Uint32Array([1, loops[0], loops[1], pcm.byteLength]));
   }
   get zref() {
     return this._zref;

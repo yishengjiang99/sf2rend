@@ -9,8 +9,5 @@
   },
   "keywords": [],
   "author": "Yisheng Jiang",
-  "license": "do-not-use",
-  "devDependencies": {
-    "webassembly": "^0.11.0"
-  }
+  "license": "do-not-use"
 }
