@@ -1,57 +1,48 @@
-export class SpinNode extends AudioWorkletNode {
-  static async init(ctx) {
-    await ctx.audioWorklet.addModule(
-      document.location.pathname + "spin-proc.js"
-    );
-    const { spArrs, renderNotify, worker } = await SpinNode.initWorker();
-    console.log(renderNotify, "rendernotify");
-    const inst = new SpinNode(ctx, {
-      outputs: spArrs.map((sp) => sp.output),
-      renderNotify,
-      worker,
-    });
-    return inst;
-  }
+import Module from "./spin.wasm.js";
+export async function init() {
+  const module = await Module();
+  await module.ready;
+  const buf = module.HEAPU8.buffer;
 
-  static async initWorker() {
-    const worker = new Worker("spin-worker.js", { type: "module" });
-    return await new Promise((r) => {
-      worker.onmessage = ({ data: { spinners, renderNotify } }) => {
-        const spArrs = spinners.map((sp) => {
-          const structArr = new Uint32Array(sp.struct);
-          return {
-            set pcmRef(ref) {
-              structArr[0] = ref;
-            },
-            set loop(loop) {
-              structArr[1] = loop[0];
-              structArr[2] = loop[1];
-            },
-            output: sp.output,
-            uiInput: sp.uiInput,
-          };
-        });
-
-        r({
-          renderNotify,
-          spArrs,
-          worker,
-        });
-      };
-    });
-  }
-  constructor(ctx, { worker, outputs, renderNotify }) {
-    super(ctx, "spin-proc", {
-      numberOfInputs: 0,
-      numberOfOutputs: 16,
-      processorOptions: {
-        outputs,
-        renderNotify,
+  const structSize = 8 * Uint32Array.BYTES_PER_ELEMENT;
+  const ref0 = module._initSpinners();
+  const spinners = [];
+  for (let i = 0; i < 16; i++) {
+    const ref = ref0 + structSize;
+    const struct = new Uint32Array(buf, ref, 8);
+    const uiInput = new Float32Array(buf, struct[4], 256);
+    const output = new Float32Array(buf, struct[3], 128);
+    const pcmInput = new Float32Array(buf, struct[0], 5096);
+    function loadPCMs(pcmSets) {
+      const refs = [];
+      for (const pcm of pcmSets) {
+        const ref = module._mallocTable(pcm.length);
+        new Float32Array(buf, ref, pcm.length).set(pcm);
+        refs.push(ref);
+      }
+      return refs;
+    }
+    spinners.push({
+      ref,
+      struct,
+      uiInput,
+      output,
+      loadPCMs,
+      pcmInput,
+      get pcmHeader() {
+        return struct.slice(0, 2);
+      },
+      set pcmHeader({ loopStart, loopEnd, pcmRef }) {
+        struct[0] = pcmRef;
+        struct[1] = loopStart;
+        struct[2] = loopEnd;
+        console.log(struct);
+      },
+      spin: () => {
+        module._spin(ref);
+        console.log(struct);
       },
     });
-    this.worker = worker;
   }
-  loadPCM(pcm, id) {
-    this.worker.postMessage({ pcm, id });
-  }
+  return spinners;
 }
