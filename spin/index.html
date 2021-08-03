@@ -8,29 +8,27 @@
 </head>
 <body>asdfas
 	<script type='module'>
-		import {init} from "./index.js";
-		const sinwave = new Float32Array(4096 + 10);
-		sinwave.map((v, i) => (sinwave[i] = Math.sin((2 * Math.PI * i) / 4096)));
-		const square = new Float32Array(4096 + 10);
-		square.map((v, i) => (square[i] = i % 4096 < 2048 ? -1 : 1));
+		import {load} from "https://unpkg.com/sf2-service@1.0.5/read.js"
+		import {SpinNode} from "./index.js"
+		window.onload = async function () {
+			const o = new AudioContext();
+			const spinInitWait = SpinNode.init(o);
+			load("https://dsp.grepawk.com/sf2rend/file.sf2").then(async function (loadProgram) {
+				debugger;
+				const piano = await loadProgram(0, 0);
+				await piano.preload();
+				spinInitWait.then((node) => {
+					Object.keys(piano.shdrMap).map(k => {
+						node.loadPcm(shdrMap[k].data, shdrMap[k].hdr);
+					})
+					node.connect(o.destination);
+				});
+			})
+		}
+		window.onkeydown = () => {
 
-		init().then(spinners => {
-			const offsets = spinners[0].loadPCMs([sinwave, square]);
-			console.log(sinwave, offsets);
-			spinners[0].pcmHeader = {
-				pcmRef: offsets[0],
-				loopStart: 0, loopEnd: 4096
-			}
-			spinners[0].spin();
-			console.log(spinners[0].output);
-			console.log(spinners[0].uiInput);
-			console.log(spinners[0].pcmInput);
-			spinners[0].spin();
-			console.log(spinners[0].output); spinners[0].spin();
-			console.log(spinners[0].output); spinners[0].spin();
-			console.log(spinners[0].output); spinners[0].spin();
-			console.log(spinners[0].output);
-		})
+		};
+
 	</script>
 </body>
 </html>
