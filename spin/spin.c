@@ -5,6 +5,7 @@ typedef struct {
   float *inputf, *outputf;
   float fract;
   uint32_t position, loopStart, loopEnd;
+  float stride, strideInc;
 } spinner;
 
 spinner* newSpinner(uint32_t size, uint32_t loopstart, uint32_t loopend) {
@@ -18,8 +19,10 @@ spinner* newSpinner(uint32_t size, uint32_t loopstart, uint32_t loopend) {
   return x;
 }
 void reset(spinner* x) {
-  x->position = 1;
+  x->position = 0;
   x->fract = 0.0f;
+  x->strideInc = 0.0f;
+  x->stride = 1.0f;
 }
 float hermite4(float frac_offset, float xm1, float x0, float x1, float x2) {
   const float c = (x1 - xm1) * 0.5f;
@@ -31,26 +34,27 @@ float hermite4(float frac_offset, float xm1, float x0, float x1, float x2) {
   return ((((a * frac_offset) - b_neg) * frac_offset + c) * frac_offset + x0);
 }
 float lerp(float f1, float f2, float frac) { return f1 + (f2 - f1) * frac; }
-float spin(spinner* x, float stride) {
+float spin(spinner* x, int n) {
   int position = x->position;
   float fract = x->fract;
-  for (int i = 0; i < 128; i++) {
-    x->outputf[i] =
-        position == 0
-            ? lerp(x->inputf[position], x->inputf[position + 1], fract)
-            : hermite4(fract, x->inputf[position - 1], x->inputf[position],
-                       x->inputf[position + 1], x->inputf[position + 2]);
+  float stride = x->stride;
+  float strideInc = x->strideInc;
+  for (int i = 0; i < n; i++) {
     fract += stride;
 
     while (fract >= 1.0f) {
       position++;
-      fract--;
+      fract -= 1.0f;
     }
 
     while (position >= x->loopEnd) position -= (x->loopEnd - x->loopStart) + 1;
+
+    x->outputf[i] = lerp(x->inputf[position], x->inputf[position + 1], fract);
+    if (strideInc) stride += strideInc;
   }
   x->position = position;
   x->fract = fract;
+  x->stride = stride;
 
   return x->fract;
 }

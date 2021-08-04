@@ -32,6 +32,15 @@ class SpinProcessor extends AudioWorkletProcessor {
       this.pcm_meta[1],
       this.pcm_meta[2]
     );
+    /*
+      float *inputf, *outputf;
+  float fract;
+  uint32_t position, loopStart, loopEnd;
+  float stride, strideInc;*/
+    this.spinStruct = [
+      new Uint32Array(memory.buffer, this.spinner, 6),
+      new Float32Array(memory.buffer, this.spinner + 24, 2),
+    ];
 
     this.sync();
   }
@@ -63,7 +72,7 @@ class SpinProcessor extends AudioWorkletProcessor {
       this.sync();
     }
     if (this.pcm_meta[0] == 2) {
-      this.inst.exports.reset();
+      //this.inst.exports.reset();
 
       this.pcm_meta[0] = 0;
     }
@@ -71,8 +80,12 @@ class SpinProcessor extends AudioWorkletProcessor {
     // for (let i = 0; i < 128; i++) {
     //   this.output[i] = 0;
     // }
-    const stride = parameters.stride[0];
-    this.inst.exports.spin(this.spinner, stride);
+    const stride = parameters.stride;
+    const strideInc = (stride[stride.length - 1] - stride[0]) / 128;
+    this.spinStruct[1][0] = stride[0];
+    this.spinStruct[1][1] = strideInc;
+
+    this.inst.exports.spin(this.spinner, 128);
     o.set(this.output);
     return true;
   }

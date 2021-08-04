@@ -1,9 +1,11 @@
 let wasmbin = null;
 export class SpinNode extends AudioWorkletNode {
   static async init(ctx) {
-    await ctx.audioWorklet.addModule("./spin/spin-proc.js");
+    await ctx.audioWorklet.addModule(
+      document.location.pathname + "/spin/spin-proc.js"
+    );
     if (!wasmbin)
-      wasmbin = await fetch("./spin/spin.wasm")
+      wasmbin = await fetch(document.location.pathname + "./spin/spin.wasm")
         .then((res) => res.arrayBuffer())
         .then((ab) => new Uint8Array(ab));
   }
@@ -37,10 +39,11 @@ export class SpinNode extends AudioWorkletNode {
   get stride() {
     return this.parameters.get("stride").value;
   }
+  get strideParam() {
+    return this.parameters.get("stride"); //.value;
+  }
   set stride(ratio) {
-    this.parameters
-      .get("stride")
-      .setValueAtTime(ratio, this.context.baseLatency);
+    this.parameters.get("stride").setValueAtTime(ratio, 0.001);
   }
   set sample({ pcm, loops, zref }) {
     this._zref = zref;
