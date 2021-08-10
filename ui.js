@@ -112,11 +112,11 @@ export function mkui(cpanel) {
         mkdiv("span", { class: "name" }, ["channel " + i]),
         mkdiv("meter", { min: 0, max: 127, step: 1, aria: "key" }),
         mkdiv("meter", { min: 0, max: 127, step: 1, aria: "vel" }),
-        mkdiv("input", { min: -1000, max: 1000, step: 1, type: "range" }),
-        mkdiv("input", { min: -1000, max: 1000, step: 1, type: "range" }),
-
-        mkdiv("input", { min: -1000, max: 1000, step: 1, type: "range" }),
-
+        mkdiv("div", {}, [
+          mkdiv("input", { min: -1000, max: 1000, step: 1, type: "range" }),
+          mkdiv("input", { min: -1000, max: 1000, step: 1, type: "range" }),
+          mkdiv("input", { min: -1000, max: 1000, step: 1, type: "range" }),
+        ]),
         mkdiv("svg", { width: "80", height: "30" }),
         mkdiv("polyline", { stroke: "black", strokeWidth: 1, points: "" }),
       ].map((dv) => dv.wrapWith("td"))

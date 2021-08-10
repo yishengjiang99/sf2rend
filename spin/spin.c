@@ -6,6 +6,7 @@ typedef struct {
   float fract;
   uint32_t position, loopStart, loopEnd;
   float stride, strideInc;
+  float db, dbInc;
 } spinner;
 
 spinner* newSpinner(uint32_t size, uint32_t loopstart, uint32_t loopend) {
@@ -47,9 +48,9 @@ float spin(spinner* x, int n) {
       fract -= 1.0f;
     }
 
-    while (position >= x->loopEnd) position -= (x->loopEnd - x->loopStart) + 1;
+    if (position >= x->loopEnd) position -= (x->loopEnd - x->loopStart) + 1;
     x->outputf[i] = lerp(x->inputf[position], x->inputf[position + 1], fract);
-    if (strideInc) stride += strideInc;
+    stride += strideInc;
   }
   x->position = position;
   x->fract = fract;

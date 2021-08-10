@@ -36,7 +36,7 @@ class SpinProcessor extends AudioWorkletProcessor {
 
     this.spinStruct = [
       new Uint32Array(memory.buffer, this.spinner, 6),
-      new Float32Array(memory.buffer, this.spinner + 24, 2),
+      new Float32Array(memory.buffer, this.spinner + 24, 4),
     ];
 
     this.sync();

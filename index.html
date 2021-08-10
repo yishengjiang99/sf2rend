@@ -30,6 +30,12 @@
 		}
 
 
+		.cover {
+			width: 100vw;
+			height: 1em;
+			top: 0;
+			display: fixed;
+		}
 
 		aside {
 			max-height: 100vh;
@@ -45,13 +51,18 @@
 			grid-template-columns: 3fr 8fr;
 		}
 
+		.centerm {
+			display: grid;
+			grid-rw-template: 7fr 3fr;
+		}
+
 	</style>
 
 	</script>
 </head>
 
 <body>
-	<div class='cover'>ld</div>
+	<div class='cover'>Welcome</div>
 
 	<div class='container row'>
 		<aside class='col-md-3'>
@@ -60,12 +71,17 @@
 				<option value='sm.sf2'> sm.sf2</option>
 			</select>
 			<div id='sf2list'></div>
+			<div id='midilist'></div>
 
 		</aside>
-		<div id='channelContainer'>
+		<div class='centerm'>
+			<div id='channelContainer'>
+			</div>
+			<pre></pre>
+			<rx></rx>
 		</div>
 	</div>
-	<script type='module' src=index.js>
+	<script type='module' src="./index.js">
 
 	</script>
 </body>

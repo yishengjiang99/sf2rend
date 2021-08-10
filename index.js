@@ -50,7 +50,7 @@ const timeslide = mkdiv("input", {
   max: 4000,
   value: -2,
 }).attachTo(cpanel);
-document.querySelector(".cover").innerHTML = "press any key";
+document.querySelector(".cover").innerHTML = "welcome";
 flist.innerHTML = "";
 initworker("song2.mid");
 
