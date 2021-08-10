@@ -4,7 +4,7 @@
 #include <string.h>
 
 #include "sf2.h"
-extern void emitHeader(int type, void *p);
+extern void emitHeader(int pid, int bid, void *p);
 extern void emitZone(int pid, void *ref);
 extern void emitSample(void *ref, int start, int len);
 extern void emitFilter(int type, uint8_t lo, uint8_t hi);
@@ -58,10 +58,10 @@ void *loadpdta(void *pdtabuffer) {
 
   for (int i = 0; i < nphdrs; i++) {
     if (phdrs[i].bankId == 0) {
-      emitHeader(phdrs[i].pid, phdrs + i);
+      emitHeader(phdrs[i].pid, phdrs[i].bankId, phdrs + i);
       presets[phdrs[i].pid] = findPresetZones(i, findPresetZonesCount(i));
     } else if (phdrs[i].bankId == 128) {
-      emitHeader(phdrs[i].pid, phdrs + i);
+      emitHeader(phdrs[i].pid, phdrs[i].bankId, phdrs + i);
 
       presets[phdrs[i].pid | phdrs[i].bankId] =
           findPresetZones(i, findPresetZonesCount(i));
@@ -129,17 +129,7 @@ int findPresetZonesCount(int i) {
           for (pgen_t *g = igens + ibgg->igen_id; g->genid != 60 && g != lastig;
                g++) {
             if (g->genid == SampleId) {
-              shdrcast *sh = (shdr *)shdrs + g->val.uAmount;
-              emitSample(sh, sdtastart + sh->start * 2,
-                         sh->end * 2 - sh->start * 2);
-
               nregions++;
-            }
-            if (g->genid == KeyRange) {
-              emitFilter(2, g->val.ranges.lo, g->val.ranges.hi);
-            }
-            if (g->genid == VelRange) {
-              emitFilter(3, g->val.ranges.lo, g->val.ranges.hi);
             }
           }
         }
@@ -262,7 +252,7 @@ zone_t *findPresetZones(int i, int nregions) {
   dummy->SampleId = -1;
   return zones;
 }
-zone_t* filterForZone(zone_t *from, uint8_t key, uint8_t vel) {
+zone_t *filterForZone(zone_t *from, uint8_t key, uint8_t vel) {
   for (zone_t *z = from; z; z++) {
     if (z == 0 || z->SampleId == (short)-1) break;
     if (vel > 0 && (z->VelRange.lo > vel || z->VelRange.hi < vel)) continue;

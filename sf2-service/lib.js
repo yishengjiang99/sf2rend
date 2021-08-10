@@ -1,7 +1,7 @@
 //let Module = Module || {};
 mergeInto(LibraryManager.library, {
-  emitHeader: function (pid, offset) {
-    Module.onHeader(pid, Module.AsciiToString(offset));
+  emitHeader: function (pid, bid, offset) {
+    Module.onHeader(pid, bid, Module.AsciiToString(offset));
   },
   emitSample: function (shdr, start, len) {
     Module.onSample(shdr, start, len);
