@@ -1,6 +1,6 @@
 {
-  "name": "chart",
-  "version": "1.0.0",
+  "name": "mk-60fps",
+  "version": "1.0.2",
   "description": "",
   "main": "chart.js",
   "scripts": {
@@ -8,8 +8,5 @@
   },
   "keywords": [],
   "author": "Yisheng Jiang",
-  "license": "ISC",
-  "dependencies": {
-    "draw-canvas-60fps": "^1.0.1"
-  }
+  "license": "ISC"
 }

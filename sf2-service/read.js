@@ -82,6 +82,18 @@ export async function load(url, { onHeader, onSample, onZone } = {}) {
         get pcm() {
           return shdrMap[this.SampleId].data();
         },
+        calcPitchRatio(key, sr) {
+          const rootkey =
+            this.OverrideRootKey > -1
+              ? this.OverrideRootKey
+              : shdrMap[this.SampleId].originalPitch;
+          const samplePitch =
+            rootkey * 100 + zone.CoarseTune * 100 + zone.FineTune * 1;
+          const pitchDiff = (key * 100 - samplePitch) / 1200;
+          const r =
+            Math.pow(2, pitchDiff) * (shdrMap[this.SampleId].sampleRate / sr);
+          return r;
+        },
       });
     }
     async function preload() {

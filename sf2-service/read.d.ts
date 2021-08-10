@@ -26,8 +26,7 @@ export interface ShdrMap {
 
 export interface Ab {}
 export declare interface Sf2Service {
-  setProgram: (pid: number, channelId: number) => Zref;
-  noteOn: typeof newSFZoneMap;
+  loadProgram: (pid: number, channelId: number) => Zref;
   presetZoneRef: any;
   loadZone: LoadZoneResp;
   getFont: (

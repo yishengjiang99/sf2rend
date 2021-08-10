@@ -1,155 +1,113 @@
-export const WIDTH = 320; // / 2,
-export const HEIGHT = 400;
-function get_w_h(canvasCtx: CanvasRenderingContext2D) {
+//@ts-ignore
+import { mkdiv } from "https://unpkg.com/mkdiv/mkdiv.js";
+export const WIDTH = 480; // / 2,
+export const HEIGHT = 320;
+function get_w_h(canvasCtx) {
   return [
     canvasCtx.canvas.getAttribute("width")
-      ? parseInt(canvasCtx.canvas.getAttribute("width")!)
+      ? parseInt(canvasCtx.canvas.getAttribute("width"))
       : WIDTH,
     canvasCtx.canvas.getAttribute("height")
-      ? parseInt(canvasCtx.canvas.getAttribute("height")!)
+      ? parseInt(canvasCtx.canvas.getAttribute("height"))
       : HEIGHT,
   ];
 }
-export function resetCanvas(canvasCtx) {
-  if (!canvasCtx) return;
-  canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
+export function resetCanvas(c) {
+  if (!c) return;
+  const canvasCtx = c;
+  const [_width, _height] = get_w_h(canvasCtx);
+  canvasCtx.clearRect(0, 0, _width, _height);
   canvasCtx.fillStyle = "black";
-  canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
+  canvasCtx.fillRect(0, 0, _width, _height);
 }
 export function chart(canvasCtx, dataArray) {
   resetCanvas(canvasCtx);
-  let sum = 0,
-    min = dataArray[0],
-    max = dataArray[0]; const [_width, _height] = get_w_h(canvasCtx);
-  let x = 0,
-    iWIDTH = WIDTH / dataArray.length; //strokeText(`r m s : ${sum / bufferLength}`, 10, 20, 100)
+  const [_width, _height] = get_w_h(canvasCtx);
+  let max = 0,
+    min = 0,
+    x = 0;
+  let iWIDTH = _width / dataArray.length; //strokeText(`r m s : ${sum / bufferLength}`, 10, 20, 100)
   for (let i = 1; i < dataArray.length; i++) {
     max = dataArray[i] > max ? dataArray[i] : max;
-    min = dataArray[i] < min ? dataArray[i] : min;
   }
   canvasCtx.beginPath();
-
-  canvasCtx.moveTo(0, ((dataArray[0] - min) / (max - min)) * HEIGHT);
+  canvasCtx.lineWidth = 1;
+  canvasCtx.strokeStyle = "rbga(0xff,0xff,0x00,.5)";
+  canvasCtx.moveTo(0, _height / 2);
+  canvasCtx.lineTo(_width, _height / 2);
+  canvasCtx.stroke();
+  canvasCtx.lineWidth = 2;
+  canvasCtx.strokeStyle = "white";
+  canvasCtx.moveTo(0, _height / 2);
   for (let i = 1; i < dataArray.length; i++) {
-    sum += Math.pow(2, dataArray[i]);
     x += iWIDTH;
     canvasCtx.lineTo(x, _height / 2 - (_height / 2) * dataArray[i]);
   }
   canvasCtx.stroke();
   canvasCtx.restore();
-  canvasCtx.font = "30px Arial";
-
-  canvasCtx.strokeText(
-    `rms: ${(sum / dataArray.length).toFixed(2)}`,
-    30,
-    50,
-    100
-  );
+  canvasCtx.font = "1em Arial";
 }
-export function mkOfflineCanvas(container = document.body) {
+export function mkcanvas(params = {}) {
+  const { width, height, container, title } = Object.assign(params, {
+    container: document.body,
+    title: "",
+    width: WIDTH,
+    height: HEIGHT,
+  });
   const canvas = document.createElement("canvas");
-  canvas.setAttribute("WIDTH", WIDTH);
-  canvas.setAttribute("height", HEIGHT);
-  container.append(canvas);
-  const offline = cag.transferControlToOffscreen();
-  return offline;
-}
-
-export function mkcanvas({ container, width, height } = {}) {
-  const canvas = document.createElement("canvas");
-  canvas.setAttribute("WIDTH", width || WIDTH);
-  canvas.setAttribute("height", height || HEIGHT);
-
+  canvas.setAttribute("width", `${width}`);
+  canvas.setAttribute("height", `${height}`);
   const canvasCtx = canvas.getContext("2d");
   canvasCtx.lineWidth = 2;
   canvasCtx.strokeStyle = "white";
   canvasCtx.fillStyle = "black";
   canvasCtx.font = "2em";
-  (container && container.append ? cantainer : document.body).append(canvas);
+  const wrap = mkdiv("div", {}, [title ? mkdiv("h5", {}, title) : "", canvas]);
+  container.append(wrap);
   canvas.ondblclick = () => resetCanvas(canvasCtx);
   return canvasCtx;
 }
-export async function* renderFrames(arr, canvsCtx, fps) {
-  let nextframe;
-  while (arr.length) {
-    chart(arr.shift(), canvsCtx);
-    nextFrame = 1 / fps + performance.now();
-    await new Promise((r) => requestAnimationFrame);
-    if (performance.now() > nextFrame);
-    resetCanvas(canvasCtx);
-    chart(arr.shift(), canvsCtx);
-
-    yield;
+export async function renderFrames(
+  canvsCtx,
+  arr,
+  fps = 60,
+  samplesPerFrame = 1024
+) {
+  let nextframe,
+    offset = 0;
+  while (arr.length > offset) {
+    if (!nextframe || performance.now() > nextframe) {
+      chart(canvsCtx, arr.slice(offset, offset + samplesPerFrame));
+      nextframe = 1 / fps + performance.now();
+      offset += samplesPerFrame / 4;
+    }
+    await new Promise((r) => requestAnimationFrame(r));
   }
+  function onclick({ x, target }) {
+    offset += (x < target.clientWidth / 2 ? -1 : 1) * samplesPerFrame;
+    chart(canvsCtx, arr.slice(offset, offset + samplesPerFrame));
+    const existingSlider = canvsCtx.canvas?.parentElement?.querySelector(
+      "input[type='range']"
+    );
+    const slider =
+      existingSlider ||
+      mkdiv("input", {
+        type: "range",
+        min: 0,
+        max: 100,
+        value: 100,
+        step: 0,
+        oninput: (e) => {
+          const { max, value } = e.target;
+          offset = (arr.length * parseInt(value)) / parseInt(max);
+          chart(canvsCtx, arr.slice(offset, offset + samplesPerFrame));
+        },
+      }).attachTo(canvsCtx.canvas.parentElement);
+  }
+  canvsCtx.canvas.addEventListener("click", onclick);
+  canvsCtx.canvas.addEventListener("dblclick", function (e) {
+    e.x;
+    offset += (e.x < canvsCtx.canvas.width / 2 ? -1 : 1) * samplesPerFrame;
+    chart(canvsCtx, arr.slice(offset, offset + samplesPerFrame));
+  });
 }
-// async function offrend(harmonics) {
-//   const ctx = new OfflineAudioContext(1, 4096, 4096);
-//   const oscs = harmonics
-//     .map(
-//       (gain, idx) =>
-//         new OscillatorNode(ctx, {
-//           frequency: (1 + 2 * idx) * 3,
-//           gain: gain,
-//         })
-//     )
-//     .forEach((o) => {
-//       o.connect(ctx.destination);
-//       o.start();
-//     });
-//   const ab = await ctx.startRendering();
-//   return ab.getChannelData(0);
-// }
-
-// offrend([0.3, 0.5, 0.7, 0.9, 1.5]).then((fl) => {
-//   chart(cctx1, fl);
-//   inputPCM(fl);
-//   //  document.body.onclick =
-//   const fbin = getFloatFrequencyData();
-//   //  chart(cctx1, fbin[1].slice(0, 1024));
-//   chart(cctx2, fbin[0].slice(0, 1024));
-
-//   const oo = new OfflineAudioContext(1, 4096, 4096);
-//   reset();
-
-//   const wavetb = new OscillatorNode(oo, {
-//     type: "custom",
-//     periodicWave: new PeriodicWave(oo, {
-//       imag: new Float32Array(250).fill(0),
-//       real: fbin[0].slice(0, 250),
-//     }),
-//     frequency: 1,
-//   });
-//   wavetb.connect(oo.destination);
-//   wavetb.start();
-//   oo.startRendering()
-//     .then((abb) => abb.getChannelData(0))
-//     .then((fll) => {
-//       reset();
-//       chart(mkcanvas(), fll);
-//       inputPCM(fll);
-//       const fbin2 = getFloatFrequencyData();
-//       chart(mkcanvas(), fbin2[1].slice(0, 500));
-//     });
-// });
-
-// let proc, ctx, sab;
-// const { readable, writable } = new TransformStream();
-// ctx = new OfflineAudioContext(1, 480000, 48000);
-// sab = new SharedArrayBuffer(new BigUint64Array(1024));
-// fetch("file.html").then((res) =>
-//   res.body.pipeThrough(
-//     new WritableStream({
-//       write: (chunk) => {},
-//     })
-//   )
-// );
-
-// ctx.audioWorklet.addModule("./proc.js").then(() => {
-//   proc = new AudioWorkletNode(ctx, "proc", {
-//     processorOptions: {
-//       sab,
-//     },
-//   });
-//   proc.port.postMessage({ readable: readable }, [readable]);
-// });
-// //document.querySelector("button").onclick = initctx;

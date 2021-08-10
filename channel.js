@@ -16,7 +16,6 @@ export function channel(ctx, sf2, id, ui) {
     throw new Error("no sf2");
   }
   const activeNotes = [];
-  const vis = mkcanvas();
   function recycledUints() {
     const pool = [];
     function dequeue(pcm, shdr, zone, ref) {
@@ -35,6 +34,7 @@ export function channel(ctx, sf2, id, ui) {
       spinner.reset();
       spinner.sample = { pcm, loops: shdr.loops, zref: ref };
       volEG.zone = zone;
+
       lpf.frequency = semitone2hz(zone.FilterFc);
       return { spinner, volEG, lpf };
     }
@@ -67,7 +67,7 @@ export function channel(ctx, sf2, id, ui) {
     ];
     console.log("filter freq", zone.FilterFc, semitone2hz(zone.FilterFc));
     spinner.connect(volEG.gainNode).connect(lpf).connect(ctx.destination);
-    setTimeout(() => chart(vis, pcm), 12);
+    //setTimeout(() => chart(vis, pcm), 12);
     return { spinner, lpf, volEG };
   }
 
