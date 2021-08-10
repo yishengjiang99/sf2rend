@@ -1,0 +1,12 @@
+{
+  "name": "lpf",
+  "version": "1.0.0",
+  "description": "",
+  "main": "lpf.js",
+  "scripts": {
+  "build":"emcc lpf.c -o lpf.wasm --no-entry"
+  },
+  "keywords": [],
+  "author": "Yisheng Jiang",
+  "license": "ISC"
+}

@@ -69,7 +69,7 @@ class SpinProcessor extends AudioWorkletProcessor {
       this.sync();
     }
     if (this.pcm_meta[0] == 2) {
-      //this.inst.exports.reset();
+      this.inst.exports.reset();
 
       this.pcm_meta[0] = 0;
     }

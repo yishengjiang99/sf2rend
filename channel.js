@@ -23,7 +23,12 @@ export function channel(ctx, sf2, id, ui) {
       if (pool.length == 0) return null;
       for (const i in pool) {
         if (pool[i].spinner.zref == ref) {
-          return pool.splice(i, 1);
+          const r = pool[i];
+
+          r.spinner.reset();
+          r.volEG.zone = zone;
+          pool.splice(i, 1);
+          return r;
         }
       }
       const { spinner, volEG, lpf } = pool.shift();

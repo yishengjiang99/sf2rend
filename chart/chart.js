@@ -1,6 +1,15 @@
 export const WIDTH = 320; // / 2,
 export const HEIGHT = 400;
-
+function get_w_h(canvasCtx: CanvasRenderingContext2D) {
+  return [
+    canvasCtx.canvas.getAttribute("width")
+      ? parseInt(canvasCtx.canvas.getAttribute("width")!)
+      : WIDTH,
+    canvasCtx.canvas.getAttribute("height")
+      ? parseInt(canvasCtx.canvas.getAttribute("height")!)
+      : HEIGHT,
+  ];
+}
 export function resetCanvas(canvasCtx) {
   if (!canvasCtx) return;
   canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
@@ -11,7 +20,7 @@ export function chart(canvasCtx, dataArray) {
   resetCanvas(canvasCtx);
   let sum = 0,
     min = dataArray[0],
-    max = dataArray[0];
+    max = dataArray[0]; const [_width, _height] = get_w_h(canvasCtx);
   let x = 0,
     iWIDTH = WIDTH / dataArray.length; //strokeText(`r m s : ${sum / bufferLength}`, 10, 20, 100)
   for (let i = 1; i < dataArray.length; i++) {
@@ -24,10 +33,11 @@ export function chart(canvasCtx, dataArray) {
   for (let i = 1; i < dataArray.length; i++) {
     sum += Math.pow(2, dataArray[i]);
     x += iWIDTH;
-    canvasCtx.lineTo(x, ((dataArray[i] - min) / (max - min)) * HEIGHT);
+    canvasCtx.lineTo(x, _height / 2 - (_height / 2) * dataArray[i]);
   }
   canvasCtx.stroke();
-  canvasCtx.restore();canvasCtx.font = "30px Arial";
+  canvasCtx.restore();
+  canvasCtx.font = "30px Arial";
 
   canvasCtx.strokeText(
     `rms: ${(sum / dataArray.length).toFixed(2)}`,
@@ -45,7 +55,7 @@ export function mkOfflineCanvas(container = document.body) {
   return offline;
 }
 
-export function mkcanvas({container,width,height}={}) {
+export function mkcanvas({ container, width, height } = {}) {
   const canvas = document.createElement("canvas");
   canvas.setAttribute("WIDTH", width || WIDTH);
   canvas.setAttribute("height", height || HEIGHT);
@@ -55,7 +65,7 @@ export function mkcanvas({container,width,height}={}) {
   canvasCtx.strokeStyle = "white";
   canvasCtx.fillStyle = "black";
   canvasCtx.font = "2em";
-  (container && container.append ? cantainer : document.body ).append(canvas);
+  (container && container.append ? cantainer : document.body).append(canvas);
   canvas.ondblclick = () => resetCanvas(canvasCtx);
   return canvasCtx;
 }

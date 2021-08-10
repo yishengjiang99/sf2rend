@@ -1,0 +1,77 @@
+export declare function mkstruct(exports: WebAssembly.Exports, buffer: ArrayBufferLike, ref: number): {
+    spref: number;
+    spin: (n?: number) => Float32Array;
+    reset: WebAssembly.ExportValue;
+    struct: DataView;
+    readonly arr: {
+        inputRef: number;
+        outputRef: number;
+        phase: number;
+        pad1: number;
+        loopStart: number;
+        loopEnd: number;
+        stride: number;
+        strideDest: number;
+        filter: number;
+        filterDest: number;
+        amp: number;
+        ampDest: number;
+    };
+    readonly input: Float32Array;
+    readonly outputRef: number;
+    readonly output: Float32Array;
+    loopStart: number;
+    loopEnd: number;
+    inputRef: number;
+    stride: number;
+    strideDest: number;
+    filter: number;
+    filterDest: number;
+    amp: number;
+    ampDest: number;
+};
+export declare function sfstruct(shBuff: SharedArrayBuffer, ch: number): {
+    zone: Int16Array;
+    shdr: Uint32Array;
+    midiCC: Uint8Array;
+};
+export declare function mkmodule(sb: SharedArrayBuffer): {
+    spinners: {
+        zone: Int16Array;
+        shdr: Uint32Array;
+        midiCC: Uint8Array;
+        spref: number;
+        spin: (n?: number) => Float32Array;
+        reset: WebAssembly.ExportValue;
+        struct: DataView;
+        arr: {
+            inputRef: number;
+            outputRef: number;
+            phase: number;
+            pad1: number;
+            loopStart: number;
+            loopEnd: number;
+            stride: number;
+            strideDest: number;
+            filter: number;
+            filterDest: number;
+            amp: number;
+            ampDest: number;
+        };
+        input: Float32Array;
+        outputRef: number;
+        output: Float32Array;
+        loopStart: number;
+        loopEnd: number;
+        inputRef: number;
+        stride: number;
+        strideDest: undefined;
+        filter: undefined;
+        filterDest: undefined;
+        amp: undefined;
+        ampDest: undefined;
+    }[];
+    instance: WebAssembly.Instance;
+    mallocTable: WebAssembly.ExportValue;
+    mem: WebAssembly.Memory;
+};

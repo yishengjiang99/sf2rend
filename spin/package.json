@@ -9,5 +9,8 @@
   },
   "keywords": [],
   "author": "Yisheng Jiang",
-  "license": "do-not-use"
+  "license": "do-not-use",
+  "dependencies": {
+    "midiread": "^2.0.14"
+  }
 }
