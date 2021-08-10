@@ -2,10 +2,8 @@ import { LowPassFilterNode } from "./lpf/lpf.js";
 import { SpinNode } from "./spin/spin.js";
 import mkEnvelope from "./adsr.js";
 import { semitone2hz } from "./sf2-service/zoneProxy.js";
-import { EnvelopeGenerator } from "./eg/index.js";
 import { mkcanvas, chart } from "./chart/chart.js";
 
-const egen = EnvelopeGenerator();
 export async function realCtx() {
   const ctx = new AudioContext({ sampleRate: 48000 });
   await SpinNode.init(ctx);
@@ -23,15 +21,16 @@ export function channel(ctx, sf2, id, ui) {
     const pool = [];
     function dequeue(pcm, shdr, zone, ref) {
       if (pool.length == 0) return null;
+      for (const i in pool) {
+        if (pool[i].spinner.zref == ref) {
+          return pool.splice(i, 1);
+        }
+      }
       const { spinner, volEG, lpf } = pool.shift();
       spinner.reset();
-      if (spinner.zref != ref)
-        spinner.sample = { pcm, loops: shdr.loops, zref: ref };
-
+      spinner.sample = { pcm, loops: shdr.loops, zref: ref };
       volEG.zone = zone;
-      // modeg.zone = zone;
       lpf.frequency = semitone2hz(zone.FilterFc);
-
       return { spinner, volEG, lpf };
     }
     function enqueue(unit) {
@@ -62,7 +61,7 @@ export function channel(ctx, sf2, id, ui) {
       new LowPassFilterNode(ctx, semitone2hz(zone.FilterFc)),
     ];
     console.log("filter freq", zone.FilterFc, semitone2hz(zone.FilterFc));
-    spinner.connect(volEG.gainNode).connect(ctx.destination);
+    spinner.connect(volEG.gainNode).connect(lpf).connect(ctx.destination);
     setTimeout(() => chart(vis, pcm), 12);
     return { spinner, lpf, volEG };
   }

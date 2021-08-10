@@ -20,6 +20,7 @@ export class LowPassFilterNode extends AudioWorkletNode {
     });
   }
   set frequency(freq) {
+    console.log("set f", freq);
     this.port.postMessage(freq / this.context.sampleRate);
   }
   modulate(input) {

@@ -3,7 +3,7 @@ class LowPassFilterProc extends AudioWorkletProcessor {
   constructor(options) {
     super(options);
     const { filterFC, wasmbin } = options.processorOptions;
-    console.log(filterFC);
+    console.log("lpf ionit");
     const instance = new WebAssembly.Instance(
       new WebAssembly.Module(wasmbin),
       {}
@@ -20,7 +20,6 @@ class LowPassFilterProc extends AudioWorkletProcessor {
     new Float32Array(this.buffer, 0, 1)[0] = data;
   }
   process([input, control], [output]) {
-    // debugger;
     for (let ch = 0; ch < input.length; ch++) {
       for (let i = 0; i < 128; i++) {
         const detune =

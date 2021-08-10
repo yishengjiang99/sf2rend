@@ -16,19 +16,19 @@ export class TrackUI {
     this.keys = Array.from(keyboard.querySelectorAll("a"));
     this.keys.forEach((k, keyidx) => {
       var refcnt = 0;
-
+      const midi = k.getAttribute("midi");
       k.onmousedown = () => {
         refcnt++;
-        eventWriter.write([0x90 | idx, keyidx, 111]);
+        eventWriter.write([0x90 | idx, midi, 111]);
 
         k.addEventListener(
           "mouseup",
-          () => refcnt-- > 0 && eventWriter.write([0x80 | idx, keyidx, 111]),
+          () => refcnt-- > 0 && eventWriter.write([0x80 | idx, midi, 111]),
           { once: true }
         );
         k.addEventListener(
           "mouseleave",
-          () => eventWriter.write([0x80 | idx, keyidx, 111]),
+          () => eventWriter.write([0x80 | idx, midi, 111]),
           { once: true }
         );
         setTimeout(() => {
@@ -127,7 +127,7 @@ export function mkui(cpanel) {
       mkdiv(
         "td",
         { colspan: 5 },
-        range(33, 88).map((midi) => mkdiv("a", { midi }, [midi, " "]))
+        range(55, 88).map((midi) => mkdiv("a", { midi }, [midi, " "]))
       )
     );
     controllers.push(new TrackUI(row, keyboard, i, writer));
