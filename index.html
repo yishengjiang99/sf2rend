@@ -22,6 +22,16 @@
 
 
 
+		body {
+			display: grid;
+			grid-template-columns: 1fr 1fr 1fr 1fr;
+			grid-template-rows: auto;
+			grid-template-areas:
+				"aside header header header"
+				"aside main   main main"
+				"aside footer footer footer";
+
+		}
 
 		* {
 
@@ -62,27 +72,26 @@
 </head>
 
 <body>
-	<div class='nav'><button id='midic'>Connect To Midi</button><span id=cover></span></div>
+	<header class='nav'><button id='midic'>Connect To Midi</button><span id=cover></span></header>
 
-	<div class='container row'>
-		<aside class='col-md-3'>
-			<select>
-				<option value='file.sf2'>file.sf2 </option>
-				<option value='sm.sf2'> sm.sf2</option>
-			</select>
-			<div id='sf2list'></div>
-			<div id='midilist'>
-				<a href="test.html">a</a>
-			</div>
-
-		</aside>
-		<div class='centerm'>
-			<div id='channelContainer'>
-			</div>
-			<pre></pre>
-			<rx></rx>
+	<aside class='col-md-3'>
+		<select>
+			<option value='file.sf2'>file.sf2 </option>
+			<option value='sm.sf2'> sm.sf2</option>
+		</select>
+		<div id='sf2list'></div>
+		<div id='midilist'>
+			<a href="test.html">a</a>
 		</div>
-	</div>
+
+	</aside>
+	<main>
+		<div id='channelContainer'>
+		</div>
+		<pre></pre>
+		<rx></rx>
+	</main>
+	<footer></footer>
 	<script type='module' src="./index.js">
 
 	</script>
