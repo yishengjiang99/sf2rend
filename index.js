@@ -1,20 +1,21 @@
 import { mkdiv, logdiv } from "./mkdiv/mkdiv.js";
 import { load } from "./sf2-service/read.js";
 import { SpinNode } from "./spin/spin.js";
-import mkEnvelope from "./adsr.js";
 import { LowPassFilterNode } from "./lpf/lpf.js";
-import { semitone2hz } from "./sf2-service/zoneProxy.js";
 import { mkui } from "./ui.js";
+import { effects } from "./misc.js";
 mkdiv("button", { id: "midic" }, "connect to midi").attachTo(document.body);
-
 let ctx;
 const { stdout, stderr, infoPanel, errPanel } = logdiv();
+window.stdout = stdout;
 const flist = document.querySelector("#sf2list");
 const cpanel = document.querySelector("#channelContainer");
 const { controllers, readable } = mkui(cpanel);
 const channels = [],
   programs = {};
 let cid = 0;
+const ccs = new Uint8Array(128 * 16);
+
 infoPanel.attachTo(cpanel);
 errPanel.attachTo(cpanel);
 const { port1, port2 } = new MessageChannel();
@@ -32,18 +33,37 @@ readable.pipeTo(
 function loadf(file) {
   flist.innerHTML = "";
   load(file, {
-    onHeader: (pid, str) => {
-      presetUI_sic(pid, str);
+    onHeader: (pid, bid, str) => {
+      const loadlink = mkdiv(
+        "a",
+        {
+          href: "#",
+          pid: pid,
+          style: "cursor:crosshair",
+          onclick: () => {
+            console.log("loading");
+            controllers[cid].name = str;
+            channels[cid].setProgram(pid, bid);
+            cid++;
+          },
+        },
+        "load preset"
+      );
+      mkdiv("li", {}, [str, "&nbsp", loadlink]).attachTo(flist);
+      programs[pid] = str;
     },
   })
     .then((_sf2) => {
       ctx = initAudio(_sf2);
     })
     .then(() => {
-      window.addEventListener("click", initMidi, { once: true });
+      document
+        .querySelector("#midic")
+        .addEventListener("click", initMidi, { once: true });
     });
 }
 loadf("file.sf2");
+const midiCC = midiCCState();
 const timeslide = mkdiv("input", {
   type: "range",
   min: -2,
@@ -52,16 +72,78 @@ const timeslide = mkdiv("input", {
 }).attachTo(cpanel);
 document.querySelector(".cover").innerHTML = "welcome";
 flist.innerHTML = "";
-initworker("song2.mid");
+initworker(
+  "https://grep32bit.blob.core.windows.net/midi/Blink_182_-_All_The_Small_Things_.mid"
+);
 
-const one_over_128x4 = 1 / 128 / 128 / 128 / 128;
-async function initworker(url) {
-  let ccs = new Uint8Array(128 * 16);
+function midiCCState() {
   for (let i = 0; i < 16; i++) {
-    ccs[i * 16 + 7] = 100; //defalt volume
-    ccs[i * 16 + 11] = 127; //default expression
-    ccs[i * 16 + 10] = 64;
+    ccs[i * 128 + 7] = 100; //defalt volume
+    ccs[i * 128 + 11] = 127; //default expression
+    ccs[i * 128 + 10] = 64;
   }
+  return new Proxy(ccs, {
+    get(ccs, idx) {
+      return new Proxy(ccs.subarray(idx * 128, idx * 128 + 129), {
+        get(target, attr) {
+          return target[attr];
+        },
+        set(target, attr, value) {
+          if (!isNaN(attr)) {
+            target[attr] = value;
+            return;
+          }
+          if (effects.indexOf(attr) >= 0) target[effects.indexOf(attr)] = value;
+        },
+      });
+    },
+  });
+}
+function mkEnvelope(ctx, zone) {
+  const volumeEnveope = new GainNode(ctx, { gain: 0 });
+  let delay, attack, hold, decay, release, gainMax, sustain, _midiState;
+
+  function setZone(zone) {
+    [delay, attack, hold, decay, release] = [
+      zone.VolEnvDelay,
+      zone.VolEnvAttack,
+      zone.VolEnvHold,
+      zone.VolEnvDecay,
+      zone.VolEnvRelease,
+    ].map((v) => (v == -1 || v <= -12000 ? 0.001 : Math.pow(2, v / 1200)));
+  }
+  setZone(zone);
+
+  return {
+    set zone(zone) {
+      setZone(zone);
+    },
+    set midiState(staet) {
+      _midiState = staet;
+    },
+    keyOn() {
+      const sf2attenuate = Math.pow(10, zone.Attenuation * -0.005);
+      const midiVol = _midiState[effects.volumecoarse] / 128;
+      const midiExpre = _midiState[effects.expressioncoarse] / 128;
+      gainMax = 3 * sf2attenuate * midiVol * midiExpre;
+      volumeEnveope.gain.linearRampToValueAtTime(gainMax, attack);
+
+      if (sustain > 0) {
+        //  volumeEnveope.gain.setTargetAtTime(0, attack + hold, decay / 2);
+        //  volumeEnveope.gain.linearRampToValueAtTime(sustain, this.sustainTime);
+      }
+      console.log(gainMax, zone.VolEnvSustain, this.sustainTime);
+    },
+    keyOff() {
+      volumeEnveope.gain.cancelScheduledValues(0);
+      //   console.log(release + "rel");
+      volumeEnveope.gain.linearRampToValueAtTime(0.0, release);
+    },
+    gainNode: volumeEnveope,
+  };
+}
+
+async function initworker(url) {
   const [midiworker, totalTicks] = await new Promise((resolve, reject) => {
     const w = new Worker("./midiworker.js#" + url, { type: "module" });
     w.addEventListener(
@@ -113,11 +195,11 @@ function nomidimsg(data) {
   stdout(data);
   stderr(data);
   switch (stat) {
-    case 0x0b: //chan set
-      // channels[ch].setProgram(key);
+    case 0xb: //chan set
+      ccs[ch * 16 + key] = vel;
       break;
     case 0xc: //change porg
-      channels[ch].setProgram(key);
+      channels[ch].setProgram(key, ch == 9 ? 128 : 0);
       break;
     case 0x08:
       channels[ch].keyOff(key, vel);
@@ -132,28 +214,6 @@ function nomidimsg(data) {
     default:
       break;
   }
-}
-async function openNextChannel(pid, str) {
-  if (channels[cid]) {
-    console.log("loading");
-    await channels[cid].setProgram(pid, 0);
-    controllers[cid].name = str;
-    cid++;
-  }
-}
-function presetUI_sic(pid, str) {
-  const loadlink = mkdiv(
-    "a",
-    {
-      href: "#",
-      pid: pid,
-      style: "cursor:crosshair",
-      onclick: () => openNextChannel(pid, str),
-    },
-    "load preset"
-  );
-  mkdiv("li", {}, [str, "&nbsp", loadlink]).attachTo(flist);
-  programs[pid] = str;
 }
 
 async function bindMidiAccess(port, tee) {
@@ -170,7 +230,7 @@ async function bindMidiAccess(port, tee) {
 }
 
 export async function realCtx() {
-  const ctx = new AudioContext({ sampleRate: 48000 });
+  const ctx = new AudioContext({ sampleRate: 44100 });
   await SpinNode.init(ctx);
   await LowPassFilterNode.init(ctx);
   return ctx;
@@ -194,6 +254,8 @@ export function channel(ctx, sf2, id, ui) {
           return r;
         }
       }
+      // if (pool.length < 3) return null;
+
       const { spinner, volEG, lpf } = pool.shift();
       spinner.reset();
       spinner.sample = { pcm, loops: shdr.loops, zref: ref };
@@ -224,28 +286,35 @@ export function channel(ctx, sf2, id, ui) {
     activeNotes().forEach((v) => v.volEG.keyOff(0));
   }
   function mkZoneRoute(pcm, shdr, zone, ref) {
+    const lops = shdr.loops;
+    //set to no loop
+    if (zone.SampleModes == 0 || lops[1] <= lops[0]) lops[0] = -1;
     const [spinner, volEG, lpf] = [
       new SpinNode(ctx, { ref, pcm, loops: shdr.loops }),
       mkEnvelope(ctx, zone),
       new LowPassFilterNode(ctx, semitone2hz(zone.FilterFc)),
     ];
     console.log("filter freq", zone.FilterFc, semitone2hz(zone.FilterFc));
-    spinner.connect(volEG.gainNode).connect(lpf).connect(ctx.destination);
+    if (id == 9) {
+      spinner.connect(ctx.destination);
+    } else
+      spinner.connect(volEG.gainNode).connect(lpf).connect(ctx.destination);
     //setTimeout(() => chart(vis, pcm), 12);
     return { spinner, lpf, volEG };
   }
 
   async function keyOn(key, vel) {
-    console.log(ctx.state);
     const { shdr, pcm, ref, ...zone } = filterKV(key, vel)[0]; //.forEach(({ shdr, pcm, ref, ...zone }) => {
-    console.log(shdr.sampleRate + "sr");
     if (pcm.byteLength != shdr.byteLength * 1)
       throw "unexpected pcm " + pcm.byteLength + " vs " + shdr.byteLength;
-    const { spinner, volEG, lpf } = pool.empty()
-      ? mkZoneRoute(pcm, shdr, zone, ref)
-      : pool.dequeue(pcm, shdr, zone, ref);
+    const { spinner, volEG, lpf } =
+      pool.dequeue(pcm, shdr, zone, ref) || mkZoneRoute(pcm, shdr, zone, ref);
+    //      : pool.dequeue(pcm, shdr, zone, ref);
+
     spinner.stride = zone.calcPitchRatio(key, ctx.sampleRate); // ({ key, zone, shdr });
+    volEG.midiState = midiCC[id];
     volEG.keyOn();
+
     activeNotes.push({ spinner, volEG, lpf, key });
     ui.zone = zone;
 
@@ -272,4 +341,7 @@ export function channel(ctx, sf2, id, ui) {
     id,
     ctx,
   };
+}
+function semitone2hz(c) {
+  return Math.pow(2, (c - 6900) / 1200) * 440;
 }

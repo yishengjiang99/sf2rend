@@ -1,4 +1,4 @@
-import { scheduler } from "./midiread/dist/scheduler.js";
+import { scheduler } from "https://unpkg.com/midiread@2.0.14/dist/scheduler.js";
 (async () => {
   const url = self.location.hash.split("#")[1];
   console.log(url);
