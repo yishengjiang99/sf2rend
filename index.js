@@ -10,7 +10,7 @@ const { stdout, stderr, infoPanel, errPanel } = logdiv();
 window.stdout = stdout;
 const flist = document.querySelector("#sf2list");
 const cpanel = document.querySelector("#channelContainer");
-const { controllers, readable } = mkui(cpanel);
+const { controllers } = mkui(cpanel, nomidimsg);
 const channels = [],
   programs = {};
 let cid = 0;
@@ -18,18 +18,7 @@ const ccs = new Uint8Array(128 * 16);
 
 infoPanel.attachTo(cpanel);
 errPanel.attachTo(cpanel);
-const { port1, port2 } = new MessageChannel();
-readable.pipeTo(
-  new WritableStream({
-    write(chunk, controller) {
-      try {
-        nomidimsg(chunk);
-      } catch (error) {
-        controller.error(error.message);
-      }
-    },
-  })
-);
+
 function loadf(file) {
   flist.innerHTML = "";
   load(file, {

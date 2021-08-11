@@ -3,10 +3,9 @@ const rowheight = 40,
   colwidth = 80;
 const pixelPerDecibel = rowheight;
 const pixelPerSec = colwidth / 2;
-const { readable, writable } = new TransformStream();
-const writer = writable.getWriter();
+
 export class TrackUI {
-  constructor(container, keyboard, idx, eventWriter) {
+  constructor(container, keyboard, idx, cb) {
     this.nameLabel = container.querySelector(".name");
     this.meters = container.querySelectorAll("meter");
     this.sliders = container.querySelectorAll("input[type='range']");
@@ -19,24 +18,22 @@ export class TrackUI {
       const midi = k.getAttribute("midi");
       k.onmousedown = () => {
         refcnt++;
-        eventWriter.write([0x90 | idx, midi, 111]);
+        cb([0x90 | idx, midi, 111]);
 
         k.addEventListener(
           "mouseup",
-          () => refcnt-- > 0 && eventWriter.write([0x80 | idx, midi, 111]),
+          () => refcnt-- > 0 && cb([0x80 | idx, midi, 111]),
           { once: true }
         );
-        k.addEventListener(
-          "mouseleave",
-          () => eventWriter.write([0x80 | idx, midi, 111]),
-          { once: true }
-        );
+        k.addEventListener("mouseleave", () => cb([0x80 | idx, midi, 111]), {
+          once: true,
+        });
         setTimeout(() => {
-          eventWriter.write([0x80 | idx, keyidx, 111]);
+          cb([0x80 | idx, keyidx, 111]);
         }, 1000);
       };
       k.onmouseut = () => {
-        if (refcnt > 0) eventWriter.write([0x80 | idx, keyidx, 111]);
+        if (refcnt > 0) cb([0x80 | idx, keyidx, 111]);
       };
     });
   }
@@ -100,7 +97,7 @@ const range = (x, y) =>
     })(x, y)
   );
 
-export function mkui(cpanel) {
+export function mkui(cpanel, cb) {
   const controllers = [];
 
   const tb = mkdiv("table", { border: 1 });
@@ -130,11 +127,11 @@ export function mkui(cpanel) {
         range(55, 88).map((midi) => mkdiv("a", { midi }, [midi, " "]))
       )
     );
-    controllers.push(new TrackUI(row, keyboard, i, writer));
+    controllers.push(new TrackUI(row, keyboard, i, cb));
     row.attachTo(tb);
     keyboard.attachTo(tb);
   }
 
   tb.attachTo(cpanel);
-  return { controllers, readable };
+  return { controllers };
 }
