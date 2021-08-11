@@ -4,20 +4,22 @@ import { SpinNode } from "./spin/spin.js";
 import { LowPassFilterNode } from "./lpf/lpf.js";
 import { mkui } from "./ui.js";
 import { effects } from "./misc.js";
-mkdiv("button", { id: "midic" }, "connect to midi").attachTo(document.body);
-let ctx;
-const { stdout, stderr, infoPanel, errPanel } = logdiv();
-window.stdout = stdout;
+import { chart, mkcanvas, renderFrames } from "./chart/chart.js";
+
 const flist = document.querySelector("#sf2list");
 const cpanel = document.querySelector("#channelContainer");
+const { stdout, stderr, infoPanel, errPanel } = logdiv();
+stderr("loading..");
+infoPanel.attachTo(cpanel);
+errPanel.attachTo(cpanel);
+window.stdout = stdout;
+
+let ctx;
 const { controllers } = mkui(cpanel, nomidimsg);
 const channels = [],
   programs = {};
 let cid = 0;
 const ccs = new Uint8Array(128 * 16);
-
-infoPanel.attachTo(cpanel);
-errPanel.attachTo(cpanel);
 
 function loadf(file) {
   flist.innerHTML = "";
@@ -162,7 +164,6 @@ async function initworker(url) {
       btn.addEventListener("click", (e) => msgcmd(e.target.getAttribute("cmd")))
     );
 }
-stderr("loading..");
 
 async function initAudio(sf2) {
   ctx = await realCtx();
@@ -229,6 +230,7 @@ export function channel(ctx, sf2, id, ui) {
   if (!sf2) {
     throw new Error("no sf2");
   }
+  const vis = mkcanvas({ container: ui.canc });
   const activeNotes = [];
   function recycledUints() {
     const pool = [];
@@ -288,7 +290,6 @@ export function channel(ctx, sf2, id, ui) {
       spinner.connect(ctx.destination);
     } else
       spinner.connect(volEG.gainNode).connect(lpf).connect(ctx.destination);
-    //setTimeout(() => chart(vis, pcm), 12);
     return { spinner, lpf, volEG };
   }
 
@@ -309,6 +310,7 @@ export function channel(ctx, sf2, id, ui) {
 
     ui.midi = key;
     ui.velocity = vel;
+    setTimeout(() => chart(vis, pcm), 12);
   }
 
   function keyOff(key) {

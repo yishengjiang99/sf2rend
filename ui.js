@@ -10,8 +10,11 @@ export class TrackUI {
     this.meters = container.querySelectorAll("meter");
     this.sliders = container.querySelectorAll("input[type='range']");
 
-    this.led = container.querySelector("input[type=checkbox");
-    this.polylines = Array.from(container.querySelectorAll("polyline"));
+    this.led = container.querySelector("input[type=checkbox]");
+    this.polylines = container.querySelectorAll("polyline");
+    this.polylines[0].setAttribute("points", "");
+    this.canc = container.querySelector(".canvasContainer");
+
     this.keys = Array.from(keyboard.querySelectorAll("a"));
     this.keys.forEach((k, keyidx) => {
       var refcnt = 0;
@@ -60,7 +63,6 @@ export class TrackUI {
     ]
       .map(([x, y]) => [x * pixelPerSec, rowheight - y * rowheight].join(","))
       .join(" ");
-    console.log(points);
     this.polylines[0].setAttribute("points", points);
   }
   set env2({ phases: [a, d, s, r], peak }) {
@@ -75,7 +77,9 @@ export class TrackUI {
     console.log(points);
     this.polylines[1].setAttribute("points", points);
   }
-
+  get canvasContainer() {
+    return this.canc;
+  }
   set zone(z) {
     this.env1 = {
       phases: [
@@ -114,13 +118,18 @@ export function mkui(cpanel, cb) {
           mkdiv("input", { min: -1000, max: 1000, step: 1, type: "range" }),
           mkdiv("input", { min: -1000, max: 1000, step: 1, type: "range" }),
         ]),
-        mkdiv("svg", { width: "80", height: "30" }),
-        mkdiv("polyline", { stroke: "black", strokeWidth: 1, points: "" }),
+        mkdiv("svg", { width: "80", height: "30" }, [
+          mkdiv("polyline", { stroke: "black", strokeWidth: 1, points: "" }),
+        ]),
+        mkdiv("svg", { width: "80", height: "30" }, [
+          mkdiv("polyline", { stroke: "black", strokeWidth: 1, points: "" }),
+        ]),
+        mkdiv("fragment", { class: "canvasContainer" }),
       ].map((dv) => dv.wrapWith("td"))
     );
     const keyboard = mkdiv(
       "tr",
-      { class: "keyboards" },
+      { class: "keyboards hide" },
       mkdiv(
         "td",
         { colspan: 5 },

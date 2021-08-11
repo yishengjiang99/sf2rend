@@ -41,4 +41,4 @@ export declare interface Sf2Service {
     shdata: Promise<Float32Array>;
   };
 }
-export declare async function load(url: string): Sf2Service;
+export declare function load(url: string, cb?): Sf2Service;

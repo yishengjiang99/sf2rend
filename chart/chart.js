@@ -48,12 +48,15 @@ export function chart(canvasCtx, dataArray) {
   canvasCtx.font = "1em Arial";
 }
 export function mkcanvas(params = {}) {
-  const { width, height, container, title } = Object.assign(params, {
-    container: document.body,
-    title: "",
-    width: WIDTH,
-    height: HEIGHT,
-  });
+  const { width, height, container, title } = Object.assign(
+    {
+      container: document.body,
+      title: "",
+      width: WIDTH,
+      height: HEIGHT,
+    },
+    params
+  );
   const canvas = document.createElement("canvas");
   canvas.setAttribute("width", `${width}`);
   canvas.setAttribute("height", `${height}`);
@@ -93,7 +96,7 @@ export async function renderFrames(
       existingSlider ||
       mkdiv("input", {
         type: "range",
-        min: 0,
+        min: -10,
         max: 100,
         value: 100,
         step: 0,
