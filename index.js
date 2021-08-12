@@ -107,6 +107,11 @@ function loadf(file) {
   })
     .then((_sf2) => initAudio(_sf2))
     .then(async () => {
+      /** these are midi gm defaults, and do not register as change program event  */
+      await channels[0].setProgram(0, 0); //piano
+      await channels[9].setProgram(0, 128); //drums
+    })
+    .then(async () => {
       let [midiworker, totalTicks, presets] = await initworker(
         "https://grep32bit.blob.core.windows.net/midi/Blink_182_-_All_The_Small_Things_.mid"
       );

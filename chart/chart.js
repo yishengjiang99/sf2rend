@@ -1,5 +1,4 @@
 //@ts-ignore
-import { mkdiv } from "https://unpkg.com/mkdiv/mkdiv.js";
 export const WIDTH = 480; // / 2,
 export const HEIGHT = 320;
 function get_w_h(canvasCtx) {
@@ -113,4 +112,37 @@ export async function renderFrames(
     offset += (e.x < canvsCtx.canvas.width / 2 ? -1 : 1) * samplesPerFrame;
     chart(canvsCtx, arr.slice(offset, offset + samplesPerFrame));
   });
+}
+export function mkdiv(type, attr = {}, children = "") {
+  // if (attr && typeof attr != "object" && !children)
+  //   return mkdiv(type, {}, attr);
+  const div = document.createElement(type);
+  for (const key in attr) {
+    if (key.match(/on(.*)/)) {
+      div.addEventListener(key.match(/on(.*)/)[1], attr[key]);
+    } else {
+      div.setAttribute(key, attr[key]);
+    }
+  }
+  const charray = !Array.isArray(children) ? [children] : children;
+  charray.forEach((c) => {
+    typeof c == "string" ? (div.innerHTML += c) : div.append(c);
+  });
+  return div;
+}
+HTMLElement.prototype.attachTo = function (parent) {
+  parent.append(this);
+  return this;
+};
+HTMLElement.prototype.wrapWith = function (tag) {
+  const parent = mkdiv(tag);
+  parent.append(this);
+  return parent;
+};
+
+export function wrapDiv(div, tag, attrs = {}) {
+  return mkdiv(tag, attrs, [div]);
+}
+export function wrapList(divs) {
+  return mkdiv("div", {}, divs);
 }
