@@ -28,7 +28,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     } = this.inst;
     this.memory = memory;
   }
-  hdlemsg({ data: { pcm, loops, zref, shId } }) {
+  hdlemsg({ data: { pcm, loops } }) {
     if (pcm && loops) {
       const fl = new Float32Array(pcm);
 
@@ -62,7 +62,6 @@ class SpinProcessor extends AudioWorkletProcessor {
       this.spinStruct[0][3] = 0;
       this.spinStruct[0][4] = loops[0];
       this.spinStruct[0][5] = loops[1];
-      this.port.postMessage({ pcm, shId }, [pcm]);
     }
   }
   // sync() {

@@ -3,25 +3,82 @@ import { load } from "./sf2-service/read.js";
 import { SpinNode } from "./spin/spin.js";
 import { LowPassFilterNode } from "./lpf/lpf.js";
 import { mkui } from "./ui.js";
-import { effects } from "./misc.js";
 import { chart, mkcanvas, renderFrames } from "./chart/chart.js";
-
+const effects = {
+  bankselectcoarse: 0,
+  modulationwheelcoarse: 1,
+  breathcontrollercoarse: 2,
+  footcontrollercoarse: 4,
+  portamentotimecoarse: 5,
+  dataentrycoarse: 6,
+  volumecoarse: 7,
+  balancecoarse: 8,
+  pancoarse: 10,
+  expressioncoarse: 11,
+  pitchbendcoarse: 12,
+  effectcontrol2coarse: 13,
+  generalpurposeslider1: 16,
+  generalpurposeslider2: 17,
+  generalpurposeslider3: 18,
+  generalpurposeslider4: 19,
+  bankselectfine: 32,
+  modulationwheelfine: 33,
+  breathcontrollerfine: 34,
+  footcontrollerfine: 36,
+  portamentotimefine: 37,
+  dataentryfine: 38,
+  volumefine: 39,
+  balancefine: 40,
+  panfine: 42,
+  expressionfine: 43,
+  pitchbendfine: 44,
+  effectcontrol2fine: 45,
+  holdpedal: 64,
+  portamento: 65,
+  sustenutopedal: 66,
+  softpedal: 67,
+  legatopedal: 68,
+  hold2pedal: 69,
+  soundvariation: 70,
+  resonance: 71,
+  soundreleasetime: 72,
+  soundattacktime: 73,
+  brightness: 74,
+  soundcontrol6: 75,
+  soundcontrol7: 76,
+  soundcontrol8: 77,
+  soundcontrol9: 78,
+  soundcontrol10: 79,
+  generalpurposebutton1: 80,
+  generalpurposebutton2: 81,
+  generalpurposebutton3: 82,
+  generalpurposebutton4: 83,
+  reverblevel: 91,
+  tremololevel: 92,
+  choruslevel: 93,
+  celestelevel: 94,
+  phaserlevel: 95,
+  databuttonincrement: 96,
+  databuttondecrement: 97,
+  nonregisteredparametercoarse: 98,
+  nonregisteredparameterfine: 99,
+  registeredparametercoarse: 100,
+  registeredparameterfine: 101,
+};
 const flist = document.querySelector("#sf2list");
 const cpanel = document.querySelector("#channelContainer");
-const { stdout, stderr } = logdiv(document.querySelector("pre"));
-
+const { stdout, stderr, infoPanel, errPanel } = logdiv();
 stderr("loading..");
-
+infoPanel.attachTo(cpanel);
+errPanel.attachTo(cpanel);
 window.stdout = stdout;
 
-let ctx,
-  cid = 0;
+let ctx;
 const { controllers } = mkui(cpanel, nomidimsg);
 const channels = [],
   programs = {};
-
+let cid = 0;
 const ccs = new Uint8Array(128 * 16);
-const nav = document.querySelector("navbar");
 
 function loadf(file) {
   flist.innerHTML = "";
@@ -33,8 +90,8 @@ function loadf(file) {
           href: "#",
           pid: pid,
           style: "cursor:crosshair",
-          onclick: () => {
-            console.log("loading");
+          onclick: (e) => {
+            e.preventDefault();
             controllers[cid].name = str;
             channels[cid].setProgram(pid, bid);
             cid++;
@@ -48,14 +105,6 @@ function loadf(file) {
   })
     .then((_sf2) => {
       ctx = initAudio(_sf2);
-    })
-    .then(async () => {
-      let [midiworker, totalTicks, presets] = await initworker(
-        "https://grep32bit.blob.core.windows.net/midi/Blink_182_-_All_The_Small_Things_.mid"
-      );
-      for (const { channel, pid } of presets) {
-        channels[channel].setProgram(pid, channel == 9 ? 128 : 0);
-      }
     })
     .then(() => {
       document
@@ -71,7 +120,11 @@ const timeslide = mkdiv("input", {
   max: 4000,
   value: -2,
 }).attachTo(cpanel);
+document.querySelector(".cover").innerHTML = "welcome";
 flist.innerHTML = "";
+initworker(
+  "https://grep32bit.blob.core.windows.net/midi/Blink_182_-_All_The_Small_Things_.mid"
+);
 
 function midiCCState() {
   for (let i = 0; i < 16; i++) {
@@ -126,8 +179,8 @@ function mkEnvelope(ctx, zone) {
       volumeEnveope.gain.linearRampToValueAtTime(gainMax, attack);
 
       if (sustain > 0) {
-        //  volumeEnveope.gain.setTargetAtTime(0, attack + hold, decay / 2);
-        //  volumeEnveope.gain.linearRampToValueAtTime(sustain, this.sustainTime);
+        volumeEnveope.gain.setTargetAtTime(0, attack + hold, decay / 2);
+        volumeEnveope.gain.linearRampToValueAtTime(sustain, this.sustainTime);
       }
       console.log(gainMax, zone.VolEnvSustain, this.sustainTime);
     },
@@ -141,20 +194,16 @@ function mkEnvelope(ctx, zone) {
 }
 
 async function initworker(url) {
-  const [midiworker, totalTicks, presets] = await new Promise(
-    (resolve, reject) => {
-      const w = new Worker("./midiworker.js#" + url, { type: "module" });
-      w.addEventListener(
-        "message",
-        ({ data: { totalTicks, presets } }) =>
-          resolve([w, totalTicks, presets]),
-        { once: true }
-      );
-      w.onerror = reject;
-      w.onmessageerror = reject;
-    }
-  );
-
+  const [midiworker, totalTicks] = await new Promise((resolve, reject) => {
+    const w = new Worker("./midiworker.js#" + url, { type: "module" });
+    w.addEventListener(
+      "message",
+      ({ data: { totalTicks } }) => resolve([w, totalTicks]),
+      { once: true }
+    );
+    w.onerror = reject;
+    w.onmessageerror = reject;
+  });
   midiworker.addEventListener("message", (e) => {
     if (e.data.channel) {
       nomidimsg(e.data.channel);
@@ -166,14 +215,13 @@ async function initworker(url) {
   function msgcmd(cmd) {
     midiworker.postMessage({ cmd });
   }
-  mkdiv("button", { class: "cmd", cmd: "start" }, "start").attachTo(cpanel);
-  mkdiv("button", { class: "cmd", cmd: "stop" }, "sts").attachTo(cpanel);
+  mkdiv("button", { class: "cmd", cmd: "start" }, "start").attachTo(footer);
+  mkdiv("button", { class: "cmd", cmd: "stop" }, "sts").attachTo(footer);
   document
     .querySelectorAll("button.cmd")
     .forEach((btn) =>
       btn.addEventListener("click", (e) => msgcmd(e.target.getAttribute("cmd")))
     );
-  return [midiworker, totalTicks, presets];
 }
 
 async function initAudio(sf2) {
@@ -184,7 +232,8 @@ async function initAudio(sf2) {
 }
 async function initMidi() {
   await ctx.resume();
-  bindMidiAccess(nomidimsg);
+  bindMidiAccess(port1);
+  port2.onmessage = (e) => nomidimsg(e.data);
 }
 function nomidimsg(data) {
   const [a, b, c] = data;
@@ -216,13 +265,13 @@ function nomidimsg(data) {
   }
 }
 
-async function bindMidiAccess(cb) {
+async function bindMidiAccess(port, tee) {
   const midiAccess = await navigator.requestMIDIAccess();
   const midiInputs = Array.from(midiAccess.inputs.values());
   const midiOutputs = Array.from(midiAccess.outputs.values());
   midiInputs.forEach((input) => {
     input.onmidimessage = ({ data, timestamp }) => {
-      cb(data);
+      if (port) port.postMessage(data);
     };
   });
 
@@ -240,7 +289,7 @@ export function channel(ctx, sf2, id, ui) {
   if (!sf2) {
     throw new Error("no sf2");
   }
-  const vis = mkcanvas({ container: ui.canc, height: 80 });
+  const vis = mkcanvas({ container: ui.canc });
   const activeNotes = [];
   function recycledUints() {
     const pool = [];
@@ -249,6 +298,7 @@ export function channel(ctx, sf2, id, ui) {
       for (const i in pool) {
         if (pool[i].spinner.zref == ref) {
           const r = pool[i];
+          r.spinner.reset();
           r.volEG.zone = zone;
           pool.splice(i, 1);
           return r;
@@ -257,6 +307,8 @@ export function channel(ctx, sf2, id, ui) {
       // if (pool.length < 3) return null;
 
       const { spinner, volEG, lpf } = pool.shift();
+      spinner.reset();
+      spinner.sample = { pcm, loops: shdr.loops, zref: ref };
       volEG.zone = zone;
 
       lpf.frequency = semitone2hz(zone.FilterFc);
@@ -271,9 +323,9 @@ export function channel(ctx, sf2, id, ui) {
       empty: () => pool.length == 0,
     };
   }
-  let filterKV, pg;
+  let filterKV;
   async function setProgram(pid, bankId) {
-    pg = sf2.loadProgram(pid, bankId);
+    const pg = sf2.loadProgram(pid, bankId);
     filterKV = pg.filterKV;
     await pg.preload();
     console.log("preloaddon");
@@ -288,14 +340,11 @@ export function channel(ctx, sf2, id, ui) {
     //set to no loop
     if (zone.SampleModes == 0 || lops[1] <= lops[0]) lops[0] = -1;
     const [spinner, volEG, lpf] = [
-      new SpinNode(ctx),
+      new SpinNode(ctx, { ref, pcm, loops: shdr.loops }),
       mkEnvelope(ctx, zone),
       new LowPassFilterNode(ctx, semitone2hz(zone.FilterFc)),
     ];
-    spinner.port.onmessage = ({ data: { pcm, shId } }) => {
-      pg.shdrMap[shId].pcm = new Float32Array(pcm);
-      renderFrames(vis, pg.shdrMap[shId].pcm);
-    };
+    console.log("filter freq", zone.FilterFc, semitone2hz(zone.FilterFc));
     if (id == 9) {
       spinner.connect(ctx.destination);
     } else
@@ -309,17 +358,8 @@ export function channel(ctx, sf2, id, ui) {
       throw "unexpected pcm " + pcm.byteLength + " vs " + shdr.byteLength;
     const { spinner, volEG, lpf } =
       pool.dequeue(pcm, shdr, zone, ref) || mkZoneRoute(pcm, shdr, zone, ref);
-    if (spinner.zref != ref)
-      spinner.sample = {
-        pcm,
-        loops: shdr.loops,
-        zref: ref,
-        shdr,
-        zone,
-      };
-    else {
-      renderFrames(vis, pcm);
-    }
+    //      : pool.dequeue(pcm, shdr, zone, ref);
+
     spinner.stride = zone.calcPitchRatio(key, ctx.sampleRate); // ({ key, zone, shdr });
     volEG.midiState = midiCC[id];
     volEG.keyOn();
@@ -329,6 +369,7 @@ export function channel(ctx, sf2, id, ui) {
 
     ui.midi = key;
     ui.velocity = vel;
+    setTimeout(() => chart(vis, pcm), 12);
   }
 
   function keyOff(key) {

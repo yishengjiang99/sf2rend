@@ -10,17 +10,32 @@ export class SpinNode extends AudioWorkletNode {
         .then((ab) => new Uint8Array(ab));
   }
 
-  constructor(ctx) {
+  constructor(ctx, { ref, pcm, loops }) {
+    const sb = new SharedArrayBuffer(pcm.byteLength * 2 + 1024);
     super(ctx, "spin-proc", {
       numberOfInputs: 0,
       numberOfOutputs: 1,
       outputChannelCount: [1],
       processorOptions: {
+        sb,
         wasm: wasmbin,
       },
     });
+    this.sb = sb;
+    this._zref = ref;
+    this.pcm = new Float32Array(sb, 4 * Float32Array.BYTES_PER_ELEMENT);
+    this.pcm_meta = new Uint32Array(sb, 0, 4);
+    this.pcm_meta.set(new Uint32Array([1, loops[0], loops[1], pcm.byteLength]));
+    this.port.postMessage({ pcm: pcm.buffer, loops }, [pcm.buffer]);
+    console.log(this.pcm.length, "vs", pcm.length);
+    // if(egPortzone.postMessage({});
   }
-
+  reset() {
+    this.pcm_meta[0] = 2;
+  }
+  despose() {
+    this.pcm_meta[0] = -1;
+  }
   get stride() {
     return this.parameters.get("stride").value;
   }
@@ -30,13 +45,10 @@ export class SpinNode extends AudioWorkletNode {
   set stride(ratio) {
     this.parameters.get("stride").setValueAtTime(ratio, 0.001);
   }
-  set sample({ pcm, loops, zref, shdr, zone }) {
+  set sample({ pcm, loops, zref }) {
     this._zref = zref;
-    this.shdr = shdr;
-    this.port.postMessage(
-      { pcm: pcm.buffer, loops, zref, shId: zone.SampleId },
-      [pcm.buffer]
-    );
+
+    this.port.postMessage({ pcm: pcm.buffer }, [pcm.buffer]);
   }
   get zref() {
     return this._zref;
