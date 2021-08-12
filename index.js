@@ -175,6 +175,7 @@ function mkEnvelope(ctx, zone) {
       zone.VolEnvDecay,
       zone.VolEnvRelease,
     ].map((v) => (v == -1 || v <= -12000 ? 0.001 : Math.pow(2, v / 1200)));
+    sustain = Math.pow(10, zone.VolEnvSustain / -200);
   }
   setZone(zone);
 
@@ -191,12 +192,10 @@ function mkEnvelope(ctx, zone) {
       const midiExpre = _midiState[effects.expressioncoarse] / 128;
       gainMax = 3 * sf2attenuate * midiVol * midiExpre;
       volumeEnveope.gain.linearRampToValueAtTime(gainMax, attack);
-
-      if (sustain > 0) {
-        volumeEnveope.gain.setTargetAtTime(0, attack + hold, 2 / decay);
-        volumeEnveope.gain.linearRampToValueAtTime(sustain, this.sustainTime);
-      }
-      console.log(gainMax, zone.VolEnvSustain, this.sustainTime);
+      volumeEnveope.gain.linearRampToValueAtTime(
+        sustain,
+        attack + hold + decay
+      );
     },
     keyOff() {
       volumeEnveope.gain.cancelScheduledValues(0);
@@ -365,14 +364,9 @@ export function channel(ctx, sf2, id, ui) {
       mkEnvelope(ctx, zone),
       new LowPassFilterNode(ctx, semitone2hz(zone.FilterFc)),
     ];
-    spinner.port.onmessage = ({ data: { pcm, shId } }) => {
-      pg.shdrMap[shId].pcm = new Float32Array(pcm);
-      renderFrames(vis, pg.shdrMap[shId].pcm);
-    };
-    if (id == 9) {
-      spinner.connect(ctx.destination);
-    } else
-      spinner.connect(volEG.gainNode).connect(lpf).connect(ctx.destination);
+
+    spinner.connect(lpf).connect(volEG.gainNode).connect(ctx.destination);
+
     return { spinner, lpf, volEG };
   }
 
@@ -393,11 +387,10 @@ export function channel(ctx, sf2, id, ui) {
         shdr,
         zone,
       };
-    else {
-      renderFrames(vis, pcm);
-    }
+
     spinner.stride = zone.calcPitchRatio(key, ctx.sampleRate); // ({ key, zone, shdr });
     volEG.midiState = midiCC[id];
+    spinner.reset();
     volEG.keyOn();
 
     activeNotes.push({ spinner, volEG, lpf, key });
@@ -405,6 +398,7 @@ export function channel(ctx, sf2, id, ui) {
 
     ui.midi = key;
     ui.velocity = vel;
+    requestAnimationFrame(() => renderFrames(vis, pcm));
   }
 
   function keyOff(key) {
