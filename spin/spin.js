@@ -26,7 +26,7 @@ export class SpinNode extends AudioWorkletNode {
     this.pcm = new Float32Array(sb, 4 * Float32Array.BYTES_PER_ELEMENT);
     this.pcm_meta = new Uint32Array(sb, 0, 4);
     this.pcm_meta.set(new Uint32Array([1, loops[0], loops[1], pcm.byteLength]));
-    this.port.postMessage({ pcm: pcm.buffer, loops }, [pcm.buffer]);
+    this.pcm.set(pcm);
     console.log(this.pcm.length, "vs", pcm.length);
     // if(egPortzone.postMessage({});
   }
@@ -47,8 +47,8 @@ export class SpinNode extends AudioWorkletNode {
   }
   set sample({ pcm, loops, zref }) {
     this._zref = zref;
-
-    this.port.postMessage({ pcm: pcm.buffer }, [pcm.buffer]);
+    this.pcm_meta.set(new Uint32Array([1, loops[0], loops[1], pcm.byteLength]));
+    this.pcm.set(pcm);
   }
   get zref() {
     return this._zref;

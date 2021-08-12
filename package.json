@@ -1,32 +1,23 @@
 {
-    "name": "sf2rend",
-    "version": "1.0.0",
-    "description": "",
-    "type": "module",
-    "main": "ctxemwtf.js",
-    "scripts": {
-        "dev": "emcc -fsanitize=undefined -g4 ctx.c -o build/ctx.wasm --no-entry && node make",
-        "build": "make",
-        "test": "chrome-cli open https://dsp.grepawk.com/ssr-bach/sf2rend/test.html",
-        "codeceptjs": "codeceptjs run --steps",
-        "codeceptjs:headless": "HEADLESS=true codeceptjs run --steps",
-        "codeceptjs:ui": "codecept-ui --app",
-        "codeceptjs:demo": "codeceptjs run --steps -c node_modules/@codeceptjs/examples",
-        "codeceptjs:demo:headless": "HEADLESS=true codeceptjs run --steps -c node_modules/@codeceptjs/examples",
-        "codeceptjs:demo:ui": "codecept-ui --app  -c node_modules/@codeceptjs/examples"
-    },
-    "keywords": [],
-    "author": "Yisheng Jiang",
-    "license": "ISC",
-    "dependencies": {
-        "@types/webmidi": "^2.0.6",
-        "mkdiv": "^2.0.2",
-        "mocha-chai-cdn": "^2.0.2",
-        "nco": "^1.0.1",
-        "parse-sf2": "^2.1.2"
-    },
-    "devDependencies": {
-        "eslint": "^7.31.0",
-        "eslint-plugin-react": "^7.24.0"
-    }
+  "name": "sf2rend",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "build": "make"
+  },
+  "keywords": [],
+  "author": "Yisheng Jiang",
+  "license": "ISC",
+  "dependencies": {
+    "@types/webmidi": "^2.0.6",
+    "mkdiv": "^2.0.2",
+    "mocha-chai-cdn": "^2.0.2",
+    "nco": "^1.0.1",
+    "parse-sf2": "^2.1.2"
+  },
+  "devDependencies": {
+    "eslint": "^7.31.0",
+    "eslint-plugin-react": "^7.24.0"
+  }
 }

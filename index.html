@@ -6,7 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Document</title>
 	<style>
-		legend {
+		body {
 			background-color: #000;
 			color: #fff;
 			padding: 3px 6px;
@@ -14,10 +14,6 @@
 
 		a {
 			cursor: crosshair
-		}
-
-		.output {
-			font: 1rem 'Fira Sans', sans-serif;
 		}
 
 
@@ -40,58 +36,99 @@
 		}
 
 
-		.cover {
-			width: 100vw;
-			height: 1em;
-			top: 0;
-			display: fixed;
-		}
+
 
 		aside {
-			max-height: 100vh;
-			width: 30vw;
-			overflow-y: scroll;
-			padding: 0;
-			scrollbar-width: none;
+			position: fixed;
+			transform: translateZ(0px);
+			display: block;
+			z-index: 1;
+			font-family: "Avenir Next", -apple-system, BlinkMacSystemFont, "Segoe UI",
+				Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+				"Segoe UI Symbol";
+			inset: 2.77778rem auto 0px 0px;
+			width: 16.6667rem;
+			box-sizing: border-box;
+			color: inherit;
+			overflow-y: auto;
+			transition: transform 150ms ease-out 0s;
 
 		}
 
-		.row {
-			display: grid;
-			grid-template-columns: 3fr 8fr;
+		#right {
+			display: "grid";
+			grid-template-rows: "1fr 1fr 1fr";
+			position: fixed;
+			transform: translateZ(0px);
+			display: block;
+			right: 0;
 		}
 
-		.centerm {
+		header {
+			margin-left 18rem;
+		}
+
+		main {
+			width: 640px;
+			height: 50vh;
+			margin-left: 18rem;
+		}
+
+		#debug {
+			position: fixed;
+			right: 0;
+			top: 10px;
+			width: 10rem;
+		}
+
+		footer {
+			position: fixed;
+			bottom: 0;
+			width: 60vw;
+			margin-left: 18rem;
+			height: 4em;
 			display: grid;
-			grid-rw-template: 7fr 3fr;
+			justify-items: stretch;
+			background-color: white;
 		}
 
 	</style>
-
-	</script>
 </head>
 
 <body>
-	<header class='nav'><button id='midic'>Connect To Midi</button><span id=cover></span></header>
-
+	<header>
+		<h3>not afraid - eminem</h3>
+	</header>
 	<aside class='col-md-3'>
-		<select>
-			<option value='file.sf2'>file.sf2 </option>
-			<option value='sm.sf2'> sm.sf2</option>
-		</select>
+
+		<form sticky> <select name='selectfile' id='sf2sel'>
+				<option value='file.sf2'>file.sf2 </option>
+				<option value='sm.sf2'> sm.sf2</option>
+			</select>
+			<select name='midif' id='midi2sel'>
+				<opton value='song.mid'>song.mid</opton>
+			</select>
+		</form>
+		<script>
+			const [sf2sel, midsel] = Array.from(document.querySelectorAll("select"));
+		</script>
+
 		<div id='sf2list'></div>
 		<div id='midilist'>
 			<a href="test.html">a</a>
 		</div>
 
 	</aside>
+	<div id='right'>
+		<pre></pre>
+		<div id=debug></div>
+	</div>
 	<main>
 		<div id='channelContainer'>
 		</div>
-		<pre></pre>
-		<rx></rx>
 	</main>
-	<footer></footer>
+	<footer><button class='cmd' cmd='start'>start</button><button class='cmd' cmd='pause'>pause</button><button
+			cmd='rwd'>rwd</button><button id='midic'>midic</button></footer>
 	<script type='module' src="./index.js">
 
 	</script>
