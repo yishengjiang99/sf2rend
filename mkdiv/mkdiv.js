@@ -53,6 +53,6 @@ export function logdiv(
 export function wrapDiv(div, tag, attrs = {}) {
   return mkdiv(tag, attrs, [div]);
 }
-export function wrapList(divs) {
-  return mkdiv("div", {}, divs);
+export function wrapList(divs, tag = "div") {
+  return mkdiv(tag, {}, divs);
 }

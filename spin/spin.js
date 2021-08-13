@@ -11,7 +11,9 @@ export class SpinNode extends AudioWorkletNode {
   }
 
   constructor(ctx, { ref, pcm, loops }) {
-    const sb = new SharedArrayBuffer(pcm.byteLength * 2 + 1024);
+    const sb = new SharedArrayBuffer(
+      Math.max(pcm.byteLength * 2, 1 << 16) + 1024
+    );
     super(ctx, "spin-proc", {
       numberOfInputs: 0,
       numberOfOutputs: 1,
@@ -23,7 +25,8 @@ export class SpinNode extends AudioWorkletNode {
     });
     this.sb = sb;
     this._zref = ref;
-    this.pcm = new Float32Array(sb, 4 * Float32Array.BYTES_PER_ELEMENT);
+
+    this.pcm = new Float32Array(sb, 1024);
     this.pcm_meta = new Uint32Array(sb, 0, 4);
     this.pcm_meta.set(new Uint32Array([1, loops[0], loops[1], pcm.byteLength]));
     this.pcm.set(pcm);
@@ -47,11 +50,15 @@ export class SpinNode extends AudioWorkletNode {
   }
   set sample({ pcm, loops, zref }) {
     this._zref = zref;
+    //pcm = pcm.slice(0, this.pcm.length);
     this.pcm_meta.set(new Uint32Array([1, loops[0], loops[1], pcm.byteLength]));
     this.pcm.set(pcm);
   }
   get zref() {
     return this._zref;
+  }
+  get flsize() {
+    return this.sb.byteLength - 8;
   }
 }
 export async function mkspinner(ctx, pcm, loops) {

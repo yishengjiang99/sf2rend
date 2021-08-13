@@ -1,4 +1,4 @@
-import { mkdiv } from "./mkdiv/mkdiv.js";
+import { mkdiv, wrapList } from "./mkdiv/mkdiv.js";
 const rowheight = 40,
   colwidth = 80;
 const pixelPerDecibel = rowheight;
@@ -11,8 +11,7 @@ export class TrackUI {
     this.sliders = container.querySelectorAll("input[type='range']");
 
     this.led = container.querySelector("input[type=checkbox]");
-    this.polylines = container.querySelectorAll("polyline");
-    this.polylines[0].setAttribute("points", "");
+
     this.canc = container.querySelector(".canvasContainer");
 
     this.keys = Array.from(keyboard.querySelectorAll("a"));
@@ -31,9 +30,6 @@ export class TrackUI {
         k.addEventListener("mouseleave", () => cb([0x80 | idx, midi, 111]), {
           once: true,
         });
-        setTimeout(() => {
-          cb([0x80 | idx, keyidx, 111]);
-        }, 1000);
       };
       k.onmouseut = () => {
         if (refcnt > 0) cb([0x80 | idx, keyidx, 111]);
@@ -102,39 +98,48 @@ const range = (x, y) =>
   );
 
 export function mkui(cpanel, cb) {
+  cb = cb.postMessage;
   const controllers = [];
 
   const tb = mkdiv("table", { border: 1 });
   for (let i = 0; i < 16; i++) {
-    const row = mkdiv(
-      "tr",
-      { class: "attrs" },
-      [
+    const row = mkdiv("div", { class: "attrs" }, [
+      mkdiv("span", { style: "display:grid,grid-template-columns:1fr 1fr" }, [
         mkdiv("span", { class: "name" }, ["channel " + i]),
+        mkdiv("input", { type: "checkbox" }),
         mkdiv("meter", { min: 0, max: 127, step: 1, aria: "key" }),
         mkdiv("meter", { min: 0, max: 127, step: 1, aria: "vel" }),
-        mkdiv("div", {}, [
-          mkdiv("input", { min: -1000, max: 1000, step: 1, type: "range" }),
-          mkdiv("input", { min: -1000, max: 1000, step: 1, type: "range" }),
-          mkdiv("input", { min: -1000, max: 1000, step: 1, type: "range" }),
-        ]),
-        mkdiv("svg", { width: "80", height: "30" }, [
-          mkdiv("polyline", { stroke: "black", strokeWidth: 1, points: "" }),
-        ]),
-        mkdiv("svg", { width: "80", height: "30" }, [
-          mkdiv("polyline", { stroke: "black", strokeWidth: 1, points: "" }),
-        ]),
-        mkdiv("fragment", { class: "canvasContainer" }),
-      ].map((dv) => dv.wrapWith("td"))
-    );
-    const keyboard = mkdiv(
-      "tr",
-      { class: "keyboards hide" },
+      ]),
+      mkdiv("span", { style: "display:grid,grid-template-columns:2fr 2fr" }, [
+        mkdiv("label", { for: "exp_vol" }, "volume"),
+        mkdiv("input", { min: 0, max: 127, step: 1, type: "range" }),
+        mkdiv("label", { for: "pan" }, "pan"),
+        mkdiv("input", { min: 0, max: 127, step: 1, type: "range" }),
+        mkdiv("label", { for: "expression" }, "expression"),
+        mkdiv("input", { min: 0, max: 127, step: 1, type: "range" }),
+      ]),
       mkdiv(
-        "td",
-        { colspan: 5 },
-        range(55, 88).map((midi) => mkdiv("a", { midi }, [midi, " "]))
-      )
+        "svg",
+        { viewBox: "0 0 200 100", xmln: "http://www.w3.org/2000/svg" },
+        [
+          mkdiv("polylines", {
+            points: "0,100 50,25 50,75 100,0",
+            fill: "red",
+            stroke: "black",
+          }),
+          mkdiv("polylines", {
+            points: "0,100 50,25 50,75 100,0",
+            fill: "red",
+            stroke: "black",
+          }),
+        ]
+      ),
+      mkdiv("div", { class: "canvasContainer" }),
+    ]);
+    const keyboard = mkdiv(
+      "div",
+      { class: "keyboards hide" },
+      range(55, 88).map((midi) => mkdiv("a", { midi }, [midi, " "]))
     );
     controllers.push(new TrackUI(row, keyboard, i, cb));
     row.attachTo(tb);
@@ -142,5 +147,5 @@ export function mkui(cpanel, cb) {
   }
 
   tb.attachTo(cpanel);
-  return { controllers };
+  return controllers;
 }

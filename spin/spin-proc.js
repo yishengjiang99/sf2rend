@@ -17,7 +17,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     const {
       processorOptions: { sb, wasm, lpfwasm, fc },
     } = options;
-    this.pcm = new Float32Array(sb, 16);
+    this.pcm = new Float32Array(sb, 1024);
     this.pcm_meta = new Uint32Array(sb, 0, 4);
 
     this.inst = new WebAssembly.Instance(new WebAssembly.Module(wasm), {
@@ -29,7 +29,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     } = this.inst;
     this.memory = memory;
     this.spinner = newSpinner(
-      this.pcm.length,
+      this.pcm_meta[3],
       this.pcm_meta[1],
       this.pcm_meta[2]
     );

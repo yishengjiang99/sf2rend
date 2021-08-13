@@ -67,7 +67,8 @@ void *loadpdta(void *pdtabuffer) {
           findPresetZones(i, findPresetZonesCount(i));
     }
   }
-  return presetZones;
+  // get mem end;
+  return malloc(4);
 }
 
 zone_t *findByPid(int pid, int bkid) {
