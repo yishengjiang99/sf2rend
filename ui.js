@@ -1,8 +1,8 @@
-import { mkdiv, wrapList } from "./mkdiv/mkdiv.js";
+import { mkdiv, mksvg } from "./mkdiv/mkdiv.js";
 const rowheight = 40,
   colwidth = 80;
 const pixelPerDecibel = rowheight;
-const pixelPerSec = colwidth / 2;
+const pixelPerSec = 12;
 
 export class TrackUI {
   constructor(container, keyboard, idx, cb) {
@@ -31,10 +31,8 @@ export class TrackUI {
           once: true,
         });
       };
-      k.onmouseut = () => {
-        if (refcnt > 0) cb([0x80 | idx, keyidx, 111]);
-      };
     });
+    this.polylines = Array.from(container.querySelectorAll("polyline"));
   }
   set name(id) {
     this.nameLabel.innerHTML = id;
@@ -57,7 +55,7 @@ export class TrackUI {
       [a + d, (100 - s) / 100],
       [a + d + r, 0],
     ]
-      .map(([x, y]) => [x * pixelPerSec, rowheight - y * rowheight].join(","))
+      .map(([x, y]) => [x * pixelPerSec, (1 - y) * 0.8 * rowheight].join(","))
       .join(" ");
     this.polylines[0].setAttribute("points", points);
   }
@@ -84,10 +82,17 @@ export class TrackUI {
         z.VolEnvSustain,
         z.VolEnvRelease,
       ].map((v) => Math.pow(2, v / 1200)),
-      peak: 100 * Math.pow(10, z.Attenuation / -200),
+      peak: Math.pow(10, z.Attenuation / -200),
     };
-    this.sliders[0].value = z.Attenuation;
-    this.sliders[1].value = z.FilterFc / 1200;
+    console.log({
+      phases: [
+        z.VolEnvAttack,
+        z.VolEnvDecay,
+        z.VolEnvSustain,
+        z.VolEnvRelease,
+      ].map((v) => Math.pow(2, v / 1200)),
+      peak: Math.pow(10, z.Attenuation / -200),
+    });
   }
 }
 const range = (x, y) =>
@@ -101,16 +106,19 @@ export function mkui(cpanel, cb) {
   cb = cb.postMessage;
   const controllers = [];
 
-  const tb = mkdiv("table", { border: 1 });
+  const tb = mkdiv("div", {
+    border: 1,
+    style: "display:grid;grid-template-columns:1fr 1fr",
+  });
   for (let i = 0; i < 16; i++) {
     const row = mkdiv("div", { class: "attrs" }, [
-      mkdiv("span", { style: "display:grid,grid-template-columns:1fr 1fr" }, [
+      mkdiv("span", { style: "display:grid; grid-template-columns:1fr 1fr" }, [
         mkdiv("span", { class: "name" }, ["channel " + i]),
         mkdiv("input", { type: "checkbox" }),
         mkdiv("meter", { min: 0, max: 127, step: 1, aria: "key" }),
         mkdiv("meter", { min: 0, max: 127, step: 1, aria: "vel" }),
       ]),
-      mkdiv("span", { style: "display:grid,grid-template-columns:2fr 2fr" }, [
+      mkdiv("span", { style: "display:grid;grid-template-columns:2fr 2fr" }, [
         mkdiv("label", { for: "exp_vol" }, "volume"),
         mkdiv("input", { min: 0, max: 127, step: 1, type: "range" }),
         mkdiv("label", { for: "pan" }, "pan"),
@@ -118,23 +126,22 @@ export function mkui(cpanel, cb) {
         mkdiv("label", { for: "expression" }, "expression"),
         mkdiv("input", { min: 0, max: 127, step: 1, type: "range" }),
       ]),
-      mkdiv(
-        "svg",
-        { viewBox: "0 0 200 100", xmln: "http://www.w3.org/2000/svg" },
-        [
-          mkdiv("polylines", {
-            points: "0,100 50,25 50,75 100,0",
-            fill: "red",
-            stroke: "black",
-          }),
-          mkdiv("polylines", {
-            points: "0,100 50,25 50,75 100,0",
-            fill: "red",
-            stroke: "black",
-          }),
-        ]
-      ),
-      mkdiv("div", { class: "canvasContainer" }),
+      mkdiv("div", { style: "display:grid; grid-template-columns:1fr 4fr" }, [
+        mksvg(
+          "svg",
+          {
+            style: "width:80;height:40; display:inline;",
+            viewBox: "0 0 80 40",
+          },
+          [
+            mksvg("polyline", {
+              fill: "red",
+              stroke: "black",
+            }),
+          ]
+        ),
+        mkdiv("div", { class: "canvasContainer" }),
+      ]),
     ]);
     const keyboard = mkdiv(
       "div",
@@ -143,7 +150,7 @@ export function mkui(cpanel, cb) {
     );
     controllers.push(new TrackUI(row, keyboard, i, cb));
     row.attachTo(tb);
-    keyboard.attachTo(tb);
+    keyboard.attachTo(row);
   }
 
   tb.attachTo(cpanel);

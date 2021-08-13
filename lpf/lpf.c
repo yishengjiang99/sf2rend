@@ -12,7 +12,7 @@ static float exp1(float x) { return (6 + x * (6 + x * (3 + x))) * 0.16666666f; }
 
 emcc_fck_off void newLpf(lpf_t *l, float fc) {
   l->fc = fc;
-  l->m1 = 0.0001;
+  l->m1 = 0.0000;
   l->b1 = (1 - 2.0f * fc) * (1 - 2.0f * fc);
 }
 

@@ -13,7 +13,7 @@ export async function load(url, { onHeader, onSample, onZone } = {}) {
   const a = module._malloc(pdtaBuffer.byteLength);
 
   module.onHeader = onHeader || devnull;
-  module.onSample = onSample || devnull;
+  module.onSample = () => onSample || devnull;
   module.onZone = onZone || devnull;
 
   module.HEAPU8.set(pdtaBuffer, a);
@@ -130,7 +130,3 @@ export function loadProgram(
     },
   };
 }
-
-/**
- * memset(retval, zone_t*)
- */

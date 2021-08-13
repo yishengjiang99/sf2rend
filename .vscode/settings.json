@@ -34,7 +34,8 @@
 		"memory": "c",
 		"ratio": "c",
 		"tuple": "c",
-		"future": "c"
+		"future": "c",
+		"stdint.h": "c"
 	},
 	"editor.tokenColorCustomizations": {
 		"textMateRules": [

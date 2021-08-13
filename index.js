@@ -21,7 +21,7 @@ async function main() {
     max: 4000,
     value: -2,
   });
-  const pt = (function (n) {
+  const pt = (function () {
     const _arr = [];
     let _fn;
     return {
@@ -52,7 +52,7 @@ async function main() {
   bindMidiWorkerToAudioAndUI(midiworker, pt, {
     timeslide,
     cmdPanel,
-    playlist: mkdiv("div", {}, []),
+    playlist: mkdiv("div", {}, await fetchmidilist()),
   });
   bindMidiAccess(pt);
 }
@@ -128,10 +128,10 @@ function bindMidiWorkerToAudioAndUI(
 }
 async function initMidiSink(ctx, sf2, controllers, pt) {
   const channels = [];
-  const pool = AUnitPool();
   const ccs = midiCCState();
   for (let i = 0; i < 16; i++) {
-    channels[i] = channel(ctx, sf2, i, controllers[i], pool);
+    channels[i] = channel(ctx, sf2, i, controllers[i]);
+    channels[i].midicc = ccs.subarray(i * 128, i * 128 + 128);
   }
   pt.onmessage(function (data) {
     const [a, b, c] = data;
@@ -177,9 +177,6 @@ async function initMidiSink(ctx, sf2, controllers, pt) {
 
     return ccs;
   }
-  channels.forEach(
-    (ch, cid) => (ch.midicc = ccs.subarray(cid * 128, cid * 128 + 128))
-  );
   return { channels, ccs };
 }
 async function initAudio() {
@@ -227,16 +224,15 @@ function mkEnvelope(ctx, zone) {
       const sf2attenuate = Math.pow(10, zone.Attenuation * -0.005);
       const midiVol = _midiState[effects.volumecoarse] / 128;
       const midiExpre = _midiState[effects.expressioncoarse] / 128;
-      gainMax = 3 * sf2attenuate * midiVol * midiExpre;
-      const tt = time - ctx.currentTime;
+      gainMax = 1 * sf2attenuate * midiVol * midiExpre;
 
       volumeEnveope.gain.linearRampToValueAtTime(gainMax, attack);
       volumeEnveope.gain.linearRampToValueAtTime(
         sustain,
-        attack + hold + decay + tt
+        attack + hold + decay
       );
     },
-    keyOff(time) {
+    keyOff() {
       volumeEnveope.gain.cancelScheduledValues(0);
       //   console.log(release + "rel");
       volumeEnveope.gain.linearRampToValueAtTime(0.0, release);
@@ -244,15 +240,17 @@ function mkEnvelope(ctx, zone) {
     gainNode: volumeEnveope,
   };
 }
-function channel(ctx, sf2, id, ui, pool) {
+function channel(ctx, sf2, id, ui) {
   const vis = mkcanvas({ container: ui.canc, height: 80 });
   const activeNotes = [];
-  function mkZoneRoute(pcm, shdr, zone, ref) {
+  const pool = AUnitPool();
+
+  function mkZoneRoute(pcm, shdr, zone) {
     const lops = shdr.loops;
     //set to no loop
     if (zone.SampleModes == 0 || lops[1] <= lops[0]) lops[0] = -1;
     const [spinner, volEG, lpf] = [
-      new SpinNode(ctx, { pcm, loops: shdr.loops, ref }),
+      new SpinNode(ctx, { pcm, shdr, zone }),
       mkEnvelope(ctx, zone),
       new LowPassFilterNode(ctx, semitone2hz(zone.FilterFc)),
     ];
@@ -290,15 +288,12 @@ function channel(ctx, sf2, id, ui, pool) {
         shdr,
         zone,
       };
-
     spinner.stride = zone.calcPitchRatio(key, ctx.sampleRate); // ({ key, zone, shdr });
     volEG.midiState = _midicc;
     spinner.reset();
-    volEG.keyOn(ctx.currentTime + ctx.baseLatency);
-
+    volEG.keyOn();
     activeNotes.push({ spinner, volEG, lpf, key });
     ui.zone = zone;
-
     ui.midi = key;
     ui.velocity = vel;
     renderFrames(vis, pcm);
@@ -311,6 +306,7 @@ function channel(ctx, sf2, id, ui, pool) {
         var unit = activeNotes[i];
         unit.volEG.keyOff(ctx.currentTime);
         pool.enqueue(activeNotes.splice(i, 1)[0]);
+
         break;
       }
     }
@@ -342,31 +338,28 @@ window.onerror = (event, source, lineno, colno, error) => {
 };
 function AUnitPool() {
   const pool = [];
-  function dequeue(pcm, shdr, zone, ref) {
+  function dequeue(pcm, shdr, zone) {
     //if (pool.length < 5) return null;
-
+    if (pool.length < 1) return null;
     for (const i in pool) {
-      if (pool[i].spinner.zref == ref) {
+      if (pool[i].spinner.zhref == shdr.hdrRef) {
         const r = pool[i];
         r.volEG.zone = zone;
+        r.spinner.reset();
         pool.splice(i, 1);
         return r;
       }
     }
     for (const i in pool) {
-      if (pool[i].spinner.flsize <= pcm.length) {
+      if (pool[i].spinner.flsize <= pcm.byteLength) {
         const r = pool[i];
         r.volEG.zone = zone;
+        r.spinner.reset();
         pool.splice(i, 1);
         return r;
       }
     }
-    if (pool.length < 5) return null;
-    const { spinner, volEG, lpf } = pool.shift();
-    volEG.zone = zone;
-
-    lpf.frequency = semitone2hz(zone.FilterFc);
-    return { spinner, volEG, lpf };
+    return null;
   }
   function enqueue(unit) {
     pool.push(unit);
@@ -374,6 +367,9 @@ function AUnitPool() {
   return {
     dequeue,
     enqueue,
+    get _pool() {
+      return pool;
+    },
     empty: () => pool.length == 0,
   };
 }
