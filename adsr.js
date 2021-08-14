@@ -1,7 +1,4 @@
-export default function mkEnvelope(
-  ctx,
-  { delay, attack, hold, decay, release }
-) {
+export default function mkEnvelope(ctx, zone) {
   const volumeEnveope = new GainNode(ctx, { gain: 0 });
   let delay, attack, hold, decay, release, gainMax, sustain;
 

@@ -257,7 +257,7 @@ if (location.search && location.search.indexOf("token=") != -1) {
       parent.appendChild(results_element);
    }
 
-   add_completion_callback(dump_test_results);
+
 
    /* If the parent window has a testharness_properties object,
     * we use this to provide the test settings. This is used by the

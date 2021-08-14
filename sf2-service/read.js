@@ -4,7 +4,7 @@ import { s16ArrayBuffer2f32 } from "./s16tof32.js";
 export async function load(url, { onHeader, onSample, onZone } = {}) {
   let heap, presetRef, shdrref, _sdtaStart, _url, presetRefs;
 
-  _url = url;
+  _url = document.location + "/" + url;
   const Module = await import("./pdta.js");
   const module = await Module.default();
   const { pdtaBuffer, sdtaStart } = await sfbkstream(url);
@@ -93,8 +93,8 @@ export function loadProgram(
     const zone = new Int16Array(heap, zref, 60);
     return newSFZoneMap(zref, zone);
   }
-  function getShdr(samleId) {
-    const hdrRef = shdrref + samleId * 46;
+  function getShdr(SampleId) {
+    const hdrRef = shdrref + SampleId * 46;
     const dv = heap.slice(hdrRef, hdrRef + 46);
     const [start, end, startloop, endloop, sampleRate] = new Uint32Array(
       dv,
@@ -110,6 +110,7 @@ export function loadProgram(
       byteLength: 4 * (end - start + 1),
       range,
       loops,
+      SampleId,
       sampleRate,
       originalPitch,
       url,
@@ -120,6 +121,7 @@ export function loadProgram(
     zMap,
     preload,
     shdrMap,
+    url: document.location + url,
     zref: rootRef,
     filterKV: function (key, vel) {
       return zMap.filter(
