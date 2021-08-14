@@ -6,18 +6,44 @@ typedef struct {
   float fract;
   uint32_t position, loopStart, loopEnd;
   float stride, strideInc;
-  float db, dbInc;
+  float amp, ampInc;
 } spinner;
+float fls[1024 * 1024 * 4];
 
-spinner* newSpinner(uint32_t size, uint32_t loopstart, uint32_t loopend) {
-  spinner* x = malloc(sizeof(spinner));
-  x->inputf = malloc(size * sizeof(float));
-  x->outputf = malloc(128 * sizeof(float));
+spinner sps[32];
+#define RENDQ 120
+#define sps_index() (spsIndx++) & 0x1f
+float outputs[16 * RENDQ];
+float silence[1024 + 32];
+unsigned long brk = 0;
+char spsIndx = 0;
+float* alloc_ftb(unsigned long flsize) {
+  float* ret = &fls[brk];
+  brk += flsize;
+  return ret;
+}
+spinner* newSpinner() {
+  int idx = sps_index();
+  spinner* x = &sps[idx];
+  x->outputf = &outputs[idx * RENDQ];
+  x->inputf = silence;
   x->fract = 0.0f;
   x->position = 0;
+
+  return x;
+}
+void set_float_attrs(spinner* x, float stride, float strideInc, float amp,
+                     float ampInc) {
+  x->stride = stride;
+  x->strideInc = strideInc;
+  x->amp = amp;
+  x->ampInc = ampInc;
+}
+void set_attrs(spinner* x, float* inp, uint32_t loopstart, uint32_t loopend) {
   x->loopStart = loopstart;
   x->loopEnd = loopend;
-  return x;
+  x->inputf = inp;
+  x->position = 0;
 }
 void reset(spinner* x) {
   x->position = 0;
@@ -41,16 +67,18 @@ float spin(spinner* x, int n) {
   float stride = x->stride;
   float strideInc = x->strideInc;
   for (int i = 0; i < n; i++) {
-    fract += stride;
+    x->outputf[i] = x->inputf[position++];
+    fract = fract + stride;
 
     while (fract >= 1.0f) {
       position++;
       fract -= 1.0f;
     }
 
-    if (position >= x->loopEnd) position -= (x->loopEnd - x->loopStart) + 1;
-    x->outputf[i] = lerp(x->inputf[position], x->inputf[position + 1], fract);
-    stride += strideInc;
+    if (position >= x->loopEnd) position = x->loopStart;
+    //   x->outputf[i] = x->inputf[position];  // lerp(x->inputf[position],
+    // x->inputf[position + 1], fract);
+    // stride += strideInc;
   }
   x->position = position;
   x->fract = fract;

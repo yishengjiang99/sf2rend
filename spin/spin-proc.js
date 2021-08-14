@@ -1,3 +1,36 @@
+const CH_META_LEN = 12;
+
+/*
+ typedef struct {
+  float *inputf, *outputf;
+  float fract;
+  uint32_t position, loopStart, loopEnd;
+  float stride, strideInc;
+  float amp, ampInc;
+} spinner;
+    */
+function spRef2json(heap, ref) {
+  const [inputRef, outputRef] = new Uint32Array(heap, ref, 2);
+  const [fract] = new Float32Array(heap, ref + 8, 1);
+  const [position, loopStart, loopEnd] = new Uint32Array(heap, ref + 8 + 4, 3);
+  const [stride, strideInc, amp, ampInc] = new Float32Array(
+    heap,
+    ref + 8 + 4 + 12,
+    4
+  );
+  return {
+    inputRef,
+    outputRef,
+    fract,
+    position,
+    loopStart,
+    loopEnd,
+    stride,
+    strideInc,
+    amp,
+    ampInc,
+  };
+}
 /* eslint-disable no-unused-vars */
 class SpinProcessor extends AudioWorkletProcessor {
   static get parameterDescriptors() {
@@ -13,77 +46,119 @@ class SpinProcessor extends AudioWorkletProcessor {
   }
   constructor(options) {
     super(options);
-    console.log("new spin");
     const {
       processorOptions: { sb, wasm, lpfwasm, fc },
     } = options;
-    this.pcm = new Float32Array(sb, 16);
-    this.pcm_meta = new Uint32Array(sb, 0, 4);
-
+    this.sb = sb;
+    this.updateArray = new Uint32Array(this.sb);
     this.inst = new WebAssembly.Instance(new WebAssembly.Module(wasm), {
       env: {},
     });
+    this.sampleIdRefs = [];
 
-    const {
-      exports: { memory, newSpinner },
-    } = this.inst;
-    this.memory = memory;
-    this.spinner = newSpinner(
-      this.pcm.length,
-      this.pcm_meta[1],
-      this.pcm_meta[2]
+    this.memory = this.inst.exports.memory;
+    this.port.onmessage = this.handleMsg.bind(this);
+    this.spinners = [];
+    this.outputs = [];
+  }
+  async handleMsg({ data: { keyOn, stream, segments, nsamples, ...data } }) {
+    if (stream && segments) {
+      const offset = this.inst.exports.alloc_ftb(nsamples);
+      const fl = new Float32Array(this.memory.buffer, offset, nsamples);
+
+      const reader = stream.getReader();
+      let writeOffset = 0;
+      await reader.read().then(function process({ done, value }) {
+        if (done) {
+          console.log(value);
+          return writeOffset;
+        }
+        if (value) {
+          const i16 = new Int16Array(value.buffer);
+          for (let i = 0; i < i16.length; i++) {
+            fl[writeOffset++] = i16[i] / 0xffff;
+          }
+        }
+        reader.read().then(process);
+      });
+      for (const sampleId in segments) {
+        this.sampleIdRefs[parseInt(sampleId)] =
+          segments[sampleId].startByte + offset;
+      }
+
+      this.port.postMessage({ ack: offset });
+    }
+  }
+  sync(offset) {
+    const [updateFlag, channel, sampleId, loopstart, loopend] = new Uint32Array(
+      this.sb,
+      4 * offset,
+      5
     );
 
-    this.spinStruct = [
-      new Uint32Array(memory.buffer, this.spinner, 6),
-      new Float32Array(memory.buffer, this.spinner + 24, 4),
-    ];
-
-    this.sync();
-  }
-  sync() {
-    this.pcm_meta[0] = 0;
-
-    const [_, loopstart, loopend, byteLength] = this.pcm_meta;
-    const loops = new Uint32Array(this.memory.buffer, this.spinner + 16, 2);
-    loops[0] = loopstart;
-    loops[1] = loopend;
-
-    const refs = new Uint32Array(this.memory.buffer, this.spinner, 2);
-    this.inputArray = new Float32Array(
-      this.memory.buffer,
-      refs[0],
-      this.pcm.length
+    const [stride, strideInc, amp, ampInc] = new Float32Array(
+      this.sb,
+      4 * offset + 20,
+      4
     );
-    this.inputArray.set(this.pcm, 0, byteLength);
 
-    this.output = new Float32Array(this.memory.buffer, refs[1], 128);
-    this.inst.exports.reset();
+    if (this.spinners[channel]) this.inst.exports.reset(this.spinners[channel]);
+    else {
+      this.spinners[channel] = this.inst.exports.newSpinner();
+      const spIO = new Uint32Array(
+        this.memory.buffer,
+        this.spinners[channel],
+        2
+      );
+      this.outputs[channel] = new Float32Array(
+        this.memory.buffer,
+        spIO[1],
+        128
+      );
+    }
+    console.assert(this.sampleIdRefs[sampleId], "sample id posted");
+    this.inst.exports.set_attrs(
+      this.spinners[channel],
+      this.sampleIdRefs[sampleId],
+      loopstart,
+      loopend
+    );
+    this.inst.exports.set_float_attrs(
+      this.spinners[channel],
+      stride,
+      strideInc,
+      amp,
+      ampInc
+    );
+    this.updateArray[offset] = 0;
+
+    if (this.updateArray[offset + CH_META_LEN] != 0) {
+      this.sync(offset + CH_META_LEN);
+    }
+    // console.log(
+    //   new Float32Array(
+    //     this.memory.buffer,
+    //     spRef2json(this.memory.buffer, this.spinners[channel])[0],
+    //     122
+    //   )
+    // );
   }
 
-  process(_, [[o]], parameters) {
-    if (this.pcm_meta[0] == -1) {
-      return false;
+  process(_, [o], parameters) {
+    if (this.updateArray[0] > 0) {
+      this.sync(0);
     }
-    if (this.pcm_meta[0] == 1) {
-      this.sync();
+    for (let i = 0; i < 16; i++) {
+      if (this.spinners[i]) {
+        this.inst.exports.spin(this.spinners[i], o[i].length);
+        o[i].set(this.outputs[i]);
+        // console.log(
+        //   "struc view",
+        //   i,
+        //   spRef2json(this.memory.buffer, this.spinners[i])
+        // );
+      }
     }
-    if (this.pcm_meta[0] == 2) {
-      this.inst.exports.reset();
-
-      this.pcm_meta[0] = 0;
-    }
-
-    // for (let i = 0; i < 128; i++) {
-    //   this.output[i] = 0;
-    // }
-    const stride = parameters.stride;
-    const strideInc = (stride[stride.length - 1] - stride[0]) / 128;
-    this.spinStruct[1][0] = stride[0];
-    this.spinStruct[1][1] = strideInc;
-
-    this.inst.exports.spin(this.spinner, 128);
-    o.set(this.output);
     return true;
   }
 }

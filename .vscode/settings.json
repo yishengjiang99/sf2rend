@@ -34,7 +34,18 @@
 		"memory": "c",
 		"ratio": "c",
 		"tuple": "c",
-		"future": "c"
+		"future": "c",
+		"stdint.h": "c",
+		"math.h": "c",
+		"__tree": "c",
+		"deque": "c",
+		"map": "c",
+		"queue": "c",
+		"set": "c",
+		"stack": "c",
+		"unordered_set": "c",
+		"valarray": "c",
+		"*.inc": "c"
 	},
 	"editor.tokenColorCustomizations": {
 		"textMateRules": [

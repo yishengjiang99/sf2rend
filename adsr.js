@@ -12,7 +12,6 @@ export default function mkEnvelope(ctx, zone) {
     ].map((v) => (v == -1 ? 0.001 : v <= -12000 ? 0.001 : 0.02));
     gainMax = 1 * Math.pow(10, zone.Attenuation * -0.005);
     sustain = Math.pow(10, zone.Attenuation * -0.005);
-    console.log(gainMax);
   }
   setZone(zone);
 

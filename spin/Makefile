@@ -1,3 +1,4 @@
 spin: spin.c
-	emcc spin.c -o spin.wasm --no-entry -s STANDALONE_WASM \
-		-s EXPORTED_FUNCTIONS="['_newSpinner','_reset', '_spin']"  
+	emcc spin.c -o spin.wasm --no-entry -Os -s STANDALONE_WASM \
+		-s EXPORTED_FUNCTIONS="['_alloc_ftb','_set_float_attrs','_set_attrs','_newSpinner','_reset', '_spin']"  \
+		-s INITIAL_MEMORY=20316160 -s TOTAL_STACK=2031616

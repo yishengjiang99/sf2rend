@@ -1,5 +1,3 @@
-#include <emscripten.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -52,10 +50,6 @@ void *loadpdta(void *pdtabuffer) {
   read(igen);
   read(shdr);
 
-  // pdtabuffer += 46;
-
-  // nshdrs = sh->size / (sizeof(shdr) - 2);
-
   for (int i = 0; i < nphdrs; i++) {
     if (phdrs[i].bankId == 0) {
       emitHeader(phdrs[i].pid, phdrs[i].bankId, phdrs + i);
@@ -67,7 +61,8 @@ void *loadpdta(void *pdtabuffer) {
           findPresetZones(i, findPresetZonesCount(i));
     }
   }
-  return presetZones;
+  // get mem end;
+  return malloc(4);
 }
 
 zone_t *findByPid(int pid, int bkid) {
@@ -109,12 +104,6 @@ int findPresetZonesCount(int i) {
     int lastPgenId = j < npbags - 1 ? pbags[j + 1].pgen_id : npgens - 1;
     for (int k = pgenId; k < lastPgenId; k++) {
       pgen *g = pgens + k;
-      if (g->genid == KeyRange) {
-        emitFilter(0, g->val.ranges.lo, g->val.ranges.hi);
-      }
-      if (g->genid == VelRange) {
-        emitFilter(1, g->val.ranges.lo, g->val.ranges.hi);
-      }
       if (g->genid == Instrument) {
         instID = g->val.uAmount;
         lastSampId = -1;
@@ -250,6 +239,7 @@ zone_t *findPresetZones(int i, int nregions) {
   }
   dummy = zones + found;
   dummy->SampleId = -1;
+  free(&attrs[0]);
   return zones;
 }
 zone_t *filterForZone(zone_t *from, uint8_t key, uint8_t vel) {
