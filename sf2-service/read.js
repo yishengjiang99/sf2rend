@@ -8,6 +8,7 @@ export async function load(url, { onHeader, onSample, onZone } = {}) {
   const Module = await import("./pdta.js");
   const module = await Module.default();
   const { pdtaBuffer, sdtaStart } = await sfbkstream(url);
+
   _sdtaStart = sdtaStart;
   function devnull() {}
   const a = module._malloc(pdtaBuffer.byteLength);
@@ -22,13 +23,7 @@ export async function load(url, { onHeader, onSample, onZone } = {}) {
   presetRef = module._presetRef();
   presetRefs = new Uint32Array(module.HEAPU32.buffer, module._presetRef(), 255);
   heap = module.HEAPU8.buffer.slice(0, memend);
-  return {
-    presetRefs,
-    heap,
-    shdrref,
-    sdtaStart,
-    url,
-  };
+  return { pdtaRef: a, presetRefs, heap, shdrref, sdtaStart, url };
 }
 
 export function loadProgram(

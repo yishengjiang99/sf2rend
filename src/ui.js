@@ -1,4 +1,4 @@
-import { mkdiv, mksvg } from "./mkdiv/mkdiv.js";
+import { mkdiv, mksvg } from "../mkdiv/mkdiv.js";
 const rowheight = 40,
   colwidth = 80;
 const pixelPerDecibel = rowheight;

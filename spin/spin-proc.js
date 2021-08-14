@@ -70,10 +70,9 @@ class SpinProcessor extends AudioWorkletProcessor {
       let writeOffset = 0;
       await reader.read().then(function process({ done, value }) {
         if (done) {
-          console.log(value);
           return writeOffset;
         }
-        if (value) {
+        if (value && value.buffer) {
           const i16 = new Int16Array(value.buffer);
           for (let i = 0; i < i16.length; i++) {
             fl[writeOffset++] = i16[i] / 0xffff;
@@ -135,6 +134,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     if (this.updateArray[offset + CH_META_LEN] != 0) {
       this.sync(offset + CH_META_LEN);
     }
+
     // console.log(
     //   new Float32Array(
     //     this.memory.buffer,
@@ -144,19 +144,15 @@ class SpinProcessor extends AudioWorkletProcessor {
     // );
   }
 
-  process(_, [o], parameters) {
+  process(_, o, parameters) {
     if (this.updateArray[0] > 0) {
       this.sync(0);
     }
     for (let i = 0; i < 16; i++) {
+      if (!o[i]) continue;
       if (this.spinners[i]) {
-        this.inst.exports.spin(this.spinners[i], o[i].length);
-        o[i].set(this.outputs[i]);
-        // console.log(
-        //   "struc view",
-        //   i,
-        //   spRef2json(this.memory.buffer, this.spinners[i])
-        // );
+        this.inst.exports.spin(this.spinners[i], o[i][0].length);
+        o[i][0].set(this.outputs[i]);
       }
     }
     return true;

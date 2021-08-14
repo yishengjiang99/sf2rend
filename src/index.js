@@ -1,26 +1,20 @@
-import { mkdiv, logdiv } from "./mkdiv/mkdiv.js";
-import { load, loadProgram } from "./sf2-service/read.js";
-import { SpinNode } from "./spin/spin.js";
-import { LowPassFilterNode } from "./lpf/lpf.js";
+import { mkdiv, logdiv } from "../mkdiv/mkdiv.js";
+import { SpinNode } from "../spin/spin.js";
+import { LowPassFilterNode } from "../lpf/lpf.js";
 import { mkui } from "./ui.js";
-import { fetchmidilist } from "./midilist.js";
-import { mkcanvas, renderFrames } from "./chart/chart.js";
+import { load } from "../sf2-service/read.js";
 
+import { fetchmidilist } from "./midilist.js";
+import { channel } from "./channel.js";
 const flist = document.querySelector("#sf2list");
 const cpanel = document.querySelector("#channelContainer");
 const { stdout } = logdiv(document.querySelector("pre"));
 window.stdout = stdout;
 const cmdPanel = document.querySelector("footer");
-
+const timeslide = document.querySelector("progress");
 main();
 
 async function main() {
-  const timeslide = mkdiv("input", {
-    type: "range",
-    min: -2,
-    max: 4000,
-    value: -2,
-  });
   const pt = (function () {
     const _arr = [];
     let _fn;
@@ -39,22 +33,23 @@ async function main() {
   const sf2 = await loadf("./file.sf2");
   if (!sf2.presetRefs) return;
   const ctx = await initAudio();
-  const spinner = new SpinNode(ctx);
   const midiSink = await initMidiSink(ctx, sf2, controllers, pt);
-  await midiSink.channels[0].setProgram(0, 0, "stereo grand piano");
-  await midiSink.channels[0].setProgram(128, 0, "std drums");
-  const { presets, totalTicks, midiworker } = await initMidiReader("song.mid");
+  const { presets, totalTicks, midiworker } = await initMidiReader(
+    "https://grep32bit.blob.core.windows.net/midi/Britney_Spears_-_Baby_One_More_Time.mid"
+  );
   timeslide.setAttribute("max", totalTicks);
-
   for await (const _ of (async function* g() {
+    yield await midiSink.channels[0].setProgram(sf2, 0, 0);
+    yield await midiSink.channels[9].setProgram(sf2, 128, 0);
+
     for (const preset of presets) {
+      console.log("prload" + preset);
       const { pid, channel } = preset;
-      const pg = midiSink.channels[channel].setProgram(
+      yield await midiSink.channels[channel].setProgram(
+        sf2,
         pid,
-        channel == 9 ? 128 : 0,
-        programNames[pid | (channel == 9 ? 128 : 0)]
+        channel == 9 ? 128 : 0
       );
-      yield await spinner.shipProgram(pg);
     }
   })()) {
     //eslint
@@ -73,7 +68,7 @@ async function main() {
   });
   bindMidiAccess(pt);
 }
-
+const programNames = [];
 async function loadf(file) {
   flist.innerHTML = "";
   return load(file, {
@@ -81,13 +76,16 @@ async function loadf(file) {
       flist.append(
         mkdiv("a", { class: "chlink", pid, bid }, [str]).wrapWith("li")
       );
+      programNames[pid | bid] = str;
     },
   });
 }
 
 function initMidiReader(url) {
   return new Promise((resolve, reject) => {
-    const midiworker = new Worker("./midiworker.js#" + url, { type: "module" });
+    const midiworker = new Worker("./dist/midiworker.js#" + url, {
+      type: "module",
+    });
     midiworker.addEventListener(
       "message",
       ({ data: { totalTicks, presets } }) =>
@@ -128,7 +126,7 @@ function bindMidiWorkerToAudioAndUI(
       )
     );
 }
-async function initMidiSink(ctx, sf2, controllers, pt) {
+async function initMidiSink(ctx, sf2, controllers, pt, spinner) {
   const channels = [];
   const ccs = midiCCState();
   for (let i = 0; i < 16; i++) {

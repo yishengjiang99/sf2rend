@@ -2,22 +2,28 @@
   "name": "sf2rend",
   "version": "1.0.0",
   "description": "",
-  "type": "module",
   "scripts": {
-    "build": "make"
+    "build": "webpack"
   },
   "keywords": [],
   "author": "Yisheng Jiang",
   "license": "ISC",
   "dependencies": {
     "@types/webmidi": "^2.0.6",
-    "mkdiv": "^2.0.2",
+    "clean-webpack-plugin": "*",
+    "lpf": "^1.0.0",
+    "mk-60fps": "file:chart",
+    "mkdiv": "^2.0.3",
     "mocha-chai-cdn": "^2.0.2",
     "nco": "^1.0.1",
-    "parse-sf2": "^2.1.2"
+    "parse-sf2": "^2.1.2",
+    "sf2-service": "^2.0.0",
+    "spin": "^0.0.1"
   },
   "devDependencies": {
     "eslint": "^7.31.0",
-    "eslint-plugin-react": "^7.24.0"
+    "eslint-plugin-react": "^7.24.0",
+    "webpack": "^5.50.0",
+    "webpack-cli": "^4.7.2"
   }
 }

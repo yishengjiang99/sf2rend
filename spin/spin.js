@@ -5,24 +5,28 @@ import {
 
 let wasmbin = null;
 const CH_META_LEN = 12;
+let k;
 export class SpinNode extends AudioWorkletNode {
   static async init(ctx) {
     await ctx.audioWorklet.addModule(
-      document.location.pathname + "/spin-proc.js"
+      document.location.pathname + "./spin/spin-proc.js"
     );
     if (!wasmbin) {
-      wasmbin = await fetch(document.location.pathname + "./spin.wasm")
+      wasmbin = await fetch(document.location.pathname + "./spin/spin.wasm")
         .then((res) => res.arrayBuffer())
         .then((ab) => new Uint8Array(ab));
     }
   }
-
+  static alloc(ctx) {
+    if (!k) k = new SpinNode(ctx);
+    return k;
+  }
   constructor(ctx) {
     const sb = new SharedArrayBuffer(CH_META_LEN * 16 * 4);
     super(ctx, "spin-proc", {
       numberOfInputs: 0,
-      numberOfOutputs: 1,
-      outputChannelCount: [16],
+      numberOfOutputs: 16,
+      outputChannelCount: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
       processorOptions: {
         sb,
         wasm: wasmbin,
@@ -40,28 +44,22 @@ export class SpinNode extends AudioWorkletNode {
   despose() {
     this.pcm_meta[0] = -1;
   }
-  get stride() {
-    return this.parameters.get("stride").value;
-  }
-  get strideParam() {
-    return this.parameters.get("stride"); //.value;
-  }
-  set stride(ratio) {
-    this.parameters.get("stride").setValueAtTime(ratio, 0.001);
-  }
+
   keyOn(channel, zone, key, vel) {
     let updateOffset = 0;
     const pcmMeta = this.u32view;
     console.log(pcmMeta);
     while (pcmMeta[updateOffset] != 0) updateOffset += CH_META_LEN;
-
+    let loops = zone.shdr.loops;
+    if (!(zone.SampleModes == 1 && loops[1] - loops[0] > 255)) {
+      loops = [-1, zone.shdr.byteLength / 2];
+    }
     pcmMeta.set(
-      new Uint32Array([1, channel, zone.SampleId, 0, 800]),
-      updateOffset
+      new Uint32Array([1, channel, zone.SampleId, loops[0], loops[1]])
     );
     this.f32view.set(
       new Float32Array([
-        0.1,
+        zone.calcPitchRatio(key, this.context.sampleRate),
         0,
         0.1,
         1 / this.context.sampleRate / Math.pow(2, zone.VolEnvAttack / 1200),

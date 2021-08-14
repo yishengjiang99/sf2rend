@@ -11,7 +11,7 @@ typedef struct {
 float fls[1024 * 1024 * 4];
 
 spinner sps[32];
-#define RENDQ 120
+#define RENDQ 128
 #define sps_index() (spsIndx++) & 0x1f
 float outputs[16 * RENDQ];
 float silence[1024 + 32];
@@ -44,12 +44,13 @@ void set_attrs(spinner* x, float* inp, uint32_t loopstart, uint32_t loopend) {
   x->loopEnd = loopend;
   x->inputf = inp;
   x->position = 0;
+  x->fract = 0.0f;
 }
 void reset(spinner* x) {
   x->position = 0;
   x->fract = 0.0f;
-  x->strideInc = 0.0f;
-  x->stride = 1.0f;
+  // x->strideInc = 0.0f;
+  // x->stride = 1.0f;
 }
 float hermite4(float frac_offset, float xm1, float x0, float x1, float x2) {
   const float c = (x1 - xm1) * 0.5f;
@@ -66,8 +67,9 @@ float spin(spinner* x, int n) {
   float fract = x->fract;
   float stride = x->stride;
   float strideInc = x->strideInc;
+  int looplen = x->loopEnd - x->loopStart + 1;
   for (int i = 0; i < n; i++) {
-    x->outputf[i] = x->inputf[position++];
+    // x->outputf[i] = x->inputf[position++];
     fract = fract + stride;
 
     while (fract >= 1.0f) {
@@ -75,14 +77,13 @@ float spin(spinner* x, int n) {
       fract -= 1.0f;
     }
 
-    if (position >= x->loopEnd) position = x->loopStart;
-    //   x->outputf[i] = x->inputf[position];  // lerp(x->inputf[position],
-    // x->inputf[position + 1], fract);
-    // stride += strideInc;
+    if (position >= x->loopEnd && x->loopStart != -1) position -= looplen;
+    x->outputf[i] = lerp(x->inputf[position], x->inputf[position + 1], fract);
+    stride += strideInc;
   }
   x->position = position;
   x->fract = fract;
   x->stride = stride;
 
-  return x->fract;
+  return stride;
 }
