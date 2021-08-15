@@ -7,12 +7,10 @@ import { scheduler } from "../midiread/dist/scheduler.js";
   const {
     ctrls: { run, rwd, pause },
     totalTicks,
-    tracks,
     presets,
   } = await scheduler(new Uint8Array(ab), postMessage);
-  console.log(res);
   // @ts-ignore
-  postMessage({ totalTicks, tracks, presets });
+  postMessage({ totalTicks, presets });
   onmessage = ({ data: { cmd, amt } }) => {
     switch (cmd) {
       case "start":

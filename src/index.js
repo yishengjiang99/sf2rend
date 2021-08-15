@@ -30,7 +30,7 @@ async function main() {
   })(11);
 
   const controllers = mkui(cpanel, pt);
-  const sf2 = await loadf("./file.sf2");
+  const sf2 = await loadf("https://dsp.grepawk.com/sf2rend/file.sf2");
   if (!sf2.presetRefs) return;
   const ctx = await initAudio();
   const midiSink = await initMidiSink(ctx, sf2, controllers, pt);
@@ -44,11 +44,13 @@ async function main() {
 
     for (const preset of presets) {
       console.log("prload" + preset);
-      const { pid, channel } = preset;
+      const { pid, channel, t } = preset;
+      if (t > 0) continue;
+      const bkid = pid | (channel == 9) ? 128 : 0;
       yield await midiSink.channels[channel].setProgram(
-        sf2,
         pid,
-        channel == 9 ? 128 : 0
+        bkid,
+        programNames[pid | bkid]
       );
     }
   })()) {
@@ -59,7 +61,8 @@ async function main() {
     // target.classList.contain("chlink") &&
     midiSink.channels[cid++].setProgram(
       target.getAttribute("pid"),
-      target.getAttribute("bid")
+      target.getAttribute("bid"),
+      programNames[target.getAttribute("pid") + target.getAttribute("bid")]
     );
   bindMidiWorkerToAudioAndUI(midiworker, pt, {
     timeslide,
