@@ -21,19 +21,18 @@ export function mkEnvelope(ctx) {
       _midiState = staet;
     },
     keyOn(time) {
+      volumeEnveope.gain.cancelScheduledValues(ctx.baseLatency);
       const sf2attenuate = Math.pow(10, _zone.Attenuation * -0.005);
       const midiVol = _midiState[effects.volumecoarse] / 128;
       const midiExpre = _midiState[effects.expressioncoarse] / 128;
       gainMax = 2 * sf2attenuate * midiVol * midiExpre;
 
-      volumeEnveope.gain.linearRampToValueAtTime(
-        gainMax,
-        time - ctx.currentTime + delay + attack
-      );
-      volumeEnveope.gain.linearRampToValueAtTime(
-        gainMax * sustain,
-        time - ctx.currentTime + attack + hold + decay
-      );
+      volumeEnveope.gain.linearRampToValueAtTime(gainMax, delay + attack);
+      // volumeEnveope.gain.linearRampToValueAtTime(
+      //   gainMax * sustain,
+      //   delay + attack + hold + decay
+      // );
+      return { phases: [delay, attack, hold, decay, release], peak: gainMax };
     },
     keyOff() {
       volumeEnveope.gain.cancelScheduledValues(0);

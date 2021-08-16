@@ -10,7 +10,7 @@
 </head>
 <body>
   <script type='module'>
-    import {load} from "./sf2-service/read.js";
+    import {loadProgram, load} from "./sf2-service/read.js";
 
     promise_test(async () => {
       const sf2 = await load("file.sf2");
@@ -23,20 +23,27 @@
       const sf2 = await load("file.sf2");
       const {shdrMap, zMap, preload, filterKV} = loadProgram(sf2, 0, 0);
       await preload();
-      assert_true(zMap[0].pcm instanceof Float32Array, "pcm data can be accessed synchronously after preload");
+      console.log(zMap);
+      assert_true(zMap[0].shdr.pcm instanceof Float32Array, "pcm data can be accessed synchronously after preload");
     }, "preload pcm data");
 
     promise_test(async () => {
       const times = [];
+      const el = document.createElement('div');
+      document.body.append(el);
       const sf2 = await load("file.sf2", {
         onHeader(type, bid, str) {
-          document.body.append(new Text(str))
+          el.append(new Text("program" + str))
           times.push(performance.now());
         }
-      }); console.log(times.join("\n"));
-      assert_true(true)
+      });
+      assert_true(document.body.innerHTML.includes("program"));
+      el.remove();
     }, "stream ui load as file is being parsed");
   </script>
-  <script src=e2e.test.js></script>
+  <script type='module'>
+    import {test} from './tests/dropship.test.js';
+    test();
+  </script>
 </body>
 </html>

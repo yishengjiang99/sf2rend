@@ -2,16 +2,18 @@ import { mkdiv, logdiv } from "../mkdiv/mkdiv.js";
 import { SpinNode } from "../spin/spin.js";
 import { LowPassFilterNode } from "../lpf/lpf.js";
 import { mkui } from "./ui.js";
-import { load } from "../sf2-service/read.js";
+import { load, loadProgram } from "../sf2-service/read.js";
 import { chart, mkcanvas, renderFrames } from "../chart/chart.js";
 import { fetchmidilist } from "./midilist.js";
 import { channel } from "./channel.js";
+import { mkEnvelope } from "./adsr.js";
 const flist = document.querySelector("#sf2list");
 const cpanel = document.querySelector("#channelContainer");
 const { stdout } = logdiv(document.querySelector("pre"));
 const cmdPanel = document.querySelector("footer");
 const timeslide = document.querySelector("progress");
 const programNames = [];
+let sf2;
 
 main(
   "https://grep32bit.blob.core.windows.net/midi/Britney_Spears_-_Baby_One_More_Time.mid",
@@ -34,7 +36,7 @@ async function main(midiurl, sf2file) {
   })(11);
 
   const controllers = mkui(cpanel, pt);
-  const sf2 = await load(sf2file, {
+  sf2 = await load(sf2file, {
     onHeader(pid, bid, str) {
       flist.append(
         mkdiv("a", { class: "chlink", pid, bid }, [str]).wrapWith("li")
@@ -48,21 +50,27 @@ async function main(midiurl, sf2file) {
   const midiSink = await initMidiSink(ctx, sf2, controllers, pt);
   const { presets, totalTicks, midiworker } = await initMidiReader(midiurl);
   timeslide.setAttribute("max", totalTicks);
-  for await (const _ of (async function* g() {
-    yield await midiSink.channels[0].setProgram(0, 0);
-    yield await midiSink.channels[9].setProgram(0, 128);
+  async function _loadProgram(channel, pid, bankId) {
+    const sf2pg = loadProgram(sf2, pid, bankId);
+    midiSink.channels[channel].program = {
+      pg: sf2pg,
+      pid,
+      bankId: bankId,
+      name: programNames[bankId | pid],
+    };
 
+    await ctx.spinner.shipProgram(sf2pg);
+  }
+  await _loadProgram(0, 0, 0);
+  await _loadProgram(9, 0, 128);
+  for await (const _ of (async function* g(presets) {
     for (const preset of presets) {
       const { pid, channel, t } = preset;
       if (t > 0) continue;
       const bkid = channel == 9 ? 128 : 0;
-      yield await midiSink.channels[channel].setProgram(
-        pid,
-        bkid,
-        programNames[pid | bkid]
-      );
+      yield await _loadProgram(channel, pid, bkid);
     }
-  })()) {
+  })(presets)) {
     //eslint
   }
   let cid = 0;
@@ -81,10 +89,11 @@ async function main(midiurl, sf2file) {
   bindMidiAccess(pt);
   function updateCanvas() {
     for (let i = 0; i < 16; i++) {
-      chart(
-        midiSink.canvases[i],
-        ctx.spinner.outputSnapshot.subarray(i * 128, i * 128 + 128)
-      );
+      if (ctx.egs[i].gainNode.gain.value > 0.00001)
+        chart(
+          midiSink.canvases[i],
+          ctx.spinner.outputSnapshot.subarray(i * 128, i * 128 + 128)
+        );
     }
     requestAnimationFrame(updateCanvas);
   }
@@ -141,7 +150,7 @@ async function initMidiSink(ctx, sf2, controllers, pt) {
   const ccs = new Uint8Array(128 * 16);
   const canvases = [];
   for (let i = 0; i < 16; i++) {
-    channels[i] = channel(ctx, sf2, i, controllers[i]);
+    channels[i] = channel(ctx, i, controllers[i]);
     channels[i].midicc = ccs.subarray(i * 128, i * 128 + 128);
     ccs[i * 128 + 7] = 100; //defalt volume
     ccs[i * 128 + 11] = 127; //default expression
@@ -165,9 +174,9 @@ async function initMidiSink(ctx, sf2, controllers, pt) {
         ccs[ch * 128 + key] = vel;
         break;
       case 0xc: //change porg
-        stdout("set program to " + key + " for " + ch);
-        if (key != channels[ch].pid)
-          channels[ch].setProgram(key, ch == 9 ? 128 : 0);
+        const pid = key,
+          bankId = ch == 9 ? 128 : 0;
+        if (pid != channels[ch].pid) _loadProgram(ch, pid, bankId);
         break;
       case 0x08:
         channels[ch].keyOff(key, vel);
@@ -192,13 +201,31 @@ async function initAudio() {
   const ctx = new AudioContext({ sampleRate: 44100 });
   await SpinNode.init(ctx);
   const spinner = new SpinNode(ctx);
-
+  const DC = new AudioBufferSourceNode(ctx, {
+    buffer: new AudioBuffer({
+      numberOfChannels: 1,
+      sampleRate: ctx.sampleRate,
+      length: 1,
+    }),
+    loop: true,
+  });
+  DC.buffer.getChannelData(0)[0] = 1;
   await LowPassFilterNode.init(ctx);
   const lpf = new LowPassFilterNode(ctx, ctx.sampleRate * 0.45);
+  const egs = [];
+  const masterMixer = new GainNode(ctx, { gain: 1 });
+  for (let i = 0; i < 16; i++) {
+    egs[i] = mkEnvelope(ctx);
+    egs[i].gainNode.connect(spinner, 0, i);
+    DC.connect(egs[i].gainNode);
+    spinner.connect(masterMixer);
+  }
+  DC.start();
+  masterMixer.connect(ctx.destination);
   document.addEventListener("mousedown", async () => await ctx.resume(), {
     once: true,
   });
-  return { ctx, spinner, lpf };
+  return { ctx, spinner, lpf, egs, masterMixer };
 }
 
 async function bindMidiAccess(port) {

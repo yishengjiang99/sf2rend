@@ -15,7 +15,7 @@
   \***********************************/
 /***/ (() => {
 
-eval("self.addEventListener(\n  \"message\",\n  ({ data: { url, smpls, destination, ...data } }) => {\n    if (destination) {\n      self.destport = destination;\n      self.destport.onmessage = ({ data }) => postMessage(data);\n    }\n    if (url && smpls) {\n      loadsdta(\"/sf2rend/file.sf2\", smpls, self.destport);\n    }\n    if (data && self.destport) self.destport.postMessage(data);\n  }\n);\n\nasync function loadsdta(url, smpls, destination) {\n  let min, max;\n  const segments = {};\n  for (const { range } of smpls) {\n    min = min ? (range[0] < min ? range[0] : min) : range[0];\n    max = max ? (range[1] > max ? range[1] : max) : range[1];\n  }\n  for (const { range, sampleId } of smpls) {\n    segments[sampleId] = {\n      startByte: range[0] - min,\n      endByte: range[1] - min,\n    };\n  }\n  const res = await fetch(url, {\n    headers: {\n      range: \"bytes=\" + [min, max].join(\"-\"),\n    },\n  });\n  destination.postMessage(\n    { stream: res.body, segments, nsamples: (max - min + 1) / 2 },\n    [res.body]\n  );\n  await res.body.close;\n  return;\n  //if (res.ok === false) throw \"fetch\" + url + \"failed \";\n}\n\n\n//# sourceURL=webpack://sf2rend/./fetch-drop-ship/worker.js?");
+eval("self.addEventListener(\n  \"message\",\n  ({ data: { url, smpls, destination, ...data } }) => {\n    console.log(smpls, url);\n    if (destination) {\n      self.destport = destination;\n      self.destport.onmessage = ({ data }) => postMessage(data);\n    } else if (url && smpls) {\n      loadsdta(\"/sf2rend/file.sf2\", smpls, self.destport);\n    } else if (data && self.destport) self.destport.postMessage(data);\n  }\n);\n\nasync function loadsdta(url, smpls, destination) {\n  let min, max;\n  const segments = {};\n  smpls.sort((a, b) => a.sampleId < b.sampleId);\n  for (const { range } of smpls) {\n    min = min ? (range[0] < min ? range[0] : min) : range[0];\n    max = max ? (range[1] > max ? range[1] : max) : range[1];\n  }\n  for (const { range, sampleId } of smpls) {\n    segments[sampleId] = {\n      startByte: range[0] - min,\n      endByte: range[1] - min,\n    };\n  }\n  const res = await fetch(url, {\n    headers: {\n      range: \"bytes=\" + [min, max].join(\"-\"),\n    },\n  });\n  destination.postMessage(\n    { stream: res.body, segments, nsamples: (max - min + 1) / 2 },\n    [res.body]\n  );\n  await res.body.close;\n  return { res };\n  //if (res.ok === false) throw \"fetch\" + url + \"failed \";\n}\n\n\n//# sourceURL=webpack://sf2rend/./fetch-drop-ship/worker.js?");
 
 /***/ })
 
@@ -80,7 +80,7 @@ eval("self.addEventListener(\n  \"message\",\n  ({ data: { url, smpls, destinati
 /******/ 	
 /******/ 	/* webpack/runtime/getFullHash */
 /******/ 	(() => {
-/******/ 		__webpack_require__.h = () => ("713bbfc319bb9b7d6d5e")
+/******/ 		__webpack_require__.h = () => ("a4493e78b783051e6bd7")
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/global */

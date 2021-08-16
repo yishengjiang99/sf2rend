@@ -1,3 +1,4 @@
+import { downloadData } from "../fetch-drop-ship/download.js";
 const CH_META_LEN = 12;
 const nchannels = 32;
 const REND_BLOCK = 128;
@@ -67,42 +68,24 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.spinners = [];
     this.outputs = [];
   }
-  async handleMsg({ data: { keyOn, stream, segments, nsamples, ...data } }) {
+  async handleMsg(e) {
+    const {
+      data: { stream, segments, nsamples, ...data },
+    } = e;
     if (stream && segments) {
       const offset = this.inst.exports.malloc(4 * nsamples);
-      const fl = new Float32Array(this.memory.buffer, offset, 4 * nsamples);
-
-      const reader = stream.getReader();
-      let writeOffset = 0;
-      let leftover;
-      const decode = function (s1, s2) {
-        const int = s1 + (s2 << 8);
-        return int > 0x8000 ? -(0x10000 - int) / 0x8000 : int / 0x7fff;
-      };
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          await stream.closed;
-          break;
-        }
-        if (!value) continue;
-        let readIndex = 0;
-
-        if (leftover != null) {
-          fl[writeOffset++] = decode(leftover, value[readIndex++]);
-        }
-        const n = ~~(value.length / 2);
-        while (readIndex < n) {
-          fl[writeOffset++] = decode(value[readIndex++], value[readIndex++]);
-        }
-        if (readIndex < value.length - 1) leftover = value[value.length - 1];
-      }
+      const fl = new Float32Array(this.memory.buffer, offset, nsamples);
+      await downloadData(stream, fl);
+      this.outputSnap.set(fl.slice(0, 2024));
       for (const sampleId in segments) {
         this.sampleIdRefs[parseInt(sampleId)] =
           segments[sampleId].startByte + offset;
       }
+      console.log(this.sampleIdRefs);
 
       this.port.postMessage({ ack: offset });
+    } else {
+      console.log(e.data);
     }
   }
   sync(offset) {
@@ -153,19 +136,24 @@ class SpinProcessor extends AudioWorkletProcessor {
     }
   }
 
-  process(_, o, parameters) {
+  process(inputs, o, parameters) {
     if (this.updateArray[0] > 0) {
       this.sync(0);
     }
     for (let i = 0; i < 16; i++) {
+      const vols = inputs[i][0];
+      if (!this.spinners[i]) continue;
+      if (!this.outputs[i]) continue;
       if (!o[i]) continue;
-      if (this.spinners[i]) {
-        this.inst.exports.spin(this.spinners[i], o[i][0].length);
-        o[i][0].set(this.outputs[i]);
-        new Promise((r) => (r) => resolve()).then(() =>
-          this.outputSnap.set(this.outputs[i], 2 * i * REND_BLOCK)
-        );
+      const rendN = o[i][0].length;
+      this.inst.exports.spin(this.spinners[i], 128);
+      for (let j = 0; j < 128; j++) {
+        o[i][0][j] = vols[j] * this.outputs[i][j];
+        o[i][1][j] = vols[j] * this.outputs[i][j];
       }
+      new Promise((r) => r()).then(() => {
+        this.outputSnap.set(o[i][0], i * REND_BLOCK);
+      });
     }
     return true;
   }

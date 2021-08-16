@@ -1,12 +1,34 @@
 export async function requestDownload(worker, sf2_program) {
-  return worker.postMessage({
-    url: sf2_program.url,
-    smpls: Object.values(sf2_program.shdrMap).map((sh) => ({
-      sampleId: sh.SampleId,
-      range: sh.range,
-      loops: sh.loops,
-    })),
-  });
+  const samples = Object.values(sf2_program.shdrMap).sort(
+    (a, b) => a.sampleId < b.sampleId
+  );
+  let lastSid = null;
+  let payload = [];
+  for (const sample of samples) {
+    if (
+      lastSid != null &&
+      lastSid + 1 != sample.sampleId &&
+      payload.length > 0
+    ) {
+      worker.postMessage({
+        url: sf2_program.url,
+        smpls: payload,
+      });
+      lastSid = null;
+      payload = [];
+    }
+    lastSid = sample.SampleId;
+    payload.push({
+      sampleId: lastSid,
+      range: sample.range,
+    });
+  }
+  if (payload.length > 0) {
+    worker.postMessage({
+      url: sf2_program.url,
+      smpls: payload,
+    });
+  }
 }
 
 export function getWorker(destinationPort) {

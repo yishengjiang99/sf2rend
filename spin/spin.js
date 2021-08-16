@@ -29,7 +29,7 @@ export class SpinNode extends AudioWorkletNode {
         RENDER_BLOCK * N_CHANNELS * Float32Array.BYTES_PER_ELEMENT
     );
     super(ctx, "spin-proc", {
-      numberOfInputs: 0,
+      numberOfInputs: 16,
       numberOfOutputs: 16,
       outputChannelCount: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
       processorOptions: {
