@@ -3,28 +3,31 @@ class LowPassFilterProc extends AudioWorkletProcessor {
   constructor(options) {
     super(options);
     const { filterFC, wasmbin } = options.processorOptions;
-    console.log("lpf ionit");
     const instance = new WebAssembly.Instance(
       new WebAssembly.Module(wasmbin),
       {}
     );
-    instance.exports.newLpf(0, filterFC);
-    this.lpf = (input, detune) =>
-      instance.exports.process_input(0, input, detune);
+    this.lpf = instance.exports.newLpf(0, filterFC);
 
-    this.srInverse = 1 / sampleRate;
+    this.instance = instance;
     this.buffer = instance.exports.memory.buffer;
     this.port.onmessage = this.onmsg.bind(this);
   }
   onmsg({ data }) {
     new Float32Array(this.buffer, 0, 1)[0] = data;
   }
-  process([input, control], [output]) {
-    for (let ch = 0; ch < input.length; ch++) {
-      for (let i = 0; i < 128; i++) {
-        const detune =
-          control && control[0] ? control[0][i] * this.srInverse : 0;
-        output[ch][i] = clamp(-1, this.lpf(input[ch][i], detune), 1);
+  process(input, output) {
+    for (let i = 0; i < input.length; i++) {
+      for (let ch = 0; ch < input[i]; ch++) {
+        this.lpfs[i * 2 + ch] =
+          this.lpfs[i * 2 + ch] ||
+          this.instance.exports.newLpf((i * 2 + ch) * 4 * 4, 0.45);
+        this.instance.exports.process_LIST(
+          this.lpfs[i * 2 + ch],
+          input[ch][i],
+          input[ch][i].length
+        );
+        output[i][ch].set(input[i][ch]);
       }
     }
     return true;

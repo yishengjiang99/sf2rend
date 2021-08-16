@@ -40,7 +40,7 @@ export function chart(canvasCtx, dataArray) {
   canvasCtx.moveTo(0, _height / 2);
   for (let i = 1; i < dataArray.length; i++) {
     x += iWIDTH;
-    canvasCtx.lineTo(x, _height / 2 - (_height / 2) * dataArray[i]);
+    canvasCtx.lineTo(x, _height / 2 - (_height / 4) * dataArray[i]);
   }
   canvasCtx.stroke();
   canvasCtx.restore();

@@ -1,5 +1,7 @@
+import { downloadData } from "../fetch-drop-ship/download.js";
 const CH_META_LEN = 12;
-
+const nchannels = 32;
+const REND_BLOCK = 128;
 /*
  typedef struct {
   float *inputf, *outputf;
@@ -50,7 +52,12 @@ class SpinProcessor extends AudioWorkletProcessor {
       processorOptions: { sb, wasm, lpfwasm, fc },
     } = options;
     this.sb = sb;
-    this.updateArray = new Uint32Array(this.sb);
+    this.updateArray = new Uint32Array(this.sb, 0, CH_META_LEN * 32);
+    this.outputSnap = new Float32Array(
+      this.sb,
+      CH_META_LEN * 32 * Uint32Array.BYTES_PER_ELEMENT,
+      REND_BLOCK * nchannels
+    );
     this.inst = new WebAssembly.Instance(new WebAssembly.Module(wasm), {
       env: {},
     });
@@ -61,32 +68,24 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.spinners = [];
     this.outputs = [];
   }
-  async handleMsg({ data: { keyOn, stream, segments, nsamples, ...data } }) {
+  async handleMsg(e) {
+    const {
+      data: { stream, segments, nsamples, ...data },
+    } = e;
     if (stream && segments) {
-      const offset = this.inst.exports.alloc_ftb(nsamples);
+      const offset = this.inst.exports.malloc(4 * nsamples);
       const fl = new Float32Array(this.memory.buffer, offset, nsamples);
-
-      const reader = stream.getReader();
-      let writeOffset = 0;
-      await reader.read().then(function process({ done, value }) {
-        if (done) {
-          console.log(value);
-          return writeOffset;
-        }
-        if (value) {
-          const i16 = new Int16Array(value.buffer);
-          for (let i = 0; i < i16.length; i++) {
-            fl[writeOffset++] = i16[i] / 0xffff;
-          }
-        }
-        reader.read().then(process);
-      });
+      await downloadData(stream, fl);
+      this.outputSnap.set(fl.slice(0, 2024));
       for (const sampleId in segments) {
         this.sampleIdRefs[parseInt(sampleId)] =
           segments[sampleId].startByte + offset;
       }
+      console.log(this.sampleIdRefs);
 
       this.port.postMessage({ ack: offset });
+    } else {
+      console.log(e.data);
     }
   }
   sync(offset) {
@@ -135,29 +134,26 @@ class SpinProcessor extends AudioWorkletProcessor {
     if (this.updateArray[offset + CH_META_LEN] != 0) {
       this.sync(offset + CH_META_LEN);
     }
-    // console.log(
-    //   new Float32Array(
-    //     this.memory.buffer,
-    //     spRef2json(this.memory.buffer, this.spinners[channel])[0],
-    //     122
-    //   )
-    // );
   }
 
-  process(_, [o], parameters) {
+  process(inputs, o, parameters) {
     if (this.updateArray[0] > 0) {
       this.sync(0);
     }
     for (let i = 0; i < 16; i++) {
-      if (this.spinners[i]) {
-        this.inst.exports.spin(this.spinners[i], o[i].length);
-        o[i].set(this.outputs[i]);
-        // console.log(
-        //   "struc view",
-        //   i,
-        //   spRef2json(this.memory.buffer, this.spinners[i])
-        // );
+      const vols = inputs[i][0];
+      if (!this.spinners[i]) continue;
+      if (!this.outputs[i]) continue;
+      if (!o[i]) continue;
+      const rendN = o[i][0].length;
+      this.inst.exports.spin(this.spinners[i], 128);
+      for (let j = 0; j < 128; j++) {
+        o[i][0][j] = vols[j] * this.outputs[i][j];
+        o[i][1][j] = vols[j] * this.outputs[i][j];
       }
+      new Promise((r) => r()).then(() => {
+        this.outputSnap.set(o[i][0], i * REND_BLOCK);
+      });
     }
     return true;
   }
