@@ -8,20 +8,14 @@ typedef struct {
   float stride, strideInc;
   float amp, ampInc;
 } spinner;
-float fls[1024 * 1024 * 4];
 
-spinner sps[32];
+spinner sps[16];
 #define RENDQ 128
-#define sps_index() (spsIndx++) & 0x1f
+#define sps_index() (spsIndx++) & 0x0f
 float outputs[16 * RENDQ];
 float silence[1024 + 32];
-unsigned long brk = 0;
 char spsIndx = 0;
-float* alloc_ftb(unsigned long flsize) {
-  float* ret = &fls[brk];
-  brk += flsize;
-  return ret;
-}
+
 spinner* newSpinner() {
   int idx = sps_index();
   spinner* x = &sps[idx];

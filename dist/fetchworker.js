@@ -7,36 +7,15 @@
  * If you are looking for production-ready output files, see mode: "production" (https://webpack.js.org/configuration/mode/).
  */
 /******/ (() => { // webpackBootstrap
-/******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ "./midiread/dist/midiread.js":
+/***/ "./fetch-drop-ship/worker.js":
 /*!***********************************!*\
-  !*** ./midiread/dist/midiread.js ***!
+  !*** ./fetch-drop-ship/worker.js ***!
   \***********************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+/***/ (() => {
 
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"readMidi\": () => (/* binding */ readMidi)\n/* harmony export */ });\nfunction readMidi(buffer) {\n    const reader = bufferReader2(buffer);\n    const { fgetc, btoa, read24, readString, read32, readVarLength, read16 } = reader;\n    const chunkType = [btoa(), btoa(), btoa(), btoa()].join(\"\");\n    const headerLength = read32();\n    const format = read16();\n    const ntracks = read16();\n    const division = read16();\n    const tracks = [];\n    const limit = buffer.byteLength;\n    let lasttype;\n    function readNextEvent() {\n        const { fgetc, read24, readString, read32, readVarLength, read16 } = reader;\n        let type = fgetc();\n        if (type == null)\n            return [];\n        if ((type & 0xf0) == 0xf0) {\n            switch (type) {\n                case 0xff: {\n                    const meta = fgetc();\n                    const len = readVarLength();\n                    const payload = readString(len);\n                    return { meta, payload };\n                }\n                case 0xf0:\n                case 0xf7:\n                    return { sysex: readString(readVarLength()) };\n                default:\n                    return { type, system: readString(readVarLength()) };\n            }\n        }\n        else {\n            let param;\n            if (0 === (type & 0x80)) {\n                param = type;\n                type = lasttype;\n            }\n            else {\n                param = fgetc();\n                lasttype = type;\n            }\n            switch (type >> 4) {\n                case 0x0c:\n                case 0x0d:\n                    return {\n                        ch: type & 0x0f,\n                        cmd: (type >> 4).toString(16),\n                        channel: [type, param, 0],\n                    };\n                default:\n                    return {\n                        ch: type & 0x0f,\n                        cmd: (type >> 4).toString(16),\n                        channel: [type, param, fgetc()],\n                    };\n            }\n        }\n    }\n    const presets = [];\n    while (reader.offset < limit) {\n        fgetc(), fgetc(), fgetc(), fgetc();\n        let t = 0;\n        const mhrkLength = read32();\n        const endofTrack = reader.offset + mhrkLength;\n        const track = [];\n        while (reader.offset < endofTrack) {\n            const delay = readVarLength();\n            const nextEvent = readNextEvent();\n            if (!nextEvent)\n                break;\n            if (nextEvent.eot)\n                break;\n            t += delay;\n            if (nextEvent.channel && nextEvent.channel[0] >> 4 == 0x0c) {\n                presets.push({\n                    t,\n                    channel: nextEvent.channel[0] & 0x0f,\n                    pid: nextEvent.channel[1] & 0x7f,\n                });\n            }\n            const evtObj = { offset: reader.offset, t, delay, ...nextEvent };\n            track.push(evtObj);\n        }\n        tracks.push(track);\n        reader.offset = endofTrack;\n    }\n    return { division, tracks, ntracks, presets };\n}\nfunction bufferReader2(bytes) {\n    let _offset = 0;\n    const fgetc = () => bytes[_offset++];\n    const read32 = () => (fgetc() << 24) | (fgetc() << 16) | (fgetc() << 8) | fgetc();\n    const read16 = () => (fgetc() << 8) | fgetc();\n    const read24 = () => (fgetc() << 16) | (fgetc() << 8) | fgetc();\n    function readVarLength() {\n        let v = 0;\n        let n = fgetc();\n        v = n & 0x7f;\n        while (n & 0x80) {\n            n = fgetc();\n            v = (v << 7) | (n & 0x7f);\n        }\n        return v;\n    }\n    function btoa() {\n        const code = fgetc();\n        return code == 32\n            ? \" \"\n            : code >= 65 && code <= 122\n                ? `ABCDEFGHIJKLMNOPQRSTUVWXYZ......abcdefghijklmnopqrstuvwxyz`.split(\"\")[code - 65]\n                : code;\n    }\n    const readString = (n) => {\n        let str = \"\";\n        while (n--)\n            str += btoa();\n        return str;\n    };\n    return {\n        get offset() {\n            return _offset;\n        },\n        set offset(o) {\n            _offset = o;\n        },\n        fgetc,\n        read32,\n        read24,\n        read16,\n        readVarLength,\n        readString,\n        btoa,\n    };\n}\n\n\n//# sourceURL=webpack://sf2rend/./midiread/dist/midiread.js?");
-
-/***/ }),
-
-/***/ "./midiread/dist/scheduler.js":
-/*!************************************!*\
-  !*** ./midiread/dist/scheduler.js ***!
-  \************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"scheduler\": () => (/* binding */ scheduler)\n/* harmony export */ });\n/* harmony import */ var _midiread_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./midiread.js */ \"./midiread/dist/midiread.js\");\n\nasync function scheduler(midi_u8, cb) {\n    const { tracks, division, presets, ntracks } = (0,_midiread_js__WEBPACK_IMPORTED_MODULE_0__.readMidi)(midi_u8);\n    const ticksPerQuarterNote = division;\n    let microsecondPerQuarterNote = 500000;\n    let timeSignature = 4;\n    let qn = 0;\n    const totalTicks = tracks\n        .map((t) => t[t.length - 1])\n        .reduce((lastEvent, eventt) => Math.max(eventt.t, lastEvent), 0);\n    const playedEvent = [];\n    let tick = 0;\n    let clockTime = 0;\n    let paused = false;\n    async function run() {\n        while (tick < totalTicks) {\n            for (let i in tracks) {\n                const track = tracks[i];\n                if (!track.length)\n                    continue;\n                while (track.length && track[0].t < tick) {\n                    const newevent = track.shift();\n                    cb(newevent);\n                    playedEvent.push({\n                        track: i,\n                        clockTime,\n                        ...newevent,\n                    });\n                    if (newevent.tempo) {\n                        microsecondPerQuarterNote = newevent.tempo;\n                    }\n                    if (newevent.timeSignature) {\n                        timeSignature =\n                            (newevent.timeSignature[0] / newevent.timeSignature[1]) * 4;\n                    }\n                }\n            }\n            if (paused)\n                break;\n            const intervalMillisecond = microsecondPerQuarterNote / 1000 / timeSignature;\n            await new Promise((resolve) => setTimeout(resolve, intervalMillisecond));\n            tick += ticksPerQuarterNote / timeSignature;\n            clockTime += intervalMillisecond / 1000;\n            qn++;\n            cb({ clockTime, qn });\n        }\n    }\n    function rwd(amt) {\n        const rwd_events = [];\n        while (playedEvent.length &&\n            playedEvent[playedEvent.unshift()].clockTime > clockTime - amt) {\n            rwd_events.push(playedEvent.pop());\n        }\n        tick = rwd_events[0].tick;\n        clockTime -= amt;\n        while (rwd_events.length) {\n            tracks[rwd_events[0].track].push(rwd_events.shift());\n        }\n    }\n    function pause() {\n        paused = true;\n    }\n    function resume() {\n        paused = false;\n        run();\n    }\n    return {\n        ctrls: { pause, rwd, run, resume },\n        tracks,\n        ntracks,\n        presets,\n        totalTicks,\n    };\n}\n\n\n//# sourceURL=webpack://sf2rend/./midiread/dist/scheduler.js?");
-
-/***/ }),
-
-/***/ "./src/midiworker.js":
-/*!***************************!*\
-  !*** ./src/midiworker.js ***!
-  \***************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _midiread_dist_scheduler_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../midiread/dist/scheduler.js */ \"./midiread/dist/scheduler.js\");\n\n(async () => {\n  const url = self.location.hash.split(\"#\")[1];\n  console.log(url);\n  const res = await fetch(url);\n  const ab = await res.arrayBuffer();\n  const {\n    ctrls: { run, rwd, pause },\n    totalTicks,\n    presets,\n  } = await (0,_midiread_dist_scheduler_js__WEBPACK_IMPORTED_MODULE_0__.scheduler)(new Uint8Array(ab), postMessage);\n  // @ts-ignore\n  postMessage({ totalTicks, presets });\n  onmessage = ({ data: { cmd, amt } }) => {\n    switch (cmd) {\n      case \"start\":\n        run();\n        break;\n      case \"pause\":\n        pause();\n        break;\n      case \"resume\":\n        run();\n        break;\n\n      case \"rwd\":\n        rwd(amt || 16);\n        break;\n      case \"ff\":\n        break;\n    }\n  };\n})();\n\n\n//# sourceURL=webpack://sf2rend/./src/midiworker.js?");
+eval("self.addEventListener(\n  \"message\",\n  ({ data: { url, smpls, destination, ...data } }) => {\n    if (destination) {\n      self.destport = destination;\n      self.destport.onmessage = ({ data }) => postMessage(data);\n    }\n    if (url && smpls) {\n      loadsdta(\"/sf2rend/file.sf2\", smpls, self.destport);\n    }\n    if (data && self.destport) self.destport.postMessage(data);\n  }\n);\n\nasync function loadsdta(url, smpls, destination) {\n  let min, max;\n  const segments = {};\n  for (const { range } of smpls) {\n    min = min ? (range[0] < min ? range[0] : min) : range[0];\n    max = max ? (range[1] > max ? range[1] : max) : range[1];\n  }\n  for (const { range, sampleId } of smpls) {\n    segments[sampleId] = {\n      startByte: range[0] - min,\n      endByte: range[1] - min,\n    };\n  }\n  return fetch(url, {\n    headers: {\n      range: \"bytes=\" + [min, max].join(\"-\"),\n    },\n  }).then((res) => {\n    //if (res.ok === false) throw \"fetch\" + url + \"failed \";\n\n    destination.postMessage(\n      { stream: res.body, segments, nsamples: (max - min + 1) / 2 },\n      [res.body]\n    );\n    return res.bodyUsed;\n  });\n}\n\n\n//# sourceURL=webpack://sf2rend/./fetch-drop-ship/worker.js?");
 
 /***/ })
 
@@ -85,18 +64,6 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _mid
 /******/ 	__webpack_require__.i = [];
 /******/ 	
 /************************************************************************/
-/******/ 	/* webpack/runtime/define property getters */
-/******/ 	(() => {
-/******/ 		// define getter functions for harmony exports
-/******/ 		__webpack_require__.d = (exports, definition) => {
-/******/ 			for(var key in definition) {
-/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
-/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
-/******/ 				}
-/******/ 			}
-/******/ 		};
-/******/ 	})();
-/******/ 	
 /******/ 	/* webpack/runtime/get javascript update chunk filename */
 /******/ 	(() => {
 /******/ 		// This function allow to reference all chunks
@@ -108,7 +75,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _mid
 /******/ 	
 /******/ 	/* webpack/runtime/get update manifest filename */
 /******/ 	(() => {
-/******/ 		__webpack_require__.hmrF = () => ("midiworker." + __webpack_require__.h() + ".hot-update.json");
+/******/ 		__webpack_require__.hmrF = () => ("fetchworker." + __webpack_require__.h() + ".hot-update.json");
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/getFullHash */
@@ -176,17 +143,6 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _mid
 /******/ 			script.onerror = onScriptComplete.bind(null, script.onerror);
 /******/ 			script.onload = onScriptComplete.bind(null, script.onload);
 /******/ 			needAttach && document.head.appendChild(script);
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/make namespace object */
-/******/ 	(() => {
-/******/ 		// define __esModule on exports
-/******/ 		__webpack_require__.r = (exports) => {
-/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 			}
-/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
 /******/ 		};
 /******/ 	})();
 /******/ 	
@@ -597,7 +553,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _mid
 /******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
 /******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
 /******/ 		var installedChunks = {
-/******/ 			"midiworker": 0
+/******/ 			"fetchworker": 0
 /******/ 		};
 /******/ 		
 /******/ 		// no chunk on demand loading
@@ -1107,7 +1063,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _mid
 /******/ 	// module cache are used so entry inlining is disabled
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
-/******/ 	var __webpack_exports__ = __webpack_require__("./src/midiworker.js");
+/******/ 	var __webpack_exports__ = __webpack_require__("./fetch-drop-ship/worker.js");
 /******/ 	
 /******/ })()
 ;

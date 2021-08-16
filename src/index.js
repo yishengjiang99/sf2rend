@@ -33,20 +33,22 @@ async function main() {
   const sf2 = await loadf("https://dsp.grepawk.com/sf2rend/file.sf2");
   if (!sf2.presetRefs) return;
   const ctx = await initAudio();
+  document.addEventListener("mousedown", async () => await ctx.resume(), {
+    once: true,
+  });
   const midiSink = await initMidiSink(ctx, sf2, controllers, pt);
   const { presets, totalTicks, midiworker } = await initMidiReader(
     "https://grep32bit.blob.core.windows.net/midi/Britney_Spears_-_Baby_One_More_Time.mid"
   );
   timeslide.setAttribute("max", totalTicks);
   for await (const _ of (async function* g() {
-    yield await midiSink.channels[0].setProgram(sf2, 0, 0);
-    yield await midiSink.channels[9].setProgram(sf2, 128, 0);
+    yield await midiSink.channels[0].setProgram(0, 0);
+    yield await midiSink.channels[9].setProgram(128, 0);
 
     for (const preset of presets) {
-      console.log("prload" + preset);
       const { pid, channel, t } = preset;
       if (t > 0) continue;
-      const bkid = pid | (channel == 9) ? 128 : 0;
+      const bkid = channel == 9 ? 128 : 0;
       yield await midiSink.channels[channel].setProgram(
         pid,
         bkid,

@@ -63,20 +63,26 @@ class SpinProcessor extends AudioWorkletProcessor {
   }
   async handleMsg({ data: { keyOn, stream, segments, nsamples, ...data } }) {
     if (stream && segments) {
-      const offset = this.inst.exports.alloc_ftb(nsamples);
-      const fl = new Float32Array(this.memory.buffer, offset, nsamples);
+      const offset = this.inst.exports.malloc(4 * nsamples);
+      const fl = new Float32Array(this.memory.buffer, offset, 4 * nsamples);
 
       const reader = stream.getReader();
       let writeOffset = 0;
+      let leftover;
+      const decode = function (s1, s2) {
+        const int = s1 + (s2 << 8);
+        return int > 0x8000 ? -(0x10000 - int) / 0x8000 : int / 0x7fff;
+      };
       await reader.read().then(function process({ done, value }) {
         if (done) {
           return writeOffset;
         }
-        if (value && value.buffer) {
-          const i16 = new Int16Array(value.buffer);
-          for (let i = 0; i < i16.length; i++) {
-            fl[writeOffset++] = i16[i] / 0xffff;
-          }
+        if (leftover) {
+          fl[writeOffset++] = decode(leftover, value.shift());
+        }
+        let i;
+        for (i = 0; i < value.length / 2; i++) {
+          fl[writeOffset++] = decode(value[2 * i], value[2 * i + 1] << 8);
         }
         reader.read().then(process);
       });
@@ -135,20 +141,20 @@ class SpinProcessor extends AudioWorkletProcessor {
       this.sync(offset + CH_META_LEN);
     }
 
-    // console.log(
-    //   new Float32Array(
-    //     this.memory.buffer,
-    //     spRef2json(this.memory.buffer, this.spinners[channel])[0],
-    //     122
-    //   )
-    // );
+    console.log(
+      new Float32Array(
+        this.memory.buffer,
+        spRef2json(this.memory.buffer, this.spinners[channel])[0],
+        122
+      )
+    );
   }
 
   process(_, o, parameters) {
     if (this.updateArray[0] > 0) {
       this.sync(0);
     }
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 32; i++) {
       if (!o[i]) continue;
       if (this.spinners[i]) {
         this.inst.exports.spin(this.spinners[i], o[i][0].length);

@@ -99,6 +99,7 @@ export function loadProgram(
     );
 
     const [originalPitch] = new Uint8Array(dv, 20 + 5 * 4, 1);
+    console.log(originalPitch);
     const range = [sdtaStart + start * 2, sdtaStart + end * 2 + 1];
     //      "bytes=" + (sdtaStart + start * 2) + "-" + (sdtaStart + end * 2 + 1);
     const loops = [startloop - start, endloop - start];
