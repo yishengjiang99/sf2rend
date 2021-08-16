@@ -14,14 +14,14 @@
 
     promise_test(async () => {
       const sf2 = await load("file.sf2");
-      const {shdrMap, zMap, preload, filterKV} = sf2.loadProgram(0, 0);
+      const {shdrMap, zMap, preload, filterKV} = loadProgram(sf2, 0, 0);
       assert_greater_than(zMap.length, 0, "number of zones");
       assert_greater_than(Object.keys(shdrMap).length, 0, "number of zones");
     }, "loading program returns more than 0 zones");
 
     promise_test(async () => {
       const sf2 = await load("file.sf2");
-      const {shdrMap, zMap, preload, filterKV} = sf2.loadProgram(0, 0);
+      const {shdrMap, zMap, preload, filterKV} = loadProgram(sf2, 0, 0);
       await preload();
       assert_true(zMap[0].pcm instanceof Float32Array, "pcm data can be accessed synchronously after preload");
     }, "preload pcm data");

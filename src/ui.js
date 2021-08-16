@@ -59,41 +59,11 @@ export class TrackUI {
       .join(" ");
     this.polylines[0].setAttribute("points", points);
   }
-  set env2({ phases: [a, d, s, r], peak }) {
-    const points = [
-      [0, 0],
-      [a, 1],
-      [a + d, (100 - s) / 100],
-      [a + d + r, 0],
-    ]
-      .map(([x, y]) => x * pixelPerSec + "," + y * pixelPerDecibel)
-      .join(" ");
-    console.log(points);
-    this.polylines[1].setAttribute("points", points);
-  }
+
   get canvasContainer() {
     return this.canc;
   }
-  set zone(z) {
-    this.env1 = {
-      phases: [
-        z.VolEnvAttack,
-        z.VolEnvDecay,
-        z.VolEnvSustain,
-        z.VolEnvRelease,
-      ].map((v) => Math.pow(2, v / 1200)),
-      peak: Math.pow(10, z.Attenuation / -200),
-    };
-    console.log({
-      phases: [
-        z.VolEnvAttack,
-        z.VolEnvDecay,
-        z.VolEnvSustain,
-        z.VolEnvRelease,
-      ].map((v) => Math.pow(2, v / 1200)),
-      peak: Math.pow(10, z.Attenuation / -200),
-    });
-  }
+  set zone(z) {}
 }
 const range = (x, y) =>
   Array.from(
@@ -108,46 +78,69 @@ export function mkui(cpanel, cb) {
 
   const tb = mkdiv("div", {
     border: 1,
-    style: "display:grid;grid-template-columns:1fr 1fr",
+    style:
+      "display:grid;grid-template-columns:1fr; margin-bottom:10px;background:#333333;grid-row-gap:20px;",
   });
   for (let i = 0; i < 16; i++) {
-    const row = mkdiv("div", { class: "attrs" }, [
-      mkdiv("span", { style: "display:grid; grid-template-columns:1fr 1fr" }, [
-        mkdiv("span", { class: "name" }, ["channel " + i]),
-        mkdiv("input", { type: "checkbox" }),
-        mkdiv("meter", { min: 0, max: 127, step: 1, aria: "key" }),
-        mkdiv("meter", { min: 0, max: 127, step: 1, aria: "vel" }),
-      ]),
-      mkdiv("span", { style: "display:grid;grid-template-columns:2fr 2fr" }, [
-        mkdiv("label", { for: "exp_vol" }, "volume"),
-        mkdiv("input", { min: 0, max: 127, step: 1, type: "range" }),
-        mkdiv("label", { for: "pan" }, "pan"),
-        mkdiv("input", { min: 0, max: 127, step: 1, type: "range" }),
-        mkdiv("label", { for: "expression" }, "expression"),
-        mkdiv("input", { min: 0, max: 127, step: 1, type: "range" }),
-      ]),
-      mkdiv("div", { style: "display:grid; grid-template-columns:1fr 4fr" }, [
-        mksvg(
-          "svg",
-          {
-            style: "width:80;height:40; display:inline;",
-            viewBox: "0 0 80 40",
-          },
-          [
-            mksvg("polyline", {
-              fill: "red",
-              stroke: "black",
-            }),
-          ]
-        ),
-        mkdiv("div", { class: "canvasContainer" }),
-      ]),
-    ]);
     const keyboard = mkdiv(
       "div",
-      { class: "keyboards hide" },
-      range(55, 88).map((midi) => mkdiv("a", { midi }, [midi, " "]))
+      { class: "keyboards", style: "display:none" },
+      range(55, 69).map((midi) => mkdiv("a", { midi }, [midi, " "]))
     );
+    const row = mkdiv(
+      "div",
+      {
+        class: "attrs",
+        onmouseenter: (e) => {
+          e.target.querySelector(".keyboards").style.display = "block";
+        },
+        onmouseleave: (e) => {
+          e.target.querySelector(".keyboards").style.display = "none";
+        },
+        style: "display:grid; grid-template-columns:1fr 1fr 1fr",
+      },
+      [
+        mkdiv("div", { style: "display:grid; grid-template-columns:1fr" }, [
+          mkdiv("span", { class: "name" }, ["channel " + i]),
+          mkdiv("input", { type: "checkbox" }),
+          mkdiv("meter", { min: 0, max: 127, step: 1, aria: "key" }),
+          mkdiv("meter", { min: 0, max: 127, step: 1, aria: "vel" }),
+        ]),
+        mkdiv("div", { style: "display:grid;grid-template-columns:2fr 2fr" }, [
+          mkdiv("label", { for: "exp_vol" }, "volume"),
+          mkdiv("input", { min: 0, max: 127, step: 1, type: "range" }),
+          mkdiv("label", { for: "pan" }, "pan"),
+          mkdiv("input", { min: 0, max: 127, step: 1, type: "range" }),
+          mkdiv("label", { for: "expression" }, "expression"),
+          mkdiv("input", { min: 0, max: 127, step: 1, type: "range" }),
+        ]),
+        mkdiv(
+          "div",
+          {
+            style:
+              "display:grid; grid-template-columns:1fr 4fr;background-color:grey",
+          },
+          [
+            mksvg(
+              "svg",
+              {
+                style: "width:80;height:40; display:inline;",
+                viewBox: "0 0 80 40",
+              },
+              [
+                mksvg("polyline", {
+                  fill: "red",
+                  stroke: "black",
+                }),
+              ]
+            ),
+            mkdiv("div", { class: "canvasContainer" }),
+          ]
+        ),
+        keyboard,
+      ]
+    );
+
     controllers.push(new TrackUI(row, keyboard, i, cb));
     row.attachTo(tb);
     keyboard.attachTo(row);

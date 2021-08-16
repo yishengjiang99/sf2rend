@@ -24,3 +24,10 @@ emcc_fck_off float process_input(lpf_t *l, float input, float detune) {
 
   return output;
 }
+emcc_fck_off void process_LIST(lpf_t *l, float *input, int n, float fc) {
+  while (n-- > 0) {
+    l->m1 = (1 - l->b1) * *input + l->b1 * l->m1;
+    *input = l->m1;
+    input++;
+  }
+}

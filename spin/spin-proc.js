@@ -1,5 +1,6 @@
 const CH_META_LEN = 12;
-
+const nchannels = 32;
+const REND_BLOCK = 128;
 /*
  typedef struct {
   float *inputf, *outputf;
@@ -50,7 +51,12 @@ class SpinProcessor extends AudioWorkletProcessor {
       processorOptions: { sb, wasm, lpfwasm, fc },
     } = options;
     this.sb = sb;
-    this.updateArray = new Uint32Array(this.sb);
+    this.updateArray = new Uint32Array(this.sb, 0, CH_META_LEN * 32);
+    this.outputSnap = new Float32Array(
+      this.sb,
+      CH_META_LEN * 32 * Uint32Array.BYTES_PER_ELEMENT,
+      REND_BLOCK * nchannels
+    );
     this.inst = new WebAssembly.Instance(new WebAssembly.Module(wasm), {
       env: {},
     });
@@ -73,19 +79,24 @@ class SpinProcessor extends AudioWorkletProcessor {
         const int = s1 + (s2 << 8);
         return int > 0x8000 ? -(0x10000 - int) / 0x8000 : int / 0x7fff;
       };
-      await reader.read().then(function process({ done, value }) {
+      while (true) {
+        const { done, value } = await reader.read();
         if (done) {
-          return writeOffset;
+          await stream.closed;
+          break;
         }
-        if (leftover) {
-          fl[writeOffset++] = decode(leftover, value.shift());
+        if (!value) continue;
+        let readIndex = 0;
+
+        if (leftover != null) {
+          fl[writeOffset++] = decode(leftover, value[readIndex++]);
         }
-        let i;
-        for (i = 0; i < value.length / 2; i++) {
-          fl[writeOffset++] = decode(value[2 * i], value[2 * i + 1] << 8);
+        const n = ~~(value.length / 2);
+        while (readIndex < n) {
+          fl[writeOffset++] = decode(value[readIndex++], value[readIndex++]);
         }
-        reader.read().then(process);
-      });
+        if (readIndex < value.length - 1) leftover = value[value.length - 1];
+      }
       for (const sampleId in segments) {
         this.sampleIdRefs[parseInt(sampleId)] =
           segments[sampleId].startByte + offset;
@@ -140,25 +151,20 @@ class SpinProcessor extends AudioWorkletProcessor {
     if (this.updateArray[offset + CH_META_LEN] != 0) {
       this.sync(offset + CH_META_LEN);
     }
-
-    console.log(
-      new Float32Array(
-        this.memory.buffer,
-        spRef2json(this.memory.buffer, this.spinners[channel])[0],
-        122
-      )
-    );
   }
 
   process(_, o, parameters) {
     if (this.updateArray[0] > 0) {
       this.sync(0);
     }
-    for (let i = 0; i < 32; i++) {
+    for (let i = 0; i < 16; i++) {
       if (!o[i]) continue;
       if (this.spinners[i]) {
         this.inst.exports.spin(this.spinners[i], o[i][0].length);
         o[i][0].set(this.outputs[i]);
+        new Promise((r) => (r) => resolve()).then(() =>
+          this.outputSnap.set(this.outputs[i], 2 * i * REND_BLOCK)
+        );
       }
     }
     return true;

@@ -11,20 +11,20 @@ export class LowPassFilterNode extends AudioWorkletNode {
       cutoffFrequency = ctx.sampleRate * 0.5;
     }
     super(ctx, "lpf", {
-      numberOfInputs: 2,
-      numberOfOutputs: 1,
+      numberOfInputs: 16,
+      numberOfOutputs: 16,
       processorOptions: {
+        outputChannelCount: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
         wasmbin,
         filterFC: cutoffFrequency / ctx.sampleRate,
       },
     });
   }
   set frequency(freq) {
-    console.log("set f", freq);
     this.port.postMessage(freq / this.context.sampleRate);
   }
   modulate(input) {
-    input.connect(this, 0, 1);
+    //input.connect(this, 0, 1);
   }
 }
 export const getwasm = async () =>

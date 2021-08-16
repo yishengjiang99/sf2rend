@@ -1,7 +1,6 @@
 function AUnitPool() {
   const pool = [];
   function dequeue(pcm, shdr, zone) {
-    //if (pool.length < 5) return null;
     if (pool.length < 1) return null;
     for (const i in pool) {
       if (pool[i].spinner.zhref == shdr.hdrRef) {

@@ -1,15 +1,15 @@
 import { SpinNode } from "../spin/spin.js";
-import { mkcanvas, renderFrames } from "../chart/chart.js";
 import { loadProgram } from "../sf2-service/read.js";
 import { mkEnvelope } from "./adsr.js";
-import { LowPassFilterNode } from "../lpf/lpf.js";
-export function channel(ctx, sf2, id, ui) {
+export function channel(aggregatedCtx, sf2, channelId, ui) {
+  const { ctx, spinner, lpf } = aggregatedCtx;
   console.assert(sf2 != null && sf2.presetRefs != null);
   const activeNotes = [];
-  const spinner = SpinNode.alloc(ctx);
   const volEG = mkEnvelope(ctx);
-  const lpf = new LowPassFilterNode(ctx, 15555);
-  spinner.connect(volEG.gainNode).connect(lpf).connect(ctx.destination);
+  spinner
+    .connect(lpf, channelId, channelId)
+    .connect(volEG.gainNode)
+    .connect(ctx.destination);
   let _midicc;
   let pg;
 
@@ -18,7 +18,6 @@ export function channel(ctx, sf2, id, ui) {
     pg = loadProgram(sf2, pid, bankId);
     await spinner.shipProgram(pg);
     return pg;
-    // await pg.preload();
   }
   function silence() {
     activeNotes().forEach((v) => v.volEG.keyOff(0));
@@ -26,13 +25,11 @@ export function channel(ctx, sf2, id, ui) {
   async function keyOn(key, vel) {
     if (!pg) return;
     const zone = pg.filterKV(key, vel)[0];
-    spinner.keyOn(id, zone, key, vel);
+    spinner.keyOn(channelId, zone, key, vel);
     volEG.midiState = _midicc;
     volEG.zone = zone;
-    lpf.frequency = semitone2hz(zone.FilterFc);
     volEG.keyOn(ctx.currentTime + ctx.baseLatency);
     activeNotes.push({ spinner, volEG, lpf, key });
-    ui.zone = zone;
     ui.midi = key;
     ui.velocity = vel;
   }
@@ -42,7 +39,6 @@ export function channel(ctx, sf2, id, ui) {
       if (activeNotes[i].key == key) {
         var unit = activeNotes[i];
         unit.volEG.keyOff(ctx.currentTime + ctx.baseLatency);
-
         break;
       }
     }
@@ -53,7 +49,6 @@ export function channel(ctx, sf2, id, ui) {
     silence,
     keyOff,
     setProgram,
-    id,
     ctx,
     set midicc(cc) {
       _midicc = cc;

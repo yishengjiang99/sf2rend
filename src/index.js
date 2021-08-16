@@ -3,18 +3,22 @@ import { SpinNode } from "../spin/spin.js";
 import { LowPassFilterNode } from "../lpf/lpf.js";
 import { mkui } from "./ui.js";
 import { load } from "../sf2-service/read.js";
-
+import { chart, mkcanvas, renderFrames } from "../chart/chart.js";
 import { fetchmidilist } from "./midilist.js";
 import { channel } from "./channel.js";
 const flist = document.querySelector("#sf2list");
 const cpanel = document.querySelector("#channelContainer");
 const { stdout } = logdiv(document.querySelector("pre"));
-window.stdout = stdout;
 const cmdPanel = document.querySelector("footer");
 const timeslide = document.querySelector("progress");
-main();
+const programNames = [];
 
-async function main() {
+main(
+  "https://grep32bit.blob.core.windows.net/midi/Britney_Spears_-_Baby_One_More_Time.mid",
+  "https://dsp.grepawk.com/sf2rend/file.sf2"
+); //.then(() => {});
+
+async function main(midiurl, sf2file) {
   const pt = (function () {
     const _arr = [];
     let _fn;
@@ -30,20 +34,23 @@ async function main() {
   })(11);
 
   const controllers = mkui(cpanel, pt);
-  const sf2 = await loadf("https://dsp.grepawk.com/sf2rend/file.sf2");
+  const sf2 = await load(sf2file, {
+    onHeader(pid, bid, str) {
+      flist.append(
+        mkdiv("a", { class: "chlink", pid, bid }, [str]).wrapWith("li")
+      );
+      programNames[pid | bid] = str;
+    },
+  });
   if (!sf2.presetRefs) return;
   const ctx = await initAudio();
-  document.addEventListener("mousedown", async () => await ctx.resume(), {
-    once: true,
-  });
+
   const midiSink = await initMidiSink(ctx, sf2, controllers, pt);
-  const { presets, totalTicks, midiworker } = await initMidiReader(
-    "https://grep32bit.blob.core.windows.net/midi/Britney_Spears_-_Baby_One_More_Time.mid"
-  );
+  const { presets, totalTicks, midiworker } = await initMidiReader(midiurl);
   timeslide.setAttribute("max", totalTicks);
   for await (const _ of (async function* g() {
     yield await midiSink.channels[0].setProgram(0, 0);
-    yield await midiSink.channels[9].setProgram(128, 0);
+    yield await midiSink.channels[9].setProgram(0, 128);
 
     for (const preset of presets) {
       const { pid, channel, t } = preset;
@@ -72,18 +79,16 @@ async function main() {
     playlist: mkdiv("div", {}, await fetchmidilist()),
   });
   bindMidiAccess(pt);
-}
-const programNames = [];
-async function loadf(file) {
-  flist.innerHTML = "";
-  return load(file, {
-    onHeader(pid, bid, str) {
-      flist.append(
-        mkdiv("a", { class: "chlink", pid, bid }, [str]).wrapWith("li")
+  function updateCanvas() {
+    for (let i = 0; i < 16; i++) {
+      chart(
+        midiSink.canvases[i],
+        ctx.spinner.outputSnapshot.subarray(i * 128, i * 128 + 128)
       );
-      programNames[pid | bid] = str;
-    },
-  });
+    }
+    requestAnimationFrame(updateCanvas);
+  }
+  requestAnimationFrame(updateCanvas);
 }
 
 function initMidiReader(url) {
@@ -131,12 +136,22 @@ function bindMidiWorkerToAudioAndUI(
       )
     );
 }
-async function initMidiSink(ctx, sf2, controllers, pt, spinner) {
+async function initMidiSink(ctx, sf2, controllers, pt) {
   const channels = [];
-  const ccs = midiCCState();
+  const ccs = new Uint8Array(128 * 16);
+  const canvases = [];
   for (let i = 0; i < 16; i++) {
     channels[i] = channel(ctx, sf2, i, controllers[i]);
     channels[i].midicc = ccs.subarray(i * 128, i * 128 + 128);
+    ccs[i * 128 + 7] = 100; //defalt volume
+    ccs[i * 128 + 11] = 127; //default expression
+    ccs[i * 128 + 10] = 64;
+    const canvasContainer = controllers[i].canvasContainer;
+    canvases[i] = mkcanvas({
+      container: canvasContainer,
+      height: canvasContainer.clientHeight,
+      width: canvasContainer.clientWidth,
+    });
   }
   pt.onmessage(function (data) {
     const [a, b, c] = data;
@@ -144,7 +159,6 @@ async function initMidiSink(ctx, sf2, controllers, pt, spinner) {
     const ch = a & 0x0f;
     const key = b & 0x7f,
       vel = c & 0x7f;
-    //  stdout(data);
     stdout("midi msg channel:" + ch + " cmd " + stat.toString(16));
     switch (stat) {
       case 0xb: //chan set
@@ -171,23 +185,20 @@ async function initMidiSink(ctx, sf2, controllers, pt, spinner) {
         break;
     }
   });
-  function midiCCState() {
-    const ccs = new Uint8Array(128 * 16);
-    for (let i = 0; i < 16; i++) {
-      ccs[i * 128 + 7] = 100; //defalt volume
-      ccs[i * 128 + 11] = 127; //default expression
-      ccs[i * 128 + 10] = 64;
-    }
 
-    return ccs;
-  }
-  return { channels, ccs };
+  return { channels, ccs, canvases };
 }
 async function initAudio() {
   const ctx = new AudioContext({ sampleRate: 44100 });
   await SpinNode.init(ctx);
+  const spinner = new SpinNode(ctx);
+
   await LowPassFilterNode.init(ctx);
-  return ctx;
+  const lpf = new LowPassFilterNode(ctx, ctx.sampleRate * 0.45);
+  document.addEventListener("mousedown", async () => await ctx.resume(), {
+    once: true,
+  });
+  return { ctx, spinner, lpf };
 }
 
 async function bindMidiAccess(port) {

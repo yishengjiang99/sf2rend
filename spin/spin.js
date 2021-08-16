@@ -5,6 +5,8 @@ import {
 
 let wasmbin = null;
 const CH_META_LEN = 12;
+const RENDER_BLOCK = 128;
+const N_CHANNELS = 32;
 let k;
 export class SpinNode extends AudioWorkletNode {
   static async init(ctx) {
@@ -22,46 +24,45 @@ export class SpinNode extends AudioWorkletNode {
     return k;
   }
   constructor(ctx) {
-    const sb = new SharedArrayBuffer(CH_META_LEN * 16 * 4);
+    const sb = new SharedArrayBuffer(
+      CH_META_LEN * N_CHANNELS * Uint32Array.BYTES_PER_ELEMENT +
+        RENDER_BLOCK * N_CHANNELS * Float32Array.BYTES_PER_ELEMENT
+    );
     super(ctx, "spin-proc", {
       numberOfInputs: 0,
       numberOfOutputs: 16,
-      outputChannelCount: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      outputChannelCount: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
       processorOptions: {
         sb,
         wasm: wasmbin,
       },
     });
     this.sb = sb;
-    this.f32view = new Float32Array(this.sb);
-    this.u32view = new Uint32Array(this.sb);
+    this.f32view = new Float32Array(this.sb, 0, CH_META_LEN * N_CHANNELS);
+    this.u32view = new Uint32Array(this.sb, 0, CH_META_LEN * N_CHANNELS);
+    const outputSampleStart =
+      CH_META_LEN * N_CHANNELS * Uint32Array.BYTES_PER_ELEMENT;
+    this.output_floats = new Float32Array(this.sb, outputSampleStart);
     this.fetchWorker = getWorker(this.port);
     // if(egPortzone.postMessage({});
-  }
-  reset() {
-    this.pcm_meta[0] = 2;
-  }
-  despose() {
-    this.pcm_meta[0] = -1;
   }
 
   keyOn(channel, zone, key, vel) {
     let updateOffset = 0;
     const pcmMeta = this.u32view;
-    console.log(pcmMeta);
     while (pcmMeta[updateOffset] != 0) updateOffset += CH_META_LEN;
     let loops = zone.shdr.loops;
     if (!(zone.SampleModes == 1 && loops[1] - loops[0] > 255)) {
-      loops = [-1, zone.shdr.byteLength / 2];
+      loops = [0, zone.shdr.byteLength / 2];
     }
     pcmMeta.set(
-      new Uint32Array([1, channel, zone.SampleId, loops[0], loops[1]])
+      new Uint32Array([2, channel, zone.SampleId, loops[0], loops[1]])
     );
     this.f32view.set(
       new Float32Array([
         zone.calcPitchRatio(key, this.context.sampleRate),
         0,
-        0.1,
+        0.2,
         1 / this.context.sampleRate / Math.pow(2, zone.VolEnvAttack / 1200),
       ]),
       updateOffset + 5
@@ -82,18 +83,8 @@ export class SpinNode extends AudioWorkletNode {
   handleMsg(e) {
     console.log(e.data);
   }
-  set sample({ channel, shdr, stride }) {
-    this.pcm_meta.set(
-      new Int32Array([stride, shdr.loops[0], shdr.loops[1], shdr.hdrRef]),
-      channel * CH_META_LEN
-    );
-    this.shRef = shdr.hdrRef;
-  }
-  get shref() {
-    return this.shRef;
-  }
-  get flsize() {
-    return this.pcm.byteLength;
+  get outputSnapshot() {
+    return this.output_floats;
   }
 }
 export async function mkspinner(ctx, pcm, loops) {

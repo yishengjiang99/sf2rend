@@ -1,4 +1,9 @@
-declare function mkcanvas(container?: HTMLElement): CanvasRenderingContext2D;
+declare function mkcanvas({
+  width,
+  height,
+  container,
+  title,
+}): CanvasRenderingContext2D;
 declare function resetCanvas(ctx: CanvasRenderingContext2D): void;
 declare function chart(
   ctx: CanvasRenderingContext2D,

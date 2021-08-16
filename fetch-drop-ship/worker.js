@@ -25,17 +25,16 @@ async function loadsdta(url, smpls, destination) {
       endByte: range[1] - min,
     };
   }
-  return fetch(url, {
+  const res = await fetch(url, {
     headers: {
       range: "bytes=" + [min, max].join("-"),
     },
-  }).then((res) => {
-    //if (res.ok === false) throw "fetch" + url + "failed ";
-
-    destination.postMessage(
-      { stream: res.body, segments, nsamples: (max - min + 1) / 2 },
-      [res.body]
-    );
-    return res.bodyUsed;
   });
+  destination.postMessage(
+    { stream: res.body, segments, nsamples: (max - min + 1) / 2 },
+    [res.body]
+  );
+  await res.body.close;
+  return;
+  //if (res.ok === false) throw "fetch" + url + "failed ";
 }
