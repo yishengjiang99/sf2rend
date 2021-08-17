@@ -24,7 +24,7 @@ export function mkEnvelope(ctx) {
       const sf2attenuate = Math.pow(10, _zone.Attenuation * -0.005);
       const midiVol = _midiState[effects.volumecoarse] / 128;
       const midiExpre = _midiState[effects.expressioncoarse] / 128;
-      gainMax = 2 * sf2attenuate * midiVol * midiExpre;
+      gainMax = 1 * sf2attenuate * midiVol * midiExpre;
 
       volumeEnveope.gain.linearRampToValueAtTime(gainMax, delay + attack);
       if (decay > 0.001 && sustain > 0.001) {
