@@ -91,11 +91,12 @@ export function loadProgram(
   function getShdr(SampleId) {
     const hdrRef = shdrref + SampleId * 46;
     const dv = heap.slice(hdrRef, hdrRef + 46);
-    const [start, end, startloop, endloop, sampleRate] = new Uint32Array(
+    let [start, end, startloop, endloop, sampleRate] = new Uint32Array(
       dv,
       20,
       5
     );
+    start = Math.max(startloop - 56, start);
 
     const [originalPitch] = new Uint8Array(dv, 20 + 5 * 4, 1);
     const range = [sdtaStart + start * 2, sdtaStart + end * 2 + 1];

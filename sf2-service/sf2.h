@@ -118,7 +118,7 @@ zone_t *findPresetZones(int i, int nregions);
 zone_t *findPresetByName(const char *name);
 int findPresetZonesCount(int i);
 
-zone_t * filterForZone(zone_t *pset, uint8_t key, uint8_t vel);
+zone_t *filterForZone(zone_t *pset, uint8_t key, uint8_t vel);
 
 enum grntypes {
   StartAddrOfs,

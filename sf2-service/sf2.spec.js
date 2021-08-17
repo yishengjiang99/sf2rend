@@ -1,27 +1,23 @@
 /* eslint-disable no-undef */
-import { load } from "./read.js";
+import { load, loadProgram } from "./read.js";
 import {
   mkcanvas,
   chart,
-  resetCanvas,
-} from "https://unpkg.com/draw-canvas-60fps@1.0.1/chart.js";
+  renderFrames,
+} from "https://unpkg.com/mk-60fps/chart.js";
 document.body.id = "mocha";
 // eslint-disable-next-line no-undef
 mocha.setup("bdd");
 const expect = globalThis.chai.expect;
-const cctx = mkcanvas(244, 230, document.body);
+const cctx = mkcanvas();
 
 describe("pdtaquery", () => {
   it("parswes file and loads zones", () => {
-    load("file.sf2").then(async ({ loadProgram, getFont }) => {
-      const sfz = loadProgram(0, 0);
-      const z = sfz.filter(55, 64);
-      console.log(await z[0].pcm);
-      console.log(await sfz.filter(55, 22)[0].pcm);
-      console.log(await sfz.filter(57, 64)[0].pcm);
-      console.log(await sfz.filter(22, 11)[0].pcm);
-      console.log(await sfz.filter(22, 64)[0].pcm);
-      console.log(await sfz.filter(55, 56)[0].pcm);
+    load("file.sf2").then(async (sf2) => {
+      const sfz = loadProgram(sf2, 0, 0);
+      sfz.zMap.forEach(async (z) => {
+        renderFrames(mkcanvas(), await z.pcm);
+      });
     });
   });
 });
