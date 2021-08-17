@@ -75,11 +75,10 @@ async function main(midiurl, sf2file) {
   }
   let cid = 0;
   flist.onclick = ({ target }) =>
-    // target.classList.contain("chlink") &&
-    midiSink.channels[cid++].setProgram(
+    _loadProgram(
+      cid++,
       target.getAttribute("pid"),
-      target.getAttribute("bid"),
-      programNames[target.getAttribute("pid") + target.getAttribute("bid")]
+      target.getAttribute("bankId")
     );
   bindMidiWorkerToAudioAndUI(midiworker, pt, {
     timeslide,
@@ -213,15 +212,17 @@ async function initAudio() {
   await LowPassFilterNode.init(ctx);
   const lpf = new LowPassFilterNode(ctx, ctx.sampleRate * 0.45);
   const egs = [];
+  const merg = new ChannelMergerNode(ctx, { numberOfInputs: 16 });
   const masterMixer = new GainNode(ctx, { gain: 1 });
   for (let i = 0; i < 16; i++) {
     egs[i] = mkEnvelope(ctx);
-    egs[i].gainNode.connect(spinner, 0, i);
-    DC.connect(egs[i].gainNode);
-    spinner.connect(masterMixer);
+    DC.connect(egs[i].gainNode)
+      .connect(spinner, 0, i)
+      // .connect(lpf, i, i)
+      .connect(merg, i);
   }
   DC.start();
-  masterMixer.connect(ctx.destination);
+  merg.connect(ctx.destination);
   document.addEventListener("mousedown", async () => await ctx.resume(), {
     once: true,
   });

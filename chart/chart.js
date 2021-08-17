@@ -32,9 +32,9 @@ export function chart(canvasCtx, dataArray) {
   canvasCtx.beginPath();
   canvasCtx.lineWidth = 1;
   canvasCtx.strokeStyle = "rbga(0xff,0xff,0x00,.5)";
-  canvasCtx.moveTo(0, _height / 2);
-  canvasCtx.lineTo(_width, _height / 2);
-  canvasCtx.stroke();
+  // canvasCtx.moveTo(0, _height / 2);
+  // canvasCtx.lineTo(_width, _height / 2);
+  // canvasCtx.stroke();
   canvasCtx.lineWidth = 2;
   canvasCtx.strokeStyle = "white";
   canvasCtx.moveTo(0, _height / 2);

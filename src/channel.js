@@ -21,19 +21,19 @@ export function channel(aggCtx, channelId, ui) {
     },
     keyOn(key, vel) {
       console.assert(_pg != null);
-      _pg.filterKV(key, vel).forEach((zone) => {
-        volEG.zone = zone;
-        volEG.midiState = _midicc;
-        volEG.keyOn(ctx.currentTime + ctx.baseLatency);
-        spinner.keyOn(channelId, zone, key, vel);
-      });
+      const zone = _pg.filterKV(key, vel)[0];
+      volEG.midiState = _midicc;
+      volEG.zone = zone;
+      spinner.keyOn(channelId, zone, key, vel);
+      volEG.keyOn(0);
+
       requestAnimationFrame(() => {
         ui.velocity = vel;
         ui.key = key;
       });
     },
     keyOff(key, vel) {
-      volEG.keyOff();
+      volEG.keyOff(0);
     },
   };
 }

@@ -52,7 +52,7 @@ export class SpinNode extends AudioWorkletNode {
     const pcmMeta = this.u32view;
     while (pcmMeta[updateOffset] != 0) updateOffset += CH_META_LEN;
     let loops = zone.shdr.loops;
-    if (!(zone.SampleModes == 1 && loops[1] - loops[0] > 255)) {
+    if (!(zone.SampleModes == 1 && loops[1] - loops[0] > 8)) {
       loops = [0, zone.shdr.byteLength / 2];
     }
     pcmMeta.set(
@@ -60,7 +60,7 @@ export class SpinNode extends AudioWorkletNode {
     );
     this.f32view.set(
       new Float32Array([
-        zone.calcPitchRatio(key, this.context.sampleRate),
+        channel == 9 ? 1 : zone.calcPitchRatio(key, this.context.sampleRate),
         0,
         0.2,
         1 / this.context.sampleRate / Math.pow(2, zone.VolEnvAttack / 1200),

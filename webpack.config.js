@@ -8,13 +8,11 @@ module.exports = {
     midiworker: "./src/midiworker.js",
     fetchworker: "./fetch-drop-ship/worker.js",
   },
-  mode: "development",
+  mode: "production",
 
   resolve: { extensions: ["*", ".js", ".jsx"] },
   output: {
     path: path.resolve(__dirname, "dist/"),
     filename: "[name].js",
   },
-
-  plugins: [new CleanWebpackPlugin(), new webpack.HotModuleReplacementPlugin()],
 };
