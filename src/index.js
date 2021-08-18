@@ -17,7 +17,7 @@ let sf2;
 
 main(
   "https://grep32bit.blob.core.windows.net/midi/Britney_Spears_-_Baby_One_More_Time.mid",
-  "https://dsp.grepawk.com/sf2rend/file.sf2"
+  "/sf2rend/sf2-service/file.sf2"
 );
 let _loadProgram;
 async function main(midiurl, sf2file) {
