@@ -7,7 +7,7 @@
  * or disable the default devtool with "devtool: false".
  * If you are looking for production-ready output files, see mode: "production" (https://webpack.js.org/configuration/mode/).
  */
-(self["webpackChunksf2rend"] = self["webpackChunksf2rend"] || []).push([["sf2-service_pdta_js"],{
+(globalThis["webpackChunksf2rend"] = globalThis["webpackChunksf2rend"] || []).push([["sf2-service_pdta_js"],{
 
 /***/ "./sf2-service/pdta.js":
 /*!*****************************!*\

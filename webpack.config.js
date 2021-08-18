@@ -15,6 +15,5 @@ module.exports = {
     path: path.resolve(__dirname, "dist/"),
     filename: "[name].js",
   },
-
   plugins: [new CleanWebpackPlugin(), new webpack.HotModuleReplacementPlugin()],
 };

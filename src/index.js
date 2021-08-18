@@ -60,7 +60,7 @@ async function main(midiurl, sf2file) {
     await ctx.spinner.shipProgram(sf2pg);
   };
   const { presets, totalTicks, midiworker } = await initMidiReader(midiurl);
-  timeslide.setAttribute("max", totalTicks);
+  timeslide.setAttribute("max", totalTicks / 255);
 
   await _loadProgram(0, 0, 0);
   await _loadProgram(9, 0, 128);
@@ -123,10 +123,10 @@ function bindMidiWorkerToAudioAndUI(
   midiworker.addEventListener("message", (e) => {
     if (e.data.channel) {
       midiPort.postMessage(e.data.channel);
-    } else if (e.data.tick) {
-      timeslide.value = e.data.tick; //(e.data.t);
+    } else if (e.data.qn) {
+      timeslide.value = e.data.qn; //(e.data.t);
     } else {
-      debugger;
+      stdout(JSON.stringify(e.data, null, 0));
     }
   });
   timeslide.value = 0;
@@ -141,10 +141,11 @@ function bindMidiWorkerToAudioAndUI(
       mkdiv(
         "a",
         {
+          href: "#" + l.get("Name"),
           onclick: () => midiworker.postMessage({ url: l.get("Url") }),
         },
         l.get("Name")
-      )
+      ).wrapWith("li")
     )
   );
   cmdPanel

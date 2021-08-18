@@ -80,7 +80,7 @@ eval("self.addEventListener(\n  \"message\",\n  ({ data: { url, smpls, destinati
 /******/ 	
 /******/ 	/* webpack/runtime/getFullHash */
 /******/ 	(() => {
-/******/ 		__webpack_require__.h = () => ("3527f8632353e295d021")
+/******/ 		__webpack_require__.h = () => ("743ea7edd7ee6aec37a0")
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/global */
@@ -587,7 +587,7 @@ eval("self.addEventListener(\n  \"message\",\n  ({ data: { url, smpls, destinati
 /******/ 			});
 /******/ 		}
 /******/ 		
-/******/ 		self["webpackHotUpdatesf2rend"] = (chunkId, moreModules, runtime) => {
+/******/ 		globalThis["webpackHotUpdatesf2rend"] = (chunkId, moreModules, runtime) => {
 /******/ 			for(var moduleId in moreModules) {
 /******/ 				if(__webpack_require__.o(moreModules, moduleId)) {
 /******/ 					currentUpdate[moduleId] = moreModules[moduleId];

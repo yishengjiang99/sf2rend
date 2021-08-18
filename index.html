@@ -31,7 +31,8 @@
 			color: inherit;
 			overflow-y: auto;
 			transition: transform 150ms ease-out 0s;
-
+			display: grid;
+			grid-template-rows: 1fr 1fr;
 		}
 
 		#right {
@@ -89,21 +90,10 @@
 	</header>
 	<aside class='col-md-3'>
 
-		<form sticky> <select name='selectfile' id='sf2sel'>
-				<option value='file.sf2'>file.sf2 </option>
-				<option value='sm.sf2'> sm.sf2</option>
-			</select>
-			<select name='midif' id='midi2sel'>
-				<opton value='song.mid'>song.mid</opton>
-			</select>
-		</form>
-		<script>
-			const [sf2sel, midsel] = Array.from(document.querySelectorAll("select"));
-		</script>
+
 
 		<div id='sf2list'></div>
 		<div id='midilist'>
-			<a href="test.html">a</a>
 		</div>
 
 	</aside>

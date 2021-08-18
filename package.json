@@ -14,12 +14,9 @@
     "lpf": "^1.0.0",
     "mk-60fps": "file:chart",
     "mkdiv": "^2.0.3",
-    "mocha-chai-cdn": "^2.0.2",
-    "nco": "^1.0.1",
-    "parse-sf2": "^2.1.2",
-    "sf2-service": "^2.0.0",
-    "spin": "^0.0.1"
+    "mocha-chai-cdn": "^2.0.2"
   },
+  "browserslist": "last 4 chrome version",
   "devDependencies": {
     "eslint": "^7.31.0",
     "eslint-plugin-react": "^7.24.0",
