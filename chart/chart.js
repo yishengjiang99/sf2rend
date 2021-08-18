@@ -30,11 +30,10 @@ export function chart(canvasCtx, dataArray) {
     max = dataArray[i] > max ? dataArray[i] : max;
   }
   canvasCtx.beginPath();
-  canvasCtx.lineWidth = 1;
-  canvasCtx.strokeStyle = "rbga(0xff,0xff,0x00,.5)";
-  canvasCtx.moveTo(0, _height / 2);
-  canvasCtx.lineTo(_width, _height / 2);
-  canvasCtx.stroke();
+  // canvasCtx.lineWidth = 0.1;
+  // canvasCtx.moveTo(0, _height / 2);
+  // canvasCtx.lineTo(_width, _height / 2);
+  // canvasCtx.stroke();
   canvasCtx.lineWidth = 2;
   canvasCtx.strokeStyle = "white";
   canvasCtx.moveTo(0, _height / 2);
@@ -73,7 +72,7 @@ export async function renderFrames(
   canvsCtx,
   arr,
   fps = 60,
-  samplesPerFrame = 1024
+  samplesPerFrame = 48000 / 60
 ) {
   let nextframe,
     offset = 0;

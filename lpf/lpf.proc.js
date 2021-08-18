@@ -14,7 +14,8 @@ class LowPassFilterProc extends AudioWorkletProcessor {
     this.port.onmessage = this.onmsg.bind(this);
   }
   onmsg({ data }) {
-    new Float32Array(this.buffer, 0, 1)[0] = data;
+    // const state=new Float32Array(this.buffer, 0, 1);
+    // stae
   }
   process(input, output) {
     for (let i = 0; i < input.length; i++) {

@@ -30,7 +30,7 @@ export function channel(aggCtx, channelId, ui) {
 
       requestAnimationFrame(() => {
         ui.velocity = vel;
-        ui.key = key;
+        ui.midi = key;
         ui.env1 = eg;
       });
     },

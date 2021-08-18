@@ -36,7 +36,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpac
   \***************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _midiread_dist_scheduler_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../midiread/dist/scheduler.js */ \"./midiread/dist/scheduler.js\");\n\n(async () => {\n  const url = self.location.hash.split(\"#\")[1];\n  console.log(url);\n  const res = await fetch(url);\n  const ab = await res.arrayBuffer();\n  const {\n    ctrls: { run, rwd, pause },\n    totalTicks,\n    presets,\n  } = await (0,_midiread_dist_scheduler_js__WEBPACK_IMPORTED_MODULE_0__.scheduler)(new Uint8Array(ab), postMessage);\n  // @ts-ignore\n  postMessage({ totalTicks, presets });\n  onmessage = ({ data: { cmd, amt } }) => {\n    switch (cmd) {\n      case \"start\":\n        run();\n        break;\n      case \"pause\":\n        pause();\n        break;\n      case \"resume\":\n        run();\n        break;\n\n      case \"rwd\":\n        rwd(amt || 16);\n        break;\n      case \"ff\":\n        break;\n    }\n  };\n})();\n\n\n//# sourceURL=webpack://sf2rend/./src/midiworker.js?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _midiread_dist_scheduler_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../midiread/dist/scheduler.js */ \"./midiread/dist/scheduler.js\");\n\nconst main = async (_url) => {\n  const res = await fetch(_url);\n  const ab = await res.arrayBuffer();\n  const {\n    ctrls: { run, rwd, pause },\n    totalTicks,\n    tracks,\n    presets,\n  } = await (0,_midiread_dist_scheduler_js__WEBPACK_IMPORTED_MODULE_0__.scheduler)(new Uint8Array(ab), postMessage);\n  // @ts-ignore\n  postMessage({ totalTicks, presets });\n  for (const t of tracks) {\n    for (const et of t) {\n      if (et.t > 0) break;\n      if (!et.channel) postMessage(et);\n    }\n  }\n  onmessage = ({ data: { cmd, amt, url } }) => {\n    if (url) {\n      pause();\n      main(url);\n    }\n    switch (cmd) {\n      case \"start\":\n        run();\n        break;\n      case \"pause\":\n        pause();\n        break;\n      case \"resume\":\n        run();\n        break;\n\n      case \"rwd\":\n        rwd(amt || 16);\n        break;\n      case \"ff\":\n        break;\n    }\n  };\n};\n\nconst url = self.location.hash.split(\"#\")[1];\nconsole.log(url);\nmain(url);\n\n\n//# sourceURL=webpack://sf2rend/./src/midiworker.js?");
 
 /***/ })
 
@@ -113,7 +113,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _mid
 /******/ 	
 /******/ 	/* webpack/runtime/getFullHash */
 /******/ 	(() => {
-/******/ 		__webpack_require__.h = () => ("d656df7e3ad1aca82c56")
+/******/ 		__webpack_require__.h = () => ("3527f8632353e295d021")
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/global */

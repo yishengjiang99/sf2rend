@@ -97,7 +97,7 @@ export function mkui(cpanel, cb) {
         onmouseleave: (e) => {
           e.target.querySelector(".keyboards").style.display = "none";
         },
-        style: "display:grid; grid-template-columns:1fr 1fr 1fr",
+        style: "display:grid; grid-template-columns:1fr 2fr 3fr",
       },
       [
         mkdiv("div", { style: "display:grid; grid-template-columns:1fr" }, [
@@ -124,7 +124,7 @@ export function mkui(cpanel, cb) {
             mksvg(
               "svg",
               {
-                style: "width:80;height:40; display:inline;",
+                style: "width:80px;height:59px; display:inline;",
                 viewBox: "0 0 80 40",
               },
               [

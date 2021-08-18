@@ -81,7 +81,6 @@ class SpinProcessor extends AudioWorkletProcessor {
         this.sampleIdRefs[parseInt(sampleId)] =
           segments[sampleId].startByte + offset;
       }
-      console.log(this.sampleIdRefs);
 
       this.port.postMessage({ ack: offset });
     } else {

@@ -18,8 +18,8 @@ let sf2;
 main(
   "https://grep32bit.blob.core.windows.net/midi/Britney_Spears_-_Baby_One_More_Time.mid",
   "https://dsp.grepawk.com/sf2rend/file.sf2"
-); //.then(() => {});
-
+);
+let _loadProgram;
 async function main(midiurl, sf2file) {
   const pt = (function () {
     const _arr = [];
@@ -48,9 +48,7 @@ async function main(midiurl, sf2file) {
   const ctx = await initAudio();
 
   const midiSink = await initMidiSink(ctx, sf2, controllers, pt);
-  const { presets, totalTicks, midiworker } = await initMidiReader(midiurl);
-  timeslide.setAttribute("max", totalTicks);
-  async function _loadProgram(channel, pid, bankId) {
+  _loadProgram = async function (channel, pid, bankId) {
     const sf2pg = loadProgram(sf2, pid, bankId);
     midiSink.channels[channel].program = {
       pg: sf2pg,
@@ -60,7 +58,10 @@ async function main(midiurl, sf2file) {
     };
 
     await ctx.spinner.shipProgram(sf2pg);
-  }
+  };
+  const { presets, totalTicks, midiworker } = await initMidiReader(midiurl);
+  timeslide.setAttribute("max", totalTicks);
+
   await _loadProgram(0, 0, 0);
   await _loadProgram(9, 0, 128);
   for await (const _ of (async function* g(presets) {
@@ -75,16 +76,11 @@ async function main(midiurl, sf2file) {
   }
   let cid = 0;
   flist.onclick = ({ target }) =>
-    // target.classList.contain("chlink") &&
-    midiSink.channels[cid++].setProgram(
-      target.getAttribute("pid"),
-      target.getAttribute("bid"),
-      programNames[target.getAttribute("pid") + target.getAttribute("bid")]
-    );
+    _loadProgram(cid++, target.getAttribute("pid"), target.getAttribute("bid"));
   bindMidiWorkerToAudioAndUI(midiworker, pt, {
     timeslide,
     cmdPanel,
-    playlist: mkdiv("div", {}, await fetchmidilist()),
+    playlist: await fetchmidilist(),
   });
   bindMidiAccess(pt);
   function updateCanvas() {
@@ -129,14 +125,28 @@ function bindMidiWorkerToAudioAndUI(
       midiPort.postMessage(e.data.channel);
     } else if (e.data.tick) {
       timeslide.value = e.data.tick; //(e.data.t);
+    } else {
+      debugger;
     }
   });
+  timeslide.value = 0;
   mkdiv("button", { class: "cmd", cmd: "start" }, "start").attachTo(cmdPanel);
   mkdiv("button", { class: "cmd", cmd: "pause" }, "pause").attachTo(cmdPanel);
   mkdiv("button", { class: "cmd", cmd: "rwd", amt: "rwd" }, "rwd").attachTo(
     cmdPanel
   );
-
+  const listsdiv = document.querySelector("#midilist");
+  playlist.forEach((l) =>
+    listsdiv.append(
+      mkdiv(
+        "a",
+        {
+          onclick: () => midiworker.postMessage({ url: l.get("Url") }),
+        },
+        l.get("Name")
+      )
+    )
+  );
   cmdPanel
     .querySelectorAll("button.cmd")
     .forEach((btn) =>
@@ -144,6 +154,10 @@ function bindMidiWorkerToAudioAndUI(
         midiworker.postMessage({ cmd: e.target.getAttribute("cmd") })
       )
     );
+}
+function resetGM() {
+  cid = 0;
+  midiSink.channels.forEach((c) => c.keyOff(1, 1));
 }
 async function initMidiSink(ctx, sf2, controllers, pt) {
   const channels = [];
@@ -210,8 +224,8 @@ async function initAudio() {
     loop: true,
   });
   DC.buffer.getChannelData(0)[0] = 1;
-  await LowPassFilterNode.init(ctx);
-  const lpf = new LowPassFilterNode(ctx, ctx.sampleRate * 0.45);
+  // await LowPassFilterNode.init(ctx);
+  // const lpf = new LowPassFilterNode(ctx, ctx.sampleRate * 0.45);
   const egs = [];
   const masterMixer = new GainNode(ctx, { gain: 1 });
   for (let i = 0; i < 16; i++) {
@@ -227,7 +241,7 @@ async function initAudio() {
   document.addEventListener("mousedown", async () => await ctx.resume(), {
     once: true,
   });
-  return { ctx, spinner, lpf, egs, masterMixer };
+  return { ctx, spinner, egs, masterMixer };
 }
 
 async function bindMidiAccess(port) {
