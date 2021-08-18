@@ -1,5 +1,5 @@
 /* eslint-disable no-undef */
-import { load, loadProgram } from "./read.js";
+import { load, loadProgram, zref2Zone } from "./read.js";
 import {
   mkcanvas,
   chart,
@@ -14,9 +14,17 @@ const cctx = mkcanvas();
 describe("pdtaquery", () => {
   it("parswes file and loads zones", () => {
     load("file.sf2").then(async (sf2) => {
-      const sfz = loadProgram(sf2, 0, 0);
-      sfz.zMap.forEach(async (z) => {
-        renderFrames(mkcanvas(), await z.pcm);
+      const z = zref2Zone(sf2.presetRefs[0].ref, sf2.heap);
+      expect(z.SampleId).to.exist; //instanceof(Int16Array);
+      const pg = loadProgram(sf2, 0, 0);
+      console.log(
+        pg.zMap.map((z) => z.KeyRange.lo + "_" + z.KeyRange.hi).join("\n")
+      );
+      pg.filterKV(55, 77).forEach(async (z) => {
+        renderFrames(
+          mkcanvas({ title: "sampleid" + z.KeyRange.lo + "-" + z.KeyRange.hi }),
+          await z.pcm
+        );
       });
     });
   });

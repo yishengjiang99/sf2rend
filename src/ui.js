@@ -63,7 +63,9 @@ export class TrackUI {
   get canvasContainer() {
     return this.canc;
   }
-  set zone(z) {}
+  set zone(z) {
+    document.querySelector("#debug").innerHTML = JSON.stringify(z, null, 1);
+  }
 }
 const range = (x, y) =>
   Array.from(

@@ -11,7 +11,6 @@
   "dependencies": {
     "@types/webmidi": "^2.0.6",
     "clean-webpack-plugin": "*",
-    "lpf": "^1.0.0",
     "mk-60fps": "file:chart",
     "mkdiv": "^2.0.3",
     "mocha-chai-cdn": "^2.0.2"

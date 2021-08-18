@@ -65,10 +65,11 @@ export function newSFZoneMap(ref, attrs) {
   var obj = { ref };
   for (let i = 0; i < 60; i++) {
     if (attributeKeys[i] == "VelRange" || attributeKeys[i] == "KeyRange") {
-      obj[attributeKeys[i]] = {
-        hi: (attrs[i] & 0x7f00) >> 8,
-        lo: attrs[i] & 0x007f,
-      };
+      // obj[attributeKeys[i]] = {
+      //   hi: (attrs[i] & 0x7f00) >> 8,
+      //   lo: attrs[i] & 0x007f,
+      // };
+      obj[attributeKeys[i]] = attrs[i];
     } else {
       obj[attributeKeys[i]] = attrs[i];
     }

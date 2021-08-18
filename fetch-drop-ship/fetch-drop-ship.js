@@ -6,8 +6,8 @@ export async function requestDownload(worker, sf2_program) {
   let payload = [];
   for (const sample of samples) {
     if (
-      // lastSid != null &&
-      // lastSid + 1 != sample.sampleId &&
+      lastSid != null &&
+      lastSid + 1 != sample.SampleId &&
       payload.length > 0
     ) {
       worker.postMessage({

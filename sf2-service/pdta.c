@@ -24,8 +24,11 @@ float *sdta;
 int sdtastart;
 zone_t *presetZones;
 zone_t *root;
-zone_t *presets[0xff];
-
+typedef struct {
+  unsigned int n;
+  zone_t *zones;
+} preset_t;
+preset_t presets[0xff];
 #define read(section)                         \
   sh = (section_header *)pdtabuffer;          \
   pdtabuffer += 8;                            \
@@ -47,28 +50,16 @@ void *loadpdta(void *pdtabuffer) {
   read(shdr);
 
   for (int i = 0; i < nphdrs; i++) {
-    if (phdrs[i].bankId == 0) {
+    if (phdrs[i].bankId == 0 || phdrs[i].bankId == 128) {
       emitHeader(phdrs[i].pid, phdrs[i].bankId, phdrs + i);
-      presets[phdrs[i].pid] = findPresetZones(i, findPresetZonesCount(i));
-    } else if (phdrs[i].bankId == 128) {
-      emitHeader(phdrs[i].pid, phdrs[i].bankId, phdrs + i);
-
+      int ctn = findPresetZonesCount(i);
       presets[phdrs[i].pid | phdrs[i].bankId] =
-          findPresetZones(i, findPresetZonesCount(i));
+          (preset_t){ctn, findPresetZones(i, ctn)};
     }
   }
+
   // get mem end;
   return malloc(4);
-}
-
-zone_t *findByPid(int pid, int bkid) {
-  for (int i = 0; i < nphdrs - 1; i++) {
-    if (phdrs[i].pid == pid && phdrs[i].bankId == bkid) {
-      return presets[phdrs[i].pid | phdrs[i].bankId];
-    }
-  }
-
-  return NULL;
 }
 void sanitizedInsert(short *attrs, int i, pgen_t *g) {
   switch (i % 60) {
@@ -117,6 +108,7 @@ int findPresetZonesCount(int i) {
                g++) {
             if (g->genid == SampleId) {
               nregions++;
+              break;
             }
           }
         }
@@ -142,8 +134,7 @@ zone_t *findPresetZones(int i, int nregions) {
     if (pbagIndex == npbags - 1) lastPgenId = npgens - 1;
     pattrs[Unused1] = pbagIndex;
     if (pdefs) memcpy(pattrs, pdefs, 120);
-    int instIds[255];
-    int ninsts_ = 0;
+
     pattrs[Instrument] = -1;
     for (int k = pgenId; k < lastPgenId; k++) {
       pgen *g = pgens + k;
@@ -152,9 +143,6 @@ zone_t *findPresetZones(int i, int nregions) {
     if (pattrs[Instrument] == -1 && pdefs == NULL) {
       pdefs = pattrs;
     } else {
-      rangesType pKeyRange = ((genAmountType)pattrs[KeyRange]).ranges;
-      rangesType pVelRange = ((genAmountType)pattrs[VelRange]).ranges;
-
       inst *instrument = insts + pattrs[Instrument];
       short *instrument_defaults;
       short instrument_generators[60];
@@ -162,6 +150,8 @@ zone_t *findPresetZones(int i, int nregions) {
            ibagIndex < instrument[1].ibagNdx; ibagIndex++) {
         if (instrument_defaults != NULL) {
           memcpy(instrument_generators, instrument_defaults, 120);
+        } else {
+          memcpy(instrument_defaults, defvals, 120);
         }
         instrument_generators[SampleId] = -1;
         ibag *ib = ibags + ibagIndex;
@@ -170,21 +160,32 @@ zone_t *findPresetZones(int i, int nregions) {
           igen *ig = igens + igenIndex;
           sanitizedInsert(instrument_generators, ig->genid, ig);
         }
-        rangesType iKeyRange =
-            ((genAmountType)instrument_generators[KeyRange]).ranges;
-        rangesType iVelRange =
-            ((genAmountType)instrument_generators[VelRange]).ranges;
-        if (iKeyRange.lo > pKeyRange.hi) continue;
-        if (iKeyRange.hi < pKeyRange.hi) continue;
-        if (iVelRange.lo > pVelRange.hi) continue;
-        if (iVelRange.hi < pVelRange.lo) continue;
 
         if (instrument_generators[SampleId] != -1) {
+          short zoneattr[60] = defattrs;
+          int add = 1;
           for (int i = 0; i < 60; i++) {
-            zoneAttrs[i] = instrument_generators[i] + pattrs[i];
+            if (instrument_generators[i]) {
+              zoneattr[i] = instrument_generators[i];
+            }
+            short pbagAttr = pattrs[i];
+
+            if (i == VelRange || i == KeyRange) {
+            } else {
+              if (pattrs[i] != defvals[i]) {
+                zoneattr[i] += pattrs[i];  // - defvals[i];
+              } else if (pdefs[i] != defvals[i]) {
+                zoneattr[i] += pdefs[i];  // - defvals[i];
+              }
+            }
           }
-          memcpy(&zones[found++], zoneAttrs,
-                 120);  // = (zone_t *)zoneAttrs;
+          zoneattr[Unused3] = pattrs[KeyRange];
+          zoneattr[Unused4] = pattrs[VelRange];
+
+          if (add) {
+            memcpy(zones + found, zoneattr, 60 * sizeof(short));
+            found++;
+          }
         } else {
           if (instrument_defaults == NULL)
             instrument_defaults = instrument_generators;
