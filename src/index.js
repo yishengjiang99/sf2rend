@@ -85,7 +85,7 @@ async function main(midiurl, sf2file) {
   bindMidiAccess(pt);
   function updateCanvas() {
     for (let i = 0; i < 16; i++) {
-      if (ctx.egs[i].gainNode.gain.value > 0.000001)
+      if (ctx.egs[i].gainNode.gain.value > 0.00001)
         chart(
           midiSink.canvases[i],
           ctx.spinner.outputSnapshot.subarray(i * 128, i * 128 + 128)
