@@ -218,7 +218,9 @@ async function initAudio() {
     egs[i] = mkEnvelope(ctx);
     egs[i].gainNode.connect(spinner, 0, i);
     DC.connect(egs[i].gainNode);
-    spinner.connect(masterMixer);
+    spinner
+      .connect(new ChannelMergerNode(ctx, { numberOfInputs: 16 }), i, 0)
+      .connect(masterMixer);
   }
   DC.start();
   masterMixer.connect(ctx.destination);

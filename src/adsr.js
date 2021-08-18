@@ -32,10 +32,9 @@ export function mkEnvelope(ctx) {
       //   gainMax * sustain,
       //   delay + attack + hold + decay
       // );
-      return { phases: [delay, attack, hold, decay, release], peak: gainMax };
+      return { phases: [attack, decay, sustain, release], peak: gainMax };
     },
     keyOff() {
-      volumeEnveope.gain.cancelScheduledValues(0);
       volumeEnveope.gain.linearRampToValueAtTime(0.0, release);
     },
     gainNode: volumeEnveope,

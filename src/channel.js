@@ -20,16 +20,18 @@ export function channel(aggCtx, channelId, ui) {
       ui.name = name || "pid " + pid + " bid " + bankId;
     },
     keyOn(key, vel) {
+      let eg;
       console.assert(_pg != null);
-      _pg.filterKV(key, vel).forEach((zone) => {
-        volEG.zone = zone;
-        volEG.midiState = _midicc;
-        volEG.keyOn(ctx.currentTime + ctx.baseLatency);
-        spinner.keyOn(channelId, zone, key, vel);
-      });
+      const zone = _pg.filterKV(key, vel)[0];
+      volEG.zone = zone;
+      volEG.midiState = _midicc;
+      eg = volEG.keyOn(ctx.currentTime + ctx.baseLatency);
+      spinner.keyOn(channelId, zone, key, vel);
+
       requestAnimationFrame(() => {
         ui.velocity = vel;
         ui.key = key;
+        ui.env1 = eg;
       });
     },
     keyOff(key, vel) {
