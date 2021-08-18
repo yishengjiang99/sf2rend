@@ -9,16 +9,13 @@
   "author": "Yisheng Jiang",
   "license": "ISC",
   "dependencies": {
-    "@types/webmidi": "^2.0.6",
-    "clean-webpack-plugin": "*",
-    "mk-60fps": "file:chart",
-    "mkdiv": "^2.0.3",
-    "mocha-chai-cdn": "^2.0.2"
+    "midiread": "^2.0.15",
+    "mk-60fps": "^1.0.5",
+    "mkdiv": "^2.1.0"
   },
   "browserslist": "last 4 chrome version",
   "devDependencies": {
     "eslint": "^7.31.0",
-    "eslint-plugin-react": "^7.24.0",
     "webpack": "^5.50.0",
     "webpack-cli": "^4.7.2"
   }

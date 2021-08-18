@@ -52,6 +52,7 @@ export function loadProgram(
   const shdrDataMap = {};
   for (let i = 0; i < cnt; i++) {
     const zone = zref2Zone(ref + i * 120, heap);
+
     if (zone.SampleId == -1) break;
     const mapKey = zone.SampleId;
     if (!shdrMap[mapKey]) {
@@ -129,17 +130,21 @@ export function loadProgram(
     url,
     zref: ref,
     filterKV: function (key, vel) {
-      return mapRef
-        .deref()
-        .filter(
-          (z) =>
-            (vel == -1 || (z.VelRange.lo <= vel && z.VelRange.hi >= vel)) &&
-            (key == -1 || (z.KeyRange.lo <= key && z.KeyRange.hi >= key))
-        );
+      return zMap.filter(
+        (z) =>
+          (vel == -1 ||
+            z.VelRange.lo == 0 ||
+            (z.VelRange.lo <= vel && z.VelRange.hi >= vel)) &&
+          (key == -1 || (z.KeyRange.lo <= key && z.KeyRange.hi >= key))
+      );
     },
   };
 }
 export function zref2Zone(zref, heap) {
-  const zone = new Int16Array(heap, zref, 60);
-  return newSFZoneMap(zref, zone);
+  try {
+    const zone = new Int16Array(heap, zref, 60);
+    return newSFZoneMap(zref, zone);
+  } catch (e) {
+    console.trace(e);
+  }
 }

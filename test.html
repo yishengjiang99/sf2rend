@@ -14,7 +14,24 @@
 
     promise_test(async () => {
       const sf2 = await load("file.sf2");
+      try {
+        const {shdrMap, zMap, preload, filterKV} = loadProgram(sf2, 0, 0); //.lo < z.KeyRange.hi));
+        assert_false(zMap.some(z => z.SampleId == -1), 'saome spids are -1');
+        console.log(zMap[0].KeyRange.lo);
+        assert_true(zMap.some(z => z.KeyRange.lo < z.KeyRange.hi));
+      } catch (e) {
+        console.trace(e)
+      }
+    }, "loading program returns more than 0 zones");
+
+  </script>
+  <script type='moasdfdule'>
+    import {loadProgram, load} from "./sf2-service/read.js";
+
+    promise_test(async () => {
+      const sf2 = await load("file.sf2");
       const {shdrMap, zMap, preload, filterKV} = loadProgram(sf2, 0, 0);
+      assert_true(zMap[3].KeyRange.lo < zMap[3].KeyRange.hi);
       assert_greater_than(zMap.length, 0, "number of zones");
       assert_greater_than(Object.keys(shdrMap).length, 0, "number of zones");
     }, "loading program returns more than 0 zones");
@@ -41,7 +58,7 @@
       el.remove();
     }, "stream ui load as file is being parsed");
   </script>
-  <script type='module'>
+  <script type='module_skip'>
     import {test} from './tests/dropship.test.js';
     test();
   </script>

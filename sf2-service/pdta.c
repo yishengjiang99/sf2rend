@@ -146,6 +146,7 @@ zone_t *findPresetZones(int i, int nregions) {
       inst *instrument = insts + pattrs[Instrument];
       short *instrument_defaults;
       short instrument_generators[60];
+      bzero(instrument_generators, 120);
       for (int ibagIndex = instrument->ibagNdx;
            ibagIndex < instrument[1].ibagNdx; ibagIndex++) {
         if (instrument_defaults != NULL) {
@@ -162,7 +163,9 @@ zone_t *findPresetZones(int i, int nregions) {
         }
 
         if (instrument_generators[SampleId] != -1) {
-          short zoneattr[60] = defattrs;
+          short zoneattr[60];
+          bzero(zoneattr, 120);
+          memcpy(zoneattr, defvals, 120);
           int add = 1;
           for (int i = 0; i < 60; i++) {
             if (instrument_generators[i]) {
@@ -171,11 +174,15 @@ zone_t *findPresetZones(int i, int nregions) {
             short pbagAttr = pattrs[i];
 
             if (i == VelRange || i == KeyRange) {
+              char plow = pbagAttr & 0x007f;
+              char phi = (pbagAttr & 0x7f00) >> 8;
+              char ilow = instrument_generators[i] & 0x007f;
+              char ihi = (instrument_generators[i] & 0x7f00) >> 8;
+              zoneattr[i] =
+                  (plow > ilow ? plow : ilow) | ((phi < ihi ? phi : ihi) << 8);
             } else {
               if (pattrs[i] != defvals[i]) {
                 zoneattr[i] += pattrs[i];  // - defvals[i];
-              } else if (pdefs[i] != defvals[i]) {
-                zoneattr[i] += pdefs[i];  // - defvals[i];
               }
             }
           }
@@ -196,17 +203,6 @@ zone_t *findPresetZones(int i, int nregions) {
   dummy = zones + found;
   dummy->SampleId = -1;
   return zones;
-}
-zone_t *filterForZone(zone_t *from, uint8_t key, uint8_t vel) {
-  for (zone_t *z = from; z; z++) {
-    if (z == 0 || z->SampleId == (short)-1) break;
-    if (vel > 0 && (z->VelRange.lo > vel || z->VelRange.hi < vel)) continue;
-    if (key > 0 && (z->KeyRange.lo > key || z->KeyRange.hi < key)) continue;
-    return z;
-  }
-  if (vel > 0) return filterForZone(from, key, 0);
-  if (key > 0) return filterForZone(from, 0, vel);
-  return &presetZones[0];
 }
 
 void *shdrref() { return shdrs; }
