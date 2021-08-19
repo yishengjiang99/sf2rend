@@ -74,7 +74,7 @@ export class SpinNode extends AudioWorkletNode {
       this.fetchWorker.addEventListener(
         "message",
         function ({ data }) {
-          if (data.ack) resolve(data.cak);
+          if (data.ack) resolve(data.ack);
         },
         { once: true }
       );

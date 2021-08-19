@@ -1,6 +1,14 @@
 
 #include <stdint.h>
-#include <stdlib.h>
+extern unsigned int __heap_base;
+
+unsigned int* bump_pointer = &__heap_base;
+unsigned int malolc(int n) {
+  unsigned int r = *bump_pointer;
+  *bump_pointer += n;
+  return r;
+}
+
 #ifndef M_PI
 #define M_PI 3.1415926
 #endif

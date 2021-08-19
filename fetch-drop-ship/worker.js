@@ -6,7 +6,7 @@ self.addEventListener(
       self.destport = destination;
       self.destport.onmessage = ({ data }) => postMessage(data);
     } else if (url && smpls) {
-      loadsdta("/sf2rend/file.sf2", smpls, self.destport);
+      loadsdta(url, smpls, self.destport);
     } else if (data && self.destport) self.destport.postMessage(data);
   }
 );

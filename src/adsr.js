@@ -10,7 +10,7 @@ export function mkEnvelope(ctx) {
       zone.VolEnvDecay,
       zone.VolEnvRelease,
     ].map((v) => (v == -1 || v <= -12000 ? 0.0001 : Math.pow(2, v / 1200)));
-    sustain = Math.pow(10, (960 - zone.VolEnvSustain) / -200);
+    sustain = Math.pow(10, zone.VolEnvSustain / -200);
     _zone = zone;
   }
   return {
@@ -24,20 +24,13 @@ export function mkEnvelope(ctx) {
       const sf2attenuate = Math.pow(10, _zone.Attenuation * -0.005);
       const midiVol = _midiState[effects.volumecoarse] / 128;
       const midiExpre = _midiState[effects.expressioncoarse] / 128;
-      gainMax = 2 * sf2attenuate * midiVol * midiExpre;
+      gainMax = sf2attenuate * midiVol * midiExpre;
 
       volumeEnveope.gain.linearRampToValueAtTime(gainMax, delay + attack);
-      if (decay > 0.001 && sustain > 0.001) {
-        volumeEnveope.gain.exponentialRampToValueAtTime(
-          gainMax * sustain,
-          delay + attack + hold + decay
-        );
-      } else {
-        (sustain = 0), (decay = release); // volumeEnveope.gain.linearRampToValueAtTime(
-        //   0,
-        //   delay + attack + hold + decay + release
-        // );
-      }
+      volumeEnveope.gain.exponentialRampToValueAtTime(
+        gainMax * sustain,
+        delay + attack + hold + decay
+      );
       console.log({ phases: [attack, decay, sustain, release], peak: gainMax });
       return { phases: [attack, decay, sustain, release], peak: gainMax };
     },

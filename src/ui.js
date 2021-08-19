@@ -52,7 +52,7 @@ export class TrackUI {
     const points = [
       [0, 0],
       [a, 1],
-      [a + d, (100 - s) / 100],
+      [a + d, s / 100],
       [a + d + r, 0],
     ]
       .map(([x, y]) => [x * pixelPerSec, (1 - y) * 0.8 * rowheight].join(","))

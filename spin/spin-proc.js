@@ -58,12 +58,18 @@ class SpinProcessor extends AudioWorkletProcessor {
       CH_META_LEN * 32 * Uint32Array.BYTES_PER_ELEMENT,
       REND_BLOCK * nchannels
     );
+    this.memory = new WebAssembly.Memory({ maximum: 1024, initial: 1024 });
     this.inst = new WebAssembly.Instance(new WebAssembly.Module(wasm), {
-      env: {},
+      env: { memory: this.memory },
     });
+    this.brk = 0x10000;
+    this.malololc = (len) => {
+      const ret = this.brk;
+      this.brk += len;
+      return ret;
+    };
     this.sampleIdRefs = [];
 
-    this.memory = this.inst.exports.memory;
     this.port.onmessage = this.handleMsg.bind(this);
     this.spinners = [];
     this.outputs = [];
@@ -73,7 +79,8 @@ class SpinProcessor extends AudioWorkletProcessor {
       data: { stream, segments, nsamples, ...data },
     } = e;
     if (stream && segments) {
-      const offset = this.inst.exports.malloc(4 * nsamples);
+      const offset = this.malololc(4 * nsamples);
+
       const fl = new Float32Array(this.memory.buffer, offset, nsamples);
       await downloadData(stream, fl);
       this.outputSnap.set(fl.slice(0, 2024));
@@ -145,6 +152,7 @@ class SpinProcessor extends AudioWorkletProcessor {
       if (!this.outputs[i]) continue;
       if (!o[i]) continue;
       const rendN = o[i][0].length;
+      for (let j = 0; j < 128; j++) this.outputs[i][j] = 0;
       this.inst.exports.spin(this.spinners[i], 128);
       for (let j = 0; j < 128; j++) {
         o[i][0][j] = vols[j] * this.outputs[i][j];
