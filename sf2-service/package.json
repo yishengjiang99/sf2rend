@@ -18,10 +18,6 @@
     "url": "https://github.com/yishengjiang99/sf2-service/issues"
   },
   "homepage": "https://github.com/yishengjiang99/sf2-service#readme",
-  "dependencies": {
-    "emutils": "^1.0.11",
-    "webassembly": "^0.11.0"
-  },
   "devDependencies": {
     "eslint": "^7.31.0",
     "eslint-plugin-react": "^7.24.0"
