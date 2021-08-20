@@ -1,9 +1,9 @@
-import { mkdiv, logdiv } from "../mkdiv/mkdiv.js";
+import { mkdiv, logdiv } from "mkdiv";
 import { SpinNode } from "../spin/spin.js";
 import { LowPassFilterNode } from "../lpf/lpf.js";
 import { mkui } from "./ui.js";
-import { load, loadProgram } from "../sf2-service/read.js";
-import { chart, mkcanvas, renderFrames } from "../chart/chart.js";
+import { load, loadProgram } from "sf2-service";
+import { chart, mkcanvas, renderFrames } from "mk-60fps";
 import { fetchmidilist } from "./midilist.js";
 import { channel } from "./channel.js";
 import { mkEnvelope } from "./adsr.js";
@@ -56,15 +56,14 @@ async function main(midiurl, sf2file) {
       bankId: bankId,
       name: programNames[bankId | pid],
     };
-
-    await ctx.spinner.shipProgram(sf2pg);
+    const ret = await ctx.spinner.shipProgram(sf2pg, bankId | pid);
   };
   const { presets, totalTicks, midiworker } = await initMidiReader(midiurl);
   timeslide.setAttribute("max", totalTicks / 255);
 
-  await _loadProgram(0, 0, 0);
-  await _loadProgram(9, 0, 128);
   for await (const _ of (async function* g(presets) {
+    yield await _loadProgram(0, 0, 0);
+    yield await _loadProgram(9, 0, 128);
     for (const preset of presets) {
       const { pid, channel, t } = preset;
       if (t > 0) continue;
@@ -73,6 +72,7 @@ async function main(midiurl, sf2file) {
     }
   })(presets)) {
     //eslint
+    console.log("preset sent");
   }
   let cid = 0;
   flist.onclick = ({ target }) =>
@@ -85,11 +85,12 @@ async function main(midiurl, sf2file) {
   bindMidiAccess(pt);
   function updateCanvas() {
     for (let i = 0; i < 16; i++) {
-      if (ctx.egs[i].gainNode.gain.value > 0.00001)
+      if (ctx.egs[i].gainNode.gain > 0.000001) {
         chart(
           midiSink.canvases[i],
           ctx.spinner.outputSnapshot.subarray(i * 128, i * 128 + 128)
         );
+      }
     }
     requestAnimationFrame(updateCanvas);
   }
