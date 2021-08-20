@@ -3,27 +3,29 @@ import {
   requestDownload,
 } from "../fetch-drop-ship/fetch-drop-ship.js";
 
-let wasmbin = null;
-const CH_META_LEN = 12;
+let wasm = null;
+const CH_META_LEN = 24;
 const RENDER_BLOCK = 128;
 const N_CHANNELS = 32;
 let k;
 export class SpinNode extends AudioWorkletNode {
   static async init(ctx) {
     await ctx.audioWorklet.addModule(
-      document.location.pathname + "./spin/spin-proc.js"
+      document.location.pathname.replace("/spin", "") + "./spin/spin-proc.js"
     );
-    if (!wasmbin) {
-      wasmbin = await fetch(document.location.pathname + "./spin/spin.wasm")
-        .then((res) => res.arrayBuffer())
-        .then((ab) => new Uint8Array(ab));
+    if (!wasm) {
+      const res = await fetch(
+        document.location.pathname.replace("/spin", "") + "./spin/spin.wasm"
+      );
+      const ab = await res.arrayBuffer();
+      wasm = new Uint8Array(ab);
     }
   }
   static alloc(ctx) {
     if (!k) k = new SpinNode(ctx);
     return k;
   }
-  constructor(ctx) {
+  constructor(ctx, presetZones, sampleHeaders) {
     const sb = new SharedArrayBuffer(
       CH_META_LEN * N_CHANNELS * Uint32Array.BYTES_PER_ELEMENT +
         RENDER_BLOCK * N_CHANNELS * Float32Array.BYTES_PER_ELEMENT
@@ -32,11 +34,9 @@ export class SpinNode extends AudioWorkletNode {
       numberOfInputs: 16,
       numberOfOutputs: 16,
       outputChannelCount: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
-      processorOptions: {
-        sb,
-        wasm: wasmbin,
-      },
+      processorOptions: { sb, wasm },
     });
+
     this.sb = sb;
     this.f32view = new Float32Array(this.sb, 0, CH_META_LEN * N_CHANNELS);
     this.u32view = new Uint32Array(this.sb, 0, CH_META_LEN * N_CHANNELS);
@@ -55,30 +55,57 @@ export class SpinNode extends AudioWorkletNode {
     if (!(zone.SampleModes == 1)) {
       loops = [0, zone.shdr.byteLength];
     }
+    const pitchRatio =
+      channel == 9 ? 1 : zone.calcPitchRatio(key, this.context.sampleRate);
     pcmMeta.set(
-      new Uint32Array([2, channel, zone.SampleId, loops[0], loops[1]])
-    );
-    this.f32view.set(
-      new Float32Array([
-        channel == 9 ? 1 : zone.calcPitchRatio(key, this.context.sampleRate),
-        0,
-        0.2,
-        1 / this.context.sampleRate / Math.pow(2, zone.VolEnvAttack / 1200),
-      ]),
-      updateOffset + 5
+      new Uint32Array([
+        2,
+        channel,
+        zone.SampleId,
+        loops[0],
+        loops[1],
+        zone.ref,
+        pitchRatio * 0xffff,
+      ])
     );
   }
-  async shipProgram(sf2program) {
+  keyOff(channel, key, vel) {
+    this.fetchWorker.postMessage({ egRelease: { channel, key, vel } });
+  }
+
+  async shipProgram(sf2program, presetId) {
     requestDownload(this.fetchWorker, sf2program, this.port);
-    return await new Promise((resolve) => {
-      this.fetchWorker.addEventListener(
-        "message",
-        function ({ data }) {
-          if (data.ack) resolve(data.ack);
-        },
-        { once: true }
-      );
+    const ack = await new Promise((resolve) => {
+      this.fetchWorker.addEventListener("message", function ({ data }) {
+        //  console.log("shipping ", presetId, "ack", data);
+        if (data.ack) {
+          resolve(data.ack);
+        }
+      });
     });
+    await this.postZoneAttributes(sf2program, presetId);
+  }
+  async postZoneAttributes(sf2program, presetId) {
+    this.fetchWorker.postMessage({
+      presetId,
+      zArr: sf2program.zMap.map((z) => {
+        const shz = new Int16Array(60);
+        shz.set(z.arr);
+        return {
+          arr: shz.buffer,
+          ref: z.ref,
+        };
+      }),
+    });
+    const zAck = await new Promise((resolve) => {
+      this.fetchWorker.addEventListener("message", function ({ data }) {
+        //  console.log("shipping ", presetId, "ack", data);
+        if (data.zack) {
+          resolve(data.zack);
+        }
+      });
+    });
+    console.assert(this.fetchWorker.onmessage == null);
   }
   handleMsg(e) {
     console.log(e.data);

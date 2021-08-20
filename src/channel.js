@@ -1,4 +1,4 @@
-import { loadProgram } from "../sf2-service/read.js";
+import { load, loadProgram } from "sf2-service";
 export function channel(aggCtx, channelId, ui) {
   const activeNotes = [];
   const ctx = aggCtx.ctx;
@@ -25,8 +25,8 @@ export function channel(aggCtx, channelId, ui) {
       const zone = _pg.filterKV(key, vel)[0];
       volEG.zone = zone;
       volEG.midiState = _midicc;
-      eg = volEG.keyOn(ctx.currentTime + ctx.baseLatency);
       spinner.keyOn(channelId, zone, key, vel);
+      eg = volEG.keyOn(vel);
 
       requestAnimationFrame(() => {
         ui.velocity = vel;
@@ -35,7 +35,8 @@ export function channel(aggCtx, channelId, ui) {
       });
     },
     keyOff(key, vel) {
-      volEG.keyOff();
+      spinner.keyOff(channelId, key, vel);
+      //volEG.keyOff();
     },
   };
 }

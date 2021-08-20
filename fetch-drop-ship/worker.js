@@ -1,7 +1,7 @@
 self.addEventListener(
   "message",
   ({ data: { url, smpls, destination, ...data } }) => {
-    console.log(smpls, url);
+    console.log(smpls, url, data);
     if (destination) {
       self.destport = destination;
       self.destport.onmessage = ({ data }) => postMessage(data);

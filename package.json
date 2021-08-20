@@ -11,7 +11,8 @@
   "dependencies": {
     "midiread": "^2.0.15",
     "mk-60fps": "^1.0.5",
-    "mkdiv": "^2.1.0"
+    "mkdiv": "^2.1.0",
+    "sf2-service": "file:../../sf2-service"
   },
   "browserslist": "last 4 chrome version",
   "devDependencies": {
