@@ -35,7 +35,8 @@ export function channel(aggCtx, channelId, ui) {
       });
     },
     keyOff(key, vel) {
-      volEG.keyOff();
+      spinner.keyOff(channelId, key, vel);
+      //volEG.keyOff();
     },
   };
 }

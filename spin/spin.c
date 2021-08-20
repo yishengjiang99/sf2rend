@@ -11,7 +11,7 @@
 #define M_PI 3.1415926
 #endif
 
-enum eg_stages { init = 0, delay, attack, hold, decay, release };
+enum eg_stages { init = 0, delay, attack, hold, decay, release, done };
 typedef struct {
   uint32_t stage, nsamples_till_next_stage;
   double egval, egIncrement;
@@ -51,6 +51,7 @@ void update_eg(EG* eg, zone_t* z, int isVolEG) {
           timecent2sample(isVolEG ? z->VolEnvDecay : z->ModEnvDecay);
 
       eg->egval = 0.0f;
+      short sustain = isVolEG ? z->VolEnvSustain : z->ModEnvSustain;
       eg->egIncrement =
           (-960.0f + z->VolEnvSustain) / eg->nsamples_till_next_stage;
       break;
@@ -61,7 +62,7 @@ void update_eg(EG* eg, zone_t* z, int isVolEG) {
           timecent2sample(isVolEG ? z->VolEnvRelease : z->ModEnvRelease);
 
       // eg->egval = 0.0f;
-      eg->egIncrement = -553.0f / (float)eg->nsamples_till_next_stage;
+      eg->egIncrement = -960.0f / (float)eg->nsamples_till_next_stage;
       break;
       // fallthrough
     case release:
@@ -86,6 +87,7 @@ EG eg[32];
 float outputs[16 * RENDQ];
 float silence[40];
 char spsIndx = 0;
+void reset(spinner* x);
 
 spinner* newSpinner() {
   int idx = sps_index();
@@ -98,22 +100,30 @@ spinner* newSpinner() {
   x->position = 0;
   x->lpf = &lpf[idx];
   newLpf(x->lpf, 0.45f);
-
+  x->voleg = &eg[idx * 2];
+  x->modeg = &eg[idx * 2 + 1];
+  reset(x);
   return x;
 }
-
+void eg_release(spinner* x) {
+  x->voleg->nsamples_till_next_stage = 0;
+  x->voleg->stage = decay;
+  update_eg(x->voleg, x->zone, 1);  // this will advance eg to release stage
+  x->modeg->nsamples_till_next_stage = 0;
+  x->modeg->stage = decay;
+  update_eg(x->modeg, x->zone, 0);  // this will advance eg to release stage
+}
 void reset(spinner* x) {
   x->position = 0;
   x->fract = 0.0f;
   x->lpf->m1 = 0;
-  x->position = 0;
-  x->fract = 0.0f;
+
   x->voleg->stage = init;
-  x->voleg->nsamples_till_next_stage = 2;
-  x->voleg->egval = -960;
+  x->voleg->nsamples_till_next_stage = 0;
+  x->voleg->egval = -960.0f;
   x->modeg->stage = init;
-  x->modeg->nsamples_till_next_stage = 2;
-  x->modeg->egval = -960;
+  x->modeg->nsamples_till_next_stage = 0;
+  x->modeg->egval = -960.0f;
 }
 void set_attrs(spinner* x, float* inp, uint32_t loopstart, uint32_t loopend) {
   x->loopStart = loopstart;
@@ -154,7 +164,6 @@ float _spinblock(spinner* x, int n, int blockOffset) {
     if (position >= x->loopEnd && x->loopStart != -1) position -= looplen;
     float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
     outputf = applyCentible(outputf, db);
-
     x->outputf[i + blockOffset] = outputf;
     db += dbInc;
   }
@@ -171,7 +180,9 @@ float _spinblock(spinner* x, int n, int blockOffset) {
 }
 
 float spin(spinner* x, int n) {
-  for (int blockOffset = 0; blockOffset < n; blockOffset += 32) {
+  if (x->voleg->stage == done) return 0.f;
+  for (int blockOffset = 0; blockOffset <= n - 32; blockOffset += 32) {
     _spinblock(x, 32, blockOffset);
   }
+  return (float)x->voleg->egval;
 }

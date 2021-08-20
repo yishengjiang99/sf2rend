@@ -101,8 +101,9 @@ class SpinProcessor extends AudioWorkletProcessor {
         ); //.set
       }
       this.port.postMessage({ zack: 1 });
-    } else {
-      console.log(e.data);
+    } else if (data.egRelease) {
+      const { channel } = data.egRelease;
+      this.inst.exports.eg_release(this.spinners[channel]);
     }
   }
   sync(offset) {
@@ -116,12 +117,8 @@ class SpinProcessor extends AudioWorkletProcessor {
       pitchRatio,
       ...blankForNow
     ] = new Uint32Array(this.sb, 4 * offset, CH_META_LEN);
-    console.log(
-      JSON.stringify(spRef2json(this.memory.buffer, this.spinners[channel]))
-    );
 
     console.assert(this.sampleIdRefs[sampleId], "sample id posted");
-    this.inst.exports.setZone(this.spinners[channel], this.presetRefs[zoneRef]);
 
     this.inst.exports.set_attrs(
       this.spinners[channel],
@@ -130,6 +127,8 @@ class SpinProcessor extends AudioWorkletProcessor {
       loopend
     );
     this.inst.exports.setStride(this.spinners[channel], pitchRatio / 0xffff);
+    this.inst.exports.setZone(this.spinners[channel], this.presetRefs[zoneRef]);
+
     this.updateArray[offset] = 0;
 
     this.inst.exports.reset(this.spinners[channel]);
@@ -152,7 +151,9 @@ class SpinProcessor extends AudioWorkletProcessor {
         o[i][0][j] = this.outputs[i][j];
         o[i][1][j] = this.outputs[i][j];
       }
-      this.outputSnap.set(this.outputs[i], i * REND_BLOCK);
+      new Promise((r) => r()).then(() =>
+        this.outputSnap.set(this.outputs[i], i * REND_BLOCK)
+      );
     }
     return true;
   }

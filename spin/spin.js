@@ -69,7 +69,9 @@ export class SpinNode extends AudioWorkletNode {
       ])
     );
   }
-  keyOff(channel) {}
+  keyOff(channel, key, vel) {
+    this.fetchWorker.postMessage({ egRelease: { channel, key, vel } });
+  }
 
   async shipProgram(sf2program, presetId) {
     requestDownload(this.fetchWorker, sf2program, this.port);
