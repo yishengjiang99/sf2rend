@@ -20,17 +20,18 @@ export function mkEnvelope(ctx) {
     set midiState(staet) {
       _midiState = staet;
     },
-    keyOn(time) {
+    keyOn(vel) {
       const sf2attenuate = Math.pow(10, _zone.Attenuation * -0.005);
       const midiVol = _midiState[effects.volumecoarse] / 128;
       const midiExpre = _midiState[effects.expressioncoarse] / 128;
-      gainMax = sf2attenuate * midiVol * midiExpre;
+      gainMax = (sf2attenuate * midiVol * midiExpre * vel) / 128;
 
       volumeEnveope.gain.linearRampToValueAtTime(gainMax, delay + attack);
-      volumeEnveope.gain.exponentialRampToValueAtTime(
-        gainMax * sustain,
-        delay + attack + hold + decay
-      );
+      if (decay > 0.001)
+        volumeEnveope.gain.linearRampToValueAtTime(
+          gainMax * (1 - sustain),
+          delay + attack + hold + decay
+        );
       console.log({ phases: [attack, decay, sustain, release], peak: gainMax });
       return { phases: [attack, decay, sustain, release], peak: gainMax };
     },
