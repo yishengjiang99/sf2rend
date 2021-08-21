@@ -73,6 +73,7 @@ export function newSFZoneMap(ref, attrs) {
       obj[attributeKeys[i]] = attrs[i];
     }
   }
+  obj.arr = attrs;
   return obj;
 }
 

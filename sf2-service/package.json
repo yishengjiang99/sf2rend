@@ -1,8 +1,8 @@
 {
   "name": "sf2-service",
-  "version": "1.2.3",
+  "version": "1.2.5",
   "description": "fast",
-  "main": "index.js",
+  "main": "read.js",
   "scripts": {
     "build": "make",
     "test": "make check"
@@ -17,9 +17,5 @@
   "bugs": {
     "url": "https://github.com/yishengjiang99/sf2-service/issues"
   },
-  "homepage": "https://github.com/yishengjiang99/sf2-service#readme",
-  "devDependencies": {
-    "eslint": "^7.31.0",
-    "eslint-plugin-react": "^7.24.0"
-  }
+  "homepage": "https://github.com/yishengjiang99/sf2-service#readme"
 }

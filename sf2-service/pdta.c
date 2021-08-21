@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -24,11 +25,12 @@ float *sdta;
 int sdtastart;
 zone_t *presetZones;
 zone_t *root;
-typedef struct {
-  unsigned int n;
-  zone_t *zones;
-} preset_t;
-preset_t presets[0xff];
+zone_t *presets[0xff];
+enum {
+  phdrHead = 0x1000,
+  instHead = 0x2000,
+  shdrHead = 0x4000,
+} headertype;
 #define read(section)                         \
   sh = (section_header *)pdtabuffer;          \
   pdtabuffer += 8;                            \
@@ -50,18 +52,30 @@ void *loadpdta(void *pdtabuffer) {
   read(shdr);
 
   for (int i = 0; i < nphdrs; i++) {
-    if (phdrs[i].bankId == 0 || phdrs[i].bankId == 128) {
+    if (phdrs[i].bankId == 0) {
       emitHeader(phdrs[i].pid, phdrs[i].bankId, phdrs + i);
-      int ctn = findPresetZonesCount(i);
+      presets[phdrs[i].pid] = findPresetZones(i, findPresetZonesCount(i));
+    } else if (phdrs[i].bankId == 128) {
+      emitHeader(phdrs[i].pid, phdrs[i].bankId, phdrs + i);
+
       presets[phdrs[i].pid | phdrs[i].bankId] =
-          (preset_t){ctn, findPresetZones(i, ctn)};
+          findPresetZones(i, findPresetZonesCount(i));
     }
   }
-
   // get mem end;
   return malloc(4);
 }
-void sanitizedInsert(short *attrs, int i, pgen_t *g) {
+
+zone_t *findByPid(int pid, int bkid) {
+  for (int i = 0; i < nphdrs - 1; i++) {
+    if (phdrs[i].pid == pid && phdrs[i].bankId == bkid) {
+      return presets[phdrs[i].pid | phdrs[i].bankId];
+    }
+  }
+
+  return NULL;
+}
+static inline void sanitizedInsert(short *attrs, int i, pgen_t *g) {
   switch (i % 60) {
     case StartAddrOfs:
     case EndAddrOfs:
@@ -74,6 +88,18 @@ void sanitizedInsert(short *attrs, int i, pgen_t *g) {
     case OverrideRootKey:
       attrs[i] = g->val.uAmount & 0x7f;
       break;
+    // case VolEnvDelay:
+    // case VolEnvAttack:
+    // case VolEnvHold:
+    // case VolEnvDecay:
+    // case VolEnvRelease:
+    // case ModEnvDelay:
+    // case ModEnvAttack:
+    // case ModEnvHold:
+    // case ModEnvDecay:
+    // case ModEnvRelease:
+    //   attrs[i] = powf(2, g->val.shAmount / 1200);
+    //   break;
     default:
       attrs[i] = g->val.shAmount;
       break;
@@ -83,14 +109,12 @@ int findPresetZonesCount(int i) {
   int nregions = 0;
   int instID = -1, lastSampId = -1;
   phdr phr = phdrs[i];
-  for (int pbagIndex = phr.pbagNdx; pbagIndex < phdrs[i + 1].pbagNdx;
-       pbagIndex++) {
-    pbag *pg = pbags + pbagIndex;
-    pgen_t *lastg = pgens + pg[pbagIndex + 1].pgen_id;
+  for (int j = phr.pbagNdx; j < phdrs[i + 1].pbagNdx; j++) {
+    pbag *pg = pbags + j;
+    pgen_t *lastg = pgens + pg[j + 1].pgen_id;
     int pgenId = pg->pgen_id;
     instID = -1;
-    int lastPgenId =
-        pbagIndex < npbags - 1 ? pbags[pbagIndex + 1].pgen_id : npgens - 1;
+    int lastPgenId = j < npbags - 1 ? pbags[j + 1].pgen_id : npgens - 1;
     for (int k = pgenId; k < lastPgenId; k++) {
       pgen *g = pgens + k;
       if (g->genid == Instrument) {
@@ -117,92 +141,158 @@ int findPresetZonesCount(int i) {
   }
   return nregions;
 }
+/**
+ *
+ * merges pset attr into zoneAttr.
+ * returns 0 if it should be skipped
+ *
+ * this adds two attributes that combine in non-linear fashion (pow2, pow10,
+ * filter etc)
+ */
+static inline int combine_pattrs(int genop, short *zoneAttr, short psetAttr) {
+  float pval, zval;
+  int irange[2], prange[2];
+  switch (genop) {
+    case VelRange:
+    case KeyRange:
+      irange[0] = zoneAttr[genop] & 0x007f;
+      irange[1] = zoneAttr[genop] >> 8;
+      prange[0] = psetAttr & 0x007f;
+      prange[1] = psetAttr >> 8;
+
+      if (prange[0] > irange[1] || prange[1] < irange[0]) {
+        return 0;
+      }
+      if (prange[1] < irange[1]) irange[1] = prange[1];
+      if (prange[0] > irange[0]) irange[0] = prange[0];
+      zoneAttr[genop] = irange[0] | (irange[1] << 8);
+      break;
+    case VolEnvDelay:
+    case VolEnvAttack:
+    case VolEnvHold:
+    case VolEnvDecay:
+    case VolEnvRelease:
+    case ModEnvDelay:
+    case ModEnvAttack:
+    case ModEnvHold:
+    case ModEnvDecay:
+    case ModEnvRelease:
+      // i apologize for the following lines of code.
+      zval = powf(2.0f, zoneAttr[genop] / 1200.0f);
+      pval = powf(2.0f, psetAttr / 1200.0f);
+      zoneAttr[genop] = log2f(zval + pval) * 1200.0f;
+      break;
+    default:
+      zoneAttr[genop] += psetAttr;
+  }
+  return 1;
+}
 zone_t *findPresetZones(int i, int nregions) {
   short defvals[60] = defattrs;
-  short zoneAttrs[60];
+
+  enum {
+    default_pbg_cache_index = 0,
+    pbg_attr_cache_index = 60,
+    default_ibagcache_idex = 120,
+    ibg_attr_cache_index = 180
+  };
   zone_t *zones = (zone_t *)malloc((nregions + 1) * sizeof(zone_t));
   zone_t *dummy;
   int found = 0;
-  short pattrs[60];
-  short *pdefs;
-  for (int pbagIndex = phdrs[i].pbagNdx; pbagIndex < phdrs[i + 1].pbagNdx;
-       pbagIndex++) {
-    pbag *pg = pbags + pbagIndex;
-    pgen_t *lastg = pgens + pg[pbagIndex + 1].pgen_id;
-    int pgenId = pg->pgen_id;
-    int lastPgenId = pbags[pbagIndex + 1].pgen_id;
-    if (pbagIndex == npbags - 1) lastPgenId = npgens - 1;
-    pattrs[Unused1] = pbagIndex;
-    if (pdefs) memcpy(pattrs, pdefs, 120);
+  short attrs[240] = {0};
+  int instID = -1;
+  int lastbag = phdrs[i + 1].pbagNdx;
+  bzero(&attrs[default_pbg_cache_index], 240 * sizeof(short));
+  memcpy(attrs, defvals, 2 * 60);
+  memcpy(attrs + pbg_attr_cache_index, defvals, 2 * 60);
 
-    pattrs[Instrument] = -1;
+  for (int j = phdrs[i].pbagNdx; j < phdrs[i + 1].pbagNdx; j++) {
+    int attr_inex =
+        j == phdrs[i].pbagNdx ? default_pbg_cache_index : pbg_attr_cache_index;
+    bzero(&attrs[pbg_attr_cache_index], 180 * sizeof(short));
+    memcpy(attrs + pbg_attr_cache_index, defvals, 2 * 60);
+
+    pbag *pg = pbags + j;
+    pgen_t *lastg = pgens + pg[j + 1].pgen_id;
+    int pgenId = pg->pgen_id;
+    int lastPgenId = j < npbags - 1 ? pbags[j + 1].pgen_id : npgens - 1;
+    attrs[Unused1 + pbg_attr_cache_index] = j;
     for (int k = pgenId; k < lastPgenId; k++) {
       pgen *g = pgens + k;
-      sanitizedInsert(pattrs, g->genid, g);
-    }
-    if (pattrs[Instrument] == -1 && pdefs == NULL) {
-      pdefs = pattrs;
-    } else {
-      inst *instrument = insts + pattrs[Instrument];
-      short *instrument_defaults;
-      short instrument_generators[60];
-      bzero(instrument_generators, 120);
-      for (int ibagIndex = instrument->ibagNdx;
-           ibagIndex < instrument[1].ibagNdx; ibagIndex++) {
-        if (instrument_defaults != NULL) {
-          memcpy(instrument_generators, instrument_defaults, 120);
-        } else {
-          memcpy(instrument_defaults, defvals, 120);
-        }
-        instrument_generators[SampleId] = -1;
-        ibag *ib = ibags + ibagIndex;
-        for (int igenIndex = ib->igen_id; igenIndex < ib[1].igen_id;
-             igenIndex++) {
-          igen *ig = igens + igenIndex;
-          sanitizedInsert(instrument_generators, ig->genid, ig);
-        }
+      if (g->genid != Instrument) {
+        sanitizedInsert(attrs, g->genid + attr_inex, g);
+      } else {
+        instID = g->val.shAmount;
+        sanitizedInsert(attrs, g->genid + attr_inex, g);
+        bzero(&attrs[default_ibagcache_idex], 120 * sizeof(short));
+        memcpy(attrs + default_ibagcache_idex, defvals, 2 * 60);
 
-        if (instrument_generators[SampleId] != -1) {
-          short zoneattr[60];
-          bzero(zoneattr, 120);
-          memcpy(zoneattr, defvals, 120);
-          int add = 1;
-          for (int i = 0; i < 60; i++) {
-            if (instrument_generators[i]) {
-              zoneattr[i] = instrument_generators[i];
-            }
-            short pbagAttr = pattrs[i];
+        inst *ihead = insts + instID;
+        int ibgId = ihead->ibagNdx;
+        int lastibg = (ihead + 1)->ibagNdx;
+        for (int ibg = ibgId; ibg < lastibg; ibg++) {
+          bzero((&attrs[0] + ibg_attr_cache_index), 60 * sizeof(short));
 
-            if (i == VelRange || i == KeyRange) {
-              char plow = pbagAttr & 0x007f;
-              char phi = (pbagAttr & 0x7f00) >> 8;
-              char ilow = instrument_generators[i] & 0x007f;
-              char ihi = (instrument_generators[i] & 0x7f00) >> 8;
-              zoneattr[i] =
-                  (plow > ilow ? plow : ilow) | ((phi < ihi ? phi : ihi) << 8);
-            } else {
-              if (pattrs[i] != defvals[i]) {
-                zoneattr[i] += pattrs[i];  // - defvals[i];
+          memcpy(attrs + ibg_attr_cache_index, defvals, 2 * 60);
+
+          attr_inex =
+              ibg == ibgId ? default_ibagcache_idex : ibg_attr_cache_index;
+          ibag *ibgg = ibags + ibg;
+          attrs[Unused2 + default_ibagcache_idex] = ibg;
+
+          pgen_t *lastig = ibg < nibags - 1 ? igens + (ibgg + 1)->igen_id
+                                            : igens + nigens - 1;
+
+          for (pgen_t *g = igens + ibgg->igen_id; g->genid != 60 && g != lastig;
+               g++) {
+            sanitizedInsert(attrs, attr_inex + g->genid, g);
+
+            if (g->genid == SampleId) {
+              short zoneattr[60];
+              bzero(zoneattr, 120);
+              memcpy(zoneattr, defvals, 120);
+              int add = 1;
+              shdrcast *sh = (shdrcast *)shdrs + g->val.shAmount;
+              for (int i = 0; i < 60; i++) {
+                if (attrs[ibg_attr_cache_index + i]) {
+                  zoneattr[i] = attrs[ibg_attr_cache_index + i];
+                } else if (attrs[default_ibagcache_idex + i]) {
+                  zoneattr[i] = attrs[default_ibagcache_idex + i];
+                }
+                short pbagAttr = attrs[pbg_attr_cache_index + i] != defvals[i]
+                                     ? attrs[pbg_attr_cache_index + i]
+                                     : attrs[default_pbg_cache_index + i];
+                int add = combine_pattrs(i, zoneattr, pbagAttr);
+                if (!add) break;
+              }
+              zone_t *zz = (zone_t *)zoneattr;
+              if (add) {
+                memcpy(zones + found, zoneattr, 60 * sizeof(short));
+                emitZone(phdrs[i].pid, zz);
+                found++;
               }
             }
           }
-          zoneattr[Unused3] = pattrs[KeyRange];
-          zoneattr[Unused4] = pattrs[VelRange];
-
-          if (add) {
-            memcpy(zones + found, zoneattr, 60 * sizeof(short));
-            found++;
-          }
-        } else {
-          if (instrument_defaults == NULL)
-            instrument_defaults = instrument_generators;
         }
       }
     }
   }
   dummy = zones + found;
   dummy->SampleId = -1;
+  free(&attrs[0]);
   return zones;
+}
+
+zone_t *filterForZone(zone_t *from, uint8_t key, uint8_t vel) {
+  for (zone_t *z = from; z; z++) {
+    if (z == 0 || z->SampleId == (short)-1) break;
+    if (vel > 0 && (z->VelRange.lo > vel || z->VelRange.hi < vel)) continue;
+    if (key > 0 && (z->KeyRange.lo > key || z->KeyRange.hi < key)) continue;
+    return z;
+  }
+  if (vel > 0) return filterForZone(from, key, 0);
+  if (key > 0) return filterForZone(from, 0, vel);
+  return &presetZones[0];
 }
 
 void *shdrref() { return shdrs; }

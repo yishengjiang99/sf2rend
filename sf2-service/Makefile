@@ -1,7 +1,7 @@
 was1:
 	emcc pdta.c -Oz -o pdta.js \
 	-s EXTRA_EXPORTED_RUNTIME_METHODS=['ccall','AsciiToString'] \
-    -s EXPORTED_FUNCTIONS=['_malloc','_free','_loadpdta','_shdrref','_presetRef'] \
+    -s EXPORTED_FUNCTIONS=['_filterForZone','_malloc','_free','_loadpdta','_findByPid','_shdrref','_presetRef'] \
     -s INITIAL_MEMORY=64mb              \
     -s USE_ES6_IMPORT_META=0 \
     -s ENVIRONMENT=web \
@@ -16,4 +16,4 @@ clean:
 	rm *wasm pdta.js pdta.wasm
 
 check:
-	npx serve -l 1234 . && chrome-cli open 'http://localhost1234/test.html'
+	npx serve . -l 1234 > /dev/null 2>&1 && chrome-cli open 'http://localhost:1234'

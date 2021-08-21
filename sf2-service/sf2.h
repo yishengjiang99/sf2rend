@@ -119,7 +119,26 @@ zone_t *findPresetByName(const char *name);
 int findPresetZonesCount(int i);
 
 zone_t *filterForZone(zone_t *pset, uint8_t key, uint8_t vel);
+/**
+ *
+ *
+  StartAddrOfs,
+  EndAddrOfs,
+  StartLoopAddrOfs,
+  EndLoopAddrOfs,
+  StartAddrCoarseOfs
 
+  VolEnvDelay,
+  VolEnvAttack,
+  VolEnvHold,
+  VolEnvDecay,
+  VolEnvRelease,
+  ModEnvDelay,
+  ModEnvAttack,
+  ModEnvHold,
+  ModEnvDecay,
+  ModEnvRelease,
+ */
 enum grntypes {
   StartAddrOfs,
   EndAddrOfs,
@@ -183,7 +202,7 @@ enum grntypes {
   Dummy
 };
 #define fivezeros 0, 0, 0, 0, 0
-#define defenvel -1, -1, -1, -1, 0, -1
+#define defenvel -12000, -12000, -12000, -12000, 0, -12000
 
 #define defattrs                                                                        \
   {fivezeros, 0,         0,         0,        13500,              /* 9*/                \

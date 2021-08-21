@@ -1,7 +1,8 @@
 export async function sfbkstream(url) {
-  const ab = await (
-    await fetch(url, { headers: { Range: "bytes=0-6400" } })
-  ).arrayBuffer();
+  const res = await fetch(url, { headers: { Range: "bytes=0-6400" } });
+
+  const ab = await res.arrayBuffer();
+
   const [preample, r] = skipToSDTA(ab);
   const sdtaSize = r.get32();
   const sdtaStart = r.offset + 8;
@@ -18,6 +19,7 @@ export async function sfbkstream(url) {
     pdtaBuffer: new Uint8Array(
       await (await fetch(url, pdtaHeader)).arrayBuffer()
     ),
+    fullUrl: res.url,
   };
 }
 function skipToSDTA(ab) {
