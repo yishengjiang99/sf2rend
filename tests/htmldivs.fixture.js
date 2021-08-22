@@ -1,0 +1,18 @@
+export const indexdivs = ` <aside class='col-md-3'>
+
+
+
+	<div id='sf2list'></div>
+	<div id='midilist'>
+	</div>
+
+</aside>
+<div id='right'>
+	<pre></pre>
+	<div id=debug></div>
+</div>
+<main>
+	<div id='channelContainer'>
+	</div>
+</main>
+<footer><progress min="0" max="10000" step="1"></progress></footer>`;
