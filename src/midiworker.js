@@ -1,4 +1,4 @@
-import { scheduler } from "https://unpkg.com/midiread@2.0.15/dist/scheduler.js";
+import { scheduler } from "midiread";
 const main = async (_url) => {
   const res = await fetch(_url);
   const ab = await res.arrayBuffer();

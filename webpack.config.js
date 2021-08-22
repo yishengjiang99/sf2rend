@@ -5,9 +5,8 @@ module.exports = {
   entry: {
     main: "./src/index.js",
     midiworker: "./src/midiworker.js",
-    fetchworker: "./fetch-drop-ship/worker.js",
   },
-  mode: "development",
+  mode: "production",
 
   resolve: { extensions: ["*", ".js", ".jsx"] },
   output: {

@@ -50,7 +50,7 @@ void update_eg(EG* eg, zone_t* z, int isVolEG) {
       eg->stage++;
       eg->egIncrement = -960.0f / timecent2sample(isVolEG ? z->VolEnvRelease
                                                           : z->ModEnvRelease);
-      eg->nsamples_till_next_stage = (-960.0f - eg->egval) / eg->egIncrement;
+      eg->nsamples_till_next_stage = (-960.0f + eg->egval) / eg->egIncrement;
 
       break;
     case release:

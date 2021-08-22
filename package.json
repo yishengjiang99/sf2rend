@@ -8,16 +8,13 @@
   "keywords": [],
   "author": "Yisheng Jiang",
   "license": "ISC",
-  "dependencies": {
-    "midiread": "^2.0.15",
-    "mk-60fps": "^1.0.5",
-    "mkdiv": "^2.1.0",
-    "sf2-service": "file:../../sf2-service"
-  },
   "browserslist": "last 4 chrome version",
   "devDependencies": {
     "eslint": "^7.31.0",
     "webpack": "^5.50.0",
     "webpack-cli": "^4.7.2"
+  },
+  "dependencies": {
+    "midiread": "^2.0.15"
   }
 }
