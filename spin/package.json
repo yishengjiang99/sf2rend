@@ -4,7 +4,7 @@
   "description": "",
   "main": "spin.js",
   "scripts": {
-    "build": "make",
+    "build": "make; cat spin.wasm | npx encode-wasm-uint8 > spin.wasm.js",
     "test": "mocha "
   },
   "keywords": [],

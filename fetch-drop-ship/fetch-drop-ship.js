@@ -1,44 +1,24 @@
-export async function requestDownload(worker, sf2_program) {
-  const samples = Object.values(sf2_program.shdrMap).sort(
-    (a, b) => a.sampleId < b.sampleId
-  );
-  let lastSid = null;
-  let payload = [];
-  for (const sample of samples) {
-    if (
-      lastSid != null &&
-      lastSid + 1 != sample.SampleId &&
-      payload.length > 0
-    ) {
-      worker.postMessage({
-        url: sf2_program.url,
-        smpls: payload,
+export async function requestDownload(program, port) {
+  await Promise.all(
+    Object.values(program.shdrMap).map(async (shdr) => {
+      const res = await fetch(program.url, {
+        headers: {
+          Range: `bytes=${shdr.range.join("-")}`,
+        },
       });
-      lastSid = null;
-      payload = [];
-    }
-    lastSid = sample.SampleId;
-    payload.push({
-      sampleId: lastSid,
-      range: sample.range,
-    });
-  }
-  if (payload.length > 0) {
-    worker.postMessage({
-      url: sf2_program.url,
-      smpls: payload,
-    });
-  }
+
+      port.postMessage(
+        {
+          segments: {
+            sampleId: shdr.SampleId,
+            nSamples: (shdr.range[1] + 1 - shdr.range[0]) / 2,
+          },
+          stream: res.body,
+        },
+        [res.body]
+      );
+      await res.body.closed;
+    })
+  );
 }
-
-export function getWorker(destinationPort) {
-  const worker = new Worker("./dist/fetchworker.js");
-  worker.postMessage({ destination: destinationPort }, [destinationPort]);
-  return worker;
-}
-
-// function workercode() {
-//   return /* javascript */ /* javascript */ `
-
-//   `;
-// }
+export const getWorker = () => {};

@@ -6,7 +6,7 @@ const pixelPerSec = 12;
 
 export class TrackUI {
   constructor(container, keyboard, idx, cb) {
-    this.nameLabel = container.querySelector(".name");
+    this.nameLabel = container.querySelector("input[type='list']");
     this.meters = container.querySelectorAll("meter");
     this.sliders = container.querySelectorAll("input[type='range']");
 
@@ -35,7 +35,7 @@ export class TrackUI {
     this.polylines = Array.from(container.querySelectorAll("polyline"));
   }
   set name(id) {
-    this.nameLabel.innerHTML = id;
+    this.nameLabel.value = id;
   }
   set midi(v) {
     this.meters[0].value = v;
@@ -86,24 +86,23 @@ export function mkui(cpanel, cb) {
   for (let i = 0; i < 16; i++) {
     const keyboard = mkdiv(
       "div",
-      { class: "keyboards", style: "display:none" },
+      { class: "keyboards" },
       range(55, 69).map((midi) => mkdiv("a", { midi }, [midi, " "]))
     );
     const row = mkdiv(
       "div",
       {
         class: "attrs",
-        onmouseenter: (e) => {
-          e.target.querySelector(".keyboards").style.display = "block";
-        },
-        onmouseleave: (e) => {
-          e.target.querySelector(".keyboards").style.display = "none";
-        },
+
         style: "display:grid; grid-template-columns:1fr 2fr 3fr",
       },
       [
         mkdiv("div", { style: "display:grid; grid-template-columns:1fr" }, [
-          mkdiv("span", { class: "name" }, ["channel " + i]),
+          mkdiv(
+            "input",
+            { type: "list", list: "programs", value: "", class: "name" },
+            ["channel " + i]
+          ),
           mkdiv("input", { type: "checkbox" }),
           mkdiv("meter", { min: 0, max: 127, step: 1, aria: "key" }),
           mkdiv("meter", { min: 0, max: 127, step: 1, aria: "vel" }),

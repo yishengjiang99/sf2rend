@@ -2,21 +2,23 @@ import {
   getWorker,
   requestDownload,
 } from "../fetch-drop-ship/fetch-drop-ship.js";
-
+import { SharedRiffPipe } from "../srp/shared-riff-pipe.js";
 let wasm = null;
 const CH_META_LEN = 24;
 const RENDER_BLOCK = 128;
 const N_CHANNELS = 32;
 let k;
+function basename() {
+  const root = document.location.pathname.split("/sf2rend")[0];
+  return root + "/sf2rend/";
+}
 export class SpinNode extends AudioWorkletNode {
   static async init(ctx) {
-    await ctx.audioWorklet.addModule(
-      document.location.pathname.replace("/spin", "") + "./spin/spin-proc.js"
-    );
+    console.log(basename() + "spin/spin-proc.js");
+
+    await ctx.audioWorklet.addModule(basename() + "spin/spin-proc.js");
     if (!wasm) {
-      const res = await fetch(
-        document.location.pathname.replace("/spin", "") + "./spin/spin.wasm"
-      );
+      const res = await fetch(basename() + "spin/spin.wasm");
       const ab = await res.arrayBuffer();
       wasm = new Uint8Array(ab);
     }
@@ -25,68 +27,51 @@ export class SpinNode extends AudioWorkletNode {
     if (!k) k = new SpinNode(ctx);
     return k;
   }
-  constructor(ctx, presetZones, sampleHeaders) {
-    const sb = new SharedArrayBuffer(
-      CH_META_LEN * N_CHANNELS * Uint32Array.BYTES_PER_ELEMENT +
-        RENDER_BLOCK * N_CHANNELS * Float32Array.BYTES_PER_ELEMENT
+  constructor(ctx) {
+    const rendSb = new SharedArrayBuffer(
+      RENDER_BLOCK * N_CHANNELS * Float32Array.BYTES_PER_ELEMENT
     );
-    super(ctx, "spin-proc", {
-      numberOfInputs: 16,
-      numberOfOutputs: 16,
-      outputChannelCount: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
-      processorOptions: { sb, wasm },
-    });
+    const pipe = new SharedRiffPipe(1 << 12);
 
-    this.sb = sb;
-    this.f32view = new Float32Array(this.sb, 0, CH_META_LEN * N_CHANNELS);
-    this.u32view = new Uint32Array(this.sb, 0, CH_META_LEN * N_CHANNELS);
-    const outputSampleStart =
-      CH_META_LEN * N_CHANNELS * Uint32Array.BYTES_PER_ELEMENT;
-    this.output_floats = new Float32Array(this.sb, outputSampleStart);
-    this.fetchWorker = getWorker(this.port);
-    // if(egPortzone.postMessage({});
+    super(ctx, "spin-proc", {
+      numberOfInputs: 0,
+      numberOfOutputs: 1,
+      outputChannelCount: [2],
+      processorOptions: {
+        rendSb,
+        wasm,
+        statusBuffer: pipe.array.buffer,
+      },
+    });
+    this.rendSb = rendSb;
+    this.pipe = pipe;
   }
 
   keyOn(channel, zone, key, vel) {
-    let updateOffset = 0;
-    const pcmMeta = this.u32view;
-    while (pcmMeta[updateOffset] != 0) updateOffset += CH_META_LEN;
-    let loops = zone.shdr.loops;
-    if (!(zone.SampleModes == 1)) {
-      loops = [0, zone.shdr.byteLength];
-    }
-    const pitchRatio =
-      channel == 9 ? 1 : zone.calcPitchRatio(key, this.context.sampleRate);
-    pcmMeta.set(
+    this.pipe.send(
+      0x0090,
       new Uint32Array([
-        2,
         channel,
         zone.SampleId,
-        loops[0],
-        loops[1],
+        zone.shdr.loops[0],
+        zone.shdr.loops[1],
         zone.ref,
-        pitchRatio * 0xffff,
-      ])
+        zone.calcPitchRatio(key, this.context.sampleRate) * 0xffff,
+      ]).buffer
     );
   }
   keyOff(channel, key, vel) {
-    this.fetchWorker.postMessage({ egRelease: { channel, key, vel } });
+    this.pipe.send(0x0080, new Uint32Array([channel]).buffer);
   }
 
   async shipProgram(sf2program, presetId) {
-    requestDownload(this.fetchWorker, sf2program, this.port);
-    const ack = await new Promise((resolve) => {
-      this.fetchWorker.addEventListener("message", function ({ data }) {
-        //  console.log("shipping ", presetId, "ack", data);
-        if (data.ack) {
-          resolve(data.ack);
-        }
-      });
-    });
+    await requestDownload(sf2program, this.port);
+    console.log("resolve dl");
     await this.postZoneAttributes(sf2program, presetId);
+    console.log("resolve st");
   }
   async postZoneAttributes(sf2program, presetId) {
-    this.fetchWorker.postMessage({
+    this.port.postMessage({
       presetId,
       zArr: sf2program.zMap.map((z) => {
         const shz = new Int16Array(60);
@@ -97,15 +82,6 @@ export class SpinNode extends AudioWorkletNode {
         };
       }),
     });
-    const zAck = await new Promise((resolve) => {
-      this.fetchWorker.addEventListener("message", function ({ data }) {
-        //  console.log("shipping ", presetId, "ack", data);
-        if (data.zack) {
-          resolve(data.zack);
-        }
-      });
-    });
-    console.assert(this.fetchWorker.onmessage == null);
   }
   handleMsg(e) {
     console.log(e.data);

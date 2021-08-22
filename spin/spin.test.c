@@ -1,4 +1,4 @@
-#include "spin.c"
+#include "src/spin.h"
 
 #include <assert.h>
 #include <math.h>

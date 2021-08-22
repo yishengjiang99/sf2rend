@@ -13,6 +13,15 @@ export function mkdiv(type, attr = {}, children = "") {
   charray.forEach((c) => {
     typeof c == "string" ? (div.innerHTML += c) : div.append(c);
   });
+  div.attachTo = function (parent) {
+    if (parent) parent.append(this);
+    return this;
+  };
+  div.wrapWith = function (tag) {
+    const parent = mkdiv(tag);
+    parent.append(this);
+    return parent;
+  };
   return div;
 }
 export function mksvg(tag, attrs = {}, children = []) {
@@ -28,15 +37,7 @@ export function mksvg(tag, attrs = {}, children = []) {
   charray.forEach((c) => el.append(c));
   return el;
 }
-HTMLElement.prototype.attachTo = function (parent) {
-  parent.append(this);
-  return this;
-};
-HTMLElement.prototype.wrapWith = function (tag) {
-  const parent = mkdiv(tag);
-  parent.append(this);
-  return parent;
-};
+
 export function logdiv(
   infoPanel = mkdiv("pre", {
     style:

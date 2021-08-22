@@ -1,4 +1,6 @@
 import { downloadData } from "../fetch-drop-ship/download.js";
+import { SharedRiffPipe } from "../srp/shared-riff-pipe.js";
+
 const CH_META_LEN = 24;
 const nchannels = 32;
 const REND_BLOCK = 128;
@@ -46,20 +48,15 @@ class SpinProcessor extends AudioWorkletProcessor {
   constructor(options) {
     super(options);
     const {
-      processorOptions: { sb, wasm },
+      processorOptions: { renderBuffer, statusBuffer, wasm },
     } = options;
-    this.sb = sb;
-    this.updateArray = new Uint32Array(this.sb, 0, CH_META_LEN * 32);
-    this.outputSnap = new Float32Array(
-      this.sb,
-      CH_META_LEN * 32 * Uint32Array.BYTES_PER_ELEMENT,
-      REND_BLOCK * nchannels
-    );
+    this.pipe = new SharedRiffPipe(statusBuffer);
+    this.outputSnap = new Float32Array(renderBuffer, REND_BLOCK * nchannels);
     this.memory = new WebAssembly.Memory({ maximum: 1024, initial: 1024 });
     this.inst = new WebAssembly.Instance(new WebAssembly.Module(wasm), {
       env: { memory: this.memory },
     });
-    this.brk = 0x10000;
+    this.brk = 0x30000;
     this.malololc = (len) => {
       const ret = this.brk;
       this.brk += len;
@@ -71,27 +68,30 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.port.onmessage = this.handleMsg.bind(this);
     this.spinners = [];
     this.outputs = [];
+    this.strides = [];
     for (let i = 0; i < 16; i++) {
       this.spinners[i] = this.inst.exports.newSpinner();
-      const spIO = new Uint32Array(this.memory.buffer, this.spinners[i], 2);
+      const spIO = new Uint32Array(this.memory.buffer, this.spinners[i], 12);
       this.outputs[i] = new Float32Array(this.memory.buffer, spIO[1], 128);
-      console.log(spRef2json(this.memory.buffer, this.spinners[i]));
+      this.strides[i] = spIO[6];
     }
   }
   async handleMsg(e) {
     const { data } = e;
     if (data.stream && data.segments) {
-      const { stream, segments, nsamples } = data;
-      const offset = this.malololc(4 * data.nsamples);
-
-      const fl = new Float32Array(this.memory.buffer, offset, data.nsamples);
+      // segments: {
+      //   sampleId: shdr.SampleId,
+      //   nSamples: (shdr.range[1] + 1 - shdr.range[0]) / 2,
+      // },
+      // stream: res.body,
+      const {
+        segments: { sampleId, nSamples },
+        stream,
+      } = data;
+      const offset = this.malololc(4 * nSamples);
+      const fl = new Float32Array(this.memory.buffer, offset, nSamples);
       await downloadData(stream, fl);
-      this.outputSnap.set(fl.slice(0, 2024));
-      for (const sampleId in segments) {
-        this.sampleIdRefs[parseInt(sampleId)] =
-          segments[sampleId].startByte + offset;
-      }
-      this.port.postMessage({ ack: offset });
+      this.sampleIdRefs[sampleId] = offset;
     } else if (data.zArr) {
       for (const { arr, ref } of data.zArr) {
         const ptr = this.malololc(120);
@@ -106,54 +106,83 @@ class SpinProcessor extends AudioWorkletProcessor {
       this.inst.exports.eg_release(this.spinners[channel]);
     }
   }
-  sync(offset) {
-    const [
-      updateFlag,
-      channel,
-      sampleId,
-      loopstart,
-      loopend,
-      zoneRef,
-      pitchRatio,
-      ...blankForNow
-    ] = new Uint32Array(this.sb, 4 * offset, CH_META_LEN);
+  // sync(offset) {
+  //   return 0;
+  //   const [
+  //     updateFlag,
+  //     channel,
+  //     sampleId,
+  //     loopstart,
+  //     loopend,
+  //     zoneRef,
+  //     pitchRatio,
+  //     ...blankForNow
+  //   ] = new Uint32Array(this.sb, 4 * offset, CH_META_LEN);
 
-    console.assert(this.sampleIdRefs[sampleId], "sample id posted");
+  //   console.assert(this.sampleIdRefs[sampleId], "sample id posted");
 
-    this.inst.exports.set_attrs(
-      this.spinners[channel],
-      this.sampleIdRefs[sampleId],
-      loopstart,
-      loopend
-    );
-    this.inst.exports.setStride(this.spinners[channel], pitchRatio / 0xffff);
-    this.inst.exports.setZone(this.spinners[channel], this.presetRefs[zoneRef]);
+  //   this.inst.exports.set_attrs(
+  //     this.spinners[channel],
+  //     this.sampleIdRefs[sampleId],
+  //     loopstart,
+  //     loopend,zone,stride
+  //   );
+  //   this.inst.exports.setStride(this.spinners[channel], pitchRatio / 0xffff);
+  //   this.inst.exports.setZone(this.spinners[channel], this.presetRefs[zoneRef]);
 
-    this.updateArray[offset] = 0;
+  //   this.updateArray[offset] = 0;
 
-    this.inst.exports.reset(this.spinners[channel]);
-    if (this.updateArray[offset + CH_META_LEN] != 0) {
-      this.sync(offset + CH_META_LEN);
-    }
-  }
+  //   this.inst.exports.reset(this.spinners[channel]);
+  //   if (this.updateArray[offset + CH_META_LEN] != 0) {
+  //     this.sync(offset + CH_META_LEN);
+  //   }
+  // }
 
   process(inputs, o, parameters) {
-    if (this.updateArray[0] > 0) {
-      this.sync(0);
+    if (this.pipe.hasMsg) {
+      this.pipe.read().forEach((msg) => {
+        switch (msg.fourcc) {
+          case 0x0080: {
+            const [channel] = msg.chunk;
+            this.inst.exports.eg_release(this.spinners[channel]);
+            break;
+          }
+          case 1:
+          case 0x0090:
+            {
+              const [channel, sampleId, loopstart, loopend, zoneRef, ratio] =
+                msg.chunk;
+              console.log(
+                this.inst.exports.set_attrs(
+                  this.spinners[channel],
+                  this.sampleIdRefs[sampleId],
+                  loopstart,
+                  loopend,
+                  this.presetRefs[zoneRef],
+                  ratio / 0xffff
+                )
+              );
+            }
+            break;
+          default:
+            break;
+        }
+      });
     }
     for (let i = 0; i < 16; i++) {
       if (!this.spinners[i]) continue;
       if (!this.outputs[i]) continue;
-      if (!o[i]) continue;
+      // if (!o[i]) continue;
       for (let j = 0; j < 128; j++) this.outputs[i][j] = 0;
       this.inst.exports.spin(this.spinners[i], 128);
+
       for (let j = 0; j < 128; j++) {
-        o[i][0][j] = this.outputs[i][j];
-        o[i][1][j] = this.outputs[i][j];
+        o[0][0][j] += this.outputs[i][j] / 6;
+        o[0][1][j] += this.outputs[i][j] / 6;
       }
-      new Promise((r) => r()).then(() =>
-        this.outputSnap.set(this.outputs[i], i * REND_BLOCK)
-      );
+      // new Promise((r) => r()).then(() =>
+      //  // this.outputSnap.set(this.outputs[i], i * REND_BLOCK)
+      // );
     }
     return true;
   }

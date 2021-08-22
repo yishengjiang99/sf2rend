@@ -1,4 +1,4 @@
-import { load, loadProgram } from "sf2-service";
+import { load, loadProgram } from "../sf2-service/read.js";
 export function channel(aggCtx, channelId, ui) {
   const activeNotes = [];
   const ctx = aggCtx.ctx;
@@ -20,6 +20,7 @@ export function channel(aggCtx, channelId, ui) {
       ui.name = name || "pid " + pid + " bid " + bankId;
     },
     keyOn(key, vel) {
+      if (!_pg) return;
       let eg;
       console.assert(_pg != null);
       const zone = _pg.filterKV(key, vel)[0];
@@ -35,6 +36,8 @@ export function channel(aggCtx, channelId, ui) {
       });
     },
     keyOff(key, vel) {
+      if (!_pg) return;
+
       spinner.keyOff(channelId, key, vel);
       //volEG.keyOff();
     },

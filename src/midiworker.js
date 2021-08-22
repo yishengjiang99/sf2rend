@@ -16,11 +16,14 @@ const main = async (_url) => {
       if (!et.channel) postMessage(et);
     }
   }
-  onmessage = ({ data: { cmd, amt, url } }) => {
+  onmessage = ({ data: { cmd, amt, url, evtPipe } }) => {
     if (url) {
       pause();
       main(url);
     }
+    // if (evtPipe) {
+    //   debugger;
+    // }
     switch (cmd) {
       case "start":
         run();

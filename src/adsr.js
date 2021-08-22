@@ -32,7 +32,7 @@ export function mkEnvelope(ctx) {
           gainMax * (1 - sustain),
           delay + attack + hold + decay
         );
-      console.log({ phases: [attack, decay, sustain, release], peak: gainMax });
+
       return { phases: [attack, decay, sustain, release], peak: gainMax };
     },
     keyOff() {

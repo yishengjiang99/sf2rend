@@ -11,30 +11,47 @@
 <body>
   <script type='module'>
     import {loadProgram, load} from "./sf2-service/read.js";
+    import {fetchAndLoadPlaylist} from "./src/midilist.js";
+    import {mkeventsPipe, initAudio, main, queryDivs} from "./src/index.js";
+    import {indexdivs} from "./tests/htmldivs.fixture.js";
+    promise_test(async (t) => {
+      assert_true(true);
+      const u = await initAudio();
+    }, 'adfdas');
 
-    promise_test(async () => {
-      const sf2 = await load("file.sf2");
-      try {
-        const {shdrMap, zMap, preload, filterKV} = loadProgram(sf2, 0, 0); //.lo < z.KeyRange.hi));
-        assert_false(zMap.some(z => z.SampleId == -1), 'saome spids are -1');
-        console.log(zMap[0].KeyRange.lo);
-        assert_true(zMap.some(z => z.KeyRange.lo < z.KeyRange.hi));
-      } catch (e) {
-        console.trace(e)
-      }
-    }, "loading program returns more than 0 zones");
+    // promise_test(async (t) => {
+    //   t.set_timeout(2)
+    //   document.body.innerHTML += `<div style='top:200vh;position:fixed;max-height:1px' id=test1>${indexdivs}</div>`;
+    //   const divs = queryDivs()
+    //   const p = mkeventsPipe();
+    //   assert_true(p.postMessage != null);
+
+    //   // await main(divs);
+    //   assert_true(true, 'got this far')
+
+    // }, 'load page')
+
+    // promise_test(async () => {
+    //   const div = await fetchAndLoadPlaylist();
+    //   assert_true(div.innerHTML.includes("song.mid"));
+    // })
+    // promise_test(async () => {
+    //   const sf2 = await load("file.sf2");
+    //   try {
+    //     const {shdrMap, zMap, preload, filterKV} = loadProgram(sf2, 0, 0); //.lo < z.KeyRange.hi));
+    //     assert_false(zMap.some(z => z.SampleId == -1), 'saome spids are -1');
+    //     console.log(zMap[0].KeyRange.lo);
+    //     assert_true(zMap.some(z => z.KeyRange.lo < z.KeyRange.hi));
+    //   } catch (e) {
+    //     console.trace(e)
+    //   }
+    // }, "loading program returns more than 0 zones");
 
   </script>
-  <script type='moasdfdule'>
+  <script type='moduale'>
     import {loadProgram, load} from "./sf2-service/read.js";
 
-    promise_test(async () => {
-      const sf2 = await load("file.sf2");
-      const {shdrMap, zMap, preload, filterKV} = loadProgram(sf2, 0, 0);
-      assert_true(zMap[3].KeyRange.lo < zMap[3].KeyRange.hi);
-      assert_greater_than(zMap.length, 0, "number of zones");
-      assert_greater_than(Object.keys(shdrMap).length, 0, "number of zones");
-    }, "loading program returns more than 0 zones");
+
 
     promise_test(async () => {
       const sf2 = await load("file.sf2");
