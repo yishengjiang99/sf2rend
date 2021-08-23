@@ -1,3 +1,0 @@
-/Users/yisheng/Documents/GitHub/sf2rend/spin/build/_deps/googletest-subbuild/CMakeFiles/rebuild_cache.dir
-/Users/yisheng/Documents/GitHub/sf2rend/spin/build/_deps/googletest-subbuild/CMakeFiles/edit_cache.dir
-/Users/yisheng/Documents/GitHub/sf2rend/spin/build/_deps/googletest-subbuild/CMakeFiles/googletest-populate.dir
