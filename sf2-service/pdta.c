@@ -259,9 +259,13 @@ zone_t *findPresetZones(int i, int nregions) {
                 } else if (attrs[default_ibagcache_idex + i]) {
                   zoneattr[i] = attrs[default_ibagcache_idex + i];
                 }
-                short pbagAttr = attrs[pbg_attr_cache_index + i] != defvals[i]
-                                     ? attrs[pbg_attr_cache_index + i]
-                                     : attrs[default_pbg_cache_index + i];
+                short pbagAttr =
+                    attrs[pbg_attr_cache_index + i] != defvals[i]
+                        ? attrs[pbg_attr_cache_index + i]
+                    : attrs[default_pbg_cache_index + i] != defvals[i]
+                        ? attrs[default_pbg_cache_index + i]
+                        : 0;
+
                 int add = combine_pattrs(i, zoneattr, pbagAttr);
                 if (!add) break;
               }
