@@ -93,7 +93,7 @@ float _spinblock(spinner* x, int n, int blockOffset) {
 
     if (position >= x->loopEnd && x->loopStart != -1) position -= looplen;
     float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
-    // outputf = applyCentible(outputf, (short)db);
+    outputf = applyCentible(outputf, (short)db);
     x->outputf[i + blockOffset] = outputf;
     db += dbInc;
   }

@@ -12,7 +12,7 @@ const programNames = [];
 let sf2;
 const cdnroot = `https://grep32bit.blob.core.windows.net/midi/`;
 
-if (document.location.href.includes("index.html")) {
+if (!document.location.href.includes("test.html")) {
   const { flist, cpanel, cmdPanel, timeslide, stdout } = queryDivs();
   fetchAndLoadPlaylist();
   main(queryDivs());
