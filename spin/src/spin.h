@@ -15,6 +15,18 @@ typedef struct {
   EG *voleg, *modeg;
   uint8_t channelId;
 } spinner;
+short aZone[60] = {
+    0,      0,   0,    0,     0,     0,      40,     0,      27000,  -10,
+    0,      0,   0,    20,    598,   300,    40,     -1000,  527,    0,
+    0,      -2,  -884, -2,    -1200, -10800, -10800, -10800, -10800, 0,
+    -10800, 0,   0,    -3969, -3969, -7811,  2400,   960,    1200,   0,
+    0,      237, 0,    17664, 32512, 0,      -2,     -2,     0,      0,
+    0,      0,   -1,   123,   1,     0,      200,    0,      44,     0};
+void set_zone(spinner* x, zone_t* z);
+spinner* newSpinner(zone_t* zoneRef, int idx);
+void eg_release(spinner* x);
+void reset(spinner* x);
+float spin(spinner* x, int n);
 
 // borrowed from tml.h
 enum TMLController {

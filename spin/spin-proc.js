@@ -1,38 +1,10 @@
 import { downloadData } from "../fetch-drop-ship/download.js";
 import { SharedRiffPipe } from "../srp/shared-riff-pipe.js";
-
+import { spRef2json } from "./spin-struct.js";
 const CH_META_LEN = 24;
 const nchannels = 32;
 const REND_BLOCK = 128;
 
-function spRef2json(heap, ref) {
-  const [inputRef, outputRef] = new Uint32Array(heap, ref, 2);
-  const [fract] = new Float32Array(heap, ref + 8, 1);
-  const [position, loopStart, loopEnd] = new Uint32Array(heap, ref + 8 + 4, 3);
-  const [stride, strideInc] = new Float32Array(heap, ref + 8 + 4 + 12, 2);
-  const [lpfref, zoneref, egVolRef, egModRef] = new Uint32Array(
-    heap,
-    ref + 8 + 4 + 12 + 8,
-    4
-  );
-  return {
-    inputRef,
-    outputRef,
-    fract,
-    position,
-    loopStart,
-    loopEnd,
-    stride,
-    strideInc,
-    lpfref,
-    zoneref: new Int16Array(heap, zoneref, 60),
-    egVolRef: [
-      new Int32Array(heap, egVolRef, 2),
-      new Float64Array(heap, egVolRef + 8, 2),
-    ],
-    egModRef,
-  };
-}
 /* eslint-disable no-unused-vars */
 class SpinProcessor extends AudioWorkletProcessor {
   constructor(options) {
@@ -60,13 +32,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.outputs = [];
     this.strides = [];
     this.egRefs = [];
-    for (let i = 0; i < 16; i++) {
-      this.spinners[i] = this.inst.exports.newSpinner();
-      const spIO = new Uint32Array(this.memory.buffer, this.spinners[i], 12);
-      this.outputs[i] = new Float32Array(this.memory.buffer, spIO[1], 128 * 2);
-      this.strides[i] = spIO[6];
-      this.egRefs[i] = spIO[11];
-    }
+
     this.egstates = (channel) =>
       new Int32Array(this.memory.buffer, this.egRefs[channel], 1);
   }
@@ -100,7 +66,14 @@ class SpinProcessor extends AudioWorkletProcessor {
       this.inst.exports.eg_release(this.spinners[channel]);
     }
   }
-
+  instantiate(zone, i) {
+    this.spinners[i] = this.inst.exports.newSpinner(zone, i);
+    const spIO = new Uint32Array(this.memory.buffer, this.spinners[i], 12);
+    this.outputs[i] = new Float32Array(this.memory.buffer, spIO[1], 128 * 2);
+    this.strides[i] = spIO[6];
+    this.egRefs[i] = spIO[11];
+    return this.spinners[i];
+  }
   process(inputs, o, parameters) {
     if (this.pipe.hasMsg) {
       this.pipe.read().forEach((msg) => {
@@ -121,15 +94,21 @@ class SpinProcessor extends AudioWorkletProcessor {
             {
               const [channel, sampleId, loopstart, loopend, zoneRef, ratio] =
                 msg.chunk;
-              console.log(
-                this.inst.exports.set_attrs(
-                  this.spinners[channel],
-                  this.sampleIdRefs[sampleId],
-                  loopstart,
-                  loopend,
-                  this.presetRefs[zoneRef],
-                  ratio / 0xffff
-                )
+              if (!this.presetRefs[zoneRef]) {
+                console.error("preset not found zoneref " + zoneRef);
+                return;
+              }
+              if (!this.spinners[channel]) {
+                this.instantiate(this.presetRefs[zoneRef], channel);
+              }
+
+              this.inst.exports.set_attrs(
+                this.spinners[channel],
+                this.sampleIdRefs[sampleId],
+                loopstart,
+                loopend,
+                this.presetRefs[zoneRef],
+                ratio / 0xffff
               );
             }
             break;
@@ -149,10 +128,21 @@ class SpinProcessor extends AudioWorkletProcessor {
       this.inst.exports.spin(this.spinners[i], 128);
 
       for (let j = 0; j < 128; j++) {
-        o[0][0][j] += this.outputs[i][2 * j] / 2;
+        o[0][0][j] += this.outputs[i][2 * j + 1] / 2;
         o[0][1][j] += this.outputs[i][2 * j + 1] / 2;
       }
-      this.outputSnap.set(this.outputs[i], 2 * i * REND_BLOCK);
+      new Promise((r) => r()).then(() => {
+        this.outputSnap.set(
+          this.outputs[i].filter((v, i) => i % 2 == 0),
+          2 * i * REND_BLOCK,
+          REND_BLOCK
+        );
+        this.outputSnap.set(
+          this.outputs[i].filter((v, i) => i % 2 == 1),
+          2 * i * REND_BLOCK + REND_BLOCK,
+          REND_BLOCK
+        );
+      });
     }
     return true;
   }

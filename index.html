@@ -57,13 +57,6 @@
 
 		}
 
-		aside a {
-			padding: 6px 8px 6px 16px;
-			text-decoration: none;
-			font-size: 25px;
-			color: #818181;
-			display: block;
-		}
 
 		header {
 			margin-left 18rem;
@@ -79,6 +72,7 @@
 			position: fixed;
 			right: 20rem;
 			width: 20rem;
+			top: 0;
 			background-color: black;
 		}
 
@@ -119,7 +113,7 @@
 		</div>
 
 	</aside>
-	<div id='right'>
+	<div id='right'>debug;
 		<pre id=stdout></pre>
 		<div id=debug></div>
 	</div>
@@ -132,9 +126,11 @@
 
 	</script>
 	<script>
-		const debugdiv = document.querySelector("#right")
+		const debugdiv = document.querySelector("#right");
+		let debugshow = false;
 		function toggledebug() {
-			debugdiv.style.display = debugdiv.style.display == 'none' ? "block" : "none";
+			debugshow = !debugshow;
+			debugdiv.style.display = debugshow ? "block" : "none";
 		}
 	</script>
 </body>

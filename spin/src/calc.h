@@ -32,12 +32,13 @@ float applyCentible(float signal, short centdb) {
   if (centdb > 0) return signal;
   if (centdb < -1000) return 0.0f;
   if (centdb < -960) return signal * 0.00001f;
+  return signal * p10over200[centdb];
 
-  int sigl = FloatTo23Bits(signal);
-  float nff = log_2_10 * centdb / -200.0f;
-  sigl = sigl >> (int)nff;
-  sigl /= p2over1200[(short)((nff - (int)nff) * 1200)];
-  return (sigl / bit23_normalize);
+  // int sigl = FloatTo23Bits(signal);
+  // float nff = log_2_10 * centdb / -200.0f;
+  // sigl = sigl >> (int)(nff + 1);
+  // // sigl /= p2over1200[(short)((nff - (int)nff) * 1200)];
+  // return (sigl / bit23_normalize);
 }
 
 float hermite4(float frac_offset, float xm1, float x0, float x1, float x2) {

@@ -74,7 +74,7 @@ export async function main({ cpanel, cmdPanel, stdout, flist, timeslide }) {
     for (let i = 0; i < 16; i++) {
       chart(
         midiSink.canvases[i],
-        new Float32Array(ctx.spinner.outputSnapshot, 128 * i * 4, 128)
+        new Float32Array(ctx.spinner.outputSnapshot, 128 * i * 4 * 2, 2 * 128)
       );
     }
     requestAnimationFrame(updateCanvas);
@@ -152,8 +152,10 @@ export function bindMidiWorkerToAudioAndUI(
       midiPort.postMessage(e.data.channel);
     } else if (e.data.qn) {
       timeslide.value = e.data.qn; //(e.data.t);
+    } else if (e.data.meta) {
+      stdout(JSON.stringify(e.data.payload, null, 0));
     } else {
-      stdout(JSON.stringify(e.data, null, 0));
+      stdout(JSON.stringify(e.data.payload, null, 0));
     }
   });
   timeslide.value = 0;

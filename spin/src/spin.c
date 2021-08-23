@@ -8,10 +8,11 @@
 
 #define RENDQ 128
 #define sps_index() (spsIndx++) & 0x0f
-#define one_over_128_128 1.0f / 128.0f / 128.0f;
-spinner sps[16];
-lpf_t lpf[16];
-EG eg[32];
+#define one_over_128_128 1.0f / 128.0f / 128.0f
+#define clamp(val, min, max) val > max ? max : val < min ? min : val
+spinner sps[21];
+lpf_t lpf[21];
+EG eg[44];
 char midi_cc_vals[16 * 128];
 void set_midi_cc_val(int channel, int metric, int val) {
   midi_cc_vals[channel * 128 + metric] = (char)val & 0x7f;
@@ -21,8 +22,7 @@ float silence[40];
 char spsIndx = 0;
 void reset(spinner* x);
 
-spinner* newSpinner() {
-  int idx = sps_index();
+spinner* newSpinner(zone_t* zoneRef, int idx) {
   spinner* x = &sps[idx];
   x->outputf = &outputs[idx * RENDQ * 2];
   x->inputf = silence;
@@ -34,12 +34,16 @@ spinner* newSpinner() {
   newLpf(x->lpf, 0.45f);
   x->voleg = &eg[idx * 2];
   x->modeg = &eg[idx * 2 + 1];
+  set_zone(x, zoneRef);
   midi_cc_vals[idx * 128 + TML_VOLUME_MSB] = 100;
   midi_cc_vals[idx * 128 + TML_PAN_MSB] = 64;
   midi_cc_vals[idx * 128 + TML_EXPRESSION_MSB] = 127;
   x->channelId = idx;
-  reset(x);
   return x;
+}
+spinner* sampleZone() {
+  zone_t* z = (zone_t*)aZone;
+  return newSpinner(z, 20);
 }
 void eg_release(spinner* x) {
   _eg_release(x->voleg);
@@ -59,16 +63,20 @@ void reset(spinner* x) {
   x->modeg->egval = -960.0f;
   x->voleg->egIncrement = 0.0f;
 }
+void set_zone(spinner* x, zone_t* z) {
+  x->zone = z;
+  reset(x);
+  init_mod_eg(x->modeg, z);
+  init_vol_eg(x->voleg, z);
+}
 float set_attrs(spinner* x, float* inp, uint32_t loopstart, uint32_t loopend,
                 zone_t* z, float stride) {
   x->loopStart = loopstart;
   x->loopEnd = loopend;
   x->inputf = inp;
-  x->zone = z;
   x->stride = stride;
-  init_mod_eg(x->modeg, z);
-  init_vol_eg(x->voleg, z);
-  reset(x);
+  set_zone(x, z);
+
   return x->stride;
 }
 
@@ -80,11 +88,12 @@ float _spinblock(spinner* x, int n, int blockOffset) {
 
   update_eg(x->modeg, n);  // x->zone, 0);
   if (x->voleg->stage == done) return .0f;
+  if (x->voleg->egval == 0 && x->voleg->egIncrement == 0) return .0f;
 
   int position = x->position;
   float fract = x->fract;
   float stride = x->stride;
-  double db = x->voleg->egval + x->zone->Attenuation;
+  double db = x->voleg->egval;
   double dbTarget = x->voleg->egval + x->voleg->egIncrement * n;
 
   int looplen = x->loopEnd - x->loopStart + 1;
@@ -92,9 +101,11 @@ float _spinblock(spinner* x, int n, int blockOffset) {
   float mixIncrement = 1.0f / (float)n;
   float mix = 0.0f;
   double dbInc = x->voleg->egIncrement;
-  double modEG = p10over200[(short)x->modeg->egval + 960];
+  double modEG = p10over200[(short)(clamp(x->modeg->egval, -960, 0))];
   stride = stride > 0
-               ? stride * (12 + modEG * x->zone->ModEnv2Pitch / 100.0f) / 12.0f
+               ? stride *
+                     (12.0f + (float)(modEG * x->zone->ModEnv2Pitch) / 100.0f) /
+                     12.0f
                : 0;
   float midicc = midi_cc_vals[128 * x->channelId + TML_VOLUME_MSB] *
                  midi_cc_vals[128 * x->channelId + TML_EXPRESSION_MSB] *
@@ -111,9 +122,9 @@ float _spinblock(spinner* x, int n, int blockOffset) {
     if (position >= x->loopEnd && x->loopStart != 0) position -= looplen;
 
     float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
-    outputf = applyCentible(outputf, (short)db) * midicc;
     x->outputf[i * 2 + blockOffset * 2] = outputf;
-    x->outputf[i * 2 + blockOffset * 2 + 1] = outputf;
+    x->outputf[i * 2 + blockOffset * 2 + 1] =
+        applyCentible(outputf, (short)db) * midicc;
 
     db += dbInc;
   }

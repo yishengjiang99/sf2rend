@@ -1,4 +1,5 @@
 import { mkdiv, mksvg } from "../mkdiv/mkdiv.js";
+import { midi_ch_cmds } from "./midilist.js";
 const rowheight = 40,
   colwidth = 80;
 const pixelPerDecibel = rowheight;
@@ -24,7 +25,27 @@ export class TrackUI {
         mkdiv("div", { style: "display:grid; grid-template-columns:1fr" }, [
           mkdiv(
             "input",
-            { type: "list", list: "programs", value: "", class: "name" },
+            {
+              type: "list",
+              list: "programs",
+              value: "",
+              class: "name",
+              onfocus: (e) => {
+                e.target.placeholder = e.target.value;
+                e.target.value = "";
+              },
+              onunfocus: (e) => {
+                if (e.target.value == "") e.target.value = e.target.placeholder;
+              },
+              onchange: (e) => {
+                const pid = Array.from(e.target.list.options).filter(
+                  (d) => d.value == e.target.value
+                );
+                if (!pid || pid.length) throw "target not found";
+                pid = pid[0].getAttribute("pid");
+                cb([midi_ch_cmds]);
+              },
+            },
             ["channel " + i]
           ),
           mkdiv("input", { type: "checkbox" }),
@@ -105,9 +126,6 @@ export class TrackUI {
           () => refcnt-- > 0 && cb([0x80 | idx, midi, 111]),
           { once: true }
         );
-        k.addEventListener("mouseleave", () => cb([0x80 | idx, midi, 111]), {
-          once: true,
-        });
       };
     });
     this.polylines = Array.from(container.querySelectorAll("polyline"));

@@ -4,11 +4,10 @@
 #include "calc.h"
 #include "sf2.h"
 
-enum eg_stages { init = 0, delay, attack, hold, decay, release, done };
+enum eg_stages { init = 0, delay, attack, hold, decay, release, done = 99 };
 typedef struct {
   int stage, nsamples_till_next_stage;
-
-  short delay, attack, hold, decay, sustain, release;
+  short delay, attack, hold, decay, sustain, release, pad1, pad2;
   double egval, egIncrement;
 } EG;
 
@@ -57,8 +56,8 @@ double update_eg(EG* eg, int n) {
       break;
     case decay:
       eg->stage++;
-      eg->egIncrement = -960.0f / timecent2sample(release);
-      eg->nsamples_till_next_stage = (-960.0f - eg->egval) / eg->egIncrement;
+      eg->egIncrement = -960.0f / timecent2sample(eg->release);
+      eg->nsamples_till_next_stage = (-960.0f + eg->egval) / eg->egIncrement;
       break;
     case release:
       eg->stage++;
@@ -77,26 +76,26 @@ void* gmemcpy(char* dest, const char* src, unsigned long n) {
 }
 void init_vol_eg(EG* eg, zone_t* z) {
   char* sz = (char*)&z->VolEnvDelay;
-  gmemcpy((char*)eg, sz, 12);
+  gmemcpy((char*)&eg->delay, sz, 12);
   eg->stage = init;
   eg->nsamples_till_next_stage = 1;
-  update_eg(eg, 2);
+  update_eg(eg, 1);
 }
 void init_mod_eg(EG* eg, zone_t* z) {
   char* sz = (char*)&z->ModEnvDelay;
-  gmemcpy((char*)eg, sz, 12);
+  gmemcpy((char*)&eg->delay, sz, 12);
   eg->stage = init;
   eg->nsamples_till_next_stage = 1;
-  update_eg(eg, 2);
+  update_eg(eg, 1);
 }
 
 void _eg_release(EG* e) {
   e->stage = decay;
-  e->nsamples_till_next_stage = 11;
+  e->nsamples_till_next_stage = 0;
 }
 void _eg_set_stage(EG* e, int n) {
   e->stage = n - 1;
-  e->nsamples_till_next_stage = 0;
+  e->nsamples_till_next_stage = 1;
   update_eg(e, 1);
 }
 #endif
