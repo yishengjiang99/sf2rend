@@ -761,7 +761,7 @@ define hidden float @_spinblock(%struct.spinner* nocapture %0, i32 %1, i32 %2) l
   %11 = getelementptr inbounds %struct.EG, %struct.EG* %10, i32 0, i32 6
   %12 = load i32, i32* %11, align 4, !tbaa !6
   %13 = icmp eq i32 %12, 6
-  br i1 %13, label %164, label %14
+  br i1 %13, label %120, label %14
 
 14:                                               ; preds = %3
   %15 = getelementptr inbounds %struct.spinner, %struct.spinner* %0, i32 0, i32 3
@@ -787,7 +787,7 @@ define hidden float @_spinblock(%struct.spinner* nocapture %0, i32 %1, i32 %2) l
   %35 = xor i32 %32, -1
   %36 = add i32 %34, %35
   %37 = icmp sgt i32 %1, 0
-  br i1 %37, label %38, label %95
+  br i1 %37, label %38, label %73
 
 38:                                               ; preds = %14
   %39 = icmp eq i32 %34, -1
@@ -795,13 +795,13 @@ define hidden float @_spinblock(%struct.spinner* nocapture %0, i32 %1, i32 %2) l
   %41 = load float*, float** %40, align 4, !tbaa !29
   %42 = getelementptr inbounds %struct.spinner, %struct.spinner* %0, i32 0, i32 1
   %43 = load float*, float** %42, align 4, !tbaa !26
-  br i1 %39, label %44, label %110
+  br i1 %39, label %44, label %88
 
-44:                                               ; preds = %38, %88
-  %45 = phi i32 [ %93, %88 ], [ 0, %38 ]
-  %46 = phi i32 [ %59, %88 ], [ %16, %38 ]
-  %47 = phi float [ %58, %88 ], [ %18, %38 ]
-  %48 = phi double [ %92, %88 ], [ %28, %38 ]
+44:                                               ; preds = %38, %57
+  %45 = phi i32 [ %71, %57 ], [ 0, %38 ]
+  %46 = phi i32 [ %59, %57 ], [ %16, %38 ]
+  %47 = phi float [ %58, %57 ], [ %18, %38 ]
+  %48 = phi double [ %70, %57 ], [ %28, %38 ]
   %49 = fadd float %20, %47
   %50 = fcmp ult float %49, 1.000000e+00
   br i1 %50, label %57, label %51
@@ -825,143 +825,79 @@ define hidden float @_spinblock(%struct.spinner* nocapture %0, i32 %1, i32 %2) l
   %65 = fsub float %64, %61
   %66 = fmul float %58, %65
   %67 = fadd float %61, %66
-  %68 = fptosi double %48 to i16
-  %69 = icmp sgt i16 %68, 0
-  br i1 %69, label %88, label %70
+  %68 = add nsw i32 %45, %2
+  %69 = getelementptr inbounds float, float* %43, i32 %68
+  store float %67, float* %69, align 4, !tbaa !43
+  %70 = fadd double %30, %48
+  %71 = add nuw nsw i32 %45, 1
+  %72 = icmp eq i32 %71, %1
+  br i1 %72, label %73, label %44, !llvm.loop !44
 
-70:                                               ; preds = %57
-  %71 = icmp slt i16 %68, -1000
-  br i1 %71, label %88, label %72
-
-72:                                               ; preds = %70
-  %73 = icmp slt i16 %68, -960
-  br i1 %73, label %86, label %74
-
-74:                                               ; preds = %72
-  %75 = fadd float %67, 1.000000e+00
-  %76 = bitcast float %75 to i32
-  %77 = and i32 %76, 8388607
-  %78 = sitofp i16 %68 to double
-  %79 = fmul double %78, 0x400A934F0979A371
-  %80 = fdiv double %79, 2.000000e+02
-  %81 = fadd double %80, -1.000000e+00
-  %82 = fptosi double %81 to i32
-  %83 = lshr i32 %77, %82
-  %84 = sitofp i32 %83 to float
-  %85 = fdiv float %84, 0x415FFFFFC0000000
-  br label %88
-
-86:                                               ; preds = %72
-  %87 = fmul float %67, 0x3EE4F8B580000000
-  br label %88
-
-88:                                               ; preds = %86, %74, %70, %57
-  %89 = phi float [ %87, %86 ], [ %85, %74 ], [ %67, %57 ], [ 0.000000e+00, %70 ]
-  %90 = add nsw i32 %45, %2
-  %91 = getelementptr inbounds float, float* %43, i32 %90
-  store float %89, float* %91, align 4, !tbaa !43
-  %92 = fadd double %30, %48
-  %93 = add nuw nsw i32 %45, 1
-  %94 = icmp eq i32 %93, %1
-  br i1 %94, label %95, label %44, !llvm.loop !44
-
-95:                                               ; preds = %157, %88, %14
-  %96 = phi double [ %28, %14 ], [ %92, %88 ], [ %161, %157 ]
-  %97 = phi float [ %18, %14 ], [ %58, %88 ], [ %124, %157 ]
-  %98 = phi i32 [ %16, %14 ], [ %59, %88 ], [ %128, %157 ]
-  store double %96, double* %21, align 8, !tbaa !12
-  store i32 %98, i32* %15, align 4, !tbaa !35
-  store float %97, float* %17, align 4, !tbaa !36
+73:                                               ; preds = %101, %57, %14
+  %74 = phi double [ %28, %14 ], [ %70, %57 ], [ %117, %101 ]
+  %75 = phi float [ %18, %14 ], [ %58, %57 ], [ %102, %101 ]
+  %76 = phi i32 [ %16, %14 ], [ %59, %57 ], [ %106, %101 ]
+  store double %74, double* %21, align 8, !tbaa !12
+  store i32 %76, i32* %15, align 4, !tbaa !35
+  store float %75, float* %17, align 4, !tbaa !36
   store float %20, float* %19, align 4, !tbaa !38
-  %99 = getelementptr inbounds %struct.EG, %struct.EG* %10, i32 0, i32 7
-  %100 = load i32, i32* %99, align 8, !tbaa !10
-  %101 = sub nsw i32 %100, %1
-  %102 = icmp sgt i32 %101, 0
-  %103 = select i1 %102, i32 %101, i32 0
-  store i32 %103, i32* %99, align 8, !tbaa !10
-  %104 = load %struct.EG*, %struct.EG** %7, align 4, !tbaa !34
-  %105 = getelementptr inbounds %struct.EG, %struct.EG* %104, i32 0, i32 7
-  %106 = load i32, i32* %105, align 8, !tbaa !10
-  %107 = sub nsw i32 %106, %1
-  %108 = icmp sgt i32 %107, 0
-  %109 = select i1 %108, i32 %107, i32 0
-  store i32 %109, i32* %105, align 8, !tbaa !10
-  br label %164
+  %77 = getelementptr inbounds %struct.EG, %struct.EG* %10, i32 0, i32 7
+  %78 = load i32, i32* %77, align 8, !tbaa !10
+  %79 = sub nsw i32 %78, %1
+  %80 = icmp sgt i32 %79, 0
+  %81 = select i1 %80, i32 %79, i32 0
+  store i32 %81, i32* %77, align 8, !tbaa !10
+  %82 = load %struct.EG*, %struct.EG** %7, align 4, !tbaa !34
+  %83 = getelementptr inbounds %struct.EG, %struct.EG* %82, i32 0, i32 7
+  %84 = load i32, i32* %83, align 8, !tbaa !10
+  %85 = sub nsw i32 %84, %1
+  %86 = icmp sgt i32 %85, 0
+  %87 = select i1 %86, i32 %85, i32 0
+  store i32 %87, i32* %83, align 8, !tbaa !10
+  br label %120
 
-110:                                              ; preds = %38, %157
-  %111 = phi i32 [ %162, %157 ], [ 0, %38 ]
-  %112 = phi i32 [ %128, %157 ], [ %16, %38 ]
-  %113 = phi float [ %124, %157 ], [ %18, %38 ]
-  %114 = phi double [ %161, %157 ], [ %28, %38 ]
-  %115 = fadd float %20, %113
-  %116 = fcmp ult float %115, 1.000000e+00
-  br i1 %116, label %123, label %117
+88:                                               ; preds = %38, %101
+  %89 = phi i32 [ %118, %101 ], [ 0, %38 ]
+  %90 = phi i32 [ %106, %101 ], [ %16, %38 ]
+  %91 = phi float [ %102, %101 ], [ %18, %38 ]
+  %92 = phi double [ %117, %101 ], [ %28, %38 ]
+  %93 = fadd float %20, %91
+  %94 = fcmp ult float %93, 1.000000e+00
+  br i1 %94, label %101, label %95
 
-117:                                              ; preds = %110, %117
-  %118 = phi i32 [ %120, %117 ], [ %112, %110 ]
-  %119 = phi float [ %121, %117 ], [ %115, %110 ]
-  %120 = add nsw i32 %118, 1
-  %121 = fadd float %119, -1.000000e+00
-  %122 = fcmp ult float %121, 1.000000e+00
-  br i1 %122, label %123, label %117, !llvm.loop !42
+95:                                               ; preds = %88, %95
+  %96 = phi i32 [ %98, %95 ], [ %90, %88 ]
+  %97 = phi float [ %99, %95 ], [ %93, %88 ]
+  %98 = add nsw i32 %96, 1
+  %99 = fadd float %97, -1.000000e+00
+  %100 = fcmp ult float %99, 1.000000e+00
+  br i1 %100, label %101, label %95, !llvm.loop !42
 
-123:                                              ; preds = %117, %110
-  %124 = phi float [ %115, %110 ], [ %121, %117 ]
-  %125 = phi i32 [ %112, %110 ], [ %120, %117 ]
-  %126 = icmp ult i32 %125, %32
-  %127 = select i1 %126, i32 0, i32 %36
-  %128 = add i32 %127, %125
-  %129 = getelementptr inbounds float, float* %41, i32 %128
-  %130 = load float, float* %129, align 4, !tbaa !43
-  %131 = add nsw i32 %128, 1
-  %132 = getelementptr inbounds float, float* %41, i32 %131
-  %133 = load float, float* %132, align 4, !tbaa !43
-  %134 = fsub float %133, %130
-  %135 = fmul float %124, %134
-  %136 = fadd float %130, %135
-  %137 = fptosi double %114 to i16
-  %138 = icmp sgt i16 %137, 0
-  br i1 %138, label %157, label %139
+101:                                              ; preds = %95, %88
+  %102 = phi float [ %93, %88 ], [ %99, %95 ]
+  %103 = phi i32 [ %90, %88 ], [ %98, %95 ]
+  %104 = icmp ult i32 %103, %32
+  %105 = select i1 %104, i32 0, i32 %36
+  %106 = add i32 %105, %103
+  %107 = getelementptr inbounds float, float* %41, i32 %106
+  %108 = load float, float* %107, align 4, !tbaa !43
+  %109 = add nsw i32 %106, 1
+  %110 = getelementptr inbounds float, float* %41, i32 %109
+  %111 = load float, float* %110, align 4, !tbaa !43
+  %112 = fsub float %111, %108
+  %113 = fmul float %102, %112
+  %114 = fadd float %108, %113
+  %115 = add nsw i32 %89, %2
+  %116 = getelementptr inbounds float, float* %43, i32 %115
+  store float %114, float* %116, align 4, !tbaa !43
+  %117 = fadd double %30, %92
+  %118 = add nuw nsw i32 %89, 1
+  %119 = icmp eq i32 %118, %1
+  br i1 %119, label %73, label %88, !llvm.loop !44
 
-139:                                              ; preds = %123
-  %140 = icmp slt i16 %137, -1000
-  br i1 %140, label %157, label %141
-
-141:                                              ; preds = %139
-  %142 = icmp slt i16 %137, -960
-  br i1 %142, label %143, label %145
-
-143:                                              ; preds = %141
-  %144 = fmul float %136, 0x3EE4F8B580000000
-  br label %157
-
-145:                                              ; preds = %141
-  %146 = fadd float %136, 1.000000e+00
-  %147 = bitcast float %146 to i32
-  %148 = and i32 %147, 8388607
-  %149 = sitofp i16 %137 to double
-  %150 = fmul double %149, 0x400A934F0979A371
-  %151 = fdiv double %150, 2.000000e+02
-  %152 = fadd double %151, -1.000000e+00
-  %153 = fptosi double %152 to i32
-  %154 = lshr i32 %148, %153
-  %155 = sitofp i32 %154 to float
-  %156 = fdiv float %155, 0x415FFFFFC0000000
-  br label %157
-
-157:                                              ; preds = %123, %139, %143, %145
-  %158 = phi float [ %144, %143 ], [ %156, %145 ], [ %136, %123 ], [ 0.000000e+00, %139 ]
-  %159 = add nsw i32 %111, %2
-  %160 = getelementptr inbounds float, float* %43, i32 %159
-  store float %158, float* %160, align 4, !tbaa !43
-  %161 = fadd double %30, %114
-  %162 = add nuw nsw i32 %111, 1
-  %163 = icmp eq i32 %162, %1
-  br i1 %163, label %95, label %110, !llvm.loop !44
-
-164:                                              ; preds = %3, %95
-  %165 = phi float [ %20, %95 ], [ 0.000000e+00, %3 ]
-  ret float %165
+120:                                              ; preds = %3, %73
+  %121 = phi float [ %20, %73 ], [ 0.000000e+00, %3 ]
+  ret float %121
 }
 
 ; Function Attrs: nofree nounwind

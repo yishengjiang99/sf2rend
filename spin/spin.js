@@ -53,10 +53,12 @@ export class SpinNode extends AudioWorkletNode {
       new Uint32Array([
         channel,
         zone.SampleId,
-        zone.shdr.loops[0],
+        channel == 9 ? 0 : zone.shdr.loops[0],
         zone.shdr.loops[1],
         zone.ref,
-        zone.calcPitchRatio(key, this.context.sampleRate) * 0xffff,
+        channel == 9
+          ? 1
+          : zone.calcPitchRatio(key, this.context.sampleRate) * 0xffff,
       ]).buffer
     );
   }

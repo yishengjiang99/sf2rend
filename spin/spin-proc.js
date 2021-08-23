@@ -180,7 +180,7 @@ class SpinProcessor extends AudioWorkletProcessor {
         o[0][0][j] += this.outputs[i][j] / 6;
         o[0][1][j] += this.outputs[i][j] / 6;
       }
-      this.outputSnap.set(this.outputs[0], i * REND_BLOCK);
+      // this.outputSnap.set(this.outputs[0], i * REND_BLOCK);
     }
     return true;
   }
