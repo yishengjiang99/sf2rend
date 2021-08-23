@@ -17,5 +17,5 @@ float roll(LFO* lfo, unsigned int n) {
   return (float)(((short)lfo->phase) * modulo_s16f_inverse);
 }
 void set_frequency(LFO* lfo, short frequency) {
-  lfo->phaseInc = timecent2hz(-1200) * modulo_u16f;
+  lfo->phaseInc = (short)(timecent2hertz(-1200) * modulo_u16f);
 }

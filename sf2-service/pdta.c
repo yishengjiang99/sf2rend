@@ -88,18 +88,6 @@ static inline void sanitizedInsert(short *attrs, int i, pgen_t *g) {
     case OverrideRootKey:
       attrs[i] = g->val.uAmount & 0x7f;
       break;
-    // case VolEnvDelay:
-    // case VolEnvAttack:
-    // case VolEnvHold:
-    // case VolEnvDecay:
-    // case VolEnvRelease:
-    // case ModEnvDelay:
-    // case ModEnvAttack:
-    // case ModEnvHold:
-    // case ModEnvDecay:
-    // case ModEnvRelease:
-    //   attrs[i] = powf(2, g->val.shAmount / 1200);
-    //   break;
     default:
       attrs[i] = g->val.shAmount;
       break;
@@ -238,43 +226,42 @@ zone_t *findPresetZones(int i, int nregions) {
           attr_inex =
               ibg == ibgId ? default_ibagcache_idex : ibg_attr_cache_index;
           ibag *ibgg = ibags + ibg;
-          attrs[Unused2 + default_ibagcache_idex] = ibg;
+          attrs[Unused2 + attr_inex] = ibg;
 
           pgen_t *lastig = ibg < nibags - 1 ? igens + (ibgg + 1)->igen_id
                                             : igens + nigens - 1;
-
+          attrs[attr_inex + SampleId] = -1;
           for (pgen_t *g = igens + ibgg->igen_id; g->genid != 60 && g != lastig;
                g++) {
             sanitizedInsert(attrs, attr_inex + g->genid, g);
-
-            if (g->genid == SampleId) {
-              short zoneattr[60];
-              bzero(zoneattr, 120);
-              memcpy(zoneattr, defvals, 120);
-              int add = 1;
-              shdrcast *sh = (shdrcast *)shdrs + g->val.shAmount;
-              for (int i = 0; i < 60; i++) {
-                if (attrs[ibg_attr_cache_index + i]) {
-                  zoneattr[i] = attrs[ibg_attr_cache_index + i];
-                } else if (attrs[default_ibagcache_idex + i]) {
-                  zoneattr[i] = attrs[default_ibagcache_idex + i];
-                }
-                short pbagAttr =
-                    attrs[pbg_attr_cache_index + i] != defvals[i]
-                        ? attrs[pbg_attr_cache_index + i]
-                    : attrs[default_pbg_cache_index + i] != defvals[i]
-                        ? attrs[default_pbg_cache_index + i]
-                        : 0;
-
-                int add = combine_pattrs(i, zoneattr, pbagAttr);
-                if (!add) break;
+          }
+          if (attrs[attr_inex + SampleId] > 0) {
+            short zoneattr[60];
+            bzero(zoneattr, 120);
+            memcpy(zoneattr, defvals, 120);
+            int add = 1;
+            shdrcast *sh = (shdrcast *)shdrs + g->val.shAmount;
+            for (int i = 0; i < 60; i++) {
+              if (attrs[ibg_attr_cache_index + i]) {
+                zoneattr[i] = attrs[ibg_attr_cache_index + i];
+              } else if (attrs[default_ibagcache_idex + i]) {
+                zoneattr[i] = attrs[default_ibagcache_idex + i];
               }
+              short pbagAttr =
+                  attrs[pbg_attr_cache_index + i] != defvals[i]
+                      ? attrs[pbg_attr_cache_index + i]
+                  : attrs[default_pbg_cache_index + i] != defvals[i]
+                      ? attrs[default_pbg_cache_index + i]
+                      : 0;
+
+              int add = combine_pattrs(i, zoneattr, pbagAttr);
+              if (!add) break;
+            }
+            if (add) {
               zone_t *zz = (zone_t *)zoneattr;
-              if (add) {
-                memcpy(zones + found, zoneattr, 60 * sizeof(short));
-                emitZone(phdrs[i].pid, zz);
-                found++;
-              }
+              memcpy(zones + found, zoneattr, 60 * sizeof(short));
+              emitZone(phdrs[i].pid, zz);
+              found++;
             }
           }
         }
@@ -283,7 +270,6 @@ zone_t *findPresetZones(int i, int nregions) {
   }
   dummy = zones + found;
   dummy->SampleId = -1;
-  free(&attrs[0]);
   return zones;
 }
 

@@ -2,7 +2,7 @@
 #define CALC_H
 
 #include "p1200.h"
-#define log_2_10 3.321928094887362
+#define log_2_10 3.321928094f
 #define bit23_normalize 1.000f / 0x7fffff
 #ifndef SAMPLE_RATE
 #define SAMPLE_RATE 44100.0f
@@ -15,8 +15,9 @@ double timecent2second(short tc) {
   if (tc > 1200) return 2.0f * timecent2second(tc - 1200);
   return p2over1200[tc];
 }
-unsigned int timecent2sample(short tc) {
-  return (unsigned int)(timecent2second(tc) * SAMPLE_RATE);
+double timecent2hertz(short tc) { return 8.176f * timecent2second(tc); }
+int timecent2sample(short tc) {
+  return (int)(timecent2second(tc) * SAMPLE_RATE);
 }
 double attack_db_inc(short attackRate) {
   return 960.0f / timecent2second(attackRate) / SAMPLE_RATE;
@@ -33,8 +34,9 @@ float applyCentible(float signal, short centdb) {
   if (centdb < -960) return signal * 0.00001f;
 
   int sigl = FloatTo23Bits(signal);
-  double nff = log_2_10 * centdb / 200.0f;
-  sigl = sigl >> (int)(nff - 1);
+  float nff = log_2_10 * centdb / -200.0f;
+  sigl = sigl >> (int)nff;
+  sigl /= p2over1200[(short)((nff - (int)nff) * 1200)];
   return (sigl / bit23_normalize);
 }
 

@@ -1,6 +1,7 @@
 export async function requestDownload(program, port) {
   await Promise.all(
     Object.values(program.shdrMap).map(async (shdr) => {
+      console.log(shdr);
       const res = await fetch(program.url, {
         headers: {
           Range: `bytes=${shdr.range.join("-")}`,

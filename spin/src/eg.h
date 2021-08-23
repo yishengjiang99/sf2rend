@@ -6,8 +6,9 @@
 
 enum eg_stages { init = 0, delay, attack, hold, decay, release, done };
 typedef struct {
-  short delay, attack, hold, decay, sustain, release;
   int stage, nsamples_till_next_stage;
+
+  short delay, attack, hold, decay, sustain, release;
   double egval, egIncrement;
 } EG;
 
@@ -52,7 +53,7 @@ double update_eg(EG* eg, int n) {
       eg->nsamples_till_next_stage = timecent2sample(eg->decay);
       eg->egval = 0.0f;
       eg->egIncrement =
-          (float)(-1.0f * eg->sustain) / (float)eg->nsamples_till_next_stage;
+          (float)(960.0f - eg->sustain) / (float)eg->nsamples_till_next_stage;
       break;
     case decay:
       eg->stage++;
@@ -91,7 +92,7 @@ void init_mod_eg(EG* eg, zone_t* z) {
 
 void _eg_release(EG* e) {
   e->stage = decay;
-  e->nsamples_till_next_stage = 122;
+  e->nsamples_till_next_stage = 11;
 }
 void _eg_set_stage(EG* e, int n) {
   e->stage = n - 1;

@@ -74,12 +74,12 @@ export async function main({ cpanel, cmdPanel, stdout, flist, timeslide }) {
     for (let i = 0; i < 16; i++) {
       chart(
         midiSink.canvases[i],
-        new Float32Array(ctx.spinner.outputSnapshot, i * 4 * 128, 128)
+        new Float32Array(ctx.spinner.outputSnapshot, 128 * i * 4, 128)
       );
     }
     requestAnimationFrame(updateCanvas);
   }
-
+  updateCanvas();
   const { presets, totalTicks, midiworker } = await initMidiReader(midiurl);
   timeslide.setAttribute("max", totalTicks / 255);
 

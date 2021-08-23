@@ -29,7 +29,7 @@ export class SpinNode extends AudioWorkletNode {
   }
   constructor(ctx) {
     const rendSb = new SharedArrayBuffer(
-      RENDER_BLOCK * N_CHANNELS * Float32Array.BYTES_PER_ELEMENT
+      RENDER_BLOCK * N_CHANNELS * Float32Array.BYTES_PER_ELEMENT * 2
     );
     const pipe = new SharedRiffPipe(1 << 12);
 

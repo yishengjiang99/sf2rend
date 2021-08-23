@@ -13,13 +13,12 @@ export function s16ArrayBuffer2f32(ab) {
 }
 
 export async function load(url, { onHeader, onSample, onZone } = {}) {
-  let heap, presetRef, shdrref, _sdtaStart, presetRefs;
+  let heap, presetRef, shdrref, presetRefs;
 
   const Module = await import("./pdta.js");
   const module = await Module.default();
   const { pdtaBuffer, sdtaStart, fullUrl } = await sfbkstream(url);
 
-  _sdtaStart = sdtaStart;
   function devnull() {}
   const a = module._malloc(pdtaBuffer.byteLength);
 
@@ -29,14 +28,12 @@ export async function load(url, { onHeader, onSample, onZone } = {}) {
 
   module.HEAPU8.set(pdtaBuffer, a);
   const memend = module._loadpdta(a);
-  shdrref = module._shdrref(a);
+  shdrref = module._shdrref();
   presetRefs = new Uint32Array(module.HEAPU32.buffer, module._presetRef(), 255);
   heap = module.HEAPU8.buffer.slice(0, memend);
-  const heapref = new WeakRef(heap);
   return {
     url: fullUrl,
     pdtaRef: a,
-    heapref,
     presetRefs,
     heap,
     shdrref,

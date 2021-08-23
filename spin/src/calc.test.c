@@ -12,5 +12,5 @@ int main() {
   assert(attack_db_inc(0.0f) - 960.0f / SAMPLE_RATE < 0.001);
 
   //  printf("\n%.8lx,%.8lx", FloatTo23Bits(.99999f), 2.f);
-  printf("\n%f\n", applyCentible(.990f, 0));
+  printf("\n%f\n", applyCentible(.99989993f, -69));
 }

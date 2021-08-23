@@ -1,16 +1,22 @@
 
 #include "spin.h"
+
+#include "LFO.c"
 #ifdef debug
 #include <stdio.h>
 #endif
 
 #define RENDQ 128
 #define sps_index() (spsIndx++) & 0x0f
-
+#define one_over_128_128 1.0f / 128.0f / 128.0f;
 spinner sps[16];
 lpf_t lpf[16];
 EG eg[32];
-float outputs[16 * RENDQ];
+char midi_cc_vals[16 * 128];
+void set_midi_cc_val(int channel, int metric, int val) {
+  midi_cc_vals[channel * 128 + metric] = (char)val & 0x7f;
+}
+float outputs[16 * RENDQ * 2];
 float silence[40];
 char spsIndx = 0;
 void reset(spinner* x);
@@ -18,7 +24,7 @@ void reset(spinner* x);
 spinner* newSpinner() {
   int idx = sps_index();
   spinner* x = &sps[idx];
-  x->outputf = &outputs[idx * RENDQ];
+  x->outputf = &outputs[idx * RENDQ * 2];
   x->inputf = silence;
   x->loopEnd = 36;
   x->loopStart = 4;
@@ -28,6 +34,10 @@ spinner* newSpinner() {
   newLpf(x->lpf, 0.45f);
   x->voleg = &eg[idx * 2];
   x->modeg = &eg[idx * 2 + 1];
+  midi_cc_vals[idx * 128 + TML_VOLUME_MSB] = 100;
+  midi_cc_vals[idx * 128 + TML_PAN_MSB] = 64;
+  midi_cc_vals[idx * 128 + TML_EXPRESSION_MSB] = 127;
+  x->channelId = idx;
   reset(x);
   return x;
 }
@@ -82,6 +92,13 @@ float _spinblock(spinner* x, int n, int blockOffset) {
   float mixIncrement = 1.0f / (float)n;
   float mix = 0.0f;
   double dbInc = x->voleg->egIncrement;
+  double modEG = p10over200[(short)x->modeg->egval + 960];
+  stride = stride > 0
+               ? stride * (12 + modEG * x->zone->ModEnv2Pitch / 100.0f) / 12.0f
+               : 0;
+  float midicc = midi_cc_vals[128 * x->channelId + TML_VOLUME_MSB] *
+                 midi_cc_vals[128 * x->channelId + TML_EXPRESSION_MSB] *
+                 one_over_128_128;
   for (int i = 0; i < n; i++) {
     mix += mixIncrement;
     fract = fract + stride;
@@ -91,21 +108,23 @@ float _spinblock(spinner* x, int n, int blockOffset) {
       fract -= 1.0f;
     }
 
-    if (position >= x->loopEnd && x->loopStart != -1) position -= looplen;
+    if (position >= x->loopEnd && x->loopStart != 0) position -= looplen;
+
     float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
-    outputf = applyCentible(outputf, (short)db);
-    x->outputf[i + blockOffset] = outputf;
+    outputf = applyCentible(outputf, (short)db) * midicc;
+    x->outputf[i * 2 + blockOffset * 2] = outputf;
+    x->outputf[i * 2 + blockOffset * 2 + 1] = outputf;
+
     db += dbInc;
   }
-
-  x->voleg->egval = db;
+  // x->voleg->egval = db;
   x->position = position;
   x->fract = fract;
   x->stride = stride;
-  x->voleg->nsamples_till_next_stage =
-      subtractWithFloor(x->voleg->nsamples_till_next_stage, n, 0);
-  x->modeg->nsamples_till_next_stage =
-      subtractWithFloor(x->modeg->nsamples_till_next_stage, n, 0);
+  // x->voleg->nsamples_till_next_stage =
+  //     subtractWithFloor(x->voleg->nsamples_till_next_stage, n, 0);
+  // x->modeg->nsamples_till_next_stage =
+  //     subtractWithFloor(x->modeg->nsamples_till_next_stage, n, 0);
   return stride;
 }
 

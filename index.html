@@ -38,7 +38,7 @@
 			display: block;
 			z-index: 1;
 			inset: 2.77778rem auto 0px 0px;
-			width: 10.6667rem;
+			width: 18.6667rem;
 			box-sizing: border-box;
 			color: inherit;
 			overflow-y: auto;
@@ -52,7 +52,7 @@
 			grid-template-rows: "1fr 1fr 1fr";
 			position: fixed;
 			transform: translateZ(0px);
-			display: block;
+			display: none;
 			right: 0;
 
 		}
@@ -72,14 +72,14 @@
 		main {
 			width: 640px;
 			height: 50vh;
-			margin-left: 10rem;
+			margin-left: 19rem;
 		}
 
 		#debug {
 			position: fixed;
 			right: 20rem;
 			width: 20rem;
-
+			background-color: black;
 		}
 
 		#stdout {
@@ -106,7 +106,9 @@
 
 <body>
 	<header>
-		<h3>not afraid - eminem</h3>
+		<h3>not afraid - eminem <button style='margin-left:auto' onclick='toggledebug()'>toggle debug</button>
+		</h3>
+
 	</header>
 	<aside class='col-md-3'>
 
@@ -128,6 +130,12 @@
 	<footer><progress min="0" max="10000" step="1"></progress></footer>
 	<script type='module' src="./src/index.js">
 
+	</script>
+	<script>
+		const debugdiv = document.querySelector("#right")
+		function toggledebug() {
+			debugdiv.style.display = debugdiv.style.display == 'none' ? "block" : "none";
+		}
 	</script>
 </body>
 </html>

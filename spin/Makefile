@@ -1,9 +1,9 @@
 all: spin.wasm
 
-clean:
+clean: src/spin.c
 	rm -f spin.ll spin.o spin.wasm spin
 
-spin.ll: src/spin.c
+spin.ll: clean 
 	clang -O3 src/spin.c --target=wasm32 -emit-llvm -c -S
 
 spin.o: spin.ll

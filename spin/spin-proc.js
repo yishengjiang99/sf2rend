@@ -4,17 +4,7 @@ import { SharedRiffPipe } from "../srp/shared-riff-pipe.js";
 const CH_META_LEN = 24;
 const nchannels = 32;
 const REND_BLOCK = 128;
-/*
- typedef struct {
-  float *inputf, *outputf;
-  float fract;
-  uint32_t position, loopStart, loopEnd;
-  float stride, strideInc;
-  lpf_t* lpf;
-  zone_t* zone;  EG *voleg, *modeg;
 
-} spinner;
-    */
 function spRef2json(heap, ref) {
   const [inputRef, outputRef] = new Uint32Array(heap, ref, 2);
   const [fract] = new Float32Array(heap, ref + 8, 1);
@@ -51,7 +41,7 @@ class SpinProcessor extends AudioWorkletProcessor {
       processorOptions: { rendSb, statusBuffer, wasm },
     } = options;
     this.pipe = new SharedRiffPipe(statusBuffer);
-    this.outputSnap = new Float32Array(rendSb, REND_BLOCK * nchannels);
+    this.outputSnap = new Float32Array(rendSb, REND_BLOCK * nchannels * 2);
     this.memory = new WebAssembly.Memory({ maximum: 1024, initial: 1024 });
     this.inst = new WebAssembly.Instance(new WebAssembly.Module(wasm), {
       env: { memory: this.memory },
@@ -69,12 +59,16 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.spinners = [];
     this.outputs = [];
     this.strides = [];
+    this.egRefs = [];
     for (let i = 0; i < 16; i++) {
       this.spinners[i] = this.inst.exports.newSpinner();
       const spIO = new Uint32Array(this.memory.buffer, this.spinners[i], 12);
-      this.outputs[i] = new Float32Array(this.memory.buffer, spIO[1], 128);
+      this.outputs[i] = new Float32Array(this.memory.buffer, spIO[1], 128 * 2);
       this.strides[i] = spIO[6];
+      this.egRefs[i] = spIO[11];
     }
+    this.egstates = (channel) =>
+      new Int32Array(this.memory.buffer, this.egRefs[channel], 1);
   }
   async handleMsg(e) {
     const { data } = e;
@@ -106,42 +100,17 @@ class SpinProcessor extends AudioWorkletProcessor {
       this.inst.exports.eg_release(this.spinners[channel]);
     }
   }
-  // sync(offset) {
-  //   return 0;
-  //   const [
-  //     updateFlag,
-  //     channel,
-  //     sampleId,
-  //     loopstart,
-  //     loopend,
-  //     zoneRef,
-  //     pitchRatio,
-  //     ...blankForNow
-  //   ] = new Uint32Array(this.sb, 4 * offset, CH_META_LEN);
-
-  //   console.assert(this.sampleIdRefs[sampleId], "sample id posted");
-
-  //   this.inst.exports.set_attrs(
-  //     this.spinners[channel],
-  //     this.sampleIdRefs[sampleId],
-  //     loopstart,
-  //     loopend,zone,stride
-  //   );
-  //   this.inst.exports.setStride(this.spinners[channel], pitchRatio / 0xffff);
-  //   this.inst.exports.setZone(this.spinners[channel], this.presetRefs[zoneRef]);
-
-  //   this.updateArray[offset] = 0;
-
-  //   this.inst.exports.reset(this.spinners[channel]);
-  //   if (this.updateArray[offset + CH_META_LEN] != 0) {
-  //     this.sync(offset + CH_META_LEN);
-  //   }
-  // }
 
   process(inputs, o, parameters) {
     if (this.pipe.hasMsg) {
       this.pipe.read().forEach((msg) => {
         switch (msg.fourcc) {
+          case 0x00b0: {
+            const [channel, metric, value] = msg.chunk;
+            this.inst.exports.set_midi_cc_val(channel, metric, value);
+
+            break;
+          }
           case 0x0080: {
             const [channel] = msg.chunk;
             this.inst.exports.eg_release(this.spinners[channel]);
@@ -170,17 +139,20 @@ class SpinProcessor extends AudioWorkletProcessor {
       });
     }
     for (let i = 0; i < 16; i++) {
+      // const volegstage = this.egstates(i)[0];
+      //if (volegstage < 1 || volegstage > 5) continue;
+
       if (!this.spinners[i]) continue;
       if (!this.outputs[i]) continue;
       // if (!o[i]) continue;
-      for (let j = 0; j < 128; j++) this.outputs[i][j] = 0;
+      for (let j = 0; j < 128 * 2; j++) this.outputs[i][j] = 0;
       this.inst.exports.spin(this.spinners[i], 128);
 
       for (let j = 0; j < 128; j++) {
-        o[0][0][j] += this.outputs[i][j] / 6;
-        o[0][1][j] += this.outputs[i][j] / 6;
+        o[0][0][j] += this.outputs[i][2 * j] / 2;
+        o[0][1][j] += this.outputs[i][2 * j + 1] / 2;
       }
-      // this.outputSnap.set(this.outputs[0], i * REND_BLOCK);
+      this.outputSnap.set(this.outputs[i], 2 * i * REND_BLOCK);
     }
     return true;
   }
