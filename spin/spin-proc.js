@@ -48,10 +48,10 @@ class SpinProcessor extends AudioWorkletProcessor {
   constructor(options) {
     super(options);
     const {
-      processorOptions: { renderBuffer, statusBuffer, wasm },
+      processorOptions: { rendSb, statusBuffer, wasm },
     } = options;
     this.pipe = new SharedRiffPipe(statusBuffer);
-    this.outputSnap = new Float32Array(renderBuffer, REND_BLOCK * nchannels);
+    this.outputSnap = new Float32Array(rendSb, REND_BLOCK * nchannels);
     this.memory = new WebAssembly.Memory({ maximum: 1024, initial: 1024 });
     this.inst = new WebAssembly.Instance(new WebAssembly.Module(wasm), {
       env: { memory: this.memory },
@@ -180,9 +180,7 @@ class SpinProcessor extends AudioWorkletProcessor {
         o[0][0][j] += this.outputs[i][j] / 6;
         o[0][1][j] += this.outputs[i][j] / 6;
       }
-      // new Promise((r) => r()).then(() =>
-      //  // this.outputSnap.set(this.outputs[i], i * REND_BLOCK)
-      // );
+      this.outputSnap.set(this.outputs[0], i * REND_BLOCK);
     }
     return true;
   }

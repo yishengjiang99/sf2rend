@@ -1,5 +1,5 @@
 #include <stdint.h>
-
+#define debug 1
 #include "calc.h"
 #include "lpf.h"
 #include "sf2.h"

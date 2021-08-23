@@ -1,13 +1,9 @@
-#include <stdint.h>
-
+#ifndef SPIN_H
+#define SPIN_H
 #include "calc.h"
+#include "eg.h"
 #include "lpf.h"
 #include "sf2.h"
-enum eg_stages { init = 0, delay, attack, hold, decay, release, done };
-typedef struct {
-  uint32_t stage, nsamples_till_next_stage;
-  double egval, egIncrement;
-} EG;
 
 typedef struct {
   float *inputf, *outputf;
@@ -18,3 +14,5 @@ typedef struct {
   zone_t* zone;
   EG *voleg, *modeg;
 } spinner;
+
+#endif

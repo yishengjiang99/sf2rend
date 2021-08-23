@@ -5,7 +5,7 @@
   "main": "spin.js",
   "scripts": {
     "build": "make; cat spin.wasm | npx encode-wasm-uint8 > spin.wasm.js",
-    "test": "mocha "
+    "test": "cmake --build build; cd build; ctest; cd -"
   },
   "keywords": [],
   "author": "Yisheng Jiang",

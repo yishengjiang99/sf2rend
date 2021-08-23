@@ -5,7 +5,85 @@ const pixelPerDecibel = rowheight;
 const pixelPerSec = 12;
 
 export class TrackUI {
-  constructor(container, keyboard, idx, cb) {
+  constructor(idx, cb) {
+    const i = idx;
+    const keyboard = mkdiv(
+      "div",
+      { class: "keyboards" },
+      range(55, 69).map((midi) => mkdiv("a", { midi }, [midi, " "]))
+    );
+    const container = mkdiv(
+      "div",
+      {
+        class: "attrs",
+
+        style:
+          "display:grid; grid-template-columns:1fr 2fr 3fr; grid-column-gap:10px;",
+      },
+      [
+        mkdiv("div", { style: "display:grid; grid-template-columns:1fr" }, [
+          mkdiv(
+            "input",
+            { type: "list", list: "programs", value: "", class: "name" },
+            ["channel " + i]
+          ),
+          mkdiv("input", { type: "checkbox" }),
+          mkdiv("meter", { min: 0, max: 127, step: 1, aria: "key" }),
+          mkdiv("meter", { min: 0, max: 127, step: 1, aria: "vel" }),
+        ]),
+        mkdiv("div", { style: "display:grid;grid-template-columns:2fr 2fr" }, [
+          mkdiv("label", { for: "exp_vol" }, "volume"),
+          mkdiv("input", {
+            min: 0,
+            max: 127,
+            step: 1,
+            type: "range",
+            oninput: (e) => cb([0xb0 | idx, 0x07, e.target.value]),
+          }),
+          mkdiv("label", { for: "pan" }, "pan"),
+          mkdiv("input", {
+            min: 0,
+            max: 127,
+            step: 1,
+            type: "range",
+            oninput: (e) => cb([0xb0 | idx, 0x07, e.target.value]),
+          }),
+          mkdiv("label", { for: "expression" }, "expression"),
+          mkdiv("input", {
+            min: 0,
+            max: 127,
+            step: 1,
+            type: "range",
+            oninput: (e) => cb([0xb0 | idx, 0x07, e.target.value]),
+          }),
+        ]),
+        mkdiv(
+          "div",
+          {
+            style:
+              "display:grid; grid-template-columns:1fr 4fr;background-color:grey",
+          },
+          [
+            mksvg(
+              "svg",
+              {
+                style: "width:80px;height:59px; display:inline;",
+                viewBox: "0 0 80 40",
+              },
+              [
+                mksvg("polyline", {
+                  fill: "red",
+                  stroke: "black",
+                }),
+              ]
+            ),
+            mkdiv("div", { class: "canvasContainer" }),
+            keyboard,
+          ]
+        ),
+      ]
+    );
+
     this.nameLabel = container.querySelector("input[type='list']");
     this.meters = container.querySelectorAll("meter");
     this.sliders = container.querySelectorAll("input[type='range']");
@@ -33,6 +111,7 @@ export class TrackUI {
       };
     });
     this.polylines = Array.from(container.querySelectorAll("polyline"));
+    this.container = container;
   }
   set name(id) {
     this.nameLabel.value = id;
@@ -84,67 +163,9 @@ export function mkui(cpanel, cb) {
       "display:grid;grid-template-columns:1fr; margin-bottom:10px;background:#333333;grid-row-gap:20px;",
   });
   for (let i = 0; i < 16; i++) {
-    const keyboard = mkdiv(
-      "div",
-      { class: "keyboards" },
-      range(55, 69).map((midi) => mkdiv("a", { midi }, [midi, " "]))
-    );
-    const row = mkdiv(
-      "div",
-      {
-        class: "attrs",
-
-        style: "display:grid; grid-template-columns:1fr 2fr 3fr",
-      },
-      [
-        mkdiv("div", { style: "display:grid; grid-template-columns:1fr" }, [
-          mkdiv(
-            "input",
-            { type: "list", list: "programs", value: "", class: "name" },
-            ["channel " + i]
-          ),
-          mkdiv("input", { type: "checkbox" }),
-          mkdiv("meter", { min: 0, max: 127, step: 1, aria: "key" }),
-          mkdiv("meter", { min: 0, max: 127, step: 1, aria: "vel" }),
-        ]),
-        mkdiv("div", { style: "display:grid;grid-template-columns:2fr 2fr" }, [
-          mkdiv("label", { for: "exp_vol" }, "volume"),
-          mkdiv("input", { min: 0, max: 127, step: 1, type: "range" }),
-          mkdiv("label", { for: "pan" }, "pan"),
-          mkdiv("input", { min: 0, max: 127, step: 1, type: "range" }),
-          mkdiv("label", { for: "expression" }, "expression"),
-          mkdiv("input", { min: 0, max: 127, step: 1, type: "range" }),
-        ]),
-        mkdiv(
-          "div",
-          {
-            style:
-              "display:grid; grid-template-columns:1fr 4fr;background-color:grey",
-          },
-          [
-            mksvg(
-              "svg",
-              {
-                style: "width:80px;height:59px; display:inline;",
-                viewBox: "0 0 80 40",
-              },
-              [
-                mksvg("polyline", {
-                  fill: "red",
-                  stroke: "black",
-                }),
-              ]
-            ),
-            mkdiv("div", { class: "canvasContainer" }),
-          ]
-        ),
-        keyboard,
-      ]
-    );
-
-    controllers.push(new TrackUI(row, keyboard, i, cb));
-    row.attachTo(tb);
-    keyboard.attachTo(row);
+    const trackrow = new TrackUI(i, cb);
+    controllers.push(trackrow);
+    tb.append(trackrow.container);
   }
 
   tb.attachTo(cpanel);

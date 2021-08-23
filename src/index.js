@@ -72,15 +72,14 @@ export async function main({ cpanel, cmdPanel, stdout, flist, timeslide }) {
   };
   function updateCanvas() {
     for (let i = 0; i < 16; i++) {
-      if (ctx.egs[i].gainNode.gain > 0.000001) {
-        chart(
-          midiSink.canvases[i],
-          ctx.spinner.outputSnapshot.subarray(i * 128, i * 128 + 128)
-        );
-      }
+      chart(
+        midiSink.canvases[i],
+        new Float32Array(ctx.spinner.outputSnapshot, i * 4 * 128, 128)
+      );
     }
-    //requestAnimationFrame(updateCanvas);
+    requestAnimationFrame(updateCanvas);
   }
+
   const { presets, totalTicks, midiworker } = await initMidiReader(midiurl);
   timeslide.setAttribute("max", totalTicks / 255);
 
@@ -203,6 +202,7 @@ export async function initMidiSink(ctx, sf2, controllers, pt) {
     switch (stat) {
       case 0xb: //chan set
         ccs[ch * 128 + key] = vel;
+        ctx.spinner.pipe.send(0xb0, [ch, key, vel]);
         break;
       case 0xc: //change porg
         const pid = key,

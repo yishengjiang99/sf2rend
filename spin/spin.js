@@ -66,9 +66,7 @@ export class SpinNode extends AudioWorkletNode {
 
   async shipProgram(sf2program, presetId) {
     await requestDownload(sf2program, this.port);
-    console.log("resolve dl");
     await this.postZoneAttributes(sf2program, presetId);
-    console.log("resolve st");
   }
   async postZoneAttributes(sf2program, presetId) {
     this.port.postMessage({
@@ -87,7 +85,7 @@ export class SpinNode extends AudioWorkletNode {
     console.log(e.data);
   }
   get outputSnapshot() {
-    return this.output_floats;
+    return this.rendSb;
   }
 }
 export async function mkspinner(ctx, pcm, loops) {

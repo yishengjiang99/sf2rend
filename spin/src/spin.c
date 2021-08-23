@@ -1,63 +1,11 @@
 
 #include "spin.h"
-
-#include <stdint.h>
+#ifdef debug
+#include <stdio.h>
+#endif
 
 #define RENDQ 128
 #define sps_index() (spsIndx++) & 0x0f
-#ifndef M_PI
-#define M_PI 3.1415926
-#endif
-
-void update_eg(EG* eg, zone_t* z, int isVolEG) {
-  if (eg->nsamples_till_next_stage > 33) return;
-  switch (eg->stage) {
-    case init:
-      eg->stage = delay;
-      eg->nsamples_till_next_stage =
-          timecent2sample(isVolEG ? z->VolEnvDelay : z->ModEnvDelay);
-      eg->egval = -960.0;
-      eg->egIncrement = 0.0f;
-      break;
-    case delay:
-      eg->stage++;
-      eg->nsamples_till_next_stage =
-          timecent2sample(isVolEG ? z->VolEnvAttack : z->ModEnvAttack);
-      eg->egval = -960.0f;
-      eg->egIncrement = 960.0f / (float)eg->nsamples_till_next_stage;
-      break;
-
-    case attack:
-      eg->stage++;
-      eg->nsamples_till_next_stage =
-          timecent2sample(isVolEG ? z->VolEnvHold : z->ModEnvHold);
-
-      eg->egval = 0.0f;
-      eg->egIncrement = 0.0f;
-      break;  // fallthrough
-    case hold:
-      eg->stage++;
-      eg->nsamples_till_next_stage =
-          timecent2sample(isVolEG ? z->VolEnvDecay : z->ModEnvDecay);
-
-      eg->egval = 0.0f;
-      short sustain = isVolEG ? z->VolEnvSustain : z->ModEnvSustain;
-      eg->egIncrement =
-          (float)(-1.0f * sustain) / (float)eg->nsamples_till_next_stage;
-      break;
-      // fallthrough
-    case decay:
-      eg->stage++;
-      eg->egIncrement = -960.0f / timecent2sample(isVolEG ? z->VolEnvRelease
-                                                          : z->ModEnvRelease);
-      eg->nsamples_till_next_stage = (-960.0f + eg->egval) / eg->egIncrement;
-
-      break;
-    case release:
-      eg->stage++;
-      break;
-  }
-}
 
 spinner sps[16];
 lpf_t lpf[16];
@@ -84,12 +32,8 @@ spinner* newSpinner() {
   return x;
 }
 void eg_release(spinner* x) {
-  x->voleg->nsamples_till_next_stage = 0;
-  x->voleg->stage = decay;
-  update_eg(x->voleg, x->zone, 1);  // this will advance eg to release stage
-  x->modeg->nsamples_till_next_stage = 0;
-  x->modeg->stage = decay;
-  update_eg(x->modeg, x->zone, 0);  // this will advance eg to release stage
+  _eg_release(x->voleg);
+  _eg_release(x->modeg);
 }
 void reset(spinner* x) {
   x->position = 0;
@@ -99,9 +43,11 @@ void reset(spinner* x) {
   x->voleg->stage = init;
   x->voleg->nsamples_till_next_stage = 0;
   x->voleg->egval = -960.0f;
+  x->voleg->egIncrement = 0.0f;
   x->modeg->stage = init;
   x->modeg->nsamples_till_next_stage = 0;
   x->modeg->egval = -960.0f;
+  x->voleg->egIncrement = 0.0f;
 }
 float set_attrs(spinner* x, float* inp, uint32_t loopstart, uint32_t loopend,
                 zone_t* z, float stride) {
@@ -110,6 +56,8 @@ float set_attrs(spinner* x, float* inp, uint32_t loopstart, uint32_t loopend,
   x->inputf = inp;
   x->zone = z;
   x->stride = stride;
+  init_mod_eg(x->modeg, z);
+  init_vol_eg(x->voleg, z);
   reset(x);
   return x->stride;
 }
@@ -118,16 +66,15 @@ float lerp(float f1, float f2, float frac) { return f1 + (f2 - f1) * frac; }
 #define subtractWithFloor(a, b, floor) a - b > floor ? a - b : 0;
 
 float _spinblock(spinner* x, int n, int blockOffset) {
-  if (x->voleg->nsamples_till_next_stage <= n / 2)
-    update_eg(x->voleg, x->zone, 1);
-  if (x->modeg->nsamples_till_next_stage <= n / 2)
-    update_eg(x->modeg, x->zone, 0);
+  update_eg(x->voleg, n);
+
+  update_eg(x->modeg, n);  // x->zone, 0);
   if (x->voleg->stage == done) return .0f;
 
   int position = x->position;
   float fract = x->fract;
   float stride = x->stride;
-  double db = x->voleg->egval;
+  double db = x->voleg->egval + x->zone->Attenuation;
   double dbTarget = x->voleg->egval + x->voleg->egIncrement * n;
 
   int looplen = x->loopEnd - x->loopStart + 1;
@@ -146,7 +93,7 @@ float _spinblock(spinner* x, int n, int blockOffset) {
 
     if (position >= x->loopEnd && x->loopStart != -1) position -= looplen;
     float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
-    outputf = applyCentible(outputf, db);
+    outputf = applyCentible(outputf, (short)db);
     x->outputf[i + blockOffset] = outputf;
     db += dbInc;
   }

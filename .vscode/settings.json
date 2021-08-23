@@ -51,7 +51,8 @@
 		"spin.h": "c",
 		"p1200.c": "cpp",
 		"calc.h": "c",
-		"p1200.h": "c"
+		"p1200.h": "c",
+		"eg.h": "c"
 	},
 	"editor.tokenColorCustomizations": {
 		"textMateRules": [

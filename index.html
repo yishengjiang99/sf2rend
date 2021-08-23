@@ -16,33 +16,20 @@
 			cursor: crosshair
 		}
 
-
-
 		datalist {
-			dislay: block
+			position: absolute;
+			background-color: lightgrey;
+			font-family: sans-serif;
+			font-size: 0.8rem;
 		}
 
-		Dropdown in Topnav Dropdown in Sidenav Resp Navbar Dropdown Subnavigation Menu Dropup Mega Menu Mobile Menu Curtain Menu Collapsed Sidebar Collapsed Sidepanel Pagination Breadcrumbs Button Group Vertical Button Group Sticky Social Bar Pill Navigation Responsive Header Images Slideshow Slideshow Gallery Modal Images Lightbox Responsive Image Grid Image Grid Tab Gallery Image Overlay Fade Image Overlay Slide Image Overlay Zoom Image Overlay Title Image Overlay Icon Image Effects Black and White Image Image Text Image Text Blocks Transparent Image Text Full Page Image Form on Image Hero Image Blur Background Image Change Bg on Scroll Side-by-Side Images Rounded Images Avatar Images Responsive Images Center Images Thumbnails Border Around Image Meet the Team Sticky Image Flip an Image Shake an Image Portfolio Gallery Portfolio with Filtering Image Zoom Image Magnifier Glass Image Comparison Slider Buttons Alert Buttons Outline Buttons Split Buttons Animated Buttons Fading Buttons Button on Image Social Media Buttons Read More Read Less Loading Buttons Download Buttons Pill Buttons Notification Button Icon Buttons Next/prev Buttons More Button in Nav Block Buttons Text Buttons Round Buttons Scroll To Top Button Forms Login Form Signup Form Checkout Form Contact Form Social Login Form Register Form Form with Icons Newsletter Stacked Form Responsive Form Popup Form Inline Form Clear Input Field Hide Number Arrows Copy Text to Clipboard Animated Search Search Button Fullscreen Search Input Field in Navbar Login Form in Navbar Custom Checkbox/Radio Custom Select Toggle Switch Check Checkbox Detect Caps Lock Trigger Button on Enter Password Validation Toggle Password Visibility Multiple Step Form Autocomplete Turn off autocomplete Turn off spellcheck File Upload Button Empty Input Validation Filters Filter List Filter Table Filter Elements Filter Dropdown Sort List Sort Table Tables Zebra Striped Table Center Tables Full-width Table Side-by-side Tables Responsive Tables Comparison Table More Fullscreen Video Modal Boxes Delete Modal Timeline Scroll Indicator Progress Bars Skill Bar Range Sliders Tooltips Display Element Hover Popups Collapsible Calendar HTML Includes To Do List Loaders Star Rating User Rating Overlay Effect Contact Chips Cards Flip Card Profile Card Product Card Alerts Callout Notes Labels Circles Style HR Coupon List Group List Without Bullets Responsive Text Cutout Text Glowing Text Fixed Footer Sticky Element Equal Height Clearfix Responsive Floats Snackbar Fullscreen Window Scroll Drawing Smooth Scroll Gradient Bg Scroll Sticky Header Shrink Header on Scroll Pricing Table Parallax Aspect Ratio Responsive Iframes Toggle Like/Dislike Toggle Hide/Show Toggle Dark Mode Toggle Text Toggle Class Add Class Remove Class Active Class Tree View Remove Property Offline Detection Find Hidden Element Redirect Webpage Zoom Hover Flip Box Center Vertically Center Button in DIV Transition on Hover Arrows Shapes Download Link Full Height Element Browser Window Custom Scrollbar Hide Scrollbar Show/Force Scrollbar Device Look Contenteditable Border Placeholder Color Text Selection Color Bullet Color Vertical Line Dividers Animate Icons Countdown Timer Typewriter Coming Soon Page Chat Messages Popup Chat Window Split Screen Testimonials Section Counter Quotes Slideshow Closable List Items Typical Device Breakpoints Draggable HTML Element JS Media Queries Syntax Highlighter JS Animations JS String Length JS Exponentiation JS Default Parameters Get Current URL Get Current Screen Size Get Iframe Elements Website Make a Website Make a Website (W3.CSS) Make a Website (BS3) Make a Website (BS4) Make a WebBook Center Website Contact Section About Page Big Header Example Website Grid 2 Column Layout 3 Column Layout 4 Column Layout Expanding Grid List Grid View Mixed Column Layout Column Cards Zig Zag Layout Blog Layout Google Google Charts Google Fonts Google Font Pairings Converters Convert Weight Convert Temperature Convert Length Convert Speed How TO - Fixed Sidebar Learn how to create a fixed side navigation menu with CSS. Full height: Auto height: Create a Fixed Sidebar Step 1) Add HTML: Example < !-- Side navigation --><div class="sidenav"><a href="#">About</a><a href="#">Services</a><a href="#">Clients</a><a href="#">Contact</a></div>< !-- Page content --><div class="main">... </div>ADVERTISEMENT Step 2) Add CSS: Example
-
-		/* The sidebar menu */
-		.sidenav {
-			height: 100%;
-			/* Full-height: remove this if you want "auto" height */
-			width: 160px;
-			/* Set the width of the sidebar */
-			position: fixed;
-			/* Fixed Sidebar (stay in place on scroll) */
-			z-index: 1;
-			/* Stay on top */
-			top: 0;
-			/* Stay at the top */
-			left: 0;
-			background-color: #111;
-			/* Black */
-			overflow-x: hidden;
-			/* Disable horizontal scroll */
-			padding-top: 20px;
+		option {
+			background-color: #bbb;
+			padding: 4px;
+			margin-bottom: 1px;
+			cursor: pointer;
 		}
+
 
 		/* The navigation menu links */
 		aside {
@@ -70,7 +57,7 @@
 
 		}
 
-		.sidenav a {
+		aside a {
 			padding: 6px 8px 6px 16px;
 			text-decoration: none;
 			font-size: 25px;
@@ -90,17 +77,17 @@
 
 		#debug {
 			position: fixed;
-			right: 0;
-			width: 10rem;
-			top: 70vh;
+			right: 20rem;
+			width: 20rem;
+
 		}
 
-		pre {
+		#stdout {
 			position: fixed;
 			right: 0;
-			width: 10rem;
+			width: 20rem;
 			top: 0;
-			height: 39vh;
+
 		}
 
 		footer {
@@ -131,7 +118,7 @@
 
 	</aside>
 	<div id='right'>
-		<pre></pre>
+		<pre id=stdout></pre>
 		<div id=debug></div>
 	</div>
 	<main>
@@ -139,7 +126,7 @@
 		</div>
 	</main>
 	<footer><progress min="0" max="10000" step="1"></progress></footer>
-	<script type='module' src="./dist/main.js">
+	<script type='module' src="./src/index.js">
 
 	</script>
 </body>

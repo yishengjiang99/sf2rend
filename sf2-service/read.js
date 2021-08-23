@@ -80,9 +80,7 @@ export function loadProgram(
       get shdr() {
         return shdrMap[zone.SampleId];
       },
-      get pcm() {
-        return shdrMap[zone.SampleId].data();
-      },
+
       calcPitchRatio(key, sr) {
         const rootkey =
           zone.OverrideRootKey > -1
