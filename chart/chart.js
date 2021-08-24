@@ -55,6 +55,7 @@ export function mkcanvas(params = {}) {
     },
     params
   );
+
   const canvas = document.createElement("canvas");
   canvas.setAttribute("width", `${width}`);
   canvas.setAttribute("height", `${height}`);

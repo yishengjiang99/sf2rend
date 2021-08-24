@@ -114,12 +114,13 @@ float _spinblock(spinner* x, int n, int blockOffset) {
   int applyEnvelope = x->zone->SampleModes > 0;
   if (!applyEnvelope) db = 0.0f;
   stride = stride + (float)(modEG * x->zone->ModEnv2Pitch);
-  short midicc =
-      (short)midi_log_10[midi_cc_vals[128 * x->channelId + TML_VOLUME_MSB]] +
-      midi_log_10[midi_cc_vals[128 * x->channelId + TML_EXPRESSION_MSB]] +
-      midi_log_10[(int)x->velocity];
-  short panLeft = panleftLUT[sf2midiPan((x->zone->Pan))];
-  short panRight = panrightLUT[sf2midiPan((x->zone->Pan))];
+  double midicc =
+      midi_volume_log10(midi_cc_vals[128 * x->channelId + TML_VOLUME_MSB]) +
+      midi_volume_log10(midi_cc_vals[128 * x->channelId + TML_EXPRESSION_MSB]) +
+      midi_volume_log10(x->velocity);
+
+  double panLeft = panleftLUT[sf2midiPan(x->zone->Pan)];
+  double panRight = panrightLUT[sf2midiPan(x->zone->Pan)];
 
   for (int i = 0; i < n; i++) {
     fract = fract + stride;

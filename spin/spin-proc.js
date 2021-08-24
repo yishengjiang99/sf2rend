@@ -73,7 +73,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.outputs[i] = new Float32Array(this.memory.buffer, spIO[1], 128 * 2);
     return this.spinners[i];
   }
-  process(inputs, o, parameters) {
+  checkmsgs() {
     if (this.pipe.hasMsg) {
       this.pipe.read().forEach((msg) => {
         switch (msg.fourcc) {
@@ -113,6 +113,9 @@ class SpinProcessor extends AudioWorkletProcessor {
         }
       });
     }
+  }
+  process(inputs, o, parameters) {
+    this.checkmsgs();
     for (let i = 0; i < nchannels; i++) {
       // const volegstage = this.egstates(i)[0];
       //if (volegstage < 1 || volegstage > 5) continue;
@@ -122,7 +125,7 @@ class SpinProcessor extends AudioWorkletProcessor {
       // if (!o[i]) continue;
       for (let j = 0; j < 128 * 2; j++) this.outputs[i][j] = 0;
       this.inst.exports.spin(this.spinners[i], 128);
-      const multiplier = i == 9 ? 5 : 0.5;
+      const multiplier = i == 9 ? 5 : 1;
       for (let j = 0; j < 128; j++) {
         o[0][0][j] += this.outputs[i][2 * j + 1] * multiplier;
         o[0][1][j] += this.outputs[i][2 * j + 1] * multiplier;
@@ -133,6 +136,7 @@ class SpinProcessor extends AudioWorkletProcessor {
           i * REND_BLOCK,
           REND_BLOCK
         );
+        this.checkmsgs();
       });
     }
     return true;

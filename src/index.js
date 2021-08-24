@@ -70,11 +70,11 @@ export async function main({ cpanel, cmdPanel, stdout, flist, timeslide }) {
 
     const ret = await ctx.spinner.shipProgram(sf2pg, bankId | pid);
   };
-  function updateCanvas() {
-    chart(midiSink.canvases[0], new Float32Array(ctx.spinner.outputSnapshot));
-    requestAnimationFrame(updateCanvas);
-  }
-  updateCanvas();
+  let updateCanvasTimer;
+  const updateCanvas = () => {
+    chart(midiSink.bigcan, new Float32Array(ctx.spinner.outputSnapshot));
+    updateCanvasTimer = requestAnimationFrame(updateCanvas);
+  };
   const { presets, totalTicks, midiworker } = await initMidiReader(midiurl);
   timeslide.setAttribute("max", totalTicks / 255);
 
@@ -98,6 +98,7 @@ export async function main({ cpanel, cmdPanel, stdout, flist, timeslide }) {
   bindMidiWorkerToAudioAndUI(midiworker, pt, ctx, {
     timeslide,
     cmdPanel,
+    updateCanvas,
   });
   shareEventBufferWithMidiWorker(ctx.spinner, midiworker);
   bindMidiAccess(pt);
@@ -141,7 +142,7 @@ export function bindMidiWorkerToAudioAndUI(
   midiworker,
   midiPort,
   ctx,
-  { timeslide, cmdPanel }
+  { timeslide, cmdPanel, updateCanvas }
 ) {
   midiworker.addEventListener("message", (e) => {
     if (e.data.channel) {
@@ -172,6 +173,8 @@ export function bindMidiWorkerToAudioAndUI(
       } else {
         midiworker.postMessage({ cmd: e.target.getAttribute("cmd") });
       }
+      debugger;
+      updateCanvas();
     })
   );
 }
@@ -183,18 +186,15 @@ export async function initMidiSink(ctx, sf2, controllers, pt) {
   const channels = [];
   const ccs = new Uint8Array(128 * 16);
   const canvases = [];
+  const cancontainer = document.querySelector("#bigcan");
+  const bigcan = mkcanvas({
+    container: document.querySelector("#bigcan"),
+    width: cancontainer.clientWidth,
+    height: cancontainer.clientHeight,
+  });
   for (let i = 0; i < 16; i++) {
     channels[i] = channel(ctx, i, controllers[i]);
     channels[i].midicc = ccs.subarray(i * 128, i * 128 + 128);
-    ccs[i * 128 + 7] = 100; //defalt volume
-    ccs[i * 128 + 11] = 127; //default expression
-    ccs[i * 128 + 10] = 64;
-    const canvasContainer = controllers[i].canvasContainer;
-    canvases[i] = mkcanvas({
-      container: canvasContainer,
-      height: canvasContainer.clientHeight,
-      width: canvasContainer.clientWidth,
-    });
   }
   pt.onmessage(function (data) {
     const [a, b, c] = data;
@@ -205,7 +205,6 @@ export async function initMidiSink(ctx, sf2, controllers, pt) {
     // stdout("midi msg channel:" + ch + " cmd " + stat.toString(16));
     switch (stat) {
       case 0xb: //chan set
-        ccs[ch * 128 + key] = vel;
         ctx.spinner.pipe.send(0xb0, [ch, key, vel]);
         break;
       case 0xc: //change porg
@@ -232,7 +231,7 @@ export async function initMidiSink(ctx, sf2, controllers, pt) {
     }
   });
 
-  return { channels, ccs, canvases };
+  return { channels, ccs, bigcan };
 }
 export async function initAudio() {
   const ctx = new AudioContext({ sampleRate: 48000 });

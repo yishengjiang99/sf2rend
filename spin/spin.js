@@ -88,7 +88,7 @@ export async function mkspinner() {
   const memory = new WebAssembly.Memory({ maximum: 1024, initial: 1024 });
   let brk = 0x30000;
   let sbrk = (len) => {
-    const ret = this.brk;
+    const ret = brk;
     brk += len;
     if (brk > memory.buffer.byteLength) throw "no mem";
     return ret;

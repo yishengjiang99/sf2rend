@@ -204,13 +204,15 @@ enum grntypes {
 #define fivezeros 0, 0, 0, 0, 0
 #define defenvel -12000, -12000, -12000, -12000, 0, -12000
 
-#define defattrs                                                                        \
-  {fivezeros, 0,         0,         0,        13500,              /* 9*/                \
-   fivezeros, fivezeros, 0,         0,        -1,                 /*22*/                \
-   0,         -1,        0,                                       /*25*/                \
-   defenvel,  0,         0,         defenvel,                     /*39*/                \
-   0,         0,         0,         0,        127 << 8, 127 << 8, /*velrange/keyrange*/ \
-   0,                                                             /*45*/                \
-   -1,        -1,        fivezeros,                               /*55*/                \
-   0,         0,         0,         100,      0,        -1,       0};
+#define defattrs                                              \
+  {                                                           \
+    fivezeros, 0, 0, 0, 13500,          /* 9*/                \
+        fivezeros, fivezeros, 0, 0, -1, /*22*/                \
+        0, -1, 0,                       /*25*/                \
+        defenvel, 0, 0, defenvel,       /*39*/                \
+        0, 0, 0, 0, 127 << 8, 127 << 8, /*velrange/keyrange*/ \
+        0,                              /*45*/                \
+        -1, -1, fivezeros,              /*55*/                \
+        0, 0, 0, 100, 0, -1, 0                                \
+  }
 #endif

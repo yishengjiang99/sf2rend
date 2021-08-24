@@ -11,6 +11,8 @@ typedef struct {
   double egval, egIncrement;
 } EG;
 
+void advanceStage(EG* eg);
+double update_eg(EG* eg, int n);
 /**
  * advances envelope generator by n steps..
  * shift to next stage and advance the remaining n steps
@@ -26,7 +28,11 @@ double update_eg(EG* eg, int n) {
   if (eg->nsamples_till_next_stage > 0) return eg->egval;
 
   int leftover = -1 * eg->nsamples_till_next_stage;
-
+  advanceStage(eg);
+  if (leftover > 0) return update_eg(eg, leftover);
+  return eg->egval;
+}
+void advanceStage(EG* eg) {
   switch (eg->stage) {
     case init:
       eg->stage++;
@@ -50,7 +56,7 @@ double update_eg(EG* eg, int n) {
     case hold:
 
       eg->stage++;
-      eg->nsamples_till_next_stage = timecent2sample(eg->decay) + 100;
+      eg->nsamples_till_next_stage = timecent2sample(eg->decay);
       eg->egval = 0.0f;
       eg->egIncrement =
           (float)(-1 * eg->sustain) / (float)eg->nsamples_till_next_stage;
@@ -67,8 +73,6 @@ double update_eg(EG* eg, int n) {
     case done:
       break;
   }
-  if (leftover > 0) return update_eg(eg, leftover);
-  return eg->egval;
 }
 
 void* gmemcpy(char* dest, const char* src, unsigned long n) {
@@ -90,14 +94,14 @@ void init_mod_eg(EG* eg, zone_t* z) {
   update_eg(eg, 1);
 }
 
-void _eg_release(EG* e) {
-  if (e->stage == decay || e->stage == hold || e->stage == attack) {
-    e->nsamples_till_next_stage = 0;
-  }
-}
 void _eg_set_stage(EG* e, int n) {
   e->stage = n - 1;
-  e->nsamples_till_next_stage = 1;
-  update_eg(e, 1);
+  e->nsamples_till_next_stage = 0;
+  advanceStage(e);
+}
+void _eg_release(EG* e) {
+  if (e->stage == decay || e->stage == hold || e->stage == attack) {
+    _eg_set_stage(e, release);
+  }
 }
 #endif

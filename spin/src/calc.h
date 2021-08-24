@@ -10,9 +10,14 @@
 #define SAMPLE_BLOCK 128
 #define BLOCKS_PER_SECOND SAMPLE_RATE / SAMPLE_BLOCK
 
+double midi_volume_log10(char val) {
+  val = val & 0x7f;
+  if (val < 0) return -1440;
+  return midi_log_10[val | 0];
+}
 double timecent2second(short tc) {
-  if (tc < 0) return 1 / timecent2second(-1 * tc);
-  if (tc > 1200) return 2.0f * timecent2second(tc - 1200);
+  if (tc < 0) return 1.0f / timecent2second(-1 * tc);
+  if (tc > 1200) return 2.0f * timecent2second(tc - 1200.0f);
   return p2over1200[tc];
 }
 double timecent2hertz(short tc) { return 8.176f * timecent2second(tc); }
@@ -32,7 +37,7 @@ float applyCentible(float signal, short centdb) {
   if (centdb > 0) return signal;
   if (centdb < -1000) return 0.0f;
   if (centdb < -960) return signal * 0.00001f;
-  return signal * p10over200[centdb];
+  return signal * p10over200[centdb + 960];
 
   // int sigl = FloatTo23Bits(signal);
   // float nff = log_2_10 * centdb / -200.0f;
