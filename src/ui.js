@@ -41,9 +41,9 @@ export class TrackUI {
                 const pid = Array.from(e.target.list.options).filter(
                   (d) => d.value == e.target.value
                 );
-                if (!pid || pid.length) throw "target not found";
-                pid = pid[0].getAttribute("pid");
-                cb([midi_ch_cmds]);
+                if (!pid || !pid.length) throw "target not found";
+                const pidval = pid[0].getAttribute("pid");
+                cb([midi_ch_cmds.change_program | idx, pidval, 0]);
               },
             },
             ["channel " + i]

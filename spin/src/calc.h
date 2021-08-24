@@ -5,7 +5,7 @@
 #define log_2_10 3.321928094f
 #define bit23_normalize 1.000f / 0x7fffff
 #ifndef SAMPLE_RATE
-#define SAMPLE_RATE 44100.0f
+#define SAMPLE_RATE 48000.0f
 #endif
 #define SAMPLE_BLOCK 128
 #define BLOCKS_PER_SECOND SAMPLE_RATE / SAMPLE_BLOCK
@@ -51,4 +51,9 @@ float hermite4(float frac_offset, float xm1, float x0, float x1, float x2) {
   return ((((a * frac_offset) - b_neg) * frac_offset + c) * frac_offset + x0);
 }
 
+static inline short sf2midiPan(short sf2pan) {
+  if (sf2pan > 500) return 128;
+  if (sf2pan < -500) return 1;
+  return (short)64 + sf2pan / 500 * 64;
+}
 #endif

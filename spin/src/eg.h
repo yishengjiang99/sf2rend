@@ -36,7 +36,7 @@ double update_eg(EG* eg, int n) {
       break;
     case delay:
       eg->stage++;
-      eg->nsamples_till_next_stage = timecent2sample(eg->attack);
+      eg->nsamples_till_next_stage = timecent2sample(eg->attack) + 11;
       eg->egval = -960.0f;
       eg->egIncrement = 960.0f / (float)eg->nsamples_till_next_stage;
       break;
@@ -48,16 +48,17 @@ double update_eg(EG* eg, int n) {
       eg->egIncrement = 0.0f;
       break;
     case hold:
+
       eg->stage++;
-      eg->nsamples_till_next_stage = timecent2sample(eg->decay);
+      eg->nsamples_till_next_stage = timecent2sample(eg->decay) + 100;
       eg->egval = 0.0f;
       eg->egIncrement =
-          (float)(960.0f - eg->sustain) / (float)eg->nsamples_till_next_stage;
+          (float)(-1 * eg->sustain) / (float)eg->nsamples_till_next_stage;
       break;
     case decay:
       eg->stage++;
       eg->egIncrement = -960.0f / timecent2sample(eg->release);
-      eg->nsamples_till_next_stage = (-960.0f + eg->egval) / eg->egIncrement;
+      eg->nsamples_till_next_stage = (-960.0f - eg->egval) / eg->egIncrement;
       break;
     case release:
       eg->stage++;
@@ -90,8 +91,9 @@ void init_mod_eg(EG* eg, zone_t* z) {
 }
 
 void _eg_release(EG* e) {
-  e->stage = decay;
-  e->nsamples_till_next_stage = 0;
+  if (e->stage == decay || e->stage == hold || e->stage == attack) {
+    e->nsamples_till_next_stage = 0;
+  }
 }
 void _eg_set_stage(EG* e, int n) {
   e->stage = n - 1;

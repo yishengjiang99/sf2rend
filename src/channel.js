@@ -24,24 +24,30 @@ export function channel(aggCtx, channelId, ui) {
       if (!_pg) return;
       let eg;
       console.assert(_pg != null);
-      const res = _pg.filterKV(key, vel)[0];
-      if (!res) return;
-      spinner.keyOn(channelId, res, key, vel);
+      _pg
+        .filterKV(key, vel)
+        .slice(0, 2)
+        .map((zone, i) => {
+          spinner.keyOn(channelId * 2 + i, zone, key, vel);
+          if (i == 0) {
+            volEG.zone = zone;
 
-      requestAnimationFrame(() => {
-        volEG.zone = res;
-
-        eg = volEG.keyOn(vel);
-        ui.velocity = vel;
-        ui.midi = key;
-        ui.env1 = eg;
-        ui.zone = res;
-      });
+            eg = volEG.keyOn(vel);
+            requestAnimationFrame(() => {
+              ui.velocity = vel;
+              ui.midi = key;
+              ui.env1 = volEG.keyOn(vel);
+              ui.zone = zone;
+            });
+          }
+        });
     },
     keyOff(key, vel) {
       if (!_pg) return;
 
-      spinner.keyOff(channelId, key, vel);
+      spinner.keyOff(channelId * 2, key, vel);
+      spinner.keyOff(channelId * 2 + 1, key, vel);
+
       //volEG.keyOff();
     },
   };

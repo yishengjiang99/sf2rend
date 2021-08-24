@@ -71,12 +71,7 @@ export async function main({ cpanel, cmdPanel, stdout, flist, timeslide }) {
     const ret = await ctx.spinner.shipProgram(sf2pg, bankId | pid);
   };
   function updateCanvas() {
-    for (let i = 0; i < 16; i++) {
-      chart(
-        midiSink.canvases[i],
-        new Float32Array(ctx.spinner.outputSnapshot, 128 * i * 4 * 2, 2 * 128)
-      );
-    }
+    chart(midiSink.canvases[0], new Float32Array(ctx.spinner.outputSnapshot));
     requestAnimationFrame(updateCanvas);
   }
   updateCanvas();
@@ -100,7 +95,7 @@ export async function main({ cpanel, cmdPanel, stdout, flist, timeslide }) {
   flist.onclick = ({ target }) =>
     _loadProgram(cid++, target.getAttribute("pid"), target.getAttribute("bid"));
 
-  bindMidiWorkerToAudioAndUI(midiworker, pt, {
+  bindMidiWorkerToAudioAndUI(midiworker, pt, ctx, {
     timeslide,
     cmdPanel,
   });
@@ -145,6 +140,7 @@ export function shareEventBufferWithMidiWorker(spinner, midiworker) {
 export function bindMidiWorkerToAudioAndUI(
   midiworker,
   midiPort,
+  ctx,
   { timeslide, cmdPanel }
 ) {
   midiworker.addEventListener("message", (e) => {
@@ -165,13 +161,19 @@ export function bindMidiWorkerToAudioAndUI(
     cmdPanel
   );
 
-  cmdPanel
-    .querySelectorAll("button.cmd")
-    .forEach((btn) =>
-      btn.addEventListener("click", (e) =>
-        midiworker.postMessage({ cmd: e.target.getAttribute("cmd") })
-      )
-    );
+  cmdPanel.querySelectorAll("button.cmd").forEach((btn) =>
+    btn.addEventListener("click", (e) => {
+      if (ctx.ctx.state != "running") {
+        ctx.ctx
+          .resume()
+          .then(() =>
+            midiworker.postMessage({ cmd: e.target.getAttribute("cmd") })
+          );
+      } else {
+        midiworker.postMessage({ cmd: e.target.getAttribute("cmd") });
+      }
+    })
+  );
 }
 function resetGM() {
   cid = 0;
@@ -233,7 +235,7 @@ export async function initMidiSink(ctx, sf2, controllers, pt) {
   return { channels, ccs, canvases };
 }
 export async function initAudio() {
-  const ctx = new AudioContext({ sampleRate: 44100 });
+  const ctx = new AudioContext({ sampleRate: 48000 });
   await SpinNode.init(ctx);
   const spinner = new SpinNode(ctx);
 

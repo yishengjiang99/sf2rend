@@ -9,12 +9,18 @@ typedef struct {
   float *inputf, *outputf;
   float fract;
   uint32_t position, loopStart, loopEnd;
-  float stride, strideInc;
+  float stride, velocity;
   lpf_t* lpf;
   zone_t* zone;
   EG *voleg, *modeg;
-  uint8_t channelId;
+  uint8_t channelId, padc1, padc2, padc3;
 } spinner;
+
+typedef struct {
+  uint32_t loopstart, loopend, length;
+  float* data;
+} pcm_t;
+
 short aZone[60] = {
     0,      0,   0,    0,     0,     0,      40,     0,      27000,  -10,
     0,      0,   0,    20,    598,   300,    40,     -1000,  527,    0,

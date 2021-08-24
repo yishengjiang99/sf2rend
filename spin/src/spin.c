@@ -7,19 +7,34 @@
 #endif
 
 #define RENDQ 128
-#define sps_index() (spsIndx++) & 0x0f
-#define one_over_128_128 1.0f / 128.0f / 128.0f
+#define nchannels 32
+#define one_over_128_128_128 1.0f / 128.0f / 128.0f / 128.0f
 #define clamp(val, min, max) val > max ? max : val < min ? min : val
-spinner sps[21];
-lpf_t lpf[21];
-EG eg[44];
-char midi_cc_vals[16 * 128];
+#define subtractWithFloor(a, b, floor) a - b > floor ? a - b : 0;
+
+/**
+ * global variables (like we're writing php)
+ *
+ **/
+spinner sps[nchannels];
+lpf_t lpf[nchannels];
+EG eg[nchannels * 2];
+LFO lfo[nchannels];
+pcm_t pcms[999];
+char midi_cc_vals[nchannels * 128];
+float outputs[nchannels * RENDQ * 2];
+float silence[40];
+char spsIndx = 0;
+#define sps_index() (spsIndx++) & 0x0f
+
+/**
+ *functions
+ *
+ */
+
 void set_midi_cc_val(int channel, int metric, int val) {
   midi_cc_vals[channel * 128 + metric] = (char)val & 0x7f;
 }
-float outputs[16 * RENDQ * 2];
-float silence[40];
-char spsIndx = 0;
 void reset(spinner* x);
 
 spinner* newSpinner(zone_t* zoneRef, int idx) {
@@ -31,7 +46,6 @@ spinner* newSpinner(zone_t* zoneRef, int idx) {
   x->fract = 0.0f;
   x->position = 0;
   x->lpf = &lpf[idx];
-  newLpf(x->lpf, 0.45f);
   x->voleg = &eg[idx * 2];
   x->modeg = &eg[idx * 2 + 1];
   set_zone(x, zoneRef);
@@ -69,19 +83,17 @@ void set_zone(spinner* x, zone_t* z) {
   init_mod_eg(x->modeg, z);
   init_vol_eg(x->voleg, z);
 }
-float set_attrs(spinner* x, float* inp, uint32_t loopstart, uint32_t loopend,
-                zone_t* z, float stride) {
-  x->loopStart = loopstart;
-  x->loopEnd = loopend;
-  x->inputf = inp;
+float trigger_attack(spinner* x, zone_t* z, float stride, float velocity) {
+  x->loopStart = pcms[z->SampleId].loopstart;
+  x->loopEnd = pcms[z->SampleId].loopend;
+  x->inputf = pcms[z->SampleId].data;
   x->stride = stride;
+  x->velocity = velocity;
   set_zone(x, z);
-
   return x->stride;
 }
 
 float lerp(float f1, float f2, float frac) { return f1 + (f2 - f1) * frac; }
-#define subtractWithFloor(a, b, floor) a - b > floor ? a - b : 0;
 
 float _spinblock(spinner* x, int n, int blockOffset) {
   update_eg(x->voleg, n);
@@ -94,24 +106,22 @@ float _spinblock(spinner* x, int n, int blockOffset) {
   float fract = x->fract;
   float stride = x->stride;
   double db = x->voleg->egval;
-  double dbTarget = x->voleg->egval + x->voleg->egIncrement * n;
-
+  float outputLeft = 0.0f, outputRight = 0.0f;
   int looplen = x->loopEnd - x->loopStart + 1;
-
-  float mixIncrement = 1.0f / (float)n;
-  float mix = 0.0f;
   double dbInc = x->voleg->egIncrement;
   double modEG = p10over200[(short)(clamp(x->modeg->egval, -960, 0))];
-  stride = stride > 0
-               ? stride *
-                     (12.0f + (float)(modEG * x->zone->ModEnv2Pitch) / 100.0f) /
-                     12.0f
-               : 0;
-  float midicc = midi_cc_vals[128 * x->channelId + TML_VOLUME_MSB] *
-                 midi_cc_vals[128 * x->channelId + TML_EXPRESSION_MSB] *
-                 one_over_128_128;
+
+  int applyEnvelope = x->zone->SampleModes > 0;
+  if (!applyEnvelope) db = 0.0f;
+  stride = stride + (float)(modEG * x->zone->ModEnv2Pitch);
+  short midicc =
+      (short)midi_log_10[midi_cc_vals[128 * x->channelId + TML_VOLUME_MSB]] +
+      midi_log_10[midi_cc_vals[128 * x->channelId + TML_EXPRESSION_MSB]] +
+      midi_log_10[(int)x->velocity];
+  short panLeft = panleftLUT[sf2midiPan((x->zone->Pan))];
+  short panRight = panrightLUT[sf2midiPan((x->zone->Pan))];
+
   for (int i = 0; i < n; i++) {
-    mix += mixIncrement;
     fract = fract + stride;
 
     while (fract >= 1.0f) {
@@ -122,20 +132,16 @@ float _spinblock(spinner* x, int n, int blockOffset) {
     if (position >= x->loopEnd && x->loopStart != 0) position -= looplen;
 
     float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
-    x->outputf[i * 2 + blockOffset * 2] = outputf;
+    x->outputf[i * 2 + blockOffset * 2] =
+        applyCentible(outputf, (short)(db + midicc + panLeft));
     x->outputf[i * 2 + blockOffset * 2 + 1] =
-        applyCentible(outputf, (short)db) * midicc;
-
+        applyCentible(outputf, (short)(db + midicc + panRight));
     db += dbInc;
   }
-  // x->voleg->egval = db;
   x->position = position;
   x->fract = fract;
   x->stride = stride;
-  // x->voleg->nsamples_till_next_stage =
-  //     subtractWithFloor(x->voleg->nsamples_till_next_stage, n, 0);
-  // x->modeg->nsamples_till_next_stage =
-  //     subtractWithFloor(x->modeg->nsamples_till_next_stage, n, 0);
+
   return stride;
 }
 

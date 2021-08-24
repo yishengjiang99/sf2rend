@@ -13,11 +13,12 @@ class SpinProcessor extends AudioWorkletProcessor {
       processorOptions: { rendSb, statusBuffer, wasm },
     } = options;
     this.pipe = new SharedRiffPipe(statusBuffer);
-    this.outputSnap = new Float32Array(rendSb, REND_BLOCK * nchannels * 2);
+    this.outputSnap = new Float32Array(rendSb);
     this.memory = new WebAssembly.Memory({ maximum: 1024, initial: 1024 });
     this.inst = new WebAssembly.Instance(new WebAssembly.Module(wasm), {
       env: { memory: this.memory },
     });
+
     this.brk = 0x30000;
     this.malololc = (len) => {
       const ret = this.brk;
@@ -25,33 +26,33 @@ class SpinProcessor extends AudioWorkletProcessor {
       if (this.brk > this.memory.buffer.byteLength) throw "no mem";
       return ret;
     };
+    this.sdtaRef = (spId) =>
+      new Uint32Array(
+        this.memory.buffer,
+        this.inst.exports.pcms.value +
+          spId * 4 * Float32Array.BYTES_PER_ELEMENT,
+        4
+      );
+
     this.sampleIdRefs = [];
     this.presetRefs = [];
     this.port.onmessage = this.handleMsg.bind(this);
     this.spinners = [];
     this.outputs = [];
-    this.strides = [];
-    this.egRefs = [];
-
-    this.egstates = (channel) =>
-      new Int32Array(this.memory.buffer, this.egRefs[channel], 1);
   }
   async handleMsg(e) {
     const { data } = e;
     if (data.stream && data.segments) {
-      // segments: {
-      //   sampleId: shdr.SampleId,
-      //   nSamples: (shdr.range[1] + 1 - shdr.range[0]) / 2,
-      // },
-      // stream: res.body,
       const {
-        segments: { sampleId, nSamples },
+        segments: { sampleId, nSamples, loops },
         stream,
       } = data;
       const offset = this.malololc(4 * nSamples);
       const fl = new Float32Array(this.memory.buffer, offset, nSamples);
       await downloadData(stream, fl);
-      this.sampleIdRefs[sampleId] = offset;
+      this.sdtaRef(sampleId).set(
+        new Uint32Array([loops[0], loops[1], nSamples, offset])
+      );
     } else if (data.zArr) {
       for (const { arr, ref } of data.zArr) {
         const ptr = this.malololc(120);
@@ -70,8 +71,6 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.spinners[i] = this.inst.exports.newSpinner(zone, i);
     const spIO = new Uint32Array(this.memory.buffer, this.spinners[i], 12);
     this.outputs[i] = new Float32Array(this.memory.buffer, spIO[1], 128 * 2);
-    this.strides[i] = spIO[6];
-    this.egRefs[i] = spIO[11];
     return this.spinners[i];
   }
   process(inputs, o, parameters) {
@@ -92,8 +91,8 @@ class SpinProcessor extends AudioWorkletProcessor {
           case 1:
           case 0x0090:
             {
-              const [channel, sampleId, loopstart, loopend, zoneRef, ratio] =
-                msg.chunk;
+              const [channel, zoneRef, ratio, velocity] = msg.chunk;
+              console.log([channel, zoneRef, ratio, velocity]);
               if (!this.presetRefs[zoneRef]) {
                 console.error("preset not found zoneref " + zoneRef);
                 return;
@@ -101,14 +100,11 @@ class SpinProcessor extends AudioWorkletProcessor {
               if (!this.spinners[channel]) {
                 this.instantiate(this.presetRefs[zoneRef], channel);
               }
-
-              this.inst.exports.set_attrs(
+              this.inst.exports.trigger_attack(
                 this.spinners[channel],
-                this.sampleIdRefs[sampleId],
-                loopstart,
-                loopend,
                 this.presetRefs[zoneRef],
-                ratio / 0xffff
+                ratio / 0x00ff,
+                velocity
               );
             }
             break;
@@ -117,7 +113,7 @@ class SpinProcessor extends AudioWorkletProcessor {
         }
       });
     }
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < nchannels; i++) {
       // const volegstage = this.egstates(i)[0];
       //if (volegstage < 1 || volegstage > 5) continue;
 
@@ -126,20 +122,15 @@ class SpinProcessor extends AudioWorkletProcessor {
       // if (!o[i]) continue;
       for (let j = 0; j < 128 * 2; j++) this.outputs[i][j] = 0;
       this.inst.exports.spin(this.spinners[i], 128);
-
+      const multiplier = i == 9 ? 5 : 0.5;
       for (let j = 0; j < 128; j++) {
-        o[0][0][j] += this.outputs[i][2 * j + 1] / 2;
-        o[0][1][j] += this.outputs[i][2 * j + 1] / 2;
+        o[0][0][j] += this.outputs[i][2 * j + 1] * multiplier;
+        o[0][1][j] += this.outputs[i][2 * j + 1] * multiplier;
       }
       new Promise((r) => r()).then(() => {
         this.outputSnap.set(
-          this.outputs[i].filter((v, i) => i % 2 == 0),
-          2 * i * REND_BLOCK,
-          REND_BLOCK
-        );
-        this.outputSnap.set(
-          this.outputs[i].filter((v, i) => i % 2 == 1),
-          2 * i * REND_BLOCK + REND_BLOCK,
+          this.outputs[i].filter((v, b) => b % 2 == 1),
+          i * REND_BLOCK,
           REND_BLOCK
         );
       });

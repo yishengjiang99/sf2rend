@@ -168,7 +168,8 @@ static inline int combine_pattrs(int genop, short *zoneAttr, short psetAttr) {
       // i apologize for the following lines of code.
       zval = powf(2.0f, zoneAttr[genop] / 1200.0f);
       pval = powf(2.0f, psetAttr / 1200.0f);
-      zoneAttr[genop] = log2f(zval + pval) * 1200.0f;
+      float cf = log2f(zval + pval) * 1200.0f;
+      zoneAttr[genop] = (short)cf;
       break;
     default:
       zoneAttr[genop] += psetAttr;
@@ -190,14 +191,13 @@ zone_t *findPresetZones(int i, int nregions) {
   short attrs[240] = {0};
   int instID = -1;
   int lastbag = phdrs[i + 1].pbagNdx;
-  bzero(&attrs[default_pbg_cache_index], 240 * sizeof(short));
+  bzero(attrs, 240 * sizeof(short));
   memcpy(attrs, defvals, 2 * 60);
-  memcpy(attrs + pbg_attr_cache_index, defvals, 2 * 60);
 
   for (int j = phdrs[i].pbagNdx; j < phdrs[i + 1].pbagNdx; j++) {
     int attr_inex =
         j == phdrs[i].pbagNdx ? default_pbg_cache_index : pbg_attr_cache_index;
-    bzero(&attrs[pbg_attr_cache_index], 180 * sizeof(short));
+    bzero(attrs + pbg_attr_cache_index, 180 * sizeof(short));
     memcpy(attrs + pbg_attr_cache_index, defvals, 2 * 60);
 
     pbag *pg = pbags + j;
@@ -212,14 +212,14 @@ zone_t *findPresetZones(int i, int nregions) {
       } else {
         instID = g->val.shAmount;
         sanitizedInsert(attrs, g->genid + attr_inex, g);
-        bzero(&attrs[default_ibagcache_idex], 120 * sizeof(short));
+        bzero(attrs + default_ibagcache_idex, 120 * sizeof(short));
         memcpy(attrs + default_ibagcache_idex, defvals, 2 * 60);
 
         inst *ihead = insts + instID;
         int ibgId = ihead->ibagNdx;
         int lastibg = (ihead + 1)->ibagNdx;
         for (int ibg = ibgId; ibg < lastibg; ibg++) {
-          bzero((&attrs[0] + ibg_attr_cache_index), 60 * sizeof(short));
+          bzero(attrs + ibg_attr_cache_index, 60 * sizeof(short));
 
           memcpy(attrs + ibg_attr_cache_index, defvals, 2 * 60);
 
@@ -235,7 +235,7 @@ zone_t *findPresetZones(int i, int nregions) {
                g++) {
             sanitizedInsert(attrs, attr_inex + g->genid, g);
           }
-          if (attrs[attr_inex + SampleId] > 0) {
+          if (attrs[attr_inex + SampleId] > -1) {
             short zoneattr[60];
             bzero(zoneattr, 120);
             memcpy(zoneattr, defvals, 120);
@@ -247,14 +247,14 @@ zone_t *findPresetZones(int i, int nregions) {
               } else if (attrs[default_ibagcache_idex + i]) {
                 zoneattr[i] = attrs[default_ibagcache_idex + i];
               }
-              short pbagAttr =
-                  attrs[pbg_attr_cache_index + i] != defvals[i]
-                      ? attrs[pbg_attr_cache_index + i]
-                  : attrs[default_pbg_cache_index + i] != defvals[i]
-                      ? attrs[default_pbg_cache_index + i]
-                      : 0;
+              if (attrs[pbg_attr_cache_index + i] != defvals[i]) {
+                add = combine_pattrs(i, zoneattr,
+                                     attrs[pbg_attr_cache_index + i]);
+              } else if (attrs[default_pbg_cache_index + i] != defvals[i]) {
+                add = combine_pattrs(i, zoneattr,
+                                     attrs[default_pbg_cache_index + i]);
+              }
 
-              int add = combine_pattrs(i, zoneattr, pbagAttr);
               if (!add) break;
             }
             if (add) {
