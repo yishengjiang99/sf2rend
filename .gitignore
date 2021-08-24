@@ -1,3 +1,7 @@
 node_modules
 */node_modules
 */.vscode
+spin/build/
+dist/*
+**/*/a.out
+*/a.out
