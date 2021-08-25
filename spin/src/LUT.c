@@ -23,7 +23,7 @@ void initLUTs(FILE* fd) {
 
   fprintf(fd, "double midi_log_10[130]={ -1400, \n");
   for (float i = 1; i < 128; i++) {
-    fprintf(fd, "%f,\n", log(i / 127.0f) * 400);
+    fprintf(fd, "%f,\n", log(127 * 127 / i * i) * 200);
   }
   fprintf(fd, "0.0}; \n");
 
