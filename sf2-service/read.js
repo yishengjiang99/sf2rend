@@ -65,12 +65,7 @@ export function loadProgram(
           headers: {
             Range: `bytes=${shdrMap[mapKey].range.join("-")}`,
           },
-        })
-          .then((res) => res.arrayBuffer())
-          .then((ab) => {
-            shdrMap[mapKey].pcm = s16ArrayBuffer2f32(ab);
-            return shdrMap[mapKey].pcm;
-          }));
+        }).then((res) => res.arrayBuffer()));
     }
     zMap.push({
       ...zone,

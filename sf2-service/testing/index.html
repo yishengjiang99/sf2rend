@@ -17,6 +17,8 @@
   </div>
   <script type='module'>
     import {load, loadProgram} from "../read.js";
+    import {wavHeader} from "./wavheader.js";
+
     const sf2url = "./fixtures/VintageDreamsWaves-v2.sf2";
     mocha.setup("bdd");
     const expect = globalThis.chai.expect;
@@ -28,7 +30,7 @@
       it("dl blob", () => {
         const z = loadProgram(sf2, 0, 0).zMap[0];
         expect(z.arr.length).eq(60);
-        document.body.querySelector("#mocha").innerHTML += z.arr.join(",");
+        // document.body.querySelector("#mocha").innerHTML += z.arr.join(",");
       })
       it("sf2file is loaded", async () => {
         expect(sf2).exists;
@@ -45,17 +47,29 @@
         sf2 = await load(sf2url);
         pg = loadProgram(sf2, 0, 0);
       });
-      it('progra loaded', () => {
-        const pg = loadProgram(sf2, 0, 0);
-        expect(pg.zMap);
-        const zone = pg.filterKV(55, 55)[0]
-        expect(zone).exists
-        expect(zone.KeyRange.hi).gt(0)
-        console.log(zone);
+      it('progra loaded', (done) => {
 
-      })
+      });
     });
     mocha.run();
+    load(sf2url).then(sf2 => {
+      for (let i = 0;i < 128;i++) {
+        const pg = loadProgram(sf2, i, 0);
+        const zone = pg.filterKV(55, 111)[0];
+        const o = document.createElement("audio");
+        document.body.querySelector("#mocha").append(o)
+        zone.shdr.data().then(a => {
+          const blob = new Blob([wavHeader({
+            nSamples: a.length / 2,
+            numChannels: 1,
+            sampleRate: zone.shdr.sampleRate,
+          }), a], {type: 'audio/wav'});
+          o.controls = true;
+          o.src = URL.createObjectURL(blob);
+        })
+      }
+    })
+
   </script>
 </body>
 </html>
