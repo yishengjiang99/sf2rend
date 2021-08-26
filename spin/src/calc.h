@@ -12,8 +12,8 @@
 
 double midi_volume_log10(char val) {
   val = val & 0x7f;
-  if (val < 0) return -1440;
-  return midi_log_10[val | 0];
+  if (val < 0) return 1440;
+  return midi_log_10[val];
 }
 double timecent2second(short tc) {
   if (tc < 0) return 1.0f / timecent2second(-1 * tc);

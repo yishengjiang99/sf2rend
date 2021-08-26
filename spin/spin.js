@@ -82,31 +82,7 @@ export class SpinNode extends AudioWorkletNode {
     return this.rendSb;
   }
 }
-export async function mkspinner() {
-  const memory = new WebAssembly.Memory({ maximum: 1024, initial: 1024 });
-  let brk = 0x30000;
-  let sbrk = (len) => {
-    const ret = brk;
-    brk += len;
-    if (brk > memory.buffer.byteLength) throw "no mem";
-    return ret;
-  };
-  const { instance } = await WebAssembly.instantiateStreaming(
-    fetch(basename() + "spin/spin.wasm"),
-    {
-      env: {
-        memory,
-      },
-    }
-  );
-  return {
-    instance,
-    brk,
-    sbrk,
-    memory,
-    ...instance.exports,
-  };
-}
+
 async function wasmBinary() {
   const res = await fetch(basename() + "spin/spin.wasm");
   const ab = await res.arrayBuffer();

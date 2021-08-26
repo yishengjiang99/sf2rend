@@ -35,7 +35,13 @@ void set_midi_cc_val(int channel, int metric, int val) {
   midi_cc_vals[channel * 128 + metric] = (char)val & 0x7f;
 }
 void reset(spinner* x);
-
+void gm_reset() {
+  for (int idx = 0; idx < 128; idx++) {
+    midi_cc_vals[idx * 128 + TML_VOLUME_MSB] = 100;
+    midi_cc_vals[idx * 128 + TML_PAN_MSB] = 64;
+    midi_cc_vals[idx * 128 + TML_EXPRESSION_MSB] = 127;
+  }
+}
 spinner* newSpinner(zone_t* zoneRef, int idx) {
   spinner* x = &sps[idx];
   x->outputf = &outputs[idx * RENDQ * 2];
@@ -50,9 +56,7 @@ spinner* newSpinner(zone_t* zoneRef, int idx) {
   x->modlfo = &lfos[idx * 2];
   x->vibrlfo = &lfos[idx * 2 + 1];
   set_zone(x, zoneRef);
-  midi_cc_vals[idx * 128 + TML_VOLUME_MSB] = 100;
-  midi_cc_vals[idx * 128 + TML_PAN_MSB] = 64;
-  midi_cc_vals[idx * 128 + TML_EXPRESSION_MSB] = 127;
+
   x->channelId = idx;
   return x;
 }
@@ -106,6 +110,12 @@ float trigger_attack(spinner* x, zone_t* z, float stride, float velocity) {
 
 float lerp(float f1, float f2, float frac) { return f1 + (f2 - f1) * frac; }
 
+float kRateAttenuate(int initialAttenuation, int volume, int expression,
+                     int velocity) {
+  return 0 - (initialAttenuation + midi_volume_log10(volume) +
+              midi_volume_log10(expression) + midi_volume_log10(velocity));
+}
+
 float _spinblock(spinner* x, int n, int blockOffset) {
   double db, dbInc;
 
@@ -131,9 +141,9 @@ float _spinblock(spinner* x, int n, int blockOffset) {
   float stride = x->zone->SampleModes > 0 ? x->stride : 1;
   int ch = (int)x->channelId / 2;
   stride = stride + (float)(modEG * x->zone->ModEnv2Pitch);
-  double midicc = midi_volume_log10(midi_cc_vals[ch + TML_VOLUME_MSB]) +
-                  midi_volume_log10(midi_cc_vals[ch + TML_EXPRESSION_MSB]) +
-                  midi_volume_log10(x->velocity);
+  double krate_centible = kRateAttenuate(
+      x->zone->Attenuation, midi_cc_vals[ch * 128 + TML_VOLUME_MSB],
+      midi_cc_vals[ch * 128 + TML_EXPRESSION_MSB], x->velocity);
 
   double panLeft = panleftLUT[sf2midiPan(x->zone->Pan)];
   double panRight = panrightLUT[sf2midiPan(x->zone->Pan)];
@@ -150,9 +160,9 @@ float _spinblock(spinner* x, int n, int blockOffset) {
 
     float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
     x->outputf[i * 2 + blockOffset * 2] =
-        applyCentible(outputf, (short)(db - midicc - panLeft / 5));
+        applyCentible(outputf, (short)(db - krate_centible - 0));
     x->outputf[i * 2 + blockOffset * 2 + 1] =
-        applyCentible(outputf, (short)(db - midicc - panRight / 5));
+        applyCentible(outputf, (short)(db - krate_centible - 0));
     db += dbInc;
   }
   x->position = position;

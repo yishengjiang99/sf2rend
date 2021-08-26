@@ -21,11 +21,14 @@ void initLUTs(FILE* fd) {
   }
   fprintf(fd, "1.0f};\n");
 
-  fprintf(fd, "double midi_log_10[130]={ -1400, \n");
+  fprintf(fd, "double midi_log_10[128]={ 1440, \n");
   for (float i = 1; i < 128; i++) {
-    fprintf(fd, "%f,\n", log(127 * 127 / i / i) * 200);
+    fprintf(fd, "%f", log(127 * 127 / i / i) * 200);
+    if (i < 128 - 1)
+      fprintf(fd, ",");
+    else
+      fprintf(fd, "};");
   }
-  fprintf(fd, "0.0}; \n");
 
   fprintf(fd, "double panleftLUT[128]={\n");
   for (float i = 2; i < 127; i++) {

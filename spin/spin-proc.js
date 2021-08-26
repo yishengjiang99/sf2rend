@@ -14,7 +14,11 @@ class SpinProcessor extends AudioWorkletProcessor {
     } = options;
     this.pipe = new SharedRiffPipe(statusBuffer);
     this.outputSnap = new Float32Array(rendSb);
-    this.memory = new WebAssembly.Memory({ maximum: 1024, initial: 1024 });
+    this.memory = new WebAssembly.Memory({
+      maximum: 1024,
+      initial: 1024,
+      shared: true,
+    });
     this.inst = new WebAssembly.Instance(new WebAssembly.Module(wasm), {
       env: { memory: this.memory },
     });
@@ -48,16 +52,7 @@ class SpinProcessor extends AudioWorkletProcessor {
   async handleMsg(e) {
     const { data } = e;
     if (data.stream && data.segments) {
-      const {
-        segments: { sampleId, nSamples, loops },
-        stream,
-      } = data;
-      const offset = this.malololc(4 * nSamples);
-      const fl = new Float32Array(this.memory.buffer, offset, nSamples);
-      await downloadData(stream, fl);
-      this.sdtaRef(sampleId).set(
-        new Uint32Array([loops[0], loops[1], nSamples, offset])
-      );
+      await this.loadsdta(data);
     } else if (data.zArr) {
       for (const { arr, ref } of data.zArr) {
         const ptr = this.malololc(120);
@@ -72,6 +67,19 @@ class SpinProcessor extends AudioWorkletProcessor {
       this.inst.exports.eg_release(this.spinners[channel]);
     }
   }
+  async loadsdta(data) {
+    const {
+      segments: { sampleId, nSamples, loops },
+      stream,
+    } = data;
+    const offset = this.malololc(4 * nSamples);
+    const fl = new Float32Array(this.memory.buffer, offset, nSamples);
+    await downloadData(stream, fl);
+    this.sdtaRef(sampleId).set(
+      new Uint32Array([loops[0], loops[1], nSamples, offset])
+    );
+  }
+
   instantiate(zone, i) {
     this.spinners[i] = this.inst.exports.newSpinner(zone, i);
     const spIO = new Uint32Array(this.memory.buffer, this.spinners[i], 12);

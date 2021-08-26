@@ -67,7 +67,6 @@ export async function main({ cpanel, cmdPanel, stdout, flist, timeslide }) {
       bankId: bankId,
       name: programNames[bankId | pid],
     };
-
     const ret = await ctx.spinner.shipProgram(sf2pg, bankId | pid);
   };
   let updateCanvasTimer;
