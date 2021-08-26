@@ -1,10 +1,10 @@
 #ifndef SPIN_H
 #define SPIN_H
+#include "LFO.h"
 #include "calc.h"
 #include "eg.h"
 #include "lpf.h"
 #include "sf2.h"
-
 typedef struct {
   float *inputf, *outputf;
   float fract;
@@ -13,6 +13,7 @@ typedef struct {
   lpf_t* lpf;
   zone_t* zone;
   EG *voleg, *modeg;
+  LFO *modlfo, *vibrlfo;
   uint8_t channelId, padc1, padc2, padc3;
 } spinner;
 

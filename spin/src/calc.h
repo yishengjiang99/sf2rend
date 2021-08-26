@@ -35,9 +35,8 @@ int FloatTo23Bits(float x) {
 float applyCentible(float signal, short centdb) {
   // if ((float)centdb < 970.0f) return 0.0f;
   if (centdb > 0) return signal;
-  if (centdb < -1000) return 0.0f;
-  if (centdb < -960) return signal * 0.00001f;
-  return signal * p10over200[centdb + 960];
+  if (centdb < -1440) return 0.0f;
+  return signal * p10over200[centdb + 1440];
 
   // int sigl = FloatTo23Bits(signal);
   // float nff = log_2_10 * centdb / -200.0f;

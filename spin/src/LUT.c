@@ -14,16 +14,16 @@ void initLUTs(FILE* fd) {
   }
   fprintf(fd, "2.0};\n");
 
-  fprintf(fd, "double p10over200[961]={ \n");
+  fprintf(fd, "double p10over200[1441]={ \n");
 
-  for (int i = -960; i < 0; i++) {
+  for (int i = -1440; i < 0; i++) {
     fprintf(fd, "%f,\n", pow(10.0f, i / 200.0));
   }
-  fprintf(fd, "0.0f};\n");
+  fprintf(fd, "1.0f};\n");
 
   fprintf(fd, "double midi_log_10[130]={ -1400, \n");
   for (float i = 1; i < 128; i++) {
-    fprintf(fd, "%f,\n", log(127 * 127 / i * i) * 200);
+    fprintf(fd, "%f,\n", log(127 * 127 / i / i) * 200);
   }
   fprintf(fd, "0.0}; \n");
 

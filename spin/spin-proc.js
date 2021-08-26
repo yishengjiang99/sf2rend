@@ -39,6 +39,11 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.port.onmessage = this.handleMsg.bind(this);
     this.spinners = [];
     this.outputs = [];
+    this.midiccRef = new Uint8Array(
+      this.memory.buffer,
+      this.inst.exports.midi_cc_vals,
+      128 * 16
+    );
   }
   async handleMsg(e) {
     const { data } = e;
@@ -77,6 +82,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     if (this.pipe.hasMsg) {
       this.pipe.read().forEach((msg) => {
         switch (msg.fourcc) {
+          case 0xb0:
           case 0x00b0: {
             const [channel, metric, value] = msg.chunk;
             this.inst.exports.set_midi_cc_val(channel, metric, value);
@@ -92,7 +98,6 @@ class SpinProcessor extends AudioWorkletProcessor {
           case 0x0090:
             {
               const [channel, zoneRef, ratio, velocity] = msg.chunk;
-              console.log([channel, zoneRef, ratio, velocity]);
               if (!this.presetRefs[zoneRef]) {
                 console.error("preset not found zoneref " + zoneRef);
                 return;
@@ -125,9 +130,9 @@ class SpinProcessor extends AudioWorkletProcessor {
       // if (!o[i]) continue;
       for (let j = 0; j < 128 * 2; j++) this.outputs[i][j] = 0;
       this.inst.exports.spin(this.spinners[i], 128);
-      const multiplier = i == 9 ? 5 : 1;
+      const multiplier = i == 9 ? 1 : 1;
       for (let j = 0; j < 128; j++) {
-        o[0][0][j] += this.outputs[i][2 * j + 1] * multiplier;
+        o[0][0][j] += this.outputs[i][2 * j] * multiplier;
         o[0][1][j] += this.outputs[i][2 * j + 1] * multiplier;
       }
       new Promise((r) => r()).then(() => {
@@ -136,7 +141,6 @@ class SpinProcessor extends AudioWorkletProcessor {
           i * REND_BLOCK,
           REND_BLOCK
         );
-        this.checkmsgs();
       });
     }
     return true;

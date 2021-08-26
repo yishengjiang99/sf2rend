@@ -42,7 +42,7 @@ void advanceStage(EG* eg) {
       break;
     case delay:
       eg->stage++;
-      eg->nsamples_till_next_stage = timecent2sample(eg->attack) + 11;
+      eg->nsamples_till_next_stage = timecent2sample(eg->attack);
       eg->egval = -960.0f;
       eg->egIncrement = 960.0f / (float)eg->nsamples_till_next_stage;
       break;

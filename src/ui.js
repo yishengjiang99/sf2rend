@@ -59,7 +59,7 @@ export class TrackUI {
             max: 127,
             step: 1,
             type: "range",
-            oninput: (e) => cb([0xb0 | idx, 0x07, e.target.value]),
+            oninput: (e) => cb([0xb0 | idx, 7, e.target.value]),
           }),
           mkdiv("label", { for: "pan" }, "pan"),
           mkdiv("input", {
@@ -67,7 +67,7 @@ export class TrackUI {
             max: 127,
             step: 1,
             type: "range",
-            oninput: (e) => cb([0xb0 | idx, 0x07, e.target.value]),
+            oninput: (e) => cb([0xb0 | idx, 9, e.target.value]),
           }),
           mkdiv("label", { for: "expression" }, "expression"),
           mkdiv("input", {
@@ -75,7 +75,7 @@ export class TrackUI {
             max: 127,
             step: 1,
             type: "range",
-            oninput: (e) => cb([0xb0 | idx, 0x07, e.target.value]),
+            oninput: (e) => cb([0xb0 | idx, 11, e.target.value]),
           }),
         ]),
         mkdiv(
@@ -108,6 +108,7 @@ export class TrackUI {
     this.nameLabel = container.querySelector("input[type='list']");
     this.meters = container.querySelectorAll("meter");
     this.sliders = container.querySelectorAll("input[type='range']");
+    this.labels = container.querySelectorAll("label");
 
     this.led = container.querySelector("input[type=checkbox]");
 
@@ -136,6 +137,27 @@ export class TrackUI {
   }
   set midi(v) {
     this.meters[0].value = v;
+  }
+  set CC({ key, value }) {
+    switch (key) {
+      case 7:
+        this.sliders[0].value = value;
+        this.labels[0].innerHTML = "volume" + value;
+
+        break;
+      case 9:
+        this.sliders[1].value = value;
+        this.labels[1].innerHTML = "pan" + value;
+
+        break;
+      case 11:
+        this.sliders[2].value = value;
+        this.labels[2].innerHTML = "exp" + value;
+
+        break;
+      default:
+        console.log(key, value);
+    }
   }
   set velocity(v) {
     this.meters[1].value = v;

@@ -171,9 +171,11 @@ export function bindMidiWorkerToAudioAndUI(
             midiworker.postMessage({ cmd: e.target.getAttribute("cmd") })
           );
       } else {
-        midiworker.postMessage({ cmd: e.target.getAttribute("cmd") });
+        setTimeout(
+          () => midiworker.postMessage({ cmd: e.target.getAttribute("cmd") }),
+          1000
+        );
       }
-      debugger;
       updateCanvas();
     })
   );
@@ -204,8 +206,10 @@ export async function initMidiSink(ctx, sf2, controllers, pt) {
       vel = c & 0x7f;
     // stdout("midi msg channel:" + ch + " cmd " + stat.toString(16));
     switch (stat) {
-      case 0xb: //chan set
+      case 0xb: //chan set/
+        stdout("midi msg channel:" + ch + " cmd " + stat.toString(16));
         ctx.spinner.pipe.send(0xb0, [ch, key, vel]);
+        channels[ch].ui.CC = { key, value: vel };
         break;
       case 0xc: //change porg
         const pid = key,

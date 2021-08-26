@@ -20,6 +20,7 @@ export function channel(aggCtx, channelId, ui) {
       _pid = pid;
       ui.name = name || "pid " + pid + " bid " + bankId;
     },
+    ui,
     keyOn(key, vel) {
       if (!_pg) return;
       let eg;
@@ -32,8 +33,8 @@ export function channel(aggCtx, channelId, ui) {
           if (i == 0) {
             volEG.zone = zone;
 
-            eg = volEG.keyOn(vel);
             requestAnimationFrame(() => {
+              eg = volEG.keyOn(vel);
               ui.velocity = vel;
               ui.midi = key;
               ui.env1 = volEG.keyOn(vel);

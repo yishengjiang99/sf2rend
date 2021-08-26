@@ -1,8 +1,7 @@
 
 #include "spin.h"
 
-#include "LFO.c"
-#ifdef debug
+#ifdef debu1g
 #include <stdio.h>
 #endif
 
@@ -19,7 +18,7 @@
 spinner sps[nchannels];
 lpf_t lpf[nchannels];
 EG eg[nchannels * 2];
-LFO lfo[nchannels];
+LFO lfos[nchannels * 2];
 pcm_t pcms[999];
 char midi_cc_vals[nchannels * 128];
 float outputs[nchannels * RENDQ * 2];
@@ -48,6 +47,8 @@ spinner* newSpinner(zone_t* zoneRef, int idx) {
   x->lpf = &lpf[idx];
   x->voleg = &eg[idx * 2];
   x->modeg = &eg[idx * 2 + 1];
+  x->modlfo = &lfos[idx * 2];
+  x->vibrlfo = &lfos[idx * 2 + 1];
   set_zone(x, zoneRef);
   midi_cc_vals[idx * 128 + TML_VOLUME_MSB] = 100;
   midi_cc_vals[idx * 128 + TML_PAN_MSB] = 64;
@@ -79,9 +80,19 @@ void reset(spinner* x) {
 }
 void set_zone(spinner* x, zone_t* z) {
   x->zone = z;
-  reset(x);
   init_mod_eg(x->modeg, z);
   init_vol_eg(x->voleg, z);
+}
+
+typedef struct {
+  float mod2volume, mod2pitch, mod2filter;
+} LFOEffects;
+
+LFOEffects lfo_effects(float lfoval, zone_t* z) {
+  float mod2vol = (1 - lfoval) * z->ModLFO2Vol;
+  float mod2pitch = lfoval * z->ModEnv2Pitch;
+  float mod2fc = lfoval * z->ModEnv2FilterFc * 8.8f;
+  return (LFOEffects){mod2vol, mod2pitch, mod2fc};
 }
 float trigger_attack(spinner* x, zone_t* z, float stride, float velocity) {
   x->loopStart = pcms[z->SampleId].loopstart;
@@ -96,28 +107,33 @@ float trigger_attack(spinner* x, zone_t* z, float stride, float velocity) {
 float lerp(float f1, float f2, float frac) { return f1 + (f2 - f1) * frac; }
 
 float _spinblock(spinner* x, int n, int blockOffset) {
+  double db, dbInc;
+
   update_eg(x->voleg, n);
 
   update_eg(x->modeg, n);  // x->zone, 0);
+  float modlfoval = roll(x->modlfo, n);
   if (x->voleg->stage == done) return .0f;
   if (x->voleg->egval == 0 && x->voleg->egIncrement == 0) return .0f;
 
   int position = x->position;
   float fract = x->fract;
-  float stride = x->stride;
-  double db = x->voleg->egval;
-  float outputLeft = 0.0f, outputRight = 0.0f;
   int looplen = x->loopEnd - x->loopStart + 1;
-  double dbInc = x->voleg->egIncrement;
-  double modEG = p10over200[(short)(clamp(x->modeg->egval, -960, 0))];
+  double modEG = p10over200[(short)(clamp(x->modeg->egval, -960, 0) + 960)];
 
-  int applyEnvelope = x->zone->SampleModes > 0;
-  if (!applyEnvelope) db = 0.0f;
+  if (x->zone->SampleModes == 0 && x->voleg->stage < 4) {
+    db = 0.0f;
+    dbInc = 0.0f;
+  } else {
+    db = x->voleg->egval;
+    dbInc = x->voleg->egIncrement;
+  }
+  float stride = x->zone->SampleModes > 0 ? x->stride : 1;
+  int ch = (int)x->channelId / 2;
   stride = stride + (float)(modEG * x->zone->ModEnv2Pitch);
-  double midicc =
-      midi_volume_log10(midi_cc_vals[128 * x->channelId + TML_VOLUME_MSB]) +
-      midi_volume_log10(midi_cc_vals[128 * x->channelId + TML_EXPRESSION_MSB]) +
-      midi_volume_log10(x->velocity);
+  double midicc = midi_volume_log10(midi_cc_vals[ch + TML_VOLUME_MSB]) +
+                  midi_volume_log10(midi_cc_vals[ch + TML_EXPRESSION_MSB]) +
+                  midi_volume_log10(x->velocity);
 
   double panLeft = panleftLUT[sf2midiPan(x->zone->Pan)];
   double panRight = panrightLUT[sf2midiPan(x->zone->Pan)];
@@ -134,9 +150,9 @@ float _spinblock(spinner* x, int n, int blockOffset) {
 
     float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
     x->outputf[i * 2 + blockOffset * 2] =
-        applyCentible(outputf, (short)(db + midicc + panLeft));
+        applyCentible(outputf, (short)(db - midicc - panLeft / 5));
     x->outputf[i * 2 + blockOffset * 2 + 1] =
-        applyCentible(outputf, (short)(db + midicc + panRight));
+        applyCentible(outputf, (short)(db - midicc - panRight / 5));
     db += dbInc;
   }
   x->position = position;

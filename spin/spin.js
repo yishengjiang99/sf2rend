@@ -14,8 +14,6 @@ function basename() {
 }
 export class SpinNode extends AudioWorkletNode {
   static async init(ctx) {
-    console.log(basename() + "spin/spin-proc.js");
-
     await ctx.audioWorklet.addModule(basename() + "spin/spin-proc.js");
     if (!wasm) {
       wasm = await wasmBinary();
@@ -27,7 +25,7 @@ export class SpinNode extends AudioWorkletNode {
   }
   constructor(ctx) {
     const rendSb = new SharedArrayBuffer(
-      RENDER_BLOCK * N_CHANNELS * Float32Array.BYTES_PER_ELEMENT * 2
+      RENDER_BLOCK * N_CHANNELS * Float32Array.BYTES_PER_ELEMENT + 128 * 16
     );
     const pipe = new SharedRiffPipe(1 << 12);
 
