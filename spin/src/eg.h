@@ -21,16 +21,15 @@ double update_eg(EG* eg, int n);
  */
 double update_eg(EG* eg, int n) {
   if (eg->stage == done) return 0.0f;  // should not occur
+  int n1 = n > eg->nsamples_till_next_stage ? eg->nsamples_till_next_stage : n;
+  eg->nsamples_till_next_stage -= n1;
+  eg->egval += eg->egIncrement * n1;
 
-  eg->nsamples_till_next_stage -= n;
-  eg->egval += eg->egIncrement * n;
+  if (n1 == n) return eg->egval;
 
-  if (eg->nsamples_till_next_stage > 0) return eg->egval;
-
-  int leftover = -1 * eg->nsamples_till_next_stage;
+  int leftover = n - n1;
   advanceStage(eg);
-  if (leftover > 0) return update_eg(eg, leftover);
-  return eg->egval;
+  return update_eg(eg, leftover);
 }
 void advanceStage(EG* eg) {
   switch (eg->stage) {
@@ -56,15 +55,21 @@ void advanceStage(EG* eg) {
     case hold:
 
       eg->stage++;
-      eg->nsamples_till_next_stage = timecent2sample(eg->decay);
       eg->egval = 0.0f;
-      eg->egIncrement =
-          (float)(-1 * eg->sustain) / (float)eg->nsamples_till_next_stage;
+      if (eg->decay <= -12000 || eg->sustain == 0) {
+        eg->egIncrement = 0.0f;
+        eg->nsamples_till_next_stage = 13 * SAMPLE_RATE;
+      } else {
+        eg->egIncrement =
+            (0.0f - eg->sustain) / (float)timecent2sample(eg->decay);
+        eg->nsamples_till_next_stage = (int)(-960.f / eg->egIncrement);
+      }
       break;
     case decay:
       eg->stage++;
-      eg->egIncrement = -960.0f / timecent2sample(eg->release);
-      eg->nsamples_till_next_stage = (-960.0f - eg->egval) / eg->egIncrement;
+      eg->egIncrement = -960.0f / (float)timecent2sample(eg->release);
+      eg->nsamples_till_next_stage = (int)(-960.f / eg->egIncrement);
+
       break;
     case release:
       eg->stage++;
@@ -83,15 +88,14 @@ void init_vol_eg(EG* eg, zone_t* z) {
   char* sz = (char*)&z->VolEnvDelay;
   gmemcpy((char*)&eg->delay, sz, 12);
   eg->stage = init;
-  eg->nsamples_till_next_stage = 1;
-  update_eg(eg, 1);
+
+  advanceStage(eg);
 }
 void init_mod_eg(EG* eg, zone_t* z) {
   char* sz = (char*)&z->ModEnvDelay;
   gmemcpy((char*)&eg->delay, sz, 12);
   eg->stage = init;
-  eg->nsamples_till_next_stage = 1;
-  update_eg(eg, 1);
+  advanceStage(eg);
 }
 
 void _eg_set_stage(EG* e, int n) {

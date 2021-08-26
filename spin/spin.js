@@ -45,7 +45,7 @@ export class SpinNode extends AudioWorkletNode {
 
   keyOn(channel, zone, key, vel) {
     this.pipe.send(
-      0x0090,
+      0x90,
       new Uint32Array([
         channel,
         zone.ref,
@@ -55,7 +55,7 @@ export class SpinNode extends AudioWorkletNode {
     );
   }
   keyOff(channel, key, vel) {
-    this.pipe.send(0x0080, new Uint32Array([channel]).buffer);
+    this.pipe.send(0x80, new Uint32Array([channel]).buffer);
   }
 
   async shipProgram(sf2program, presetId) {

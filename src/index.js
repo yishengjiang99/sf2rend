@@ -206,8 +206,10 @@ export async function initMidiSink(ctx, sf2, controllers, pt) {
     // stdout("midi msg channel:" + ch + " cmd " + stat.toString(16));
     switch (stat) {
       case 0xb: //chan set/
-        stdout("midi msg channel:" + ch + " cmd " + stat.toString(16));
-        ctx.spinner.pipe.send(0xb0, [ch, key, vel]);
+        stdout(
+          "midi msg channel:" + ch + " cmd " + stat.toString(16) + " vel " + vel
+        );
+        ctx.spinner.pipe.send(0xb0, new Uint32Array([ch, key, vel]));
         channels[ch].ui.CC = { key, value: vel };
         break;
       case 0xc: //change porg

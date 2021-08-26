@@ -9,6 +9,7 @@
 #endif
 #define SAMPLE_BLOCK 128
 #define BLOCKS_PER_SECOND SAMPLE_RATE / SAMPLE_BLOCK
+#define clamp(val, min, max) val > max ? max : val < min ? min : val
 
 double midi_volume_log10(char val) {
   val = val & 0x7f;

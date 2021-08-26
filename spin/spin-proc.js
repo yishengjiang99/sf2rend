@@ -19,10 +19,19 @@ class SpinProcessor extends AudioWorkletProcessor {
       initial: 1024,
       shared: true,
     });
+    let lastfl;
+    const imports = {
+      memory: this.memory,
+      debugFL: (fl) => {
+        if (!lastfl || fl != lastfl) {
+          console.log("DEBUG FL:", fl);
+          lastfl = fl;
+        }
+      },
+    };
     this.inst = new WebAssembly.Instance(new WebAssembly.Module(wasm), {
-      env: { memory: this.memory },
+      env: imports,
     });
-
     this.brk = 0x30000;
     this.malololc = (len) => {
       const ret = this.brk;
@@ -37,7 +46,7 @@ class SpinProcessor extends AudioWorkletProcessor {
           spId * 4 * Float32Array.BYTES_PER_ELEMENT,
         4
       );
-
+    this.inst.exports.gm_reset();
     this.sampleIdRefs = [];
     this.presetRefs = [];
     this.port.onmessage = this.handleMsg.bind(this);
@@ -94,12 +103,13 @@ class SpinProcessor extends AudioWorkletProcessor {
           case 0x00b0: {
             const [channel, metric, value] = msg.chunk;
             this.inst.exports.set_midi_cc_val(channel, metric, value);
-
             break;
           }
           case 0x0080: {
             const [channel] = msg.chunk;
+
             this.inst.exports.eg_release(this.spinners[channel]);
+            console.log(spRef2json(this.memory.buffer, this.spinners[channel]));
             break;
           }
           case 1:
