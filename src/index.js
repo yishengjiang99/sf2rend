@@ -28,7 +28,9 @@ if (!document.location.href.includes("test.html")) {
 export function queryDivs() {
   const flist = document.querySelector("#sf2list");
   const cpanel = document.querySelector("#channelContainer");
-  const cmdPanel = document.querySelector("footer");
+  const cmdPanel = document.querySelector("#cmdPanel");
+  const rx = document.querySelector("#rx");
+
   const timeslide = document.querySelector("progress");
   const { stdout } = logdiv(document.querySelector("pre"));
   const titleDiv = document.querySelector("#title");
@@ -39,6 +41,7 @@ export function queryDivs() {
     timeslide,
     stdout,
     titleDiv,
+    rx,
   };
 }
 export async function main({
@@ -48,6 +51,7 @@ export async function main({
   flist,
   timeslide,
   titleDiv,
+  rx,
 }) {
   if (!cpanel) cpanel = mkdiv("div");
   window.stdout = stdout;
@@ -91,7 +95,7 @@ export async function main({
     updateCanvasTimer = requestAnimationFrame(updateCanvas);
   };
   const { presets, totalTicks, midiworker } = await initMidiReader(midiurl);
-  timeslide.setAttribute("max", totalTicks / 255);
+  timeslide.setAttribute("max", totalTicks);
   for await (const _ of (async function* g(presets) {
     for (const preset of presets) {
       const { pid, channel, t } = preset;
@@ -118,6 +122,7 @@ export async function main({
     cmdPanel,
     updateCanvas,
     titleDiv,
+    rx,
   });
   bindMidiAccess(pt);
 }
@@ -158,13 +163,20 @@ export function bindMidiWorkerToAudioAndUI(
   midiworker,
   midiPort,
   ctx,
-  { timeslide, cmdPanel, updateCanvas, titleDiv }
+  { timeslide, rx, cmdPanel, updateCanvas, titleDiv }
 ) {
+  const rx1 = mkdiv("span").attachTo(rx);
+  const rx2 = mkdiv("span").attachTo(rx);
+
   midiworker.addEventListener("message", (e) => {
     if (e.data.channel) {
       midiPort.postMessage(e.data.channel);
     } else if (e.data.qn) {
-      timeslide.value = e.data.qn; //(e.data.t);
+      rx1.innerHTML = e.data.qn;
+    } else if (e.data.tempo) {
+      rx2.innerHTML = e.data.tempo;
+    } else if (e.data.t) {
+      timeslide.value = e.data.t; //(e.data.t);
     } else if (e.data.meta) {
       const metalist = [
         "seq num",
@@ -195,6 +207,7 @@ export function bindMidiWorkerToAudioAndUI(
     }
   });
   timeslide.value = 0;
+
   mkdiv("button", { class: "cmd", cmd: "start" }, "start").attachTo(cmdPanel);
   mkdiv("button", { class: "cmd", cmd: "pause" }, "pause").attachTo(cmdPanel);
   mkdiv("button", { class: "cmd", cmd: "rwd", amt: "rwd" }, "rwd").attachTo(

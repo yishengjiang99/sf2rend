@@ -8,11 +8,12 @@ const main = async (_url) => {
     tracks,
     presets,
   } = await scheduler(new Uint8Array(ab), postMessage);
+  if (!tracks) return;
   // @ts-ignore
   postMessage({ totalTicks, presets });
   for (const t of tracks) {
     for (const et of t) {
-      if (et.t > 0) break;
+      if (et && et.t > 0) break;
       if (!et.channel) postMessage(et);
     }
   }

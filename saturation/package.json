@@ -1,0 +1,21 @@
+{
+  "name": "saturation",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build": "make",
+    "test": "npx nyc mocha"
+  },
+  "mocha": {
+    "spec": "test.js"
+  },
+  "keywords": [],
+  "author": "Yisheng Jiang",
+  "license": "ISC",
+  "devDependencies": {
+    "chai": "^4.3.4",
+    "mocha": "^9.1.0"
+  }
+}

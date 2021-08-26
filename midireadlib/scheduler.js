@@ -50,7 +50,7 @@ export async function scheduler(midi_u8, cb) {
     const rwd_events = [];
     while (
       playedEvent.length &&
-      playedEvent[playedEvent.unshift()].clockTime > clockTime - amt
+      playedEvent[playedEvent.pop()].clockTime > clockTime - amt
     ) {
       rwd_events.push(playedEvent.pop());
     }

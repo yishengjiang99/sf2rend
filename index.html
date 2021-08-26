@@ -90,9 +90,25 @@
 			width: 100vh;
 			margin-left: 18rem;
 			height: 4em;
-			display: grid;
-			grid-template-columns: 1fr 1fr 1fr 1fr;
+			color: black;
+
 			background-color: white;
+		}
+
+		#rx {
+			color: black;
+			display: grid;
+
+			background-color: white;
+			grid-template-columns: 1fr 1fr 1fr;
+		}
+
+		#cmdPanel {
+			color: black;
+			display: grid;
+
+			background-color: white;
+			grid-template-columns: 1fr 1fr 1fr;
 		}
 
 		#bigcan {
@@ -134,7 +150,10 @@
 		</div>
 	</main>
 	<div id='bigcan'></div>
-	<footer><progress min="0" max="10000" step="1"></progress></footer>
+	<footer>
+		<div id='rx'><progress min="0" max="10000" step="1"></progress></div>
+		<div id='cmdPanel'></div>
+	</footer>
 	<script type='module' src="./src/index.js">
 
 	</script>

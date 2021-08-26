@@ -66,7 +66,7 @@ export function readMidi(buffer) {
     const mhrkLength = read32();
     const endofTrack = reader.offset + mhrkLength;
     const track = [];
-    while (reader.offset < endofTrack) {
+    while (reader.offset < limit && reader.offset < endofTrack) {
       const delay = readVarLength();
       const nextEvent = readNextEvent();
       if (!nextEvent) break;
@@ -90,7 +90,7 @@ export function readMidi(buffer) {
         track.push(evtObj);
       }
     }
-    tracks.push(track);
+    if (track.length) tracks.push(track);
     reader.offset = endofTrack;
   }
   return { division, tracks, ntracks, presets, tempos };
