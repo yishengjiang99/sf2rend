@@ -4,6 +4,7 @@
 #include "calc.h"
 #include "eg.h"
 #include "lpf.h"
+#include "saturate.c"
 #include "sf2.h"
 typedef struct {
   float *inputf, *outputf;

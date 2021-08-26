@@ -7,7 +7,14 @@ export function channel(aggCtx, channelId, ui) {
   let _midicc;
   let _pg;
   let _pid;
+  let _active = false;
   return {
+    set active(a) {
+      _active = a;
+    },
+    get active() {
+      return _active;
+    },
     get pid() {
       return _pid;
     },
@@ -31,9 +38,9 @@ export function channel(aggCtx, channelId, ui) {
         .map((zone, i) => {
           spinner.keyOn(channelId * 2 + i, zone, key, vel);
           if (i == 0) {
-            volEG.zone = zone;
-
             requestAnimationFrame(() => {
+              volEG.zone = zone;
+              ui.active = true;
               eg = volEG.keyOn(vel);
               ui.velocity = vel;
               ui.midi = key;
@@ -48,7 +55,7 @@ export function channel(aggCtx, channelId, ui) {
 
       spinner.keyOff(channelId * 2, key, vel);
       spinner.keyOff(channelId * 2 + 1, key, vel);
-
+      requestAnimationFrame(() => (ui.active = false));
       //volEG.keyOff();
     },
   };

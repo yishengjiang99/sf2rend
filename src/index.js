@@ -13,7 +13,6 @@ let sf2;
 const cdnroot = `https://grep32bit.blob.core.windows.net/midi/`;
 
 if (!document.location.href.includes("test.html")) {
-  const { flist, cpanel, cmdPanel, timeslide, stdout } = queryDivs();
   fetchAndLoadPlaylist();
   main(queryDivs());
   window.onerror = (event, source, lineno, colno, error) => {
@@ -32,9 +31,24 @@ export function queryDivs() {
   const cmdPanel = document.querySelector("footer");
   const timeslide = document.querySelector("progress");
   const { stdout } = logdiv(document.querySelector("pre"));
-  return { flist, cpanel, cmdPanel, timeslide, stdout };
+  const titleDiv = document.querySelector("#title");
+  return {
+    flist,
+    cpanel,
+    cmdPanel,
+    timeslide,
+    stdout,
+    titleDiv,
+  };
 }
-export async function main({ cpanel, cmdPanel, stdout, flist, timeslide }) {
+export async function main({
+  cpanel,
+  cmdPanel,
+  stdout,
+  flist,
+  timeslide,
+  titleDiv,
+}) {
   if (!cpanel) cpanel = mkdiv("div");
   window.stdout = stdout;
   const midiurl =
@@ -68,7 +82,9 @@ export async function main({ cpanel, cmdPanel, stdout, flist, timeslide }) {
       name: programNames[bankId | pid],
     };
     const ret = await ctx.spinner.shipProgram(sf2pg, bankId | pid);
+    midiSink.channels[channel].active = true;
   };
+
   let updateCanvasTimer;
   const updateCanvas = () => {
     chart(midiSink.bigcan, new Float32Array(ctx.spinner.outputSnapshot));
@@ -76,15 +92,18 @@ export async function main({ cpanel, cmdPanel, stdout, flist, timeslide }) {
   };
   const { presets, totalTicks, midiworker } = await initMidiReader(midiurl);
   timeslide.setAttribute("max", totalTicks / 255);
-
   for await (const _ of (async function* g(presets) {
-    yield await _loadProgram(0, 0, 0);
-    yield await _loadProgram(9, 0, 128);
     for (const preset of presets) {
       const { pid, channel, t } = preset;
       if (t > 0) continue;
       const bkid = channel == 9 ? 128 : 0;
       yield await _loadProgram(channel, pid, bkid);
+    }
+    if (midiSink.channels[0].active == false) {
+      yield await _loadProgram(0, 0, 0);
+    }
+    if (midiSink.channels[9].active == false) {
+      yield await _loadProgram(9, 0, 0);
     }
   })(presets)) {
     //eslint
@@ -98,8 +117,8 @@ export async function main({ cpanel, cmdPanel, stdout, flist, timeslide }) {
     timeslide,
     cmdPanel,
     updateCanvas,
+    titleDiv,
   });
-  shareEventBufferWithMidiWorker(ctx.spinner, midiworker);
   bindMidiAccess(pt);
 }
 export function mkeventsPipe() {
@@ -134,14 +153,12 @@ export function initMidiReader(url) {
     midiworker.onmessageerror = reject;
   });
 }
-export function shareEventBufferWithMidiWorker(spinner, midiworker) {
-  midiworker.postMessage({ evtPipe: spinner.pipe });
-}
+
 export function bindMidiWorkerToAudioAndUI(
   midiworker,
   midiPort,
   ctx,
-  { timeslide, cmdPanel, updateCanvas }
+  { timeslide, cmdPanel, updateCanvas, titleDiv }
 ) {
   midiworker.addEventListener("message", (e) => {
     if (e.data.channel) {
@@ -149,9 +166,32 @@ export function bindMidiWorkerToAudioAndUI(
     } else if (e.data.qn) {
       timeslide.value = e.data.qn; //(e.data.t);
     } else if (e.data.meta) {
-      stdout(JSON.stringify(e.data.payload, null, 0));
+      const metalist = [
+        "seq num",
+        "text",
+        "cpyrght",
+        "Track Name",
+        "lyrics",
+        "instrument",
+        "marker",
+        "cue point",
+      ];
+      function metaDisplay(num) {
+        if (num < 8) return metalist[num];
+        switch (parseInt(num, 16)) {
+          case 0x51:
+            return "tempo";
+          case 0x54:
+            return "sempt";
+          case 0x58:
+            return "fiveeights";
+          default:
+            return parseInt(num).toString(16);
+        }
+      }
+      titleDiv.innerHTML +=
+        "<br>" + metaDisplay(e.data.meta) + ": " + e.data.payload;
     } else {
-      stdout(JSON.stringify(e.data.payload, null, 0));
     }
   });
   timeslide.value = 0;
@@ -170,12 +210,9 @@ export function bindMidiWorkerToAudioAndUI(
             midiworker.postMessage({ cmd: e.target.getAttribute("cmd") })
           );
       } else {
-        setTimeout(
-          () => midiworker.postMessage({ cmd: e.target.getAttribute("cmd") }),
-          1000
-        );
+        midiworker.postMessage({ cmd: e.target.getAttribute("cmd") });
       }
-      updateCanvas();
+      //  updateCanvas();
     })
   );
 }
@@ -203,13 +240,9 @@ export async function initMidiSink(ctx, sf2, controllers, pt) {
     const ch = a & 0x0f;
     const key = b & 0x7f,
       vel = c & 0x7f;
-    // stdout("midi msg channel:" + ch + " cmd " + stat.toString(16));
     switch (stat) {
       case 0xb: //chan set/
-        stdout(
-          "midi msg channel:" + ch + " cmd " + stat.toString(16) + " vel " + vel
-        );
-        ctx.spinner.pipe.send(0xb0, new Uint32Array([ch, key, vel]));
+        ctx.spinner.port.postMessage([0xb0, ch, key, vel]);
         channels[ch].ui.CC = { key, value: vel };
         break;
       case 0xc: //change porg
@@ -226,8 +259,6 @@ export async function initMidiSink(ctx, sf2, controllers, pt) {
         if (vel == 0) {
           channels[ch].keyOff(key, vel);
         } else {
-          // stdout("playnote " + key + " for " + ch);
-
           channels[ch].keyOn(key, vel);
         }
         break;
@@ -243,30 +274,14 @@ export async function initAudio() {
   await SpinNode.init(ctx);
   const spinner = new SpinNode(ctx);
 
-  // const DC = new AudioBufferSourceNode(ctx, {
-  //   buffer: new AudioBuffer({
-  //     numberOfChannels: 1,
-  //     sampleRate: ctx.sampleRate,
-  //     length: 1,
-  //   }),
-  //   loop: true,
-  // });
-  // DC.buffer.getChannelData(0)[0] = 1;
-
   const egs = [];
   const masterMixer = new GainNode(ctx, { gain: 1 });
   spinner.connect(ctx.destination);
 
   for (let i = 0; i < 16; i++) {
     egs[i] = mkEnvelope(ctx);
-
-    // egs[i].gainNode.connect(spinner, 0, i);
-    // DC.connect(egs[i].gainNode);
-    // .connect(new ChannelMergerNode(ctx, { numberOfInputs: 16 }), i, 0)
-    // .connect(masterMixer);
   }
-  // DC.start();
-  // masterMixer.connect(ctx.destination);
+
   document.addEventListener("mousedown", async () => await ctx.resume(), {
     once: true,
   });

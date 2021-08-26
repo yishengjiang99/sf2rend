@@ -1,13 +1,36 @@
-#include "pdta.h"
-
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "sf2.h"
+extern void emitHeader(int pid, int bid, void *p);
 extern void emitZone(int pid, void *ref);
 extern void emitSample(void *ref, int start, int len);
 extern void emitFilter(int type, uint8_t lo, uint8_t hi);
-extern void emitHeader(int pid, int bid, void *p);
+int nphdrs, npbags, npgens, npmods, nshdrs, ninsts, nimods, nigens, nibags;
 
+phdr *phdrs;
+pbag *pbags;
+pmod *pmods;
+pgen *pgens;
+inst *insts;
+ibag *ibags;
+imod *imods;
+igen *igens;
+shdr *shdrs;
+short *data;
+char *info;
+int nsamples;
+float *sdta;
+int sdtastart;
+zone_t *presetZones;
+zone_t *root;
+zone_t *presets[0xff];
+enum {
+  phdrHead = 0x1000,
+  instHead = 0x2000,
+  shdrHead = 0x4000,
+} headertype;
 #define read(section)                         \
   sh = (section_header *)pdtabuffer;          \
   pdtabuffer += 8;                            \
@@ -52,7 +75,6 @@ zone_t *findByPid(int pid, int bkid) {
 
   return NULL;
 }
-
 static inline void sanitizedInsert(short *attrs, int i, pgen_t *g) {
   switch (i % 60) {
     case StartAddrOfs:

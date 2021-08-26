@@ -112,16 +112,17 @@ float lerp(float f1, float f2, float frac) { return f1 + (f2 - f1) * frac; }
 
 float kRateAttenuate(int initialAttenuation, int volume, int expression,
                      int velocity) {
-  return 0 - (midi_volume_log10(volume) + midi_volume_log10(velocity)) + 111;
+  return 0 - initialAttenuation -
+         (midi_volume_log10(volume) + midi_volume_log10(velocity) +
+          midi_volume_log10(expression));
 }
 
 float _spinblock(spinner* x, int n, int blockOffset) {
   double db, dbInc;
-
-  update_eg(x->voleg, n);
-
-  update_eg(x->modeg, n);  // x->zone, 0);
-  float modlfoval = roll(x->modlfo, n);
+  float modlfoval = roll(x->modlfo, 32);
+  float vibrLfoVal = roll(x->vibrlfo, 32);
+  LFOEffects modlfoEffect = lfo_effects(modlfoval, x->zone);
+  LFOEffects vibrLFOEffects = lfo_effects(vibrLfoVal, x->zone);
   if (x->voleg->stage == done) return .0f;
   if (x->voleg->egval == 0 && x->voleg->egIncrement == 0) return .0f;
 
@@ -139,10 +140,18 @@ float _spinblock(spinner* x, int n, int blockOffset) {
   }
   float stride = x->zone->SampleModes > 0 ? x->stride : 1;
   int ch = (int)(x->channelId / 2);
-  stride = stride + (float)(modEG * x->zone->ModEnv2Pitch);
+  stride = stride *
+           (12.0f +
+            ((float)(modEG * x->zone->ModEnv2Pitch) +
+             (float)modlfoEffect.mod2pitch / 100.0f) +
+            (float)vibrLFOEffects.mod2pitch / 100.0f) /
+           12.0f;
+
   float krate_centible = kRateAttenuate(
       x->zone->Attenuation, midi_cc_vals[ch * 128 + TML_VOLUME_MSB],
-      midi_cc_vals[ch * 128 + TML_EXPRESSION_MSB], x->velocity);
+      x->voleg->stage <= hold ? midi_cc_vals[ch * 128 + TML_EXPRESSION_MSB]
+                              : 64,
+      x->velocity);
 
   double panLeft = panleftLUT[sf2midiPan(x->zone->Pan)];
   double panRight = panrightLUT[sf2midiPan(x->zone->Pan)];
@@ -158,11 +167,11 @@ float _spinblock(spinner* x, int n, int blockOffset) {
     if (position >= x->loopEnd && x->loopStart != 0) position -= looplen;
 
     float gain = lerp(x->inputf[position], x->inputf[position + 1], fract);
-    float outputf = applyCentible(gain, (short)(db));
-    outputf = applyCentible(outputf, (short)(krate_centible));
-
-    x->outputf[i * 2 + blockOffset * 2] = gain;
-    x->outputf[i * 2 + blockOffset * 2 + 1] = outputf;
+    float outputf = applyCentible(gain, (short)db);
+    outputf = applyCentible(outputf, (short)krate_centible);
+    outputf = process_input(x->lpf, outputf);
+    x->outputf[i * 2 + blockOffset * 2] = applyCentible(outputf, panLeft);
+    x->outputf[i * 2 + blockOffset * 2 + 1] = applyCentible(outputf, panRight);
     db += dbInc;
   }
   x->position = position;
@@ -173,12 +182,16 @@ float _spinblock(spinner* x, int n, int blockOffset) {
 }
 
 float spin(spinner* x, int n) {
-  if (x->voleg->stage == done) return 0.f;
-  if (x->voleg->egval < -1000) {
-    x->voleg->stage = done;
-    return .0f;
-  }
-  for (int blockOffset = 0; blockOffset <= n - 32; blockOffset += 32) {
+  for (int blockOffset = 0; blockOffset <= n - 16; blockOffset += 16) {
+    update_eg(x->voleg, 16);
+
+    update_eg(x->modeg, 16);  // x->zone, 0);
+
+    if (x->voleg->stage == done) return 0.f;
+    if (x->voleg->egval < -1000) {
+      x->voleg->stage = done;
+      return .0f;
+    }
     _spinblock(x, 32, blockOffset);
   }
   return (float)x->voleg->egval;

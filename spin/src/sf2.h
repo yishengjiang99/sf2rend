@@ -206,8 +206,8 @@ enum grntypes {
 
 #define defattrs                                                                        \
   {fivezeros, 0,         0,         0,        13500,              /* 9*/                \
-   fivezeros, fivezeros, 0,         0,        -1,                 /*22*/                \
-   0,         -1,        0,                                       /*25*/                \
+   fivezeros, fivezeros, 0,         0,        -12000,             /*22*/                \
+   0,         -12000,    0,                                       /*25*/                \
    defenvel,  0,         0,         defenvel,                     /*39*/                \
    0,         0,         0,         0,        127 << 8, 127 << 8, /*velrange/keyrange*/ \
    0,                                                             /*45*/                \

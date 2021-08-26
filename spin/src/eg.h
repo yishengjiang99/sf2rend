@@ -21,15 +21,21 @@ double update_eg(EG* eg, int n);
  */
 double update_eg(EG* eg, int n) {
   if (eg->stage == done) return 0.0f;  // should not occur
+  if (eg->stage == decay && eg->egIncrement == 0.0f) {
+    return eg->egval;
+  }
   int n1 = n > eg->nsamples_till_next_stage ? eg->nsamples_till_next_stage : n;
+
   eg->nsamples_till_next_stage -= n1;
+
   eg->egval += eg->egIncrement * n1;
 
   if (n1 == n) return eg->egval;
 
-  int leftover = n - n1;
+  int leftover = n - n1 - 1;
   advanceStage(eg);
-  return update_eg(eg, leftover);
+  if (leftover > 0) return update_eg(eg, leftover);
+  return eg->egval;
 }
 void advanceStage(EG* eg) {
   switch (eg->stage) {
@@ -42,23 +48,21 @@ void advanceStage(EG* eg) {
     case delay:
       eg->stage++;
       eg->nsamples_till_next_stage = timecent2sample(eg->attack);
-      eg->egval = -960.0f;
       eg->egIncrement = 960.0f / (float)eg->nsamples_till_next_stage;
       break;
 
     case attack:
       eg->stage++;
       eg->nsamples_till_next_stage = timecent2sample(eg->hold);
-      eg->egval = 0.0f;
       eg->egIncrement = 0.0f;
       break;
     case hold:
 
       eg->stage++;
-      eg->egval = 0.0f;
-      if (eg->decay <= -12000 || eg->sustain == 0) {
+      // eg->egval = 0.0f;
+      if (eg->decay <= -11111 || eg->sustain == 0) {
         eg->egIncrement = 0.0f;
-        eg->nsamples_till_next_stage = 13 * SAMPLE_RATE;
+        eg->nsamples_till_next_stage = 23 * SAMPLE_RATE;
       } else {
         eg->egIncrement =
             (0.0f - eg->sustain) / (float)timecent2sample(eg->decay);

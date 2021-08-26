@@ -163,7 +163,7 @@ export class TrackUI {
     this.meters[1].value = v;
   }
   set active(b) {
-    b
+    b === true
       ? this.led.setAttribute("checked", "checked")
       : this.led.removeAttribute("checked");
   }

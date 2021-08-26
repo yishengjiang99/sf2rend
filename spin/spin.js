@@ -15,47 +15,30 @@ function basename() {
 export class SpinNode extends AudioWorkletNode {
   static async init(ctx) {
     await ctx.audioWorklet.addModule(basename() + "spin/spin-proc.js");
-    if (!wasm) {
-      wasm = await wasmBinary();
-    }
   }
   static alloc(ctx) {
     if (!k) k = new SpinNode(ctx);
     return k;
   }
   constructor(ctx) {
-    const rendSb = new SharedArrayBuffer(
-      RENDER_BLOCK * N_CHANNELS * Float32Array.BYTES_PER_ELEMENT + 128 * 16
-    );
-    const pipe = new SharedRiffPipe(1 << 12);
-
     super(ctx, "spin-proc", {
       numberOfInputs: 0,
       numberOfOutputs: 1,
       outputChannelCount: [2],
-      processorOptions: {
-        rendSb,
-        wasm,
-        statusBuffer: pipe.array.buffer,
-      },
     });
-    this.rendSb = rendSb;
-    this.pipe = pipe;
   }
 
   keyOn(channel, zone, key, vel) {
-    this.pipe.send(
-      0x90,
-      new Uint32Array([
-        channel,
-        zone.ref,
-        zone.calcPitchRatio(key, this.context.sampleRate) * 0x00ff,
-        vel,
-      ]).buffer
-    );
+    this.port.postMessage([
+      0x0090,
+      channel,
+      zone.ref,
+      zone.calcPitchRatio(key, this.context.sampleRate) * 0x00ff,
+      vel,
+    ]);
   }
   keyOff(channel, key, vel) {
-    this.pipe.send(0x80, new Uint32Array([channel]).buffer);
+    this.port.postMessage([0x80, channel, key, vel]);
   }
 
   async shipProgram(sf2program, presetId) {
@@ -78,14 +61,4 @@ export class SpinNode extends AudioWorkletNode {
   handleMsg(e) {
     console.log(e.data);
   }
-  get outputSnapshot() {
-    return this.rendSb;
-  }
-}
-
-async function wasmBinary() {
-  const res = await fetch(basename() + "spin/spin.wasm");
-  const ab = await res.arrayBuffer();
-  wasm = new Uint8Array(ab);
-  return wasm;
 }
