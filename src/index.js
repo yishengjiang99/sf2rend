@@ -6,6 +6,7 @@ import { chart, mkcanvas, renderFrames } from "../chart/chart.js";
 import { fetchAndLoadPlaylist } from "./midilist.js";
 import { channel } from "./channel.js";
 import { mkEnvelope } from "./adsr.js";
+import { readMidi } from "./midireadlib/midiread.js";
 let _loadProgram;
 
 const programNames = [];
@@ -75,8 +76,11 @@ export async function main({
   });
   if (!sf2.presetRefs) return;
   const ctx = await initAudio();
-
+  ctx.spinner.port.postMessage({
+    midiab: await (await fetch(midiurl)).arrayBuffer(),
+  });
   const midiSink = await initMidiSink(ctx, sf2, controllers, pt);
+
   _loadProgram = async function (channel, pid, bankId) {
     const sf2pg = loadProgram(sf2, pid, bankId);
     midiSink.channels[channel].program = {
@@ -86,7 +90,6 @@ export async function main({
       name: programNames[bankId | pid],
     };
     const ret = await ctx.spinner.shipProgram(sf2pg, bankId | pid);
-    midiSink.channels[channel].active = true;
   };
 
   let updateCanvasTimer;
@@ -94,7 +97,9 @@ export async function main({
     chart(midiSink.bigcan, new Float32Array(ctx.spinner.outputSnapshot));
     updateCanvasTimer = requestAnimationFrame(updateCanvas);
   };
+
   const { presets, totalTicks, midiworker } = await initMidiReader(midiurl);
+  midiworker.postMessage({ port: ctx.spinner.port });
   timeslide.setAttribute("max", totalTicks);
   for await (const _ of (async function* g(presets) {
     for (const preset of presets) {
@@ -107,7 +112,7 @@ export async function main({
       yield await _loadProgram(0, 0, 0);
     }
     if (midiSink.channels[9].active == false) {
-      yield await _loadProgram(9, 0, 0);
+      yield await _loadProgram(9, 0, 128);
     }
   })(presets)) {
     //eslint

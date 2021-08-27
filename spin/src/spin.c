@@ -1,48 +1,28 @@
 
 #include "spin.h"
 
-#ifdef debu1g
+#ifdef debug
 #include <stdio.h>
 #endif
 
 #define RENDQ 128
-#define nchannels 32
-#define one_over_128_128_128 1.0f / 128.0f / 128.0f / 128.0f
-#define clamp(val, min, max) val > max ? max : val < min ? min : val
-#define subtractWithFloor(a, b, floor) a - b > floor ? a - b : 0;
+#define nchannels 64
 extern void debugFL(float fl);
-/**
- * global variables (like we're writing php)
- *
- **/
+
 spinner sps[nchannels];
 lpf_t lpf[nchannels];
 EG eg[nchannels * 2];
 LFO lfos[nchannels * 2];
-pcm_t pcms[999];
+pcm_t pcms[2222];
+
 char midi_cc_vals[nchannels * 128];
 float outputs[nchannels * RENDQ * 2];
 float silence[40];
 char spsIndx = 0;
+
 #define sps_index() (spsIndx++) & 0x0f
 
-/**
- *functions
- *
- */
-
-void set_midi_cc_val(int channel, int metric, int val) {
-  midi_cc_vals[channel * 128 + metric] = (char)val & 0x7f;
-}
-void reset(spinner* x);
-void gm_reset() {
-  for (int idx = 0; idx < 128; idx++) {
-    midi_cc_vals[idx * 128 + TML_VOLUME_MSB] = 100;
-    midi_cc_vals[idx * 128 + TML_PAN_MSB] = 64;
-    midi_cc_vals[idx * 128 + TML_EXPRESSION_MSB] = 127;
-  }
-}
-spinner* newSpinner(zone_t* zoneRef, int idx) {
+spinner* newSpinner(int idx) {
   spinner* x = &sps[idx];
   x->outputf = &outputs[idx * RENDQ * 2];
   x->inputf = silence;
@@ -55,14 +35,29 @@ spinner* newSpinner(zone_t* zoneRef, int idx) {
   x->modeg = &eg[idx * 2 + 1];
   x->modlfo = &lfos[idx * 2];
   x->vibrlfo = &lfos[idx * 2 + 1];
-  set_zone(x, zoneRef);
-
   x->channelId = idx;
   return x;
 }
 spinner* sampleZone() {
+  short aZone[60] = {
+      0,      0,   0,    0,     0,     0,      40,     0,      27000,  -10,
+      0,      0,   0,    20,    598,   300,    40,     -1000,  527,    0,
+      0,      -2,  -884, -2,    -1200, -10800, -10800, -10800, -10800, 0,
+      -10800, 0,   0,    -3969, -3969, -7811,  2400,   960,    1200,   0,
+      0,      237, 0,    17664, 32512, 0,      -2,     -2,     0,      0,
+      0,      0,   -1,   123,   1,     0,      200,    0,      44,     0};
   zone_t* z = (zone_t*)aZone;
-  return newSpinner(z, 20);
+  return newSpinner(20);
+}
+void gm_reset() {
+  for (int idx = 0; idx < 128; idx++) {
+    midi_cc_vals[idx * 128 + TML_VOLUME_MSB] = 100;
+    midi_cc_vals[idx * 128 + TML_PAN_MSB] = 64;
+    midi_cc_vals[idx * 128 + TML_EXPRESSION_MSB] = 127;
+  }
+  for (int i = 0; i < nchannels; i++) {
+    newSpinner(i);
+  }
 }
 void eg_release(spinner* x) {
   _eg_release(x->voleg);
@@ -88,9 +83,12 @@ void set_zone(spinner* x, zone_t* z) {
   init_vol_eg(x->voleg, z);
 }
 
-typedef struct {
-  float mod2volume, mod2pitch, mod2filter;
-} LFOEffects;
+void set_midi_cc_val(int channel, int metric, int val) {
+  midi_cc_vals[channel * 128 + metric] = (char)val & 0x7f;
+}
+
+spinner* spRef(int idx) { return &sps[idx]; }
+pcm_t* pcmRef(int idx) { return &pcms[idx]; }
 
 LFOEffects lfo_effects(float lfoval, zone_t* z) {
   float mod2vol = (1 - lfoval) * z->ModLFO2Vol;
@@ -98,12 +96,13 @@ LFOEffects lfo_effects(float lfoval, zone_t* z) {
   float mod2fc = lfoval * z->ModEnv2FilterFc * 8.8f;
   return (LFOEffects){mod2vol, mod2pitch, mod2fc};
 }
-float trigger_attack(spinner* x, zone_t* z, float stride, float velocity) {
+float trigger_attack(spinner* x, zone_t* z, unsigned char key,
+                     unsigned char vel) {
   x->loopStart = pcms[z->SampleId].loopstart;
   x->loopEnd = pcms[z->SampleId].loopend;
   x->inputf = pcms[z->SampleId].data;
-  x->stride = stride;
-  x->velocity = velocity;
+  x->stride = 1;
+  x->velocity = vel;
   set_zone(x, z);
   return x->stride;
 }
@@ -131,7 +130,7 @@ float _spinblock(spinner* x, int n, int blockOffset) {
   int looplen = x->loopEnd - x->loopStart + 1;
   double modEG = p10over200[(short)(clamp(x->modeg->egval, -960, 0) + 960)];
 
-  if (x->zone->SampleModes == 0 && x->voleg->stage < release) {
+  if (x->zone->SampleModes == 0 && x->voleg->stage <= release) {
     db = 0.0f;
     dbInc = 0.0f;
   } else {
@@ -141,10 +140,9 @@ float _spinblock(spinner* x, int n, int blockOffset) {
   float stride = x->zone->SampleModes > 0 ? x->stride : 1;
   int ch = (int)(x->channelId / 2);
   stride = stride *
-           (12.0f +
-            ((float)(modEG * x->zone->ModEnv2Pitch) +
-             (float)modlfoEffect.mod2pitch / 100.0f) +
-            (float)vibrLFOEffects.mod2pitch / 100.0f) /
+           (12.0f + (float)(modEG * x->zone->ModEnv2Pitch / 100.0f) +
+            (float)(modlfoEffect.mod2pitch / 100.0f) +
+            (float)(vibrLFOEffects.mod2pitch / 100.0f)) /
            12.0f;
 
   float krate_centible = kRateAttenuate(
@@ -181,18 +179,19 @@ float _spinblock(spinner* x, int n, int blockOffset) {
   return db + krate_centible;
 }
 
-float spin(spinner* x, int n) {
+enum spin_done { DONE = 0, NOT_DONE };
+int spin(spinner* x, int n) {
   for (int blockOffset = 0; blockOffset <= n - 16; blockOffset += 16) {
     update_eg(x->voleg, 16);
 
     update_eg(x->modeg, 16);  // x->zone, 0);
 
-    if (x->voleg->stage == done) return 0.f;
+    if (x->voleg->stage == done) return DONE;
     if (x->voleg->egval < -1000) {
       x->voleg->stage = done;
-      return .0f;
+      return DONE;
     }
-    _spinblock(x, 32, blockOffset);
+    _spinblock(x, 16, blockOffset);
   }
-  return (float)x->voleg->egval;
+  return NOT_DONE;
 }

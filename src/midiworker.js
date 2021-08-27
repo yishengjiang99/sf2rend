@@ -2,12 +2,19 @@ import { scheduler } from "../midireadlib/scheduler.js";
 const main = async (_url) => {
   const res = await fetch(_url);
   const ab = await res.arrayBuffer();
+  let procPort;
   const {
     ctrls: { run, rwd, pause },
     totalTicks,
     tracks,
     presets,
-  } = await scheduler(new Uint8Array(ab), postMessage);
+  } = await scheduler(
+    new Uint8Array(ab),
+    (onMessage = (e) => {
+      if (procPort) procPort.postMessage(e);
+      else postMessage(e);
+    })
+  );
   if (!tracks) return;
   // @ts-ignore
   postMessage({ totalTicks, presets });
@@ -22,9 +29,8 @@ const main = async (_url) => {
       pause();
       main(url);
     }
-    // if (evtPipe) {
-    //   debugger;
-    // }
+    if (port) {
+    }
     switch (cmd) {
       case "start":
         run();
