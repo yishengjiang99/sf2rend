@@ -6,7 +6,7 @@ import { chart, mkcanvas, renderFrames } from "../chart/chart.js";
 import { fetchAndLoadPlaylist } from "./midilist.js";
 import { channel } from "./channel.js";
 import { mkEnvelope } from "./adsr.js";
-import { readMidi } from "./midireadlib/midiread.js";
+import { readMidi } from "../midireadlib/midiread.js";
 let _loadProgram;
 
 const programNames = [];
