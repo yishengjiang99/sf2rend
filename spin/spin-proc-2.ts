@@ -1,7 +1,7 @@
 import { wasmbin } from "./spin.wasm.js";
 import { readMidi } from "../midireadlib/midiread.js";
 const CH_META_LEN = 24;
-const nchannels = 32;
+const nchannels = 64;
 const REND_BLOCK = 128;
 const KeyRangeIndex = 42,
   VelRangeIndex = 43;
@@ -15,7 +15,6 @@ interface Spinner_t {
 }
 enum spinDone {
   DONE = 0,
-  NOT_NODE = 1,
 }
 /* eslint-disable no-unused-vars */
 // @ts-ignore
