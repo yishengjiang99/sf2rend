@@ -4,13 +4,11 @@
 #include <math.h>
 #include <stdio.h>
 int main() {
-  // printf("%f", timecent2second(1200));
-  assert(timecent2second(1200) == 2.0f);
-  assert(timecent2second(0) == 1.0f);
+  for (int i = -960; i < 0; i++) {
+    printf("%f %i %f \n", powf(10.0f, i / 200.0f), i, .1f);
+  }
 
-  assert(timecent2second(-12000) == pow(2.0, -12000 / 1200));
-  assert(attack_db_inc(0.0f) - 960.0f / SAMPLE_RATE < 0.001);
-
-  //  printf("\n%.8lx,%.8lx", FloatTo23Bits(.99999f), 2.f);
-  printf("\n%f\n", applyCentible(.99989993f, -60));
+  for (int i = 1; i < 128; i++) {
+    printf("%f, \\%d \n", log10(127.0f * 127.0f / i / i) * 200.0f, i);
+  }
 }

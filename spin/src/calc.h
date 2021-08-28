@@ -11,11 +11,12 @@
 #define BLOCKS_PER_SECOND SAMPLE_RATE / SAMPLE_BLOCK
 #define clamp(val, min, max) val > max ? max : val < min ? min : val
 
-double midi_volume_log10(char val) {
-  val = val & 0x7f;
+double midi_volume_log10(int val) {
   if (val < 0) return 1440;
+  if (val > 128) return 0;
   return midi_log_10[val];
 }
+
 double timecent2second(short tc) {
   if (tc < 0) return 1.0f / timecent2second(-1 * tc);
   if (tc > 1200) return 2.0f * timecent2second(tc - 1200.0f);

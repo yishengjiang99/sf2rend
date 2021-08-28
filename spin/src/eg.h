@@ -8,22 +8,20 @@ enum eg_stages { init = 0, delay, attack, hold, decay, release, done = 99 };
 typedef struct {
   int stage, nsamples_till_next_stage;
   short delay, attack, hold, decay, sustain, release, pad1, pad2;
-  double egval, egIncrement;
+  float egval, egIncrement;
 } EG;
 
 void advanceStage(EG* eg);
-double update_eg(EG* eg, int n);
+float update_eg(EG* eg, int n);
 /**
  * advances envelope generator by n steps..
  * shift to next stage and advance the remaining n steps
  * if necessary
  *
  */
-double update_eg(EG* eg, int n) {
+float update_eg(EG* eg, int n) {
   if (eg->stage == done) return 0.0f;  // should not occur
-  if (eg->stage == decay && eg->egIncrement == 0.0f) {
-    return eg->egval;
-  }
+
   int n1 = n > eg->nsamples_till_next_stage ? eg->nsamples_till_next_stage : n;
 
   eg->nsamples_till_next_stage -= n1;
@@ -42,7 +40,7 @@ void advanceStage(EG* eg) {
     case init:
       eg->stage++;
       eg->nsamples_till_next_stage = timecent2sample(eg->delay);
-      eg->egval = -960.0;
+      eg->egval = -960.0f;
       eg->egIncrement = 0.0f;
       break;
     case delay:
@@ -59,15 +57,9 @@ void advanceStage(EG* eg) {
     case hold:
 
       eg->stage++;
-      // eg->egval = 0.0f;
-      if (eg->decay <= -11111 || eg->sustain == 0) {
-        eg->egIncrement = 0.0f;
-        eg->nsamples_till_next_stage = 23 * SAMPLE_RATE;
-      } else {
-        eg->egIncrement =
-            (0.0f - eg->sustain) / (float)timecent2sample(eg->decay);
-        eg->nsamples_till_next_stage = (int)(-960.f / eg->egIncrement);
-      }
+      eg->egIncrement =
+          (0.0f - eg->sustain) / (float)timecent2sample(eg->decay);
+      eg->nsamples_till_next_stage = (int)(-960.f / eg->egIncrement);
       break;
     case decay:
       eg->stage++;

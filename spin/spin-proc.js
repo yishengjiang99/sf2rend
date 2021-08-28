@@ -92,7 +92,7 @@ class SpinProcessor extends AudioWorkletProcessor {
             if (!this.spinners[channel]) {
               this.instantiate(this.presetRefs[zoneRef], channel);
             }
-
+            this.inst.exports.reset(this.spinners[channel]);
             this.inst.exports.trigger_attack(
               this.spinners[channel],
               this.presetRefs[zoneRef],
@@ -120,7 +120,7 @@ class SpinProcessor extends AudioWorkletProcessor {
   }
 
   instantiate(zone, i) {
-    this.spinners[i] = this.inst.exports.newSpinner(zone, i);
+    this.spinners[i] = this.inst.exports.newSpinner(i);
     const spIO = new Uint32Array(this.memory.buffer, this.spinners[i], 12);
     this.outputs[i] = new Float32Array(this.memory.buffer, spIO[1], 128 * 2);
     return this.spinners[i];
@@ -133,7 +133,7 @@ class SpinProcessor extends AudioWorkletProcessor {
       // if (!o[i]) continue;
       for (let j = 0; j < 128 * 2; j++) this.outputs[i][j] = 0;
       this.inst.exports.spin(this.spinners[i], 128);
-      const multiplier = i == 9 ? 1 : 0.1;
+      const multiplier = i == 9 ? 1 : 1;
       for (let j = 0; j < 128; j++) {
         o[0][0][j] += this.outputs[i][2 * j] * multiplier;
         o[0][1][j] += this.outputs[i][2 * j + 1] * multiplier;
