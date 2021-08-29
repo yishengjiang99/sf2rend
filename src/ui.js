@@ -57,6 +57,7 @@ export class TrackUI {
           mkdiv("input", {
             min: 0,
             max: 127,
+            value: 100,
             step: 1,
             type: "range",
             oninput: (e) => cb([0xb0 | idx, 7, e.target.value]),
@@ -74,6 +75,7 @@ export class TrackUI {
             min: 0,
             max: 127,
             step: 1,
+            value: 127,
             type: "range",
             oninput: (e) => cb([0xb0 | idx, 11, e.target.value]),
           }),

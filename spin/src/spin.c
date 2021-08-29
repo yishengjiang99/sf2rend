@@ -1,7 +1,7 @@
 
 #include "spin.h"
 
-#ifdef debug
+#ifdef debug1
 #include <stdio.h>
 #endif
 
@@ -20,8 +20,6 @@ float outputs[nchannels * RENDQ * 2];
 float silence[40];
 char spsIndx = 0;
 
-#define sps_index() (spsIndx++) & 0x0f
-
 spinner* newSpinner(int idx) {
   spinner* x = &sps[idx];
   x->outputf = &outputs[idx * RENDQ * 2];
@@ -38,17 +36,7 @@ spinner* newSpinner(int idx) {
   x->channelId = idx;
   return x;
 }
-spinner* sampleZone() {
-  short aZone[60] = {
-      0,      0,   0,    0,     0,     0,      40,     0,      27000,  -10,
-      0,      0,   0,    20,    598,   300,    40,     -1000,  527,    0,
-      0,      -2,  -884, -2,    -1200, -10800, -10800, -10800, -10800, 0,
-      -10800, 0,   0,    -3969, -3969, -7811,  2400,   960,    1200,   0,
-      0,      237, 0,    17664, 32512, 0,      -2,     -2,     0,      0,
-      0,      0,   -1,   123,   1,     0,      200,    0,      44,     0};
-  zone_t* z = (zone_t*)aZone;
-  return newSpinner(20);
-}
+
 void gm_reset() {
   for (int idx = 0; idx < 128; idx++) {
     midi_cc_vals[idx * 128 + TML_VOLUME_MSB] = 100;
@@ -125,7 +113,7 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   int looplen = x->loopEnd - x->loopStart + 1;
   double modEG = p10over200[(short)(clamp(x->modeg->egval, -960, 0) + 960)];
 
-  if (x->zone->SampleModes == 0) {
+  if (x->zone->SampleModes == 0 && x->voleg->stage <= release) {
     db = 0.0f;
     dbInc = 0.0f;
   } else {
@@ -157,7 +145,7 @@ void _spinblock(spinner* x, int n, int blockOffset) {
       fract -= 1.0f;
     }
 
-    if (position >= x->loopEnd && x->loopStart != 0) position -= looplen;
+    if (position >= x->loopEnd) position -= looplen;
 
     float gain = lerp(x->inputf[position], x->inputf[position + 1], fract);
     float outputf = applyCentible(gain, (short)db);

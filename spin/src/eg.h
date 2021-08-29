@@ -23,10 +23,11 @@ float update_eg(EG* eg, int n) {
   if (eg->stage == done) return 0.0f;  // should not occur
 
   int n1 = n > eg->nsamples_till_next_stage ? eg->nsamples_till_next_stage : n;
+  if (eg->nsamples_till_next_stage != 0xffff) {
+    eg->nsamples_till_next_stage -= n1;
 
-  eg->nsamples_till_next_stage -= n1;
-
-  eg->egval += eg->egIncrement * n1;
+    eg->egval += eg->egIncrement * n1;
+  }
 
   if (n1 == n) return eg->egval;
 
@@ -57,9 +58,14 @@ void advanceStage(EG* eg) {
     case hold:
 
       eg->stage++;
-      eg->egIncrement =
-          (0.0f - eg->sustain) / (float)timecent2sample(eg->decay);
-      eg->nsamples_till_next_stage = (int)(-960.f / eg->egIncrement);
+      if (eg->decay > -12000) {
+        eg->egIncrement =
+            (0.0f - eg->sustain) / (float)timecent2sample(eg->decay);
+        eg->nsamples_till_next_stage = (int)(-960.f / eg->egIncrement);
+      } else {
+        eg->egIncrement = .0f;
+        eg->nsamples_till_next_stage = 0xffff;
+      }
       break;
     case decay:
       eg->stage++;
