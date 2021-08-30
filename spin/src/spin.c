@@ -55,6 +55,8 @@ void reset(spinner* x) {
   x->position = 0;
   x->fract = 0.0f;
   x->lpf->m1 = 0;
+  x->modlfo->phase = 0;
+  x->vibrlfo->phase = 0;
 }
 void set_zone(spinner* x, zone_t* z) {
   x->zone = z;
@@ -104,8 +106,8 @@ float kRateAttenuate(int initialAttenuation, int volume, int expression,
 
 void _spinblock(spinner* x, int n, int blockOffset) {
   double db, dbInc;
-  float modlfoval = roll(x->modlfo, 32);
-  float vibrLfoVal = roll(x->vibrlfo, 32);
+  float modlfoval = roll(x->modlfo, 16);
+  float vibrLfoVal = roll(x->vibrlfo, 16);
   LFOEffects modlfoEffect = lfo_effects(modlfoval, x->zone);
   LFOEffects vibrLFOEffects = lfo_effects(vibrLfoVal, x->zone);
   int position = x->position;
@@ -120,7 +122,7 @@ void _spinblock(spinner* x, int n, int blockOffset) {
     db = x->voleg->egval;
     dbInc = x->voleg->egIncrement;
   }
-  float stride = x->zone->SampleModes > 0 ? x->stride : 1;
+  float stride = x->zone->SampleModes > 0 ? x->stride : 1.0f;
   int ch = (int)(x->channelId / 2);
   stride = stride *
            (12.0f + (float)(modEG * x->zone->ModEnv2Pitch / 100.0f) +
@@ -147,10 +149,10 @@ void _spinblock(spinner* x, int n, int blockOffset) {
 
     if (position >= x->loopEnd) position -= looplen;
 
-    float gain = lerp(x->inputf[position], x->inputf[position + 1], fract);
-    float outputf = applyCentible(gain, (short)db);
-    outputf = applyCentible(outputf, (short)(kRateCB + db));
+    float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
     outputf = process_input(x->lpf, outputf);
+
+    outputf = applyCentible(outputf, (short)(db + kRateCB));
     x->outputf[i * 2 + blockOffset * 2] = outputf;
     x->outputf[i * 2 + blockOffset * 2 + 1] = outputf;
     db += dbInc;
