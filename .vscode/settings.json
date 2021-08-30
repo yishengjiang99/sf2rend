@@ -54,7 +54,8 @@
 		"p1200.h": "c",
 		"eg.h": "c",
 		"pdta.h": "c",
-		"lfo.h": "c"
+		"lfo.h": "c",
+		"cmath": "c"
 	},
 	"editor.tokenColorCustomizations": {
 		"textMateRules": [

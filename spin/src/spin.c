@@ -145,6 +145,8 @@ void _spinblock(spinner* x, int n, int blockOffset) {
     if (position >= nsamples - 1) {
       x->outputf[i * 2 + blockOffset * 2] = 0.0f;
       x->outputf[i * 2 + blockOffset * 2 + 1] = 0.0f;
+      x->voleg->stage = done;
+      return;
     }
 
     float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);

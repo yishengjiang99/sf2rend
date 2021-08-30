@@ -59,13 +59,6 @@ export function loadProgram(
     const mapKey = zone.SampleId;
     if (!shdrMap[mapKey]) {
       shdrMap[mapKey] = getShdr(zone.SampleId);
-      shdrMap[mapKey].data = async () =>
-        shdrMap[mapKey].pcm ||
-        (await fetch(url, {
-          headers: {
-            Range: `bytes=${shdrMap[mapKey].range.join("-")}`,
-          },
-        }).then((res) => res.arrayBuffer()));
     }
     zMap.push({
       ...zone,
@@ -123,12 +116,5 @@ export function loadProgram(
     shdrMap,
     url,
     zref: rootRef,
-    filterKV: function (key, vel) {
-      return zMap.filter(
-        (z) =>
-          (vel == -1 || (z.VelRange.lo <= vel && z.VelRange.hi >= vel)) &&
-          (key == -1 || (z.KeyRange.lo <= key && z.KeyRange.hi >= key))
-      );
-    },
   };
 }

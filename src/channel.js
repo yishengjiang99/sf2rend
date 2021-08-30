@@ -32,8 +32,13 @@ export function channel(aggCtx, channelId, ui) {
       if (!_pg) return;
       let eg;
       console.assert(_pg != null);
-      _pg
-        .filterKV(key, vel)
+
+      _pg.zMap
+        .filter(
+          (z) =>
+            (vel == -1 || (z.VelRange.lo <= vel && z.VelRange.hi >= vel)) &&
+            (key == -1 || (z.KeyRange.lo <= key && z.KeyRange.hi >= key))
+        )
         .slice(0, 2)
         .map((zone, i) => {
           spinner.keyOn(channelId * 2 + i, zone, key, vel);

@@ -19,7 +19,7 @@ typedef struct {
 } spinner;
 
 typedef struct {
-  uint32_t loopstart, loopend, length, sampleRate;
+  uint32_t loopstart, loopend, length, sampleRate, originalPitch;
   float* data;
 
 } pcm_t;

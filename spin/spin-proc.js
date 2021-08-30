@@ -37,8 +37,8 @@ class SpinProcessor extends AudioWorkletProcessor {
       new Uint32Array(
         this.memory.buffer,
         this.inst.exports.pcms.value +
-          spId * 5 * Float32Array.BYTES_PER_ELEMENT,
-        5
+          spId * 6 * Float32Array.BYTES_PER_ELEMENT,
+        6
       );
     this.inst.exports.gm_reset();
     this.sampleIdRefs = [];
@@ -65,9 +65,6 @@ class SpinProcessor extends AudioWorkletProcessor {
         ); //.set
       }
       this.port.postMessage({ zack: 1 });
-    } else if (data.egRelease) {
-      const { channel } = data.egRelease;
-      this.inst.exports.eg_release(this.spinners[channel]);
     } else {
       const [cmd, channel, ...args] = data;
       switch (cmd) {
@@ -108,20 +105,20 @@ class SpinProcessor extends AudioWorkletProcessor {
   }
   async loadsdta(data) {
     const {
-      segments: { sampleId, nSamples, loops, sampleRate: sr },
+      segments: { sampleId, nSamples, loops, originalPitch, sampleRate: sr },
       stream,
     } = data;
     const offset = this.malololc(4 * nSamples);
     const fl = new Float32Array(this.memory.buffer, offset, nSamples);
     await downloadData(stream, fl);
     this.sdtaRef(sampleId).set(
-      new Uint32Array([loops[0], loops[1], nSamples, sr, offset])
+      new Uint32Array([loops[0], loops[1], nSamples, sr, originalPitch, offset])
     );
   }
 
   instantiate(zone, i) {
     this.spinners[i] = this.inst.exports.newSpinner(i);
-    const spIO = new Uint32Array(this.memory.buffer, this.spinners[i], 12);
+    const spIO = new Uint32Array(this.memory.buffer, this.spinners[i], 2);
     this.outputs[i] = new Float32Array(this.memory.buffer, spIO[1], 128 * 2);
     return this.spinners[i];
   }
