@@ -250,9 +250,6 @@ zone_t *findPresetZones(int i, int nregions) {
               if (attrs[pbg_attr_cache_index + i] != defvals[i]) {
                 add = combine_pattrs(i, zoneattr,
                                      attrs[pbg_attr_cache_index + i]);
-              } else if (attrs[default_pbg_cache_index + i] != defvals[i]) {
-                add = combine_pattrs(i, zoneattr,
-                                     attrs[default_pbg_cache_index + i]);
               }
 
               if (!add) break;

@@ -8,27 +8,26 @@ enum eg_stages { init = 0, delay, attack, hold, decay, release, done = 99 };
 typedef struct {
   int stage, nsamples_till_next_stage;
   short delay, attack, hold, decay, sustain, release, pad1, pad2;
-  double egval, egIncrement;
+  float egval, egIncrement;
 } EG;
 
 void advanceStage(EG* eg);
-double update_eg(EG* eg, int n);
+float update_eg(EG* eg, int n);
 /**
  * advances envelope generator by n steps..
  * shift to next stage and advance the remaining n steps
  * if necessary
  *
  */
-double update_eg(EG* eg, int n) {
+float update_eg(EG* eg, int n) {
   if (eg->stage == done) return 0.0f;  // should not occur
-  if (eg->stage == decay && eg->egIncrement == 0.0f) {
-    return eg->egval;
-  }
+
   int n1 = n > eg->nsamples_till_next_stage ? eg->nsamples_till_next_stage : n;
+  if (eg->nsamples_till_next_stage != 0xffff) {
+    eg->nsamples_till_next_stage -= n1;
 
-  eg->nsamples_till_next_stage -= n1;
-
-  eg->egval += eg->egIncrement * n1;
+    eg->egval += eg->egIncrement * n1;
+  }
 
   if (n1 == n) return eg->egval;
 
@@ -42,7 +41,7 @@ void advanceStage(EG* eg) {
     case init:
       eg->stage++;
       eg->nsamples_till_next_stage = timecent2sample(eg->delay);
-      eg->egval = -960.0;
+      eg->egval = -960.0f;
       eg->egIncrement = 0.0f;
       break;
     case delay:
@@ -59,14 +58,13 @@ void advanceStage(EG* eg) {
     case hold:
 
       eg->stage++;
-      // eg->egval = 0.0f;
-      if (eg->decay <= -11111 || eg->sustain == 0) {
-        eg->egIncrement = 0.0f;
-        eg->nsamples_till_next_stage = 23 * SAMPLE_RATE;
-      } else {
+      if (eg->decay > -12000) {
         eg->egIncrement =
             (0.0f - eg->sustain) / (float)timecent2sample(eg->decay);
         eg->nsamples_till_next_stage = (int)(-960.f / eg->egIncrement);
+      } else {
+        eg->egIncrement = .0f;
+        eg->nsamples_till_next_stage = 0xffff;
       }
       break;
     case decay:
@@ -88,16 +86,28 @@ void* gmemcpy(char* dest, const char* src, unsigned long n) {
   for (int i = 0; i < n; i++) *(dest + i) = src[i];
   return (void*)dest;
 }
-void init_vol_eg(EG* eg, zone_t* z) {
+void scaleTc(EG* eg, unsigned int pcmSampleRate) {
+  float scaleFactor = SAMPLE_RATE / (float)pcmSampleRate;
+  eg->attack *= scaleFactor;
+  eg->delay *= scaleFactor;
+  eg->decay *= scaleFactor;
+  eg->release *= scaleFactor;
+  eg->hold *= scaleFactor;
+}
+void init_vol_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
   char* sz = (char*)&z->VolEnvDelay;
   gmemcpy((char*)&eg->delay, sz, 12);
-  eg->stage = init;
+  scaleTc(eg, pcmSampleRate);
 
+  eg->stage = init;
+  if (eg->attack >= 0) eg->attack = 0;
   advanceStage(eg);
 }
-void init_mod_eg(EG* eg, zone_t* z) {
+void init_mod_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
   char* sz = (char*)&z->ModEnvDelay;
   gmemcpy((char*)&eg->delay, sz, 12);
+  scaleTc(eg, pcmSampleRate);
+
   eg->stage = init;
   advanceStage(eg);
 }

@@ -13,6 +13,7 @@ export async function requestDownload(program, port) {
             sampleId: shdr.SampleId,
             nSamples: (shdr.range[1] + 1 - shdr.range[0]) / 2,
             loops: shdr.loops,
+            sampleRate: shdr.sampleRate,
           },
           stream: res.body,
         },

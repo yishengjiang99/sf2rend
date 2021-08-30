@@ -38,7 +38,24 @@ export async function scheduler(midi_u8, cb) {
       cb({ tempo: microsecondPerQuarterNote });
     }
     while (tick < totalTicks) {
-      runAt(tick);
+      for (let i in tracks) {
+        const track = tracks[i];
+        if (!track.length) continue;
+        while (track.length && track[0].t < tick) {
+          const newevent = track.shift();
+          cb(newevent);
+          // playedEvent.push({
+          //   track: i,
+          //   clockTime,
+          //   ...newevent,
+          // });
+
+          if (newevent.timeSignature) {
+            timeSignature =
+              (newevent.timeSignature[0] / newevent.timeSignature[1]) * 4;
+          }
+        }
+      }
       if (paused) break;
       const intervalMillisecond =
         microsecondPerQuarterNote / 1000 / timeSignature;
@@ -50,6 +67,7 @@ export async function scheduler(midi_u8, cb) {
     }
   }
   function rwd(amt) {
+    return false;
     const rwd_events = [];
     while (
       playedEvent.length &&

@@ -16,7 +16,6 @@ export async function mkspinner() {
   const memory = new WebAssembly.Memory({
     maximum: 1024,
     initial: 1024,
-    shared: true,
   });
   const fetchPromise = fetch(basename() + "spin/spin.wasm");
   const { instance } = await WebAssembly.instantiateStreaming(fetchPromise, {

@@ -15,21 +15,19 @@ typedef struct {
   zone_t* zone;
   EG *voleg, *modeg;
   LFO *modlfo, *vibrlfo;
-  unsigned char channelId, key, velocity, padc3;
+  int channelId, key, velocity;
 } spinner;
 
 typedef struct {
-  uint32_t loopstart, loopend, length;
+  uint32_t loopstart, loopend, length, sampleRate;
   float* data;
-  uint32_t sampleRate;
-  char originalPitch, pitchCorrection, pad1, pad2;
 } pcm_t;
 
 typedef struct {
   float mod2volume, mod2pitch, mod2filter;
 } LFOEffects;
 
-void set_zone(spinner* x, zone_t* z);
+void set_zone(spinner* x, zone_t* z, unsigned int pcm_sampleRate);
 spinner* newSpinner(int idx);
 void eg_release(spinner* x);
 void reset(spinner* x);
