@@ -107,7 +107,7 @@ export async function main({
       yield await _loadProgram(0, 0, 0);
     }
     if (midiSink.channels[9].active == false) {
-      yield await _loadProgram(9, 0, 0);
+      yield await _loadProgram(9, 0, 128);
     }
   })(presets)) {
     //eslint
