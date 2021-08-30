@@ -37,8 +37,8 @@ class SpinProcessor extends AudioWorkletProcessor {
       new Uint32Array(
         this.memory.buffer,
         this.inst.exports.pcms.value +
-          spId * 4 * Float32Array.BYTES_PER_ELEMENT,
-        4
+          spId * 5 * Float32Array.BYTES_PER_ELEMENT,
+        5
       );
     this.inst.exports.gm_reset();
     this.sampleIdRefs = [];
@@ -96,7 +96,7 @@ class SpinProcessor extends AudioWorkletProcessor {
             this.inst.exports.trigger_attack(
               this.spinners[channel],
               this.presetRefs[zoneRef],
-              ratio / 0x00ff,
+              ratio,
               velocity
             );
           }
@@ -108,14 +108,14 @@ class SpinProcessor extends AudioWorkletProcessor {
   }
   async loadsdta(data) {
     const {
-      segments: { sampleId, nSamples, loops },
+      segments: { sampleId, nSamples, loops, sampleRate: sr },
       stream,
     } = data;
     const offset = this.malololc(4 * nSamples);
     const fl = new Float32Array(this.memory.buffer, offset, nSamples);
     await downloadData(stream, fl);
     this.sdtaRef(sampleId).set(
-      new Uint32Array([loops[0], loops[1], nSamples, offset])
+      new Uint32Array([loops[0], loops[1], nSamples, sr, offset])
     );
   }
 
@@ -133,18 +133,18 @@ class SpinProcessor extends AudioWorkletProcessor {
       // if (!o[i]) continue;
       for (let j = 0; j < 128 * 2; j++) this.outputs[i][j] = 0;
       this.inst.exports.spin(this.spinners[i], 128);
-      const multiplier = i == 9 ? 1 : 1;
+      const multiplier = i == 9 ? 0.25 : 0.16;
       for (let j = 0; j < 128; j++) {
         o[0][0][j] += this.outputs[i][2 * j] * multiplier;
         o[0][1][j] += this.outputs[i][2 * j + 1] * multiplier;
       }
     }
-    for (let j = 0; j < 128; j++) {
-      o[0][0][j] =
-        o[0][0][j] > 1.0 ? 1.0 : o[0][0][j] < -1.0 ? -1.0 : o[0][0][j];
-      o[0][1][j] =
-        o[0][1][j] > 1.0 ? 1.0 : o[0][1][j] < -1.0 ? -1.0 : o[0][1][j];
-    }
+    // for (let j = 0; j < 128; j++) {
+    //   o[0][0][j] =
+    //     o[0][0][j] > 1.0 ? 1.0 : o[0][0][j] < -1.0 ? -1.0 : o[0][0][j];
+    //   o[0][1][j] =
+    //     o[0][1][j] > 1.0 ? 1.0 : o[0][1][j] < -1.0 ? -1.0 : o[0][1][j];
+    // }
 
     return true;
   }

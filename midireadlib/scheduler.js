@@ -24,11 +24,11 @@ export async function scheduler(midi_u8, cb) {
         while (track.length && track[0].t < tick) {
           const newevent = track.shift();
           cb(newevent);
-          playedEvent.push({
-            track: i,
-            clockTime,
-            ...newevent,
-          });
+          // playedEvent.push({
+          //   track: i,
+          //   clockTime,
+          //   ...newevent,
+          // });
 
           if (newevent.timeSignature) {
             timeSignature =
@@ -47,6 +47,7 @@ export async function scheduler(midi_u8, cb) {
     }
   }
   function rwd(amt) {
+    return false;
     const rwd_events = [];
     while (
       playedEvent.length &&

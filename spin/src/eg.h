@@ -86,16 +86,28 @@ void* gmemcpy(char* dest, const char* src, unsigned long n) {
   for (int i = 0; i < n; i++) *(dest + i) = src[i];
   return (void*)dest;
 }
-void init_vol_eg(EG* eg, zone_t* z) {
+void scaleTc(EG* eg, unsigned int pcmSampleRate) {
+  float scaleFactor = SAMPLE_RATE / (float)pcmSampleRate;
+  eg->attack *= scaleFactor;
+  eg->delay *= scaleFactor;
+  eg->decay *= scaleFactor;
+  eg->release *= scaleFactor;
+  eg->hold *= scaleFactor;
+}
+void init_vol_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
   char* sz = (char*)&z->VolEnvDelay;
   gmemcpy((char*)&eg->delay, sz, 12);
-  eg->stage = init;
+  scaleTc(eg, pcmSampleRate);
 
+  eg->stage = init;
+  if (eg->attack >= 0) eg->attack = 0;
   advanceStage(eg);
 }
-void init_mod_eg(EG* eg, zone_t* z) {
+void init_mod_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
   char* sz = (char*)&z->ModEnvDelay;
   gmemcpy((char*)&eg->delay, sz, 12);
+  scaleTc(eg, pcmSampleRate);
+
   eg->stage = init;
   advanceStage(eg);
 }

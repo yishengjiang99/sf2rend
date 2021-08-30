@@ -58,10 +58,11 @@ void reset(spinner* x) {
   x->modlfo->phase = 0;
   x->vibrlfo->phase = 0;
 }
-void set_zone(spinner* x, zone_t* z) {
+void set_zone(spinner* x, zone_t* z, unsigned int pcmSampleRate) {
   x->zone = z;
-  init_mod_eg(x->modeg, z);
-  init_vol_eg(x->voleg, z);
+
+  init_mod_eg(x->modeg, z, pcmSampleRate);
+  init_vol_eg(x->voleg, z, pcmSampleRate);
 }
 
 void set_midi_cc_val(int channel, int metric, int val) {
@@ -78,31 +79,22 @@ LFOEffects lfo_effects(float lfoval, zone_t* z) {
   return (LFOEffects){mod2vol, mod2pitch, mod2fc};
 }
 float trigger_attack(spinner* x, zone_t* z, float ratio, int velocity) {
-  x->loopStart = pcms[z->SampleId].loopstart;
-  x->loopEnd = pcms[z->SampleId].loopend;
-  x->inputf = pcms[z->SampleId].data;
+  pcm_t* pcm = pcms + z->SampleId;
+  x->loopStart = pcm->loopstart;
+  x->loopEnd = pcm->loopend;
+  x->inputf = pcm->data;
+
   x->position = 0;
   x->fract = 0.0f;
   x->lpf->m1 = 0.0f;
   x->stride = ratio;
   x->velocity = velocity & 0x7f;
 
-  set_zone(x, z);
+  set_zone(x, z, pcm->sampleRate);
   return x->stride;
 }
 
 float lerp(float f1, float f2, float frac) { return f1 + (f2 - f1) * frac; }
-
-float kRateAttenuate(int initialAttenuation, int volume, int expression,
-                     int velocity) {
-  double db = 0.0f;
-  db -= (double)initialAttenuation;
-  db -= midi_volume_log10((int)volume);
-  db -= midi_volume_log10((int)velocity);
-  db -= midi_volume_log10((int)expression);
-
-  return db;
-}
 
 void _spinblock(spinner* x, int n, int blockOffset) {
   double db, dbInc;
@@ -110,12 +102,13 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   float vibrLfoVal = roll(x->vibrlfo, 16);
   LFOEffects modlfoEffect = lfo_effects(modlfoval, x->zone);
   LFOEffects vibrLFOEffects = lfo_effects(vibrLfoVal, x->zone);
-  int position = x->position;
+  unsigned int position = x->position;
   float fract = x->fract;
-  int looplen = x->loopEnd - x->loopStart + 1;
+  unsigned int nsamples = pcms[x->zone->SampleId].length;
+  unsigned int looplen = x->loopEnd - x->loopStart + 1;
   double modEG = p10over200[(short)(clamp(x->modeg->egval, -960, 0) + 960)];
 
-  if (x->zone->SampleModes == 0 && x->voleg->stage <= release) {
+  if (x->zone->SampleModes == 0 && x->voleg->stage < release) {
     db = 0.0f;
     dbInc = 0.0f;
   } else {
@@ -130,11 +123,12 @@ void _spinblock(spinner* x, int n, int blockOffset) {
             (float)(vibrLFOEffects.mod2pitch / 100.0f)) /
            12.0f;
 
-  float kRateCB = 0;
+  float kRateCB = 0.0f;
   kRateCB -= (float)x->zone->Attenuation;
   kRateCB -= midi_volume_log10(midi_cc_vals[ch * 128 + TML_VOLUME_MSB]);
   kRateCB -= midi_volume_log10(midi_cc_vals[ch * 128 + TML_EXPRESSION_MSB]);
   kRateCB -= midi_volume_log10(x->velocity);
+  kRateCB += modlfoEffect.mod2volume;
 
   double panLeft = .5;
   double panRight = .5;  // panrightLUT[sf2midiPan(x->zone->Pan)];
@@ -147,7 +141,11 @@ void _spinblock(spinner* x, int n, int blockOffset) {
       fract -= 1.0f;
     }
 
-    if (position >= x->loopEnd) position -= looplen;
+    if (position >= x->loopEnd && x->zone->SampleModes > 0) position -= looplen;
+    if (position >= nsamples - 1) {
+      x->outputf[i * 2 + blockOffset * 2] = 0.0f;
+      x->outputf[i * 2 + blockOffset * 2 + 1] = 0.0f;
+    }
 
     float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
     outputf = process_input(x->lpf, outputf);

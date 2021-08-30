@@ -33,7 +33,7 @@ export class SpinNode extends AudioWorkletNode {
       0x0090,
       channel,
       zone.ref,
-      zone.calcPitchRatio(key, this.context.sampleRate) * 0x00ff,
+      zone.calcPitchRatio(key, this.context.sampleRate),
       vel,
     ]);
   }

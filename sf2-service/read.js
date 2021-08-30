@@ -115,8 +115,6 @@ export function loadProgram(
       SampleId,
       sampleRate,
       originalPitch,
-      url,
-      hdrRef,
     };
   }
   return {
