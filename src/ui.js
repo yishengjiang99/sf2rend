@@ -19,7 +19,7 @@ export class TrackUI {
         class: "attrs",
 
         style:
-          "display:grid; grid-template-columns:1fr 2fr 3fr; grid-column-gap:10px;",
+          "display:grid; grid-template-columns:1fr 1fr 1fr; grid-column-gap:10px;",
       },
       [
         mkdiv("div", { style: "display:grid; grid-template-columns:1fr" }, [
@@ -68,7 +68,8 @@ export class TrackUI {
             max: 127,
             step: 1,
             type: "range",
-            oninput: (e) => cb([0xb0 | idx, 9, e.target.value]),
+            value: 64,
+            oninput: (e) => cb([0xb0 | idx, 10, e.target.value]),
           }),
           mkdiv("label", { for: "expression" }, "expression"),
           mkdiv("input", {
@@ -147,7 +148,7 @@ export class TrackUI {
         this.labels[0].innerHTML = "volume" + value;
 
         break;
-      case 9:
+      case 10:
         this.sliders[1].value = value;
         this.labels[1].innerHTML = "pan" + value;
 
@@ -202,7 +203,7 @@ export function mkui(cpanel, cb) {
   const tb = mkdiv("div", {
     border: 1,
     style:
-      "display:grid;grid-template-columns:1fr; margin-bottom:10px;background:#333333;grid-row-gap:20px;",
+      "display:grid;grid-template-columns:1fr 1fr; margin-bottom:10px;background:#333333;grid-row-gap:20px;",
   });
   for (let i = 0; i < 16; i++) {
     const trackrow = new TrackUI(i, cb);

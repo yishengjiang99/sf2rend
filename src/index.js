@@ -11,10 +11,11 @@ let _loadProgram;
 const programNames = [];
 let sf2;
 const cdnroot = `https://grep32bit.blob.core.windows.net/midi/`;
+const sf2file = "/sf2rend/static/file.sf2";
 
 if (!document.location.href.includes("test.html")) {
   fetchAndLoadPlaylist();
-  main(queryDivs());
+  main(sf2file, queryDivs());
   window.onerror = (event, source, lineno, colno, error) => {
     document.querySelector("#debug").innerHTML = JSON.stringify([
       event,
@@ -44,21 +45,15 @@ export function queryDivs() {
     rx,
   };
 }
-export async function main({
-  cpanel,
-  cmdPanel,
-  stdout,
-  flist,
-  timeslide,
-  titleDiv,
-  rx,
-}) {
+export async function main(
+  sf2file,
+  { cpanel, cmdPanel, stdout, flist, timeslide, titleDiv, rx }
+) {
   if (!cpanel) cpanel = mkdiv("div");
   window.stdout = stdout;
   const midiurl =
     cdnroot + (document.location.search.substring(1) || "song.mid");
   console.log(midiurl);
-  const sf2file = "/sf2rend/file.sf2";
   const pt = mkeventsPipe();
 
   const controllers = mkui(cpanel, pt);
@@ -167,7 +162,7 @@ export function bindMidiWorkerToAudioAndUI(
 ) {
   const rx1 = mkdiv("span").attachTo(rx);
   const rx2 = mkdiv("span").attachTo(rx);
-
+  let metaChannel = 0x00;
   midiworker.addEventListener("message", (e) => {
     if (e.data.channel) {
       midiPort.postMessage(e.data.channel);
@@ -190,19 +185,26 @@ export function bindMidiWorkerToAudioAndUI(
       ];
       function metaDisplay(num) {
         if (num < 8) return metalist[num];
-        switch (parseInt(num, 16)) {
+        switch (num) {
+          case 0x20:
+            return "mc";
+          case 0x21:
+            return "port: ";
           case 0x51:
             return "tempo";
-          case 0x54:
-            return "sempt";
+          case 0x2f:
+            return "end of tack";
           case 0x58:
-            return "fiveeights";
+            return "time signature";
           default:
             return parseInt(num).toString(16);
         }
       }
       titleDiv.innerHTML +=
-        "<br>" + metaDisplay(e.data.meta) + ": " + e.data.payload;
+        "<br>" +
+        metaDisplay(e.data.meta) +
+        ": " +
+        JSON.stringify(e.data.payload);
     } else {
     }
   });

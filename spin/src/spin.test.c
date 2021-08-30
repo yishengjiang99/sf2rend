@@ -20,7 +20,7 @@ int main() {
   z->VolEnvDelay = -12000;
 
   z->VolEnvAttack = 0;
-  set_zone(x, z);
+  set_zone(x, z, 1);
 
   printf("%hd, %u\n", z->VolEnvAttack, timecent2sample((z->VolEnvAttack)));
   printvoleg(x);

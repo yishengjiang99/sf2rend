@@ -7,7 +7,10 @@
 #include <stdlib.h>
 
 void initLUTs(FILE* fd) {
-  fprintf(fd, "#ifndef lut1200 \n #define lut1200 1\n\n");
+  fprintf(fd,
+          "#ifndef lut1200 \n "
+          "\t #define lut1200 1\n\n");
+
   fprintf(fd, "double p2over1200[1201]={ \n");
   for (int i = 0; i < 1200; i++) {
     fprintf(fd, "%f,", pow(2.0f, i / 1200.0f));
@@ -29,12 +32,12 @@ void initLUTs(FILE* fd) {
 
   fprintf(fd, "double panleftLUT[128]={\n");
   for (float i = 2; i < 127; i++) {
-    fprintf(fd, "%f,\n", log(cos(M_PI / 2.0 * (i - 1) / 126.0f)) * 200);
+    fprintf(fd, "%f,\n", log10(cos(M_PI / 2.0 * (i - 1) / 126.0f)) * 200.0f);
   }
   fprintf(fd, "1500}; \n");
   fprintf(fd, "double panrightLUT[128]={\n");
   for (float i = 2; i < 127; i++) {
-    fprintf(fd, "%f,\n", log(sin(M_PI / 2.0 * (i - 1) / 126.0f)) * 200);
+    fprintf(fd, "%f,\n", log10(sin(M_PI / 2.0 * (i - 1) / 126.0f)) * 200.0f);
   }
   fprintf(fd, "0}; \n");
 

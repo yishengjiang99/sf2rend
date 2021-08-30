@@ -1,12 +1,9 @@
 
 #include "spin.h"
 
-#ifdef debug1
-#include <stdio.h>
-#endif
-
 #define RENDQ 128
 #define nchannels 64
+#define nmidiChannels 16
 extern void debugFL(float fl);
 
 spinner sps[nchannels];
@@ -15,7 +12,10 @@ EG eg[nchannels * 2];
 LFO lfos[nchannels * 2];
 pcm_t pcms[2222];
 
-char midi_cc_vals[nchannels * 128];
+char midi_cc_vals[nmidiChannels * 128];
+char pitch_bend_msb[nmidiChannels];
+char pitch_bend_msb[nmidiChannels];
+
 float outputs[nchannels * RENDQ * 2];
 float silence[40];
 char spsIndx = 0;
@@ -128,10 +128,10 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   kRateCB -= midi_volume_log10(midi_cc_vals[ch * 128 + TML_VOLUME_MSB]);
   kRateCB -= midi_volume_log10(midi_cc_vals[ch * 128 + TML_EXPRESSION_MSB]);
   kRateCB -= midi_volume_log10(x->velocity);
-  kRateCB += modlfoEffect.mod2volume;
+  kRateCB -= modlfoEffect.mod2volume;
 
-  double panLeft = .5;
-  double panRight = .5;  // panrightLUT[sf2midiPan(x->zone->Pan)];
+  double panLeft = panleftLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]];
+  double panRight = panrightLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]];
 
   for (int i = 0; i < n; i++) {
     fract = fract + stride;
