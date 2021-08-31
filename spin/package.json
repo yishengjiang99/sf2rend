@@ -2,6 +2,7 @@
   "name": "mkspin",
   "version": "1.0.2",
   "description": "",
+  "type": "module",
   "main": "spin.js",
   "scripts": {
     "build": "make",

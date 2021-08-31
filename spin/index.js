@@ -1,4 +1,3 @@
-export * from "./spin.js";
 /**
  * 
  * @returns 

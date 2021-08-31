@@ -1,7 +1,5 @@
-import { mkspinner, SpinNode } from "../index.js";
-import { loadProgram, load } from "https://unpkg.com/sf2-service@1.3.0/read.js";
-import { spRef2json, egStruct } from "../spin-struct.js";
-import { newSFZoneMap } from "https://unpkg.com/sf2-service@1.3.0/zoneProxy.js";
+import { mkspinner } from "../index.js";
+
 promise_test(async () => {
   const sp = await mkspinner();
   sp.gm_reset();

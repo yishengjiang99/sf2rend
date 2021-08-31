@@ -1,5 +1,7 @@
 /* eslint-disable no-undef */
-import { mkspinner, SpinNode } from "../spin.js";
+import { SpinNode } from "../spin.js";
+import { mkspinner } from "../index.js";
+
 import { loadProgram, load } from "https://unpkg.com/sf2-service@1.3.0/read.js";
 import { spRef2json, egStruct } from "../spin-struct.js";
 import { newSFZoneMap } from "https://unpkg.com/sf2-service@1.3.0/zoneProxy.js";

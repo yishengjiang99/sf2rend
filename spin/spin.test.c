@@ -6,7 +6,7 @@
 int main() {
   short defvals[60] = defattrs;
   zone_t* z = (zone_t*)defvals;
-  spinner* x = newSpinner(z, 1);
+  spinner* x = newSpinner(1);
 
   for (int i = 0; i < 40; i++) {
     x->inputf[i] = sinf(2 * 3.14 * i / 32);
@@ -15,7 +15,7 @@ int main() {
   printf("%hd, %u\n", z->VolEnvDelay, timecent2sample((z->VolEnvDelay)));
   z->VolEnvDecay = -1200;
   z->VolEnvSustain = 450.0f;
-  set_zone(x, z);
+  set_zone(x, z, 4);
   x->stride = 1.0f;
   x->voleg->stage = init;
   update_eg(x->voleg, 1);

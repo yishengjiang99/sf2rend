@@ -1,8 +1,4 @@
-import {
-  getWorker,
-  requestDownload,
-} from "../fetch-drop-ship/fetch-drop-ship.js";
-import { SharedRiffPipe } from "../srp/shared-riff-pipe.js";
+import { requestDownload } from "../fetch-drop-ship/fetch-drop-ship.js";
 let wasm = null;
 const CH_META_LEN = 24;
 const RENDER_BLOCK = 128;
