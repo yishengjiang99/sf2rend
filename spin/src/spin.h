@@ -21,7 +21,6 @@ typedef struct {
 typedef struct {
   uint32_t loopstart, loopend, length, sampleRate, originalPitch;
   float* data;
-
 } pcm_t;
 
 typedef struct {

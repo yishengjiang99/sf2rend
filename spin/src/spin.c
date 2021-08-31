@@ -1,6 +1,7 @@
 
 #include "spin.h"
 
+
 #define RENDQ 128
 #define nchannels 64
 #define nmidiChannels 16
@@ -36,7 +37,6 @@ spinner* newSpinner(int idx) {
   x->channelId = idx;
   return x;
 }
-
 void gm_reset() {
   for (int idx = 0; idx < 128; idx++) {
     midi_cc_vals[idx * 128 + TML_VOLUME_MSB] = 100;
@@ -108,7 +108,7 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   unsigned int looplen = x->loopEnd - x->loopStart + 1;
   double modEG = p10over200[(short)(clamp(x->modeg->egval, -960, 0) + 960)];
 
-  if (x->zone->SampleModes == 0 && x->voleg->stage < release) {
+  if (x->zone->SampleModes == 0 && x->voleg->stage <= release) {
     db = 0.0f;
     dbInc = 0.0f;
   } else {

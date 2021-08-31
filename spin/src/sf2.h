@@ -202,7 +202,7 @@ enum grntypes {
   Dummy
 };
 #define fivezeros 0, 0, 0, 0, 0
-#define defenvel -12000, -12000, -12000, -12000, 0, -12000
+#define defenvel -12000, -7000, -12000, -7999, 255, -9999
 
 #define defattrs                                                                        \
   {fivezeros, 0,         0,         0,        13500,              /* 9*/                \

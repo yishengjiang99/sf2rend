@@ -92,7 +92,7 @@ export function loadProgram(
   function getShdr(SampleId) {
     const hdrRef = shdrref + SampleId * 46;
     const dv = heap.slice(hdrRef, hdrRef + 46);
-    const [start, end, startloop, endloop, sampleRate] = new Uint32Array(
+    let [start, end, startloop, endloop, sampleRate] = new Uint32Array(
       dv,
       20,
       5

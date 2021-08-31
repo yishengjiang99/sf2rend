@@ -1,4 +1,7 @@
-all: spin.wasm.js
+all: typescript
+
+typescript: spin.wasm.js
+	tsc -t esnext -m esnext spin-proc-2.ts
 
 spin.wasm.js: spin.wasm
 	cat build/spin.wasm | npx encode-wasm-uint8 > spin.wasm.js

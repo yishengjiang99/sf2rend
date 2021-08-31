@@ -9,9 +9,29 @@ export async function scheduler(midi_u8, cb) {
     .map((t) => t[t.length - 1])
     .reduce((lastEvent, eventt) => Math.max(eventt.t, lastEvent), 0);
   const playedEvent = [];
-  let tick = 0;
+  let tick = -1200;
   let clockTime = 0;
   let paused = false;
+  function runAt(tick) {
+    for (let i in tracks) {
+      const track = tracks[i];
+      if (!track.length) continue;
+      while (track.length && track[0].t <= tick) {
+        const newevent = track.shift();
+        cb(newevent);
+        playedEvent.push({
+          track: i,
+          clockTime,
+          ...newevent,
+        });
+
+        if (newevent.timeSignature) {
+          timeSignature =
+            (newevent.timeSignature[0] / newevent.timeSignature[1]) * 4;
+        }
+      }
+    }
+  }
   async function run() {
     if (tick >= tempos[0].t) {
       microsecondPerQuarterNote = tempos.shift().tempo;
