@@ -1,4 +1,4 @@
-import { mkcanvas, chart } from "../src/chart.js";
+import { mkcanvas, chart } from "../chart.js";
 describe("mkcanvas", () => {
   it("instantiate", () => {
     const ret = mkcanvas();

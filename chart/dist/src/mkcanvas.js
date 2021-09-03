@@ -6,6 +6,7 @@ export const defaultParams = {
     title: "",
     width: WIDTH,
     height: HEIGHT,
+    zoomToFit: true,
 };
 export function mkcanvas(params) {
     const { width, height, container, title } = Object.assign({}, params, defaultParams);

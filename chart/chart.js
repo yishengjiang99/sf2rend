@@ -9,6 +9,7 @@ function get_w_h(canvasCtx) {
     canvasCtx.canvas.getAttribute("height")
       ? parseInt(canvasCtx.canvas.getAttribute("height"))
       : HEIGHT,
+    JSON.parse(canvasCtx.canvas.getAttribute("mkchartConfigs") || "{}"),
   ];
 }
 export function resetCanvas(c) {
@@ -21,13 +22,14 @@ export function resetCanvas(c) {
 }
 export function chart(canvasCtx, dataArray) {
   resetCanvas(canvasCtx);
-  const [_width, _height] = get_w_h(canvasCtx);
+  const [_width, _height, configs] = get_w_h(canvasCtx);
   let max = 0,
     min = 0,
     x = 0;
   let iWIDTH = _width / dataArray.length; //strokeText(`r m s : ${sum / bufferLength}`, 10, 20, 100)
   for (let i = 1; i < dataArray.length; i++) {
     max = dataArray[i] > max ? dataArray[i] : max;
+    min = dataArray[i] < min ? dataArray[i] : min;
   }
   canvasCtx.beginPath();
   // canvasCtx.lineWidth = 0.1;
@@ -39,7 +41,7 @@ export function chart(canvasCtx, dataArray) {
   canvasCtx.moveTo(0, _height / 2);
   for (let i = 1; i < dataArray.length; i++) {
     x += iWIDTH;
-    canvasCtx.lineTo(x, _height / 2 - (_height / 4) * dataArray[i]);
+    canvasCtx.lineTo(x, _height / 2 - ((_height / 4) * dataArray[i]) / max);
   }
   canvasCtx.stroke();
   canvasCtx.restore();
@@ -67,6 +69,7 @@ export function mkcanvas(params = {}) {
   const wrap = mkdiv("div", {}, [title ? mkdiv("h5", {}, title) : "", canvas]);
   container.append(wrap);
   canvas.ondblclick = () => resetCanvas(canvasCtx);
+  canvas.setAttribute("mkchartConfigs", JSON.stringify({ width, height }));
   return canvasCtx;
 }
 export async function renderFrames(

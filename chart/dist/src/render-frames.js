@@ -1,3 +1,4 @@
+import { mkdiv } from "../node_modules/mkdiv/mkdiv";
 import { chart } from "./chart.js";
 export async function renderFrames(canvsCtx, arr, fps = 60, samplesPerFrame = 48000 / 60) {
     let nextframe, offset = 0;
@@ -9,8 +10,8 @@ export async function renderFrames(canvsCtx, arr, fps = 60, samplesPerFrame = 48
         }
         await new Promise((r) => requestAnimationFrame(r));
     }
-    function onclick({ x, target }) {
-        offset += (x < target.clientWidth / 2 ? -1 : 1) * samplesPerFrame;
+    function onclick(e) {
+        offset += (e.x < e.target.clientWidth / 2 ? -1 : 1) * samplesPerFrame;
         chart(canvsCtx, arr.slice(offset, offset + samplesPerFrame));
         const existingSlider = canvsCtx.canvas?.parentElement?.querySelector("input[type='range']");
         const slider = existingSlider ||

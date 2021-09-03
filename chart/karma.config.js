@@ -3,7 +3,7 @@ module.exports = function (config) {
     frameworks: ["mocha", "chai"],
     files: [
       {
-        pattern: "src/**/*.js",
+        pattern: "./chart.js",
         type: "module",
         include: "true",
       },

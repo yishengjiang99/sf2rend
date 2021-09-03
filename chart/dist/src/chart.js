@@ -27,12 +27,13 @@ export function chart(canvasCtx, dataArray) {
     let iWIDTH = _width / dataArray.length; //strokeText(`r m s : ${sum / bufferLength}`, 10, 20, 100)
     for (let i = 1; i < dataArray.length; i++) {
         max = dataArray[i] > max ? dataArray[i] : max;
+        min = dataArray[i] < min ? dataArray[i] : min;
     }
     canvasCtx.beginPath();
-    // canvasCtx.lineWidth = 0.1;
-    // canvasCtx.moveTo(0, _height / 2);
-    // canvasCtx.lineTo(_width, _height / 2);
-    // canvasCtx.stroke();
+    canvasCtx.lineWidth = 0.1;
+    canvasCtx.moveTo(0, _height / 2);
+    canvasCtx.lineTo(_width, _height / 2);
+    canvasCtx.stroke();
     canvasCtx.lineWidth = 2;
     canvasCtx.strokeStyle = "white";
     canvasCtx.moveTo(0, _height / 2);
