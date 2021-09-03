@@ -132,16 +132,16 @@ class SpinProcessor extends AudioWorkletProcessor {
       this.inst.exports.spin(this.spinners[i], 128);
       const multiplier = i == 9 ? 0.25 : 0.5;
       for (let j = 0; j < 128; j++) {
-        o[0][0][j] += this.outputs[i][2 * j] * multiplier;
-        o[0][1][j] += this.outputs[i][2 * j + 1] * multiplier;
+        o[0][0][j] += this.outputs[i][2 * j] * 1;
+        o[0][1][j] += this.outputs[i][2 * j + 1] * 1;
       }
     }
-    // for (let j = 0; j < 128; j++) {
-    //   o[0][0][j] =
-    //     o[0][0][j] > 1.0 ? 1.0 : o[0][0][j] < -1.0 ? -1.0 : o[0][0][j];
-    //   o[0][1][j] =
-    //     o[0][1][j] > 1.0 ? 1.0 : o[0][1][j] < -1.0 ? -1.0 : o[0][1][j];
-    // }
+    for (let j = 0; j < 128; j++) {
+      o[0][0][j] =
+        o[0][0][j] > 1.0 ? 1.0 : o[0][0][j] < -1.0 ? -1.0 : o[0][0][j];
+      o[0][1][j] =
+        o[0][1][j] > 1.0 ? 1.0 : o[0][1][j] < -1.0 ? -1.0 : o[0][1][j];
+    }
 
     return true;
   }
