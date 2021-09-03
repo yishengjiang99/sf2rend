@@ -1,5 +1,5 @@
 export async function downloadData(stream, fl) {
-  for (const v of fl) v = 0;
+  for (let v of fl) v = 0;
   const reader = stream.getReader();
   let writeOffset = 0;
   let leftover;
