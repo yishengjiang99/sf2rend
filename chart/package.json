@@ -4,9 +4,21 @@
   "description": "",
   "main": "chart.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "karma start karma.config.js --auto-watch"
   },
   "keywords": [],
   "author": "Yisheng Jiang",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "chai": "^4.3.4",
+    "karma": "^6.3.4",
+    "karma-chai": "^0.1.0",
+    "karma-chrome-launcher": "^3.1.0",
+    "karma-mocha": "^2.0.1",
+    "karma-mocha-reporter": "^2.2.5",
+    "mocha": "^9.1.1"
+  },
+  "dependencies": {
+    "mkdiv": "^2.0.4"
+  }
 }

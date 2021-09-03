@@ -1,8 +1,9 @@
 {
   "name": "mkdiv",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "",
-  "main": "mkdiv.js",
+  "types": "./dist/mkdiv.d.ts",
+  "main": "./dist/mkdiv.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

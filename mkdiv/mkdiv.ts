@@ -1,27 +1,39 @@
-export function mkdiv(type, attr = {}, children = "") {
+export function mkdiv(
+  type: string | keyof HTMLElementTagNameMap,
+  attr: Record<string, string | EventListenerObject> = {},
+  children:
+    | string
+    | string[]
+    | HTMLElement
+    | (string | HTMLElement)[]
+    | HTMLElement[] = ""
+) {
   // if (attr && typeof attr != "object" && !children)
   //   return mkdiv(type, {}, attr);
   const div = document.createElement(type);
   for (const key in attr) {
     if (key.match(/on(.*)/)) {
-      div.addEventListener(key.match(/on(.*)/)[1], attr[key]);
+      div.addEventListener(
+        key.match(/on(.*)/)[1],
+        attr[key] as EventListenerObject
+      );
     } else {
-      div.setAttribute(key, attr[key]);
+      div.setAttribute(key, attr[key] as string);
     }
   }
   const charray = !Array.isArray(children) ? [children] : children;
   charray.forEach((c) => {
     typeof c == "string" ? (div.innerHTML += c) : div.append(c);
   });
-  div.attachTo = function (parent) {
+  Object.defineProperty(div, "attachTo", function (parent) {
     if (parent) parent.append(this);
     return this;
-  };
-  div.wrapWith = function (tag) {
+  });
+  Object.defineProperty(div, "wrapWith", function (tag) {
     const parent = mkdiv(tag);
     parent.append(this);
     return parent;
-  };
+  });
   return div;
 }
 export function mksvg(tag, attrs = {}, children = []) {
