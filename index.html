@@ -119,20 +119,18 @@
 		}
 
 		#bigcan {
-			margin: 0;
-			padding: 0;
-			width: 50vw;
-			height: 50vh;
-			position: fixed;
-			top: 0;
-			left: 50vw;
-			z-index: -1;
+			width: 720px;
+			z-index: 1;
+			height: 320px;
+			margin-left: 20rem;
 		}
 
 	</style>
 </head>
 
 <body>
+	<div id='bigcan'></div>
+
 	<header>
 		<h3>not afraid - eminem <button style='margin-left:auto' onclick='toggledebug()'>toggle debug</button>
 		</h3>
@@ -156,7 +154,6 @@
 		<div id='channelContainer'>
 		</div>
 	</main>
-	<div id='bigcan'></div>
 	<footer>
 		<div id='rx'><progress min="0" max="10000" step="1"></progress></div>
 		<div id='cmdPanel'></div>

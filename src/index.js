@@ -84,11 +84,6 @@ export async function main(
     midiSink.channels[channel].active = true;
   };
 
-  let updateCanvasTimer;
-  const updateCanvas = () => {
-    chart(midiSink.bigcan, new Float32Array(ctx.spinner.outputSnapshot));
-    updateCanvasTimer = requestAnimationFrame(updateCanvas);
-  };
   const { presets, totalTicks, midiworker } = await initMidiReader(midiurl);
   timeslide.setAttribute("max", totalTicks);
   for await (const _ of (async function* g(presets) {
@@ -115,11 +110,20 @@ export async function main(
   bindMidiWorkerToAudioAndUI(midiworker, pt, ctx, {
     timeslide,
     cmdPanel,
-    updateCanvas,
+    updateCanvas: null,
     titleDiv,
     rx,
   });
   bindMidiAccess(pt);
+  ctx.spinner.port.onmessage = function ({ data: { pcmplayback } }) {
+    pcmplayback &&
+      requestAnimationFrame(() =>
+        chart(
+          midiSink.bigcan,
+          pcmplayback.filter((v) => v != 0)
+        )
+      );
+  };
 }
 export function mkeventsPipe() {
   const _arr = [];
@@ -200,11 +204,9 @@ export function bindMidiWorkerToAudioAndUI(
             return parseInt(num).toString(16);
         }
       }
-      titleDiv.innerHTML +=
-        "<br>" +
-        metaDisplay(e.data.meta) +
-        ": " +
-        JSON.stringify(e.data.payload);
+      if (e.data.payload)
+        titleDiv.innerHTML +=
+          "<br>" + metaDisplay(e.data.meta) + ": " + e.data.payload;
     } else {
     }
   });
@@ -227,7 +229,6 @@ export function bindMidiWorkerToAudioAndUI(
       } else {
         midiworker.postMessage({ cmd: e.target.getAttribute("cmd") });
       }
-      //  updateCanvas();
     })
   );
 }
