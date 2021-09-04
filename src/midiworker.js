@@ -1,4 +1,4 @@
-import { scheduler } from "../midireadlib/scheduler.js";
+import { scheduler } from "../midiread/scheduler.js";
 const main = async (_url) => {
   const res = await fetch(_url);
   const ab = await res.arrayBuffer();

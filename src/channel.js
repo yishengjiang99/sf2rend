@@ -36,8 +36,8 @@ export function channel(aggCtx, channelId, ui) {
       _pg.zMap
         .filter(
           (z) =>
-            (vel == -1 || (z.VelRange.lo <= vel && z.VelRange.hi >= vel)) &&
-            (key == -1 || (z.KeyRange.lo <= key && z.KeyRange.hi >= key))
+            (vel == -1 || (z.VelRange.lo < vel && z.VelRange.hi >= vel)) &&
+            (key == -1 || (z.KeyRange.lo < key && z.KeyRange.hi >= key))
         )
         .slice(0, 2)
         .map((zone, i) => {
@@ -46,7 +46,6 @@ export function channel(aggCtx, channelId, ui) {
             requestAnimationFrame(() => {
               volEG.zone = zone;
               ui.active = true;
-              eg = volEG.keyOn(vel);
               ui.velocity = vel;
               ui.midi = key;
               ui.env1 = volEG.keyOn(vel);
@@ -57,7 +56,6 @@ export function channel(aggCtx, channelId, ui) {
     },
     keyOff(key, vel) {
       if (!_pg) return;
-
       spinner.keyOff(channelId * 2, key, vel);
       spinner.keyOff(channelId * 2 + 1, key, vel);
       requestAnimationFrame(() => (ui.active = false));

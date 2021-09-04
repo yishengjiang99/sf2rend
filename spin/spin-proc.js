@@ -1,6 +1,5 @@
 import { downloadData } from "../fetch-drop-ship/download.js";
-import { SharedRiffPipe } from "../srp/shared-riff-pipe.js";
-import { spRef2json } from "./spin-struct.js";
+
 import { wasmbin } from "./spin.wasm.js";
 const CH_META_LEN = 24;
 const nchannels = 32;
@@ -50,6 +49,11 @@ class SpinProcessor extends AudioWorkletProcessor {
       this.memory.buffer,
       this.inst.exports.midi_cc_vals,
       128 * 16
+    );
+    this.outputfff = new Float32Array(
+      this.memory.buffer,
+      this.inst.exports.outputs.value,
+      128 * 32
     );
   }
   async handleMsg(e) {
@@ -130,7 +134,6 @@ class SpinProcessor extends AudioWorkletProcessor {
       // if (!o[i]) continue;
       for (let j = 0; j < 128 * 2; j++) this.outputs[i][j] = 0;
       this.inst.exports.spin(this.spinners[i], 128);
-      const multiplier = i == 9 ? 0.25 : 0.5;
       for (let j = 0; j < 128; j++) {
         o[0][0][j] += this.outputs[i][2 * j] * 1;
         o[0][1][j] += this.outputs[i][2 * j + 1] * 1;
@@ -142,7 +145,13 @@ class SpinProcessor extends AudioWorkletProcessor {
       o[0][1][j] =
         o[0][1][j] > 1.0 ? 1.0 : o[0][1][j] < -1.0 ? -1.0 : o[0][1][j];
     }
-
+    const pcmplayback = new Float32Array(128 * 32);
+    pcmplayback.set(this.outputfff);
+    //round-about way to async invoke msg port when less verbose method unavailable in audioworklet scope
+    //thank god for my 21st century laptop for accommodating a horrendously inefficient way to do this
+    new Promise((r) => r()).then(() =>
+      this.port.postMessage({ pcmplayback: pcmplayback })
+    );
     return true;
   }
 }

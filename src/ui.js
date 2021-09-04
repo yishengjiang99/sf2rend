@@ -92,7 +92,7 @@ export class TrackUI {
               "svg",
               {
                 style: "width:80px;height:59px; display:inline;",
-                viewBox: "0 0 80 40",
+                viewBox: "0 0 80 60",
               },
               [
                 mksvg("polyline", {
