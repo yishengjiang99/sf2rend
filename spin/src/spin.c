@@ -54,8 +54,9 @@ void eg_release(spinner* x) {
 void reset(spinner* x) {
   x->position = 0;
   x->fract = 0.0f;
-  x->lpf->m1 = 0;
+  x->lpf->m1 = 0.00000f;
   x->modlfo->phase = 0;
+
   x->vibrlfo->phase = 0;
 }
 void set_zone(spinner* x, zone_t* z, unsigned int pcmSampleRate) {
@@ -63,6 +64,11 @@ void set_zone(spinner* x, zone_t* z, unsigned int pcmSampleRate) {
 
   init_mod_eg(x->modeg, z, pcmSampleRate);
   init_vol_eg(x->voleg, z, pcmSampleRate);
+  x->modlfo->delay = timecent2sample(z->ModLFODelay);
+  x->vibrlfo->delay = timecent2sample(z->ModLFODelay);
+
+  set_frequency(x->modlfo, z->ModLFOFreq);
+  set_frequency(x->vibrlfo, z->VibLFOFreq);
 }
 
 void set_midi_cc_val(int channel, int metric, int val) {
@@ -152,8 +158,10 @@ void _spinblock(spinner* x, int n, int blockOffset) {
     float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
     outputf = process_input(x->lpf, outputf);
     outputf = applyCentible(outputf, (short)(db + kRateCB));
-    x->outputf[i * 2 + blockOffset * 2] = outputf;
-    x->outputf[i * 2 + blockOffset * 2 + 1] = outputf;
+    x->outputf[i * 2 + blockOffset * 2] =
+        applyCentible(outputf, (short)(db + kRateCB + panLeft));
+    x->outputf[i * 2 + blockOffset * 2 + 1] =
+        applyCentible(outputf, (short)(db + kRateCB + panRight));
     db += dbInc;
   }
   x->position = position;

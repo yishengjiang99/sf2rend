@@ -45,7 +45,7 @@
 			transform: translateZ(0px);
 			display: block;
 			z-index: 1;
-			inset: 2.77778rem auto 0px 0px;
+			inset: 5.77778rem auto 0px 0px;
 			width: 18.6667rem;
 			box-sizing: border-box;
 			color: inherit;
@@ -71,6 +71,7 @@
 		}
 
 		main {
+			width: 640px;
 			height: 50vh;
 			margin-left: 19rem;
 		}
@@ -119,18 +120,20 @@
 		}
 
 		#bigcan {
-			width: 720px;
-			z-index: 1;
-			height: 320px;
-			margin-left: 20rem;
+			margin: 0;
+			padding: 0;
+			width: 50vw;
+			height: 50vh;
+			position: fixed;
+			top: 0;
+			left: 50vw;
+			z-index: -1;
 		}
 
 	</style>
 </head>
 
 <body>
-	<div id='bigcan'></div>
-
 	<header>
 		<h3>not afraid - eminem <button style='margin-left:auto' onclick='toggledebug()'>toggle debug</button>
 		</h3>
@@ -154,6 +157,7 @@
 		<div id='channelContainer'>
 		</div>
 	</main>
+	<div id='bigcan'></div>
 	<footer>
 		<div id='rx'><progress min="0" max="10000" step="1"></progress></div>
 		<div id='cmdPanel'></div>

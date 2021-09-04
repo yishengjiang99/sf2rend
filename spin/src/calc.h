@@ -24,8 +24,7 @@ double timecent2second(short tc) {
 }
 double timecent2hertz(short tc) { return 8.176f * timecent2second(tc); }
 int timecent2sample(short tc) {
-  int n = (int)(timecent2second(tc) * SAMPLE_RATE);
-  return clamp(n, 102, 480000);
+  return (int)(timecent2second(tc) * SAMPLE_RATE);
 }
 double attack_db_inc(short attackRate) {
   return 960.0f / timecent2second(attackRate) / SAMPLE_RATE;
