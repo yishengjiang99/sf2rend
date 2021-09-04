@@ -62,7 +62,7 @@ void advanceStage(EG* eg) {
       eg->egval = 0.0f;
 
       eg->stage++;
-      if (eg->decay > -12000) {
+      if (eg->decay > -12000 && eg->sustain > 10) {
         eg->egIncrement =
             (0.0f - eg->sustain) / (float)timecent2sample(eg->decay);
         eg->nsamples_till_next_stage = (int)(-960.f / eg->egIncrement);

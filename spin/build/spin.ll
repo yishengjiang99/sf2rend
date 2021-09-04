@@ -267,13 +267,13 @@ define hidden float @update_eg(%struct.EG* %0, i32 %1) local_unnamed_addr #4 {
 define hidden void @advanceStage(%struct.EG* %0) local_unnamed_addr #4 {
   %2 = getelementptr inbounds %struct.EG, %struct.EG* %0, i32 0, i32 0
   %3 = load i32, i32* %2, align 4, !tbaa !11
-  switch i32 %3, label %69 [
+  switch i32 %3, label %71 [
     i32 0, label %4
     i32 1, label %13
     i32 2, label %24
     i32 3, label %33
-    i32 4, label %55
-    i32 5, label %67
+    i32 4, label %57
+    i32 5, label %69
   ]
 
 4:                                                ; preds = %1
@@ -289,7 +289,7 @@ define hidden void @advanceStage(%struct.EG* %0) local_unnamed_addr #4 {
   store float -9.600000e+02, float* %11, align 4, !tbaa !17
   %12 = getelementptr inbounds %struct.EG, %struct.EG* %0, i32 0, i32 11
   store float 0.000000e+00, float* %12, align 4, !tbaa !16
-  br label %69
+  br label %71
 
 13:                                               ; preds = %1
   store i32 2, i32* %2, align 4, !tbaa !11
@@ -306,7 +306,7 @@ define hidden void @advanceStage(%struct.EG* %0) local_unnamed_addr #4 {
   %22 = fdiv float 9.600000e+02, %21
   %23 = getelementptr inbounds %struct.EG, %struct.EG* %0, i32 0, i32 11
   store float %22, float* %23, align 4, !tbaa !16
-  br label %69
+  br label %71
 
 24:                                               ; preds = %1
   store i32 3, i32* %2, align 4, !tbaa !11
@@ -321,7 +321,7 @@ define hidden void @advanceStage(%struct.EG* %0) local_unnamed_addr #4 {
   store i32 %30, i32* %31, align 4, !tbaa !15
   %32 = getelementptr inbounds %struct.EG, %struct.EG* %0, i32 0, i32 11
   store float 0.000000e+00, float* %32, align 4, !tbaa !16
-  br label %69
+  br label %71
 
 33:                                               ; preds = %1
   %34 = getelementptr inbounds %struct.EG, %struct.EG* %0, i32 0, i32 10
@@ -330,57 +330,61 @@ define hidden void @advanceStage(%struct.EG* %0) local_unnamed_addr #4 {
   %35 = getelementptr inbounds %struct.EG, %struct.EG* %0, i32 0, i32 5
   %36 = load i16, i16* %35, align 2, !tbaa !21
   %37 = icmp sgt i16 %36, -12000
-  br i1 %37, label %38, label %52
+  br i1 %37, label %38, label %54
 
 38:                                               ; preds = %33
   %39 = getelementptr inbounds %struct.EG, %struct.EG* %0, i32 0, i32 6
   %40 = load i16, i16* %39, align 4, !tbaa !22
-  %41 = sitofp i16 %40 to float
-  %42 = fsub float 0.000000e+00, %41
-  %43 = tail call double @timecent2second(i16 signext %36) #8
-  %44 = fmul double %43, 4.800000e+04
-  %45 = fptosi double %44 to i32
-  %46 = sitofp i32 %45 to float
-  %47 = fdiv float %42, %46
-  %48 = getelementptr inbounds %struct.EG, %struct.EG* %0, i32 0, i32 11
-  store float %47, float* %48, align 4, !tbaa !16
-  %49 = fdiv float -9.600000e+02, %47
-  %50 = fptosi float %49 to i32
-  %51 = getelementptr inbounds %struct.EG, %struct.EG* %0, i32 0, i32 1
-  store i32 %50, i32* %51, align 4, !tbaa !15
-  br label %69
+  %41 = icmp sgt i16 %40, 10
+  br i1 %41, label %42, label %54
 
-52:                                               ; preds = %33
-  %53 = getelementptr inbounds %struct.EG, %struct.EG* %0, i32 0, i32 11
-  store float 0.000000e+00, float* %53, align 4, !tbaa !16
-  %54 = getelementptr inbounds %struct.EG, %struct.EG* %0, i32 0, i32 1
-  store i32 65535, i32* %54, align 4, !tbaa !15
-  br label %69
+42:                                               ; preds = %38
+  %43 = sitofp i16 %40 to float
+  %44 = fsub float 0.000000e+00, %43
+  %45 = tail call double @timecent2second(i16 signext %36) #8
+  %46 = fmul double %45, 4.800000e+04
+  %47 = fptosi double %46 to i32
+  %48 = sitofp i32 %47 to float
+  %49 = fdiv float %44, %48
+  %50 = getelementptr inbounds %struct.EG, %struct.EG* %0, i32 0, i32 11
+  store float %49, float* %50, align 4, !tbaa !16
+  %51 = fdiv float -9.600000e+02, %49
+  %52 = fptosi float %51 to i32
+  %53 = getelementptr inbounds %struct.EG, %struct.EG* %0, i32 0, i32 1
+  store i32 %52, i32* %53, align 4, !tbaa !15
+  br label %71
 
-55:                                               ; preds = %1
+54:                                               ; preds = %38, %33
+  %55 = getelementptr inbounds %struct.EG, %struct.EG* %0, i32 0, i32 11
+  store float 0.000000e+00, float* %55, align 4, !tbaa !16
+  %56 = getelementptr inbounds %struct.EG, %struct.EG* %0, i32 0, i32 1
+  store i32 65535, i32* %56, align 4, !tbaa !15
+  br label %71
+
+57:                                               ; preds = %1
   store i32 5, i32* %2, align 4, !tbaa !11
-  %56 = getelementptr inbounds %struct.EG, %struct.EG* %0, i32 0, i32 7
-  %57 = load i16, i16* %56, align 2, !tbaa !23
-  %58 = tail call double @timecent2second(i16 signext %57) #8
-  %59 = fmul double %58, 4.800000e+04
-  %60 = fptosi double %59 to i32
-  %61 = sitofp i32 %60 to float
-  %62 = fdiv float -9.600000e+02, %61
-  %63 = getelementptr inbounds %struct.EG, %struct.EG* %0, i32 0, i32 11
-  store float %62, float* %63, align 4, !tbaa !16
-  %64 = fdiv float -9.600000e+02, %62
-  %65 = fptosi float %64 to i32
-  %66 = getelementptr inbounds %struct.EG, %struct.EG* %0, i32 0, i32 1
-  store i32 %65, i32* %66, align 4, !tbaa !15
-  br label %69
-
-67:                                               ; preds = %1
-  store i32 6, i32* %2, align 4, !tbaa !11
+  %58 = getelementptr inbounds %struct.EG, %struct.EG* %0, i32 0, i32 7
+  %59 = load i16, i16* %58, align 2, !tbaa !23
+  %60 = tail call double @timecent2second(i16 signext %59) #8
+  %61 = fmul double %60, 4.800000e+04
+  %62 = fptosi double %61 to i32
+  %63 = sitofp i32 %62 to float
+  %64 = fdiv float -9.600000e+02, %63
+  %65 = getelementptr inbounds %struct.EG, %struct.EG* %0, i32 0, i32 11
+  store float %64, float* %65, align 4, !tbaa !16
+  %66 = fdiv float -9.600000e+02, %64
+  %67 = fptosi float %66 to i32
   %68 = getelementptr inbounds %struct.EG, %struct.EG* %0, i32 0, i32 1
-  store i32 65535, i32* %68, align 4, !tbaa !15
-  br label %69
+  store i32 %67, i32* %68, align 4, !tbaa !15
+  br label %71
 
-69:                                               ; preds = %38, %52, %1, %67, %55, %24, %13, %4
+69:                                               ; preds = %1
+  store i32 6, i32* %2, align 4, !tbaa !11
+  %70 = getelementptr inbounds %struct.EG, %struct.EG* %0, i32 0, i32 1
+  store i32 65535, i32* %70, align 4, !tbaa !15
+  br label %71
+
+71:                                               ; preds = %42, %54, %1, %69, %57, %24, %13, %4
   ret void
 }
 
@@ -1246,179 +1250,211 @@ define hidden void @_spinblock(%struct.spinner* nocapture %0, i32 %1, i32 %2) lo
   %137 = getelementptr inbounds %struct.zone_t, %struct.zone_t* %57, i32 0, i32 48
   %138 = load i16, i16* %137, align 2, !tbaa !67
   %139 = sitofp i16 %138 to float
-  %140 = fsub float 0.000000e+00, %139
-  %141 = shl nsw i32 %125, 7
-  %142 = or i32 %141, 7
-  %143 = getelementptr inbounds [2048 x i8], [2048 x i8]* @midi_cc_vals, i32 0, i32 %142
-  %144 = load i8, i8* %143, align 1, !tbaa !24
-  %145 = icmp slt i8 %144, 0
-  br i1 %145, label %150, label %146
+  %140 = fmul float %139, 2.500000e-01
+  %141 = fsub float 0.000000e+00, %140
+  %142 = shl nsw i32 %125, 7
+  %143 = or i32 %142, 7
+  %144 = getelementptr inbounds [2048 x i8], [2048 x i8]* @midi_cc_vals, i32 0, i32 %143
+  %145 = load i8, i8* %144, align 1, !tbaa !24
+  %146 = icmp slt i8 %145, 0
+  br i1 %146, label %151, label %147
 
-146:                                              ; preds = %118
-  %147 = zext i8 %144 to i32
-  %148 = getelementptr inbounds [128 x double], [128 x double]* @midi_log_10, i32 0, i32 %147
-  %149 = load double, double* %148, align 8, !tbaa !2
-  br label %150
+147:                                              ; preds = %118
+  %148 = zext i8 %145 to i32
+  %149 = getelementptr inbounds [128 x double], [128 x double]* @midi_log_10, i32 0, i32 %148
+  %150 = load double, double* %149, align 8, !tbaa !2
+  br label %151
 
-150:                                              ; preds = %118, %146
-  %151 = phi double [ %149, %146 ], [ 1.440000e+03, %118 ]
-  %152 = fpext float %140 to double
-  %153 = fsub double %152, %151
-  %154 = fptrunc double %153 to float
-  %155 = or i32 %141, 11
-  %156 = getelementptr inbounds [2048 x i8], [2048 x i8]* @midi_cc_vals, i32 0, i32 %155
-  %157 = load i8, i8* %156, align 1, !tbaa !24
-  %158 = icmp slt i8 %157, 0
-  br i1 %158, label %163, label %159
+151:                                              ; preds = %118, %147
+  %152 = phi double [ %150, %147 ], [ 1.440000e+03, %118 ]
+  %153 = fpext float %141 to double
+  %154 = fsub double %153, %152
+  %155 = fptrunc double %154 to float
+  %156 = or i32 %142, 11
+  %157 = getelementptr inbounds [2048 x i8], [2048 x i8]* @midi_cc_vals, i32 0, i32 %156
+  %158 = load i8, i8* %157, align 1, !tbaa !24
+  %159 = icmp slt i8 %158, 0
+  br i1 %159, label %164, label %160
 
-159:                                              ; preds = %150
-  %160 = zext i8 %157 to i32
-  %161 = getelementptr inbounds [128 x double], [128 x double]* @midi_log_10, i32 0, i32 %160
-  %162 = load double, double* %161, align 8, !tbaa !2
-  br label %163
+160:                                              ; preds = %151
+  %161 = zext i8 %158 to i32
+  %162 = getelementptr inbounds [128 x double], [128 x double]* @midi_log_10, i32 0, i32 %161
+  %163 = load double, double* %162, align 8, !tbaa !2
+  br label %164
 
-163:                                              ; preds = %150, %159
-  %164 = phi double [ %162, %159 ], [ 1.440000e+03, %150 ]
-  %165 = fpext float %154 to double
-  %166 = fsub double %165, %164
-  %167 = fptrunc double %166 to float
-  %168 = getelementptr inbounds %struct.spinner, %struct.spinner* %0, i32 0, i32 16
-  %169 = load i32, i32* %168, align 4, !tbaa !60
-  %170 = icmp slt i32 %169, 0
-  br i1 %170, label %176, label %171
+164:                                              ; preds = %151, %160
+  %165 = phi double [ %163, %160 ], [ 1.440000e+03, %151 ]
+  %166 = fpext float %155 to double
+  %167 = fsub double %166, %165
+  %168 = fptrunc double %167 to float
+  %169 = getelementptr inbounds %struct.spinner, %struct.spinner* %0, i32 0, i32 16
+  %170 = load i32, i32* %169, align 4, !tbaa !60
+  %171 = icmp slt i32 %170, 0
+  br i1 %171, label %178, label %172
 
-171:                                              ; preds = %163
-  %172 = icmp sgt i32 %169, 128
-  br i1 %172, label %176, label %173
+172:                                              ; preds = %164
+  %173 = icmp sgt i32 %170, 128
+  br i1 %173, label %178, label %174
 
-173:                                              ; preds = %171
-  %174 = getelementptr inbounds [128 x double], [128 x double]* @midi_log_10, i32 0, i32 %169
-  %175 = load double, double* %174, align 8, !tbaa !2
-  br label %176
+174:                                              ; preds = %172
+  %175 = getelementptr inbounds [128 x double], [128 x double]* @midi_log_10, i32 0, i32 %170
+  %176 = load double, double* %175, align 8, !tbaa !2
+  %177 = fmul double %176, 2.500000e-01
+  br label %178
 
-176:                                              ; preds = %163, %171, %173
-  %177 = phi double [ %175, %173 ], [ 1.440000e+03, %163 ], [ 0.000000e+00, %171 ]
-  %178 = icmp sgt i32 %1, 0
-  br i1 %178, label %179, label %263
+178:                                              ; preds = %164, %172, %174
+  %179 = phi double [ %177, %174 ], [ 3.600000e+02, %164 ], [ 0.000000e+00, %172 ]
+  %180 = or i32 %142, 10
+  %181 = getelementptr inbounds [2048 x i8], [2048 x i8]* @midi_cc_vals, i32 0, i32 %180
+  %182 = load i8, i8* %181, align 2, !tbaa !24
+  %183 = sext i8 %182 to i32
+  %184 = getelementptr inbounds [128 x double], [128 x double]* @panleftLUT, i32 0, i32 %183
+  %185 = load double, double* %184, align 8, !tbaa !2
+  %186 = getelementptr inbounds [128 x double], [128 x double]* @panrightLUT, i32 0, i32 %183
+  %187 = load double, double* %186, align 8, !tbaa !2
+  %188 = icmp sgt i32 %1, 0
+  br i1 %188, label %189, label %289
 
-179:                                              ; preds = %176
-  %180 = fpext float %167 to double
-  %181 = fsub double %180, %177
-  %182 = fptrunc double %181 to float
-  %183 = fadd float %62, %182
-  %184 = select i1 %119, i32 %82, i32 0
-  %185 = add i32 %76, -1
-  %186 = getelementptr inbounds %struct.spinner, %struct.spinner* %0, i32 0, i32 0
-  %187 = getelementptr inbounds %struct.spinner, %struct.spinner* %0, i32 0, i32 8
-  %188 = fpext float %183 to double
-  %189 = getelementptr inbounds %struct.spinner, %struct.spinner* %0, i32 0, i32 1
-  br label %190
+189:                                              ; preds = %178
+  %190 = fpext float %168 to double
+  %191 = fsub double %190, %179
+  %192 = fptrunc double %191 to float
+  %193 = fadd float %62, %192
+  %194 = select i1 %119, i32 %82, i32 0
+  %195 = add i32 %76, -1
+  %196 = getelementptr inbounds %struct.spinner, %struct.spinner* %0, i32 0, i32 0
+  %197 = getelementptr inbounds %struct.spinner, %struct.spinner* %0, i32 0, i32 8
+  %198 = fpext float %193 to double
+  %199 = getelementptr inbounds %struct.spinner, %struct.spinner* %0, i32 0, i32 1
+  br label %200
 
-190:                                              ; preds = %179, %243
-  %191 = phi i1 [ true, %179 ], [ %253, %243 ]
-  %192 = phi double [ %120, %179 ], [ %251, %243 ]
-  %193 = phi i32 [ 0, %179 ], [ %252, %243 ]
-  %194 = phi i32 [ %69, %179 ], [ %209, %243 ]
-  %195 = phi float [ %71, %179 ], [ %205, %243 ]
-  %196 = fadd float %136, %195
-  %197 = fcmp ult float %196, 1.000000e+00
-  br i1 %197, label %204, label %198
+200:                                              ; preds = %189, %273
+  %201 = phi i1 [ true, %189 ], [ %279, %273 ]
+  %202 = phi double [ %120, %189 ], [ %277, %273 ]
+  %203 = phi i32 [ 0, %189 ], [ %278, %273 ]
+  %204 = phi i32 [ %69, %189 ], [ %219, %273 ]
+  %205 = phi float [ %71, %189 ], [ %215, %273 ]
+  %206 = fadd float %136, %205
+  %207 = fcmp ult float %206, 1.000000e+00
+  br i1 %207, label %214, label %208
 
-198:                                              ; preds = %190, %198
-  %199 = phi i32 [ %201, %198 ], [ %194, %190 ]
-  %200 = phi float [ %202, %198 ], [ %196, %190 ]
-  %201 = add i32 %199, 1
-  %202 = fadd float %200, -1.000000e+00
-  %203 = fcmp ult float %202, 1.000000e+00
-  br i1 %203, label %204, label %198, !llvm.loop !68
+208:                                              ; preds = %200, %208
+  %209 = phi i32 [ %211, %208 ], [ %204, %200 ]
+  %210 = phi float [ %212, %208 ], [ %206, %200 ]
+  %211 = add i32 %209, 1
+  %212 = fadd float %210, -1.000000e+00
+  %213 = fcmp ult float %212, 1.000000e+00
+  br i1 %213, label %214, label %208, !llvm.loop !68
 
-204:                                              ; preds = %198, %190
-  %205 = phi float [ %196, %190 ], [ %202, %198 ]
-  %206 = phi i32 [ %194, %190 ], [ %201, %198 ]
-  %207 = icmp ult i32 %206, %78
-  %208 = select i1 %207, i32 0, i32 %184
-  %209 = add i32 %208, %206
-  %210 = icmp ult i32 %209, %185
-  br i1 %210, label %211, label %255
+214:                                              ; preds = %208, %200
+  %215 = phi float [ %206, %200 ], [ %212, %208 ]
+  %216 = phi i32 [ %204, %200 ], [ %211, %208 ]
+  %217 = icmp ult i32 %216, %78
+  %218 = select i1 %217, i32 0, i32 %194
+  %219 = add i32 %218, %216
+  %220 = icmp ult i32 %219, %195
+  br i1 %220, label %221, label %281
 
-211:                                              ; preds = %204
-  %212 = load float*, float** %186, align 4, !tbaa !34
-  %213 = getelementptr inbounds float, float* %212, i32 %209
-  %214 = load float, float* %213, align 4, !tbaa !69
-  %215 = add nuw i32 %209, 1
-  %216 = getelementptr inbounds float, float* %212, i32 %215
-  %217 = load float, float* %216, align 4, !tbaa !69
-  %218 = fsub float %217, %214
-  %219 = fmul float %205, %218
-  %220 = fadd float %214, %219
-  %221 = load %struct.lpf_t*, %struct.lpf_t** %187, align 4, !tbaa !39
-  %222 = getelementptr inbounds %struct.lpf_t, %struct.lpf_t* %221, i32 0, i32 1
-  %223 = load float, float* %222, align 4, !tbaa !30
-  %224 = fsub float 1.000000e+00, %223
-  %225 = fmul float %224, %220
-  %226 = getelementptr inbounds %struct.lpf_t, %struct.lpf_t* %221, i32 0, i32 2
-  %227 = load float, float* %226, align 4, !tbaa !29
-  %228 = fmul float %223, %227
-  %229 = fadd float %225, %228
-  store float %229, float* %226, align 4, !tbaa !29
-  %230 = fadd double %192, %188
-  %231 = fptosi double %230 to i16
-  %232 = sext i16 %231 to i32
-  %233 = icmp sgt i16 %231, 0
-  br i1 %233, label %243, label %234
+221:                                              ; preds = %214
+  %222 = load float*, float** %196, align 4, !tbaa !34
+  %223 = getelementptr inbounds float, float* %222, i32 %219
+  %224 = load float, float* %223, align 4, !tbaa !69
+  %225 = add nuw i32 %219, 1
+  %226 = getelementptr inbounds float, float* %222, i32 %225
+  %227 = load float, float* %226, align 4, !tbaa !69
+  %228 = fsub float %227, %224
+  %229 = fmul float %215, %228
+  %230 = fadd float %224, %229
+  %231 = load %struct.lpf_t*, %struct.lpf_t** %197, align 4, !tbaa !39
+  %232 = getelementptr inbounds %struct.lpf_t, %struct.lpf_t* %231, i32 0, i32 1
+  %233 = load float, float* %232, align 4, !tbaa !30
+  %234 = fsub float 1.000000e+00, %233
+  %235 = fmul float %234, %230
+  %236 = getelementptr inbounds %struct.lpf_t, %struct.lpf_t* %231, i32 0, i32 2
+  %237 = load float, float* %236, align 4, !tbaa !29
+  %238 = fmul float %233, %237
+  %239 = fadd float %235, %238
+  store float %239, float* %236, align 4, !tbaa !29
+  %240 = fadd double %202, %198
+  %241 = fadd double %185, %240
+  %242 = fptosi double %241 to i16
+  %243 = sext i16 %242 to i32
+  %244 = icmp sgt i16 %242, 0
+  br i1 %244, label %254, label %245
 
-234:                                              ; preds = %211
-  %235 = icmp slt i16 %231, -1439
-  br i1 %235, label %243, label %236
+245:                                              ; preds = %221
+  %246 = icmp slt i16 %242, -1439
+  br i1 %246, label %254, label %247
 
-236:                                              ; preds = %234
-  %237 = fpext float %229 to double
-  %238 = add nsw i32 %232, 1440
-  %239 = getelementptr inbounds [1441 x double], [1441 x double]* @p10over200, i32 0, i32 %238
-  %240 = load double, double* %239, align 8, !tbaa !2
-  %241 = fmul double %240, %237
-  %242 = fptrunc double %241 to float
-  br label %243
+247:                                              ; preds = %245
+  %248 = fpext float %239 to double
+  %249 = add nsw i32 %243, 1440
+  %250 = getelementptr inbounds [1441 x double], [1441 x double]* @p10over200, i32 0, i32 %249
+  %251 = load double, double* %250, align 8, !tbaa !2
+  %252 = fmul double %251, %248
+  %253 = fptrunc double %252 to float
+  br label %254
 
-243:                                              ; preds = %211, %234, %236
-  %244 = phi float [ %242, %236 ], [ %229, %211 ], [ 0.000000e+00, %234 ]
-  %245 = load float*, float** %189, align 4, !tbaa !31
-  %246 = add i32 %193, %2
-  %247 = shl i32 %246, 1
-  %248 = getelementptr inbounds float, float* %245, i32 %247
-  store float %244, float* %248, align 4, !tbaa !69
-  %249 = or i32 %247, 1
-  %250 = getelementptr inbounds float, float* %245, i32 %249
-  store float %244, float* %250, align 4, !tbaa !69
-  %251 = fadd double %121, %192
-  %252 = add nuw nsw i32 %193, 1
-  %253 = icmp slt i32 %252, %1
-  %254 = icmp eq i32 %252, %1
-  br i1 %254, label %263, label %190, !llvm.loop !70
-
-255:                                              ; preds = %204
-  %256 = load float*, float** %189, align 4, !tbaa !31
-  %257 = add i32 %193, %2
+254:                                              ; preds = %221, %245, %247
+  %255 = phi float [ %253, %247 ], [ %239, %221 ], [ 0.000000e+00, %245 ]
+  %256 = load float*, float** %199, align 4, !tbaa !31
+  %257 = add i32 %203, %2
   %258 = shl i32 %257, 1
   %259 = getelementptr inbounds float, float* %256, i32 %258
-  store float 0.000000e+00, float* %259, align 4, !tbaa !69
-  %260 = or i32 %258, 1
-  %261 = getelementptr inbounds float, float* %256, i32 %260
-  store float 0.000000e+00, float* %261, align 4, !tbaa !69
-  %262 = getelementptr inbounds %struct.EG, %struct.EG* %102, i32 0, i32 0
-  store i32 99, i32* %262, align 4, !tbaa !11
-  br i1 %191, label %267, label %263
+  store float %255, float* %259, align 4, !tbaa !69
+  %260 = fadd double %187, %240
+  %261 = fptosi double %260 to i16
+  %262 = sext i16 %261 to i32
+  %263 = icmp sgt i16 %261, 0
+  br i1 %263, label %273, label %264
 
-263:                                              ; preds = %243, %176, %255
-  %264 = phi i32 [ %209, %255 ], [ %69, %176 ], [ %209, %243 ]
-  %265 = phi float [ %205, %255 ], [ %71, %176 ], [ %205, %243 ]
-  store i32 %264, i32* %68, align 4, !tbaa !38
-  store float %265, float* %70, align 4, !tbaa !37
-  %266 = getelementptr inbounds %struct.spinner, %struct.spinner* %0, i32 0, i32 6
-  store float %136, float* %266, align 4, !tbaa !59
-  br label %267
+264:                                              ; preds = %254
+  %265 = icmp slt i16 %261, -1439
+  br i1 %265, label %273, label %266
 
-267:                                              ; preds = %255, %263
+266:                                              ; preds = %264
+  %267 = fpext float %239 to double
+  %268 = add nsw i32 %262, 1440
+  %269 = getelementptr inbounds [1441 x double], [1441 x double]* @p10over200, i32 0, i32 %268
+  %270 = load double, double* %269, align 8, !tbaa !2
+  %271 = fmul double %270, %267
+  %272 = fptrunc double %271 to float
+  br label %273
+
+273:                                              ; preds = %254, %264, %266
+  %274 = phi float [ %272, %266 ], [ %239, %254 ], [ 0.000000e+00, %264 ]
+  %275 = or i32 %258, 1
+  %276 = getelementptr inbounds float, float* %256, i32 %275
+  store float %274, float* %276, align 4, !tbaa !69
+  %277 = fadd double %121, %202
+  %278 = add nuw nsw i32 %203, 1
+  %279 = icmp slt i32 %278, %1
+  %280 = icmp eq i32 %278, %1
+  br i1 %280, label %289, label %200, !llvm.loop !70
+
+281:                                              ; preds = %214
+  %282 = load float*, float** %199, align 4, !tbaa !31
+  %283 = add i32 %203, %2
+  %284 = shl i32 %283, 1
+  %285 = getelementptr inbounds float, float* %282, i32 %284
+  store float 0.000000e+00, float* %285, align 4, !tbaa !69
+  %286 = or i32 %284, 1
+  %287 = getelementptr inbounds float, float* %282, i32 %286
+  store float 0.000000e+00, float* %287, align 4, !tbaa !69
+  %288 = getelementptr inbounds %struct.EG, %struct.EG* %102, i32 0, i32 0
+  store i32 99, i32* %288, align 4, !tbaa !11
+  br i1 %201, label %293, label %289
+
+289:                                              ; preds = %273, %178, %281
+  %290 = phi i32 [ %219, %281 ], [ %69, %178 ], [ %219, %273 ]
+  %291 = phi float [ %215, %281 ], [ %71, %178 ], [ %215, %273 ]
+  store i32 %290, i32* %68, align 4, !tbaa !38
+  store float %291, float* %70, align 4, !tbaa !37
+  %292 = getelementptr inbounds %struct.spinner, %struct.spinner* %0, i32 0, i32 6
+  store float %136, float* %292, align 4, !tbaa !59
+  br label %293
+
+293:                                              ; preds = %281, %289
   ret void
 }
 

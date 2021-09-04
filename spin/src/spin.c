@@ -56,7 +56,6 @@ void reset(spinner* x) {
   x->fract = 0.0f;
   x->lpf->m1 = 0.00000f;
   x->modlfo->phase = 0;
-
   x->vibrlfo->phase = 0;
 }
 void set_zone(spinner* x, zone_t* z, unsigned int pcmSampleRate) {
@@ -130,10 +129,10 @@ void _spinblock(spinner* x, int n, int blockOffset) {
            12.0f;
 
   float kRateCB = 0.0f;
-  kRateCB -= (float)x->zone->Attenuation;
+  kRateCB -= (float)x->zone->Attenuation / 4;
   kRateCB -= midi_volume_log10(midi_cc_vals[ch * 128 + TML_VOLUME_MSB]);
   kRateCB -= midi_volume_log10(midi_cc_vals[ch * 128 + TML_EXPRESSION_MSB]);
-  kRateCB -= midi_volume_log10(x->velocity);
+  kRateCB -= midi_volume_log10(x->velocity) / 4;
   kRateCB += modlfoEffect.mod2volume;
 
   double panLeft = panleftLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]];
@@ -157,7 +156,6 @@ void _spinblock(spinner* x, int n, int blockOffset) {
 
     float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
     outputf = process_input(x->lpf, outputf);
-    outputf = applyCentible(outputf, (short)(db + kRateCB));
     x->outputf[i * 2 + blockOffset * 2] =
         applyCentible(outputf, (short)(db + kRateCB + panLeft));
     x->outputf[i * 2 + blockOffset * 2 + 1] =
@@ -172,12 +170,12 @@ void _spinblock(spinner* x, int n, int blockOffset) {
 int spin(spinner* x, int n) {
   update_eg(x->voleg, 64);
 
-  update_eg(x->modeg, 64);  // x->zone, 0);
+  update_eg(x->modeg, 64);
 
   _spinblock(x, 64, 0);
   update_eg(x->voleg, 64);
 
-  update_eg(x->modeg, 64);  // x->zone, 0);
+  update_eg(x->modeg, 64);
 
   _spinblock(x, 64, 64);
   return x->voleg->stage;
