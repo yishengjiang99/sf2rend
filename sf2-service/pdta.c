@@ -165,6 +165,13 @@ static inline int combine_pattrs(int genop, short *zoneAttr, short psetAttr) {
     case ModEnvHold:
     case ModEnvDecay:
     case ModEnvRelease:
+      /**
+       *
+       *  2^(x/1200) = y
+       *
+       * x/1200 = log2(y)
+       * x=log2(y)*1200
+       */
       // i apologize for the following lines of code.
       zval = powf(2.0f, zoneAttr[genop] / 1200.0f);
       pval = powf(2.0f, psetAttr / 1200.0f);

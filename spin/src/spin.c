@@ -98,8 +98,8 @@ float lerp(float f1, float f2, float frac) { return f1 + (f2 - f1) * frac; }
 
 void _spinblock(spinner* x, int n, int blockOffset) {
   double db, dbInc;
-  float modlfoval = roll(x->modlfo, 16);
-  float vibrLfoVal = roll(x->vibrlfo, 16);
+  float modlfoval = roll(x->modlfo, 64);
+  float vibrLfoVal = roll(x->vibrlfo, 64);
   LFOEffects modlfoEffect = lfo_effects(modlfoval, x->zone);
   LFOEffects vibrLFOEffects = lfo_effects(vibrLfoVal, x->zone);
   unsigned int position = x->position;
@@ -128,7 +128,7 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   kRateCB -= midi_volume_log10(midi_cc_vals[ch * 128 + TML_VOLUME_MSB]);
   kRateCB -= midi_volume_log10(midi_cc_vals[ch * 128 + TML_EXPRESSION_MSB]);
   kRateCB -= midi_volume_log10(x->velocity);
-  kRateCB -= modlfoEffect.mod2volume;
+  kRateCB += modlfoEffect.mod2volume;
 
   double panLeft = panleftLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]];
   double panRight = panrightLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]];
@@ -151,7 +151,6 @@ void _spinblock(spinner* x, int n, int blockOffset) {
 
     float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
     outputf = process_input(x->lpf, outputf);
-
     outputf = applyCentible(outputf, (short)(db + kRateCB));
     x->outputf[i * 2 + blockOffset * 2] = outputf;
     x->outputf[i * 2 + blockOffset * 2 + 1] = outputf;
@@ -162,15 +161,16 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   x->stride = stride;
 }
 
-enum spin_done { DONE = 0, NOT_DONE };
 int spin(spinner* x, int n) {
-  for (int blockOffset = 0; blockOffset <= n - 16; blockOffset += 16) {
-    update_eg(x->voleg, 16);
+  update_eg(x->voleg, 64);
 
-    update_eg(x->modeg, 16);  // x->zone, 0);
+  update_eg(x->modeg, 64);  // x->zone, 0);
 
-    if (x->voleg->stage == done) return DONE;
-    _spinblock(x, 16, blockOffset);
-  }
-  return NOT_DONE;
+  _spinblock(x, 64, 0);
+  update_eg(x->voleg, 64);
+
+  update_eg(x->modeg, 64);  // x->zone, 0);
+
+  _spinblock(x, 64, 64);
+  return x->voleg->stage;
 }

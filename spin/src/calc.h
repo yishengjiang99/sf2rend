@@ -24,27 +24,17 @@ double timecent2second(short tc) {
 }
 double timecent2hertz(short tc) { return 8.176f * timecent2second(tc); }
 int timecent2sample(short tc) {
-  return (int)(timecent2second(tc) * SAMPLE_RATE);
+  int n = (int)(timecent2second(tc) * SAMPLE_RATE);
+  return clamp(n, 102, 480000);
 }
 double attack_db_inc(short attackRate) {
   return 960.0f / timecent2second(attackRate) / SAMPLE_RATE;
 }
-int FloatTo23Bits(float x) {
-  float y = x + 1.f;
-  return (*(unsigned long*)&y) & 0x7FFFFF;  // last 23 bits
-}
 
 float applyCentible(float signal, short centdb) {
-  if (centdb < -970) centdb = -970;
-  // if ((float)centdb < 970.0f) return 0.0f;
   if (centdb > 0) return signal;
-  if (centdb < -1440) return 0.0f;
-
-  int sigl = FloatTo23Bits(signal);
-  float nff = log_2_10 * centdb / -200.0f;
-  sigl = sigl >> (int)(nff + 1);
-  sigl /= p2over1200[(short)((nff - (int)nff) * 1200)];
-  return (sigl / bit23_normalize);
+  if (centdb <= -1440) return 0.0f;
+  return (float)signal * p10over200[centdb + 1440];
 }
 
 float hermite4(float frac_offset, float xm1, float x0, float x1, float x2) {

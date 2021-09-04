@@ -46,16 +46,20 @@ void advanceStage(EG* eg) {
       break;
     case delay:
       eg->stage++;
+      eg->egval = -960.0f;
       eg->nsamples_till_next_stage = timecent2sample(eg->attack);
       eg->egIncrement = 960.0f / (float)eg->nsamples_till_next_stage;
       break;
 
     case attack:
       eg->stage++;
+      eg->egval = 0.0f;
+
       eg->nsamples_till_next_stage = timecent2sample(eg->hold);
       eg->egIncrement = 0.0f;
       break;
     case hold:
+      eg->egval = 0.0f;
 
       eg->stage++;
       if (eg->decay > -12000) {
