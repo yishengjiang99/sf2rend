@@ -35,7 +35,7 @@ export function channel(aggCtx, channelId, ui) {
 
       let zones = _pg.zMap.filter(
         (z) =>
-          (vel == -1 || (z.VelRange.lo <= vel && z.VelRange.hi >= vel)) &&
+          (vel == -1 || (z.VelRange.lo < vel && z.VelRange.hi >= vel)) &&
           (key == -1 || (z.KeyRange.lo < key && z.KeyRange.hi >= key))
       );
       if (zones.length == 0) {

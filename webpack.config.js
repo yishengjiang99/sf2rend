@@ -10,6 +10,8 @@ module.exports = {
 
   resolve: { extensions: ["*", ".js", ".jsx"] },
   output: {
+    publicPath: "dist/",
+
     path: path.resolve(__dirname, "dist/"),
     filename: "[name].js",
   },

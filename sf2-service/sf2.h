@@ -119,26 +119,7 @@ zone_t *findPresetByName(const char *name);
 int findPresetZonesCount(int i);
 
 zone_t *filterForZone(zone_t *pset, uint8_t key, uint8_t vel);
-/**
- *
- *
-  StartAddrOfs,
-  EndAddrOfs,
-  StartLoopAddrOfs,
-  EndLoopAddrOfs,
-  StartAddrCoarseOfs
 
-  VolEnvDelay,
-  VolEnvAttack,
-  VolEnvHold,
-  VolEnvDecay,
-  VolEnvRelease,
-  ModEnvDelay,
-  ModEnvAttack,
-  ModEnvHold,
-  ModEnvDecay,
-  ModEnvRelease,
- */
 enum grntypes {
   StartAddrOfs,
   EndAddrOfs,
@@ -204,15 +185,29 @@ enum grntypes {
 #define fivezeros 0, 0, 0, 0, 0
 #define defenvel -12000, -12000, -12000, -12000, 0, -12000
 
-#define defattrs                                              \
-  {                                                           \
-    fivezeros, 0, 0, 0, 13500,          /* 9*/                \
-        fivezeros, fivezeros, 0, 0, -1, /*22*/                \
-        0, -1, 0,                       /*25*/                \
-        defenvel, 0, 0, defenvel,       /*39*/                \
-        0, 0, 0, 0, 127 << 8, 127 << 8, /*velrange/keyrange*/ \
-        0,                              /*45*/                \
-        -1, -1, fivezeros,              /*55*/                \
-        0, 0, 0, 100, 0, -1, 0                                \
+#define defattrs                                                               \
+  {                                                                            \
+    /*StartAddrOfs:*/ 0, /*EndAddrOfs:*/ 0, /*StartLoopAddrOfs:*/ 0,           \
+        /*EndLoopAddrOfs:*/ 0, /*StartAddrCoarseOfs:*/ 0, /*ModLFO2Pitch:*/ 0, \
+        /*VibLFO2Pitch:*/ 0, /*ModEnv2Pitch:*/ 0, /*FilterFc:*/ 13500,         \
+        /*FilterQ:*/ 0, /*ModLFO2FilterFc:*/ 0, /*ModEnv2FilterFc:*/ 0,        \
+        /*EndAddrCoarseOfs:*/ 0, /*ModLFO2Vol:*/ 0, /*Unused1:*/ 0,            \
+        /*ChorusSend:*/ 0, /*ReverbSend:*/ 0, /*Pan:*/ 0, /*Unused2:*/ 0,      \
+        /*Unused3:*/ 0, /*Unused4:*/ 0, /*ModLFODelay:*/ 0, /*ModLFOFreq:*/ 0, \
+        /*VibLFODelay:*/ 0, /*VibLFOFreq:*/ -1133, /*ModEnvDelay:*/ -12000,    \
+        /*ModEnvAttack:*/ -12000, /*ModEnvHold:*/ -12000,                      \
+        /*ModEnvDecay:*/ -12000, /*ModEnvSustain:*/ 0,                         \
+        /*ModEnvRelease:*/ -12000, /*Key2ModEnvHold:*/ 0,                      \
+        /*Key2ModEnvDecay:*/ 0, /*VolEnvDelay:*/ -12000,                       \
+        /*VolEnvAttack:*/ -12000, /*VolEnvHold:*/ -12000,                      \
+        /*VolEnvDecay:*/ -12000, /*VolEnvSustain:*/ 0,                         \
+        /*VolEnvRelease:*/ -12000, /*Key2VolEnvHold:*/ 0,                      \
+        /*Key2VolEnvDecay:*/ 0, /*Instrument:*/ -1, /*Reserved1:*/ 0,          \
+        /*KeyRange:*/ 127 << 8, /*VelRange:*/ 127 << 8,                        \
+        /*StartLoopAddrCoarseOfs:*/ 0, /*Keynum:*/ -1, /*Velocity:*/ -1,       \
+        /*Attenuation:*/ 0, /*Reserved2:*/ 0, /*EndLoopAddrCoarseOfs:*/ 0,     \
+        /*CoarseTune:*/ 0, /*FineTune:*/ 0, /*SampleId:*/ -1,                  \
+        /*SampleModes:*/ 1, /*Reserved3:*/ 0, /*ScaleTune:*/ 100,              \
+        /*ExclusiveClass:*/ 0, /*OverrideRootKey:*/ -1, /*Dummy:*/ 0           \
   }
 #endif

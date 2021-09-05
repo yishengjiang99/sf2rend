@@ -1102,7 +1102,7 @@ define hidden float @kRateAttenuate(%struct.spinner* nocapture readonly %0, i32 
   %4 = load %struct.zone_t*, %struct.zone_t** %3, align 4, !tbaa !47
   %5 = getelementptr inbounds %struct.zone_t, %struct.zone_t* %4, i32 0, i32 48
   %6 = load i16, i16* %5, align 2, !tbaa !64
-  %7 = sitofp i16 %6 to float
+  %7 = uitofp i16 %6 to float
   %8 = fmul float %7, 2.500000e-01
   %9 = fsub float 0.000000e+00, %8
   %10 = shl nsw i32 %1, 7
@@ -1351,7 +1351,7 @@ define hidden void @_spinblock(%struct.spinner* %0, i32 %1, i32 %2) local_unname
   %131 = fdiv float %130, 1.200000e+01
   %132 = getelementptr inbounds %struct.zone_t, %struct.zone_t* %57, i32 0, i32 48
   %133 = load i16, i16* %132, align 2, !tbaa !64
-  %134 = sitofp i16 %133 to float
+  %134 = uitofp i16 %133 to float
   %135 = fmul float %134, 2.500000e-01
   %136 = fsub float 0.000000e+00, %135
   %137 = shl nsw i32 %120, 7

@@ -31,7 +31,7 @@ export function mkcanvas(params = {}) {
   const { width, height, container, title } = Object.assign(
     {
       container: document.body,
-      title: "",
+      title: "3",
       width: 480,
       height: 320,
     },
@@ -45,11 +45,16 @@ export function mkcanvas(params = {}) {
   canvasCtx.strokeStyle = "white";
   canvasCtx.fillStyle = "black";
   canvasCtx.font = "2em";
-  const wrap = mkdiv("div", { style: "padding:10px" }, [
+  const wrap = mkdiv("div", { style: "padding:2px" }, [
     title ? mkdiv("h5", {}, title) : "",
     mkdiv("div", { class: "cp" }, [
       "y-zoom",
-      mkdiv("input", { type: "range", value: height, max: 3 * height, min: 0 }),
+      mkdiv("input", {
+        type: "range",
+        value: 0.5 * height,
+        max: 3 * height,
+        min: 0,
+      }),
     ]),
     canvas,
   ]);

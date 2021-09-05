@@ -43,11 +43,12 @@ export function queryDivs() {
     stdout,
     titleDiv,
     rx,
+    headerDiv: document.querySelector("#trktitle"),
   };
 }
 export async function main(
   sf2file,
-  { cpanel, cmdPanel, stdout, flist, timeslide, titleDiv, rx }
+  { cpanel, cmdPanel, stdout, flist, timeslide, titleDiv, rx, headerDiv }
 ) {
   if (!cpanel) cpanel = mkdiv("div");
   window.stdout = stdout;
@@ -111,6 +112,7 @@ export async function main(
     updateCanvas: null,
     titleDiv,
     rx,
+    headerDiv,
   });
   bindMidiAccess(pt);
   ctx.spinner.port.onmessage = function ({ data: { pcmplayback } }) {
@@ -155,7 +157,7 @@ export function bindMidiWorkerToAudioAndUI(
   midiworker,
   midiPort,
   ctx,
-  { timeslide, rx, cmdPanel, updateCanvas, titleDiv }
+  { timeslide, rx, cmdPanel, updateCanvas, titleDiv, headerDiv }
 ) {
   const rx1 = mkdiv("span").attachTo(rx);
   const rx2 = mkdiv("span").attachTo(rx);
@@ -166,7 +168,7 @@ export function bindMidiWorkerToAudioAndUI(
     } else if (e.data.qn) {
       rx1.innerHTML = e.data.qn;
     } else if (e.data.tempo) {
-      rx2.innerHTML = e.data.tempo;
+      rx2.innerHTML = "Tempo:" + e.data.tempo;
     } else if (e.data.t) {
       timeslide.value = e.data.t; //(e.data.t);
     } else if (e.data.meta) {
@@ -197,10 +199,12 @@ export function bindMidiWorkerToAudioAndUI(
             return parseInt(num).toString(16);
         }
       }
-      if (e.data.payload)
+      if (e.data.meta == 3) {
+        headerDiv.innerHTML = e.data.payload;
+      } else if (e.data.payload) {
         titleDiv.innerHTML +=
           "<br>" + metaDisplay(e.data.meta) + ": " + e.data.payload;
-    } else {
+      }
     }
   });
   timeslide.value = 0;
@@ -234,9 +238,10 @@ export async function initMidiSink(ctx, sf2, controllers, pt) {
   const ccs = new Uint8Array(128 * 16);
   const canvases = [];
   const cancontainer = document.querySelector("#bigcan");
+  debugger;
   const bigcan = mkcanvas({
     container: document.querySelector("#bigcan"),
-    width: 128 * 32,
+    width: cancontainer.clientWidth,
     height: cancontainer.clientHeight,
   });
   for (let i = 0; i < 16; i++) {

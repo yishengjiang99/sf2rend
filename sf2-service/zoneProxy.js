@@ -1,4 +1,4 @@
-const attributeKeys = [
+export const attributeKeys = [
   "StartAddrOfs",
   "EndAddrOfs",
   "StartLoopAddrOfs",

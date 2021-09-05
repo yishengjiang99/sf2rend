@@ -35,13 +35,15 @@
 		}
 
 		#channelContainer {
-			margin-top: 200px
+			margin-top: 20px;
+			height: 720px;
+			overflow-y: scroll;
 		}
 
 		#bigcan {
-			height: 220px;
+			height: 500px;
 			width: 1200px;
-			z-index: 1;
+			z-index: -1;
 		}
 
 	</style>
@@ -52,16 +54,16 @@
 
 	<table>
 		<tr>
-			<td colspan=6>
-				<h3>not afraid - eminem <button style='margin-left:auto' onclick='toggledebug()'>toggle debug</button>
-				</h3>
+			<td colspan=3>
+				<h3 id='trktitle'>not afraid - eminem
+				</h3><button style='margin-left:auto' onclick='toggledebug()'>toggle debug</button>
 			</td>
 		</tr>
 		<tr>
 			<td>
 				<div id='rx'><progress min="0" max="10000" step="1"></progress></div>
 			</td>
-			<td>
+			<td colspan="2">
 				<div id='cmdPanel'></div>
 			</td>
 
@@ -83,7 +85,7 @@
 			<td width=33% valign=top>
 				<div id="title"></div>
 
-				<div id=debug></div>
+				<pre id=debug></pre>
 			</td>
 		</tr>
 

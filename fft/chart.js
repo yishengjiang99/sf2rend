@@ -7,7 +7,7 @@ function resetCanvas(canvasCtx) {
   canvasCtx.fillRect(0, 0, width, height);
 }
 function chart(canvasCtx, dataArray) {
-  resetCanvas(canvasCtx)
+  resetCanvas(canvasCtx);
   let sum = 0,
     min = dataArray[0],
     max = dataArray[0];
@@ -17,7 +17,7 @@ function chart(canvasCtx, dataArray) {
     max = dataArray[i] > max ? dataArray[i] : max;
     min = dataArray[i] < min ? dataArray[i] : min;
   }
- canvasCtx.save();
+  canvasCtx.save();
   canvasCtx.beginPath();
 
   canvasCtx.moveTo(0, ((dataArray[0] - min) / (max - min)) * height);
@@ -28,7 +28,7 @@ function chart(canvasCtx, dataArray) {
   }
   canvasCtx.stroke();
   canvasCtx.restore();
-canvasCtx.restore();
+  canvasCtx.restore();
 }
 function mkcanvas() {
   const canvas = document.createElement("canvas");
@@ -40,7 +40,7 @@ function mkcanvas() {
   canvasCtx.strokeStyle = "white";
   canvasCtx.fillStyle = "black";
   canvasCtx.font = "2em";
-  canvas.style='background:black'; //color:black';
+  canvas.style = "background:black"; //color:black';
   document.body.append(canvas);
   return canvasCtx;
 }
