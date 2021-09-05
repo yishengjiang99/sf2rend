@@ -15,6 +15,7 @@
     "webpack-cli": "^4.7.2"
   },
   "dependencies": {
-    "midiread": "^2.0.15"
+    "midiread": "^2.0.15",
+    "mk-60fps": "^1.1.1"
   }
 }

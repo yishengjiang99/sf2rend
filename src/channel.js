@@ -33,26 +33,27 @@ export function channel(aggCtx, channelId, ui) {
       let eg;
       console.assert(_pg != null);
 
-      _pg.zMap
-        .filter(
-          (z) =>
-            (vel == -1 || (z.VelRange.lo < vel && z.VelRange.hi >= vel)) &&
-            (key == -1 || (z.KeyRange.lo < key && z.KeyRange.hi >= key))
-        )
-        .slice(0, 2)
-        .map((zone, i) => {
-          spinner.keyOn(channelId * 2 + i, zone, key, vel);
-          if (i == 0) {
-            requestAnimationFrame(() => {
-              volEG.zone = zone;
-              ui.active = true;
-              ui.velocity = vel;
-              ui.midi = key;
-              ui.env1 = volEG.keyOn(vel);
-              ui.zone = zone;
-            });
-          }
-        });
+      let zones = _pg.zMap.filter(
+        (z) =>
+          (vel == -1 || (z.VelRange.lo <= vel && z.VelRange.hi >= vel)) &&
+          (key == -1 || (z.KeyRange.lo < key && z.KeyRange.hi >= key))
+      );
+      if (zones.length == 0) {
+        zones = [_pg.zMap[0]];
+      }
+      zones.slice(0, 2).map((zone, i) => {
+        spinner.keyOn(channelId * 2 + i, zone, key, vel);
+        if (i == 0) {
+          requestAnimationFrame(() => {
+            volEG.zone = zone;
+            ui.active = true;
+            ui.velocity = vel;
+            ui.midi = key;
+            ui.env1 = volEG.keyOn(vel);
+            ui.zone = zone;
+          });
+        }
+      });
     },
     keyOff(key, vel) {
       if (!_pg) return;

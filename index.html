@@ -12,6 +12,20 @@
 			padding: 3px 6px;
 		}
 
+		a {
+			color: white
+		}
+
+		#midilist {
+			height: 720px;
+			overflow-y: scroll;
+		}
+
+		header {
+			height: fit-content
+		}
+
+
 		.keyboards {
 			user-select: none;
 		}
@@ -20,153 +34,67 @@
 			color: black;
 		}
 
-		a {
-			color: white;
-		}
-
-		datalist {
-			position: absolute;
-			background-color: lightgrey;
-			font-family: sans-serif;
-			font-size: 0.8rem;
-		}
-
-		option {
-			background-color: #bbb;
-			padding: 4px;
-			margin-bottom: 1px;
-			cursor: pointer;
-		}
-
-
-		/* The navigation menu links */
-		aside {
-			position: fixed;
-			transform: translateZ(0px);
-			display: block;
-			z-index: 1;
-			inset: 5.77778rem auto 0px 0px;
-			width: 18.6667rem;
-			box-sizing: border-box;
-			color: inherit;
-			overflow-y: auto;
-			transition: transform 150ms ease-out 0s;
-			display: grid;
-			grid-template-rows: 1fr 1fr;
-		}
-
-		#right {
-			display: "grid";
-			grid-template-rows: "1fr 1fr 1fr";
-			position: fixed;
-			transform: translateZ(0px);
-			display: none;
-			right: 0;
-
-		}
-
-
-		header {
-			margin-left 18rem;
-		}
-
-		main {
-			width: 640px;
-			height: 50vh;
-			margin-left: 19rem;
-		}
-
-		#debug {
-			position: fixed;
-			right: 20rem;
-			width: 20rem;
-			top: 0;
-			background-color: black;
-		}
-
-		#stdout {
-			position: fixed;
-			right: 0;
-			width: 20rem;
-			top: 0;
-
-		}
-
-		footer {
-			position: fixed;
-			bottom: 0;
-			width: 100vh;
-			margin-left: 18rem;
-			height: 4em;
-			color: black;
-
-			background-color: white;
-		}
-
-		#rx {
-			color: black;
-			display: grid;
-
-			background-color: white;
-			grid-template-columns: 1fr 1fr 1fr;
-		}
-
-		#cmdPanel {
-			color: black;
-			display: grid;
-
-			background-color: white;
-			grid-template-columns: 1fr 1fr 1fr;
+		#channelContainer {
+			margin-top: 200px
 		}
 
 		#bigcan {
-			margin: 0;
-			padding: 0;
-			width: 50vw;
-			height: 50vh;
-			position: fixed;
-			top: 0;
-			left: 50vw;
-			z-index: -1;
+			height: 220px;
+			width: 1200px;
+			z-index: 1;
 		}
 
 	</style>
 </head>
 
 <body>
-	<header>
-		<h3>not afraid - eminem <button style='margin-left:auto' onclick='toggledebug()'>toggle debug</button>
-		</h3>
-
-	</header>
-	<aside class='col-md-3'>
 
 
+	<table>
+		<tr>
+			<td colspan=6>
+				<h3>not afraid - eminem <button style='margin-left:auto' onclick='toggledebug()'>toggle debug</button>
+				</h3>
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<div id='rx'><progress min="0" max="10000" step="1"></progress></div>
+			</td>
+			<td>
+				<div id='cmdPanel'></div>
+			</td>
 
-		<div id='sf2list'></div>
-		<div id='midilist'>
-		</div>
+		</tr>
+		<tr>
+			<td colspan=3>
+				<div id='bigcan'></div>
+			</td>
+		</tr>
+		<tr>
+			<td width=33% valign=top>
+				<div id='midilist'>
+			</td>
+			<td width=33% valign=top>
 
-	</aside>
-	<div id='right'>debug;
-		<pre id=stdout></pre>
-		<div id=debug></div>
-	</div>
-	<main>
-		<div id="title"></div>
-		<div id='channelContainer'>
-		</div>
-	</main>
-	<div id='bigcan'></div>
-	<footer>
-		<div id='rx'><progress min="0" max="10000" step="1"></progress></div>
-		<div id='cmdPanel'></div>
-	</footer>
+				<div id='channelContainer'>
+				</div>
+			</td>
+			<td width=33% valign=top>
+				<div id="title"></div>
+
+				<div id=debug></div>
+			</td>
+		</tr>
+
+	</table>
+	<pre id=stdout></pre>
+
 	<script type='module' src="./src/index.js">
 
 	</script>
 	<script>
-		const debugdiv = document.querySelector("#right");
+		const debugdiv = document.querySelector("#debug");
 		let debugshow = false;
 		function toggledebug() {
 			debugshow = !debugshow;

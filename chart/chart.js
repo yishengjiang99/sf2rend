@@ -1,50 +1,30 @@
-//@ts-ignore
-export const WIDTH = 480; // / 2,
-export const HEIGHT = 320;
-function get_w_h(canvasCtx) {
-  return [
-    canvasCtx.canvas.getAttribute("width")
-      ? parseInt(canvasCtx.canvas.getAttribute("width"))
-      : WIDTH,
-    canvasCtx.canvas.getAttribute("height")
-      ? parseInt(canvasCtx.canvas.getAttribute("height"))
-      : HEIGHT,
-    JSON.parse(canvasCtx.canvas.getAttribute("mkchartConfigs") || "{}"),
-  ];
-}
-export function resetCanvas(c) {
-  if (!c) return;
-  const canvasCtx = c;
-  const [_width, _height] = get_w_h(canvasCtx);
-  canvasCtx.clearRect(0, 0, _width, _height);
-  canvasCtx.fillStyle = "black";
-  canvasCtx.fillRect(0, 0, _width, _height);
-}
+import { mkdiv } from "../mkdiv/mkdiv.js";
+
 export function chart(canvasCtx, dataArray) {
   resetCanvas(canvasCtx);
-  const [_width, _height, configs] = get_w_h(canvasCtx);
+  const slider = canvasCtx.canvas.parentElement.querySelector(
+    "input[type='range']"
+  );
+  slider.oninput = (e) => chart(canvasCtx, dataArray);
+  const [_width, _height] = get_w_h(canvasCtx);
   let max = 0,
     min = 0,
     x = 0;
   let iWIDTH = _width / dataArray.length; //strokeText(`r m s : ${sum / bufferLength}`, 10, 20, 100)
   for (let i = 1; i < dataArray.length; i++) {
     max = dataArray[i] > max ? dataArray[i] : max;
-    min = dataArray[i] < min ? dataArray[i] : min;
   }
   canvasCtx.beginPath();
-  // canvasCtx.lineWidth = 0.1;
-  // canvasCtx.moveTo(0, _height / 2);
-  // canvasCtx.lineTo(_width, _height / 2);
-  // canvasCtx.stroke();
-  canvasCtx.lineWidth = 2;
+
+  canvasCtx.lineWidth = 1;
   canvasCtx.strokeStyle = "white";
   canvasCtx.moveTo(0, _height / 2);
+  const zoomY = slider.value;
   for (let i = 1; i < dataArray.length; i++) {
     x += iWIDTH;
-    canvasCtx.lineTo(x, _height / 2 - ((_height / 4) * dataArray[i]) / max);
+    canvasCtx.lineTo(x, _height / 2 - zoomY * dataArray[i]);
   }
   canvasCtx.stroke();
-  canvasCtx.restore();
   canvasCtx.font = "1em Arial";
 }
 export function mkcanvas(params = {}) {
@@ -52,12 +32,11 @@ export function mkcanvas(params = {}) {
     {
       container: document.body,
       title: "",
-      width: WIDTH,
-      height: HEIGHT,
+      width: 480,
+      height: 320,
     },
     params
   );
-
   const canvas = document.createElement("canvas");
   canvas.setAttribute("width", `${width}`);
   canvas.setAttribute("height", `${height}`);
@@ -66,17 +45,23 @@ export function mkcanvas(params = {}) {
   canvasCtx.strokeStyle = "white";
   canvasCtx.fillStyle = "black";
   canvasCtx.font = "2em";
-  const wrap = mkdiv("div", {}, [title ? mkdiv("h5", {}, title) : "", canvas]);
+  const wrap = mkdiv("div", { style: "padding:10px" }, [
+    title ? mkdiv("h5", {}, title) : "",
+    mkdiv("div", { class: "cp" }, [
+      "y-zoom",
+      mkdiv("input", { type: "range", value: height, max: 3 * height, min: 0 }),
+    ]),
+    canvas,
+  ]);
   container.append(wrap);
   canvas.ondblclick = () => resetCanvas(canvasCtx);
-  canvas.setAttribute("mkchartConfigs", JSON.stringify({ width, height }));
   return canvasCtx;
 }
 export async function renderFrames(
   canvsCtx,
   arr,
   fps = 60,
-  samplesPerFrame = 48000 / 60
+  samplesPerFrame = 1024
 ) {
   let nextframe,
     offset = 0;
@@ -116,36 +101,21 @@ export async function renderFrames(
     chart(canvsCtx, arr.slice(offset, offset + samplesPerFrame));
   });
 }
-export function mkdiv(type, attr = {}, children = "") {
-  // if (attr && typeof attr != "object" && !children)
-  //   return mkdiv(type, {}, attr);
-  const div = document.createElement(type);
-  for (const key in attr) {
-    if (key.match(/on(.*)/)) {
-      div.addEventListener(key.match(/on(.*)/)[1], attr[key]);
-    } else {
-      div.setAttribute(key, attr[key]);
-    }
-  }
-  const charray = !Array.isArray(children) ? [children] : children;
-  charray.forEach((c) => {
-    typeof c == "string" ? (div.innerHTML += c) : div.append(c);
-  });
-  return div;
+function get_w_h(canvasCtx) {
+  return [
+    canvasCtx.canvas.getAttribute("width")
+      ? parseInt(canvasCtx.canvas.getAttribute("width"))
+      : WIDTH,
+    canvasCtx.canvas.getAttribute("height")
+      ? parseInt(canvasCtx.canvas.getAttribute("height"))
+      : HEIGHT,
+  ];
 }
-HTMLElement.prototype.attachTo = function (parent) {
-  parent.append(this);
-  return this;
-};
-HTMLElement.prototype.wrapWith = function (tag) {
-  const parent = mkdiv(tag);
-  parent.append(this);
-  return parent;
-};
-
-export function wrapDiv(div, tag, attrs = {}) {
-  return mkdiv(tag, attrs, [div]);
-}
-export function wrapList(divs) {
-  return mkdiv("div", {}, divs);
+export function resetCanvas(c) {
+  if (!c) return;
+  const canvasCtx = c;
+  const [_width, _height] = get_w_h(canvasCtx);
+  canvasCtx.clearRect(0, 0, _width, _height);
+  canvasCtx.fillStyle = "black";
+  canvasCtx.fillRect(0, 0, _width, _height);
 }

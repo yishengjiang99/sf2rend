@@ -104,8 +104,6 @@ export async function main(
     console.log("preset sent");
   }
   let cid = 0;
-  flist.onclick = ({ target }) =>
-    _loadProgram(cid++, target.getAttribute("pid"), target.getAttribute("bid"));
 
   bindMidiWorkerToAudioAndUI(midiworker, pt, ctx, {
     timeslide,
@@ -117,12 +115,7 @@ export async function main(
   bindMidiAccess(pt);
   ctx.spinner.port.onmessage = function ({ data: { pcmplayback } }) {
     pcmplayback &&
-      requestAnimationFrame(() =>
-        chart(
-          midiSink.bigcan,
-          pcmplayback.filter((v) => v != 0)
-        )
-      );
+      requestAnimationFrame(() => chart(midiSink.bigcan, pcmplayback));
   };
 }
 export function mkeventsPipe() {
@@ -243,7 +236,7 @@ export async function initMidiSink(ctx, sf2, controllers, pt) {
   const cancontainer = document.querySelector("#bigcan");
   const bigcan = mkcanvas({
     container: document.querySelector("#bigcan"),
-    width: cancontainer.clientWidth,
+    width: 128 * 32,
     height: cancontainer.clientHeight,
   });
   for (let i = 0; i < 16; i++) {

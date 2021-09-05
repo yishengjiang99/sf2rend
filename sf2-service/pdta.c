@@ -1,4 +1,3 @@
-#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -26,11 +25,20 @@ int sdtastart;
 zone_t *presetZones;
 zone_t *root;
 zone_t *presets[0xff];
-enum {
-  phdrHead = 0x1000,
-  instHead = 0x2000,
-  shdrHead = 0x4000,
-} headertype;
+
+typedef struct {
+  rangesType vel, key;
+  pgen *attrs;
+} conditionals;
+
+typedef struct {
+  phdr *pheader;
+  pgen *pdefs;
+  igen *idefs;
+  conditionals *pattrs;
+  conditionals *iattrs;
+} pzone;
+
 #define read(section)                         \
   sh = (section_header *)pdtabuffer;          \
   pdtabuffer += 8;                            \
@@ -155,29 +163,7 @@ static inline int combine_pattrs(int genop, short *zoneAttr, short psetAttr) {
       if (prange[0] > irange[0]) irange[0] = prange[0];
       zoneAttr[genop] = irange[0] | (irange[1] << 8);
       break;
-    case VolEnvDelay:
-    case VolEnvAttack:
-    case VolEnvHold:
-    case VolEnvDecay:
-    case VolEnvRelease:
-    case ModEnvDelay:
-    case ModEnvAttack:
-    case ModEnvHold:
-    case ModEnvDecay:
-    case ModEnvRelease:
-      /**
-       *
-       *  2^(x/1200) = y
-       *
-       * x/1200 = log2(y)
-       * x=log2(y)*1200
-       */
-      // i apologize for the following lines of code.
-      zval = powf(2.0f, zoneAttr[genop] / 1200.0f);
-      pval = powf(2.0f, psetAttr / 1200.0f);
-      float cf = log2f(zval + pval) * 1200.0f;
-      zoneAttr[genop] = (short)cf;
-      break;
+
     default:
       zoneAttr[genop] += psetAttr;
   }
