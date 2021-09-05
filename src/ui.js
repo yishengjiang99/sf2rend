@@ -8,10 +8,29 @@ const pixelPerSec = 12;
 export class TrackUI {
   constructor(idx, cb) {
     const i = idx;
+    let refcnt = 0;
     const keyboard = mkdiv(
       "div",
       { class: "keyboards" },
-      range(55, 69).map((midi) => mkdiv("a", { midi }, [midi, " "]))
+      range(55, 78).map((midi) =>
+        mkdiv(
+          "a",
+          {
+            midi,
+            onmousedown: (e) => {
+              refcnt++;
+              cb([0x90 | idx, midi, 111]);
+
+              e.target.addEventListener(
+                "mouseup",
+                () => refcnt >= 0 && cb([0x80 | idx, midi, 111]),
+                { once: true }
+              );
+            },
+          },
+          [midi, " "]
+        )
+      )
     );
     const container = mkdiv(
       "div",
@@ -117,21 +136,21 @@ export class TrackUI {
 
     this.canc = container.querySelector(".canvasContainer");
 
-    this.keys = Array.from(keyboard.querySelectorAll("a"));
-    this.keys.forEach((k, keyidx) => {
-      var refcnt = 0;
-      const midi = k.getAttribute("midi");
-      k.onmousedown = () => {
-        refcnt++;
-        cb([0x90 | idx, midi, 111]);
+    // this.keys = Array.from(keyboard.querySelectorAll("a"));
+    // this.keys.forEach((k, keyidx) => {
+    //   var refcnt = 0;
+    //   const midi = k.getAttribute("midi");
+    //   k.onmousedown = () => {
+    //     refcnt++;
+    //     cb([0x90 | idx, midi, 111]);
 
-        k.addEventListener(
-          "mouseup",
-          () => refcnt-- > 0 && cb([0x80 | idx, midi, 111]),
-          { once: true }
-        );
-      };
-    });
+    //     k.addEventListener(
+    //       "mouseup",
+    //       () => refcnt-- > 0 && cb([0x80 | idx, midi, 111]),
+    //       { once: true }
+    //     );
+    //   };
+    // });
     this.polylines = Array.from(container.querySelectorAll("polyline"));
     this.container = container;
   }

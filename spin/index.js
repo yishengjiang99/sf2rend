@@ -1,3 +1,4 @@
+import { wasmbin } from "./spin.wasm.js";
 /**
  * 
  * @returns 
@@ -16,8 +17,8 @@ export async function mkspinner() {
     maximum: 1024,
     initial: 1024,
   });
-  const fetchPromise = fetch(basename() + "spin/spin.wasm");
-  const { instance } = await WebAssembly.instantiateStreaming(fetchPromise, {
+  const mod = await WebAssembly.compile(wasmbin);
+  const instance = await WebAssembly.instantiate(mod, {
     env: { memory },
   });
   let brk = 0x30000;

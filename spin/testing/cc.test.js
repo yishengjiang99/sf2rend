@@ -24,8 +24,8 @@ promise_test(async () => {
   }
 
   assert_equals(sp.applyCentible(0.6, 0 - sp.midi_volume_log10(0)), 0.0);
-  assert_equals(sp.applyCentible(0.6, sp.kRateAttenuate(0, 0, 127, 127)), 0.0);
-
-  const kdb = sp.kRateAttenuate(0, 127, 127, 127);
+  sp.set_zone(sp);
+  const spp = sp.sps.value;
+  const kdb = sp.kRateAttenuate(spp, 0);
   assert_equals(kdb, 0);
 }, "calc krate asss 2, 127, 127, 127");

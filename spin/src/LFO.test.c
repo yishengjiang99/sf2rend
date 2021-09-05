@@ -1,4 +1,4 @@
-#include "LFO.c"
+#include "LFO.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -29,13 +29,12 @@
 
 int main() {
   LFO lfo[2];
-
+  lfo->delay = 1200;
   set_frequency(lfo, 1200);
-  roll(lfo, 128);
-  lfo->delay = 0;
-  lfo->phaseInc = 50;
-  printf("\n %f\n", timecent2hertz(-1200) * (1 << 16) / SAMPLE_RATE);
+  roll(lfo, 1);
+
+  // printf("\n %f\n", timecent2hertz(-1200) * (1 << 16) / SAMPLE_RATE);
 
   set_frequency(lfo, -1200);
-  rollprint(48000, 128);
+  rollprint(48000, 1);
 }

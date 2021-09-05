@@ -101,6 +101,15 @@ float trigger_attack(spinner* x, zone_t* z, float ratio, int velocity) {
 
 float lerp(float f1, float f2, float frac) { return f1 + (f2 - f1) * frac; }
 
+float kRateAttenuate(spinner* x, int ch) {
+  float kRateCB = 0.0f;
+  kRateCB -= (float)x->zone->Attenuation / 4;
+  kRateCB -= midi_volume_log10(midi_cc_vals[ch * 128 + TML_VOLUME_MSB]);
+  if (x->voleg->stage < decay)
+    kRateCB -= midi_volume_log10(midi_cc_vals[ch * 128 + TML_EXPRESSION_MSB]);
+  kRateCB -= midi_volume_log10(x->velocity) / 4;
+  return kRateCB;
+}
 void _spinblock(spinner* x, int n, int blockOffset) {
   double db, dbInc;
   float modlfoval = roll(x->modlfo, 64);
@@ -128,12 +137,7 @@ void _spinblock(spinner* x, int n, int blockOffset) {
             (float)(vibrLFOEffects.mod2pitch / 100.0f)) /
            12.0f;
 
-  float kRateCB = 0.0f;
-  kRateCB -= (float)x->zone->Attenuation / 4;
-  kRateCB -= midi_volume_log10(midi_cc_vals[ch * 128 + TML_VOLUME_MSB]);
-  kRateCB -= midi_volume_log10(midi_cc_vals[ch * 128 + TML_EXPRESSION_MSB]);
-  kRateCB -= midi_volume_log10(x->velocity) / 4;
-  kRateCB += modlfoEffect.mod2volume;
+  float kRateCB = kRateAttenuate(x, ch);
 
   double panLeft = panleftLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]];
   double panRight = panrightLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]];
