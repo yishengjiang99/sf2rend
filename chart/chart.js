@@ -31,7 +31,7 @@ export function mkcanvas(params = {}) {
   const { width, height, container, title } = Object.assign(
     {
       container: document.body,
-      title: "3",
+      title: "",
       width: 480,
       height: 320,
     },

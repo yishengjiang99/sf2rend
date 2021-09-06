@@ -139,8 +139,8 @@ void _spinblock(spinner* x, int n, int blockOffset) {
 
   float kRateCB = kRateAttenuate(x, ch);
 
-  double panLeft = panleftLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]];
-  double panRight = panrightLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]];
+  double panLeft = panleftLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]] / 4;
+  double panRight = panrightLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]] / 4;
 
   for (int i = 0; i < n; i++) {
     fract = fract + stride;

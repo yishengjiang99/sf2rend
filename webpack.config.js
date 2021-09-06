@@ -1,6 +1,10 @@
 const path = require("path");
 const webpack = require("webpack");
-
+const Fs = require("fs");
+Fs.writeFileSync(
+  "./api/v1_list.js",
+  `export const sf2list=${JSON.stringify(Fs.readdirSync("static"))}`
+);
 module.exports = {
   entry: {
     main: "./src/index.js",

@@ -6,6 +6,7 @@ import { chart, mkcanvas, renderFrames } from "../chart/chart.js";
 import { fetchAndLoadPlaylist } from "./midilist.js";
 import { channel } from "./channel.js";
 import { mkEnvelope } from "./adsr.js";
+import { sf2list } from "../api/v1_list.js";
 let _loadProgram;
 
 const programNames = [];
