@@ -3,7 +3,13 @@ const webpack = require("webpack");
 const Fs = require("fs");
 Fs.writeFileSync(
   "./api/v1_list.js",
-  `export const sf2list=${JSON.stringify(Fs.readdirSync("static"))}`
+  `export const sf2list=${JSON.stringify(
+    require("child_process")
+      .execSync("ls -rS static")
+      .toString()
+      .trim()
+      .split("\n")
+  )}`
 );
 module.exports = {
   entry: {

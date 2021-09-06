@@ -8,15 +8,16 @@ import { channel } from "./channel.js";
 import { mkEnvelope } from "./adsr.js";
 import { sf2list } from "../api/v1_list.js";
 let _loadProgram;
-
-const programNames = [];
+const getParams = new URLSearchParams(document.location.search);
+let midif = getParams.get("midif") || "song.mid";
+let sf2f = getParams.get("sf2f") || sf2list[0];
 let sf2;
+const programNames = [];
 const cdnroot = `https://grep32bit.blob.core.windows.net/midi/`;
-const sf2file = "/sf2rend/static/file.sf2";
 
 if (!document.location.href.includes("test.html")) {
   fetchAndLoadPlaylist();
-  main(sf2file, queryDivs());
+  main(sf2f, midif, queryDivs());
   window.onerror = (event, source, lineno, colno, error) => {
     document.querySelector("#debug").innerHTML = JSON.stringify([
       event,
@@ -36,6 +37,21 @@ export function queryDivs() {
   const timeslide = document.querySelector("progress");
   const { stdout } = logdiv(document.querySelector("pre"));
   const titleDiv = document.querySelector("#title");
+  const sf2select = mkdiv(
+    "select",
+    {
+      onchange: (e) =>
+        (document.location.href = `${
+          document.location.href.split("?")[0]
+        }?midif=${midif}&sf2f=${e.target.value}`),
+    },
+    sf2list.map((f) =>
+      f == sf2f
+        ? mkdiv("option", { value: f, selected: 1 }, f)
+        : mkdiv("option", { value: f }, f)
+    )
+  );
+  cmdPanel.append(sf2select);
   return {
     flist,
     cpanel,
@@ -49,13 +65,12 @@ export function queryDivs() {
 }
 export async function main(
   sf2file,
+  midif,
   { cpanel, cmdPanel, stdout, flist, timeslide, titleDiv, rx, headerDiv }
 ) {
   if (!cpanel) cpanel = mkdiv("div");
   window.stdout = stdout;
-  const midiurl =
-    cdnroot + (document.location.search.substring(1) || "song.mid");
-  console.log(midiurl);
+  const midiurl = cdnroot + midif;
   const pt = mkeventsPipe();
 
   const controllers = mkui(cpanel, pt);
@@ -63,7 +78,7 @@ export async function main(
   const drums = mkdiv("datalist", { id: "drums" });
   document.body.append(programs);
   document.body.append(drums);
-  sf2 = await load(sf2file, {
+  sf2 = await load("static/" + sf2file, {
     onHeader(pid, bid, str) {
       const list = bid ? drums : programs;
       list.append(mkdiv("option", { class: "chlink", value: str, pid }));
