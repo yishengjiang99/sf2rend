@@ -145,13 +145,20 @@ class SpinProcessor extends AudioWorkletProcessor {
       o[0][1][j] =
         o[0][1][j] > 1.0 ? 1.0 : o[0][1][j] < -1.0 ? -1.0 : o[0][1][j];
     }
-    const pcmplayback = new Float32Array(128 * 32);
-    pcmplayback.set(this.outputfff);
-    //round-about way to async invoke msg port when less verbose method unavailable in audioworklet scope
-    //thank god for my 21st century laptop for accommodating a horrendously inefficient way to do this
-    new Promise((r) => r()).then(() =>
-      this.port.postMessage({ pcmplayback: pcmplayback })
-    );
+    if (
+      o[0][0][15] > 0.00000001 ||
+      o[0][0][44] > 0.00000001 ||
+      o[0][0][66] > 0.00000001 ||
+      o[0][0][22] > 0.00000001
+    ) {
+      const pcmplayback = new Float32Array(128 * 32);
+      pcmplayback.set(this.outputfff);
+      //round-about way to async invoke msg port when less verbose method unavailable in audioworklet scope
+      //thank god for my 21st century laptop for accommodating a horrendously inefficient way to do this
+      new Promise((r) => r()).then(() =>
+        this.port.postMessage({ pcmplayback: pcmplayback })
+      );
+    }
     return true;
   }
 }
