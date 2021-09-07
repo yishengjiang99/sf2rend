@@ -191,16 +191,13 @@ export function bindMidiWorkerToAudioAndUI(
       midiPort.postMessage(e.data.channel);
     } else if (e.data.qn) {
       rx1.innerHTML = e.data.qn;
-      if (e.data.qn ^ 0xf) {
-        const seqrow = new Array(50).fill(" ");
-        for (const c of controllers) {
-          seqrow[c.midi - 50] = "#";
-          stdout(seqrow.join(""));
-        }
-        stdout(seqrow.join(""));
+      const seqrow = new Array(88).fill(" ");
+      for (const c of controllers) {
+        if (c.active && c.midi) seqrow[c.midi - 21] = "#";
       }
+      stdout(seqrow.join(""));
     } else if (e.data.tempo) {
-      rx2.innerHTML = "Tempo:" + e.data.tempo;
+      rx2.innerHTML = "Tempo:" + (e.data.tempo | 0);
     } else if (e.data.t) {
       timeslide.value = e.data.t; //(e.data.t);
     } else if (e.data.meta) {
@@ -252,6 +249,7 @@ export function bindMidiWorkerToAudioAndUI(
       }
     })
   );
+  midiworker.postMessage({ cmd: "inited" });
 }
 function resetGM() {
   cid = 0;
@@ -292,6 +290,14 @@ export async function initMidiSink(ctx, sf2, controllers, pt) {
       case 0x08:
         channels[ch].keyOff(key, vel);
         break;
+      case 0x00:
+        channels[ch].keyOn(key, 55);
+        //   channels[ch].keyOn(vel, 55);
+
+        //  channels[ch + 1].keyOn(vel, 66);
+        //  stdout("midi cmd: " + [ch, stat, b, c].join("/"));
+
+        break;
       case 0x09:
         if (vel == 0) {
           channels[ch].keyOff(key, vel);
@@ -300,6 +306,8 @@ export async function initMidiSink(ctx, sf2, controllers, pt) {
         }
         break;
       default:
+        stdout("midi cmd: " + [ch, stat, b, c].join("/"));
+
         break;
     }
   });

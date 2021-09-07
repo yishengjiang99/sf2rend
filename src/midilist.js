@@ -27,7 +27,7 @@ export async function fetchAndLoadPlaylist() {
       mkdiv(
         "a",
         {
-          href: "index.html?" + l.get("Url").replace(cdnroot, ""),
+          href: "index.html?midif=" + l.get("Url").replace(cdnroot, ""),
         },
         l.get("Name")
       ).wrapWith("li")

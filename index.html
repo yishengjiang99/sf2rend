@@ -17,7 +17,7 @@
 		}
 
 		#midilist {
-			height: 250px;
+			height: 720px;
 			overflow-y: scroll;
 		}
 
@@ -30,7 +30,6 @@
 		}
 
 		#channelContainer {
-			margin-top: 20px;
 			height: 720px;
 			overflow-y: scroll;
 		}
@@ -38,11 +37,15 @@
 		#bigcan {
 			height: 250px;
 			width: 1200px;
+		}
+
+		#bigcan canvas {
 			z-index: -1;
 		}
 
 		#stdout {
-			/* height: 250px; */
+			height: 720px;
+
 			overflow-y: scroll;
 		}
 
@@ -53,6 +56,16 @@
 
 
 	<table>
+		<tr>
+			<td colspan=3>
+				<div id='bigcan'></div>
+			</td>
+			<td rowspan=4 valign=top>
+				<pre id=stdout>welcome
+					
+				</pre>
+			</td>
+		</tr>
 		<tr>
 			<td colspan=1>
 				<span id='trktitle'>Performant WASM MIDI Player
@@ -70,18 +83,9 @@
 			</td>
 			<td>
 			</td>
-			<td rowspan=3>
-				<pre id=stdout>welcome
-					
-				</pre>
-			</td>
+
 		</tr>
 
-		<tr>
-			<td colspan=3>
-				<div id='bigcan'></div>
-			</td>
-		</tr>
 		<tr>
 			<td width=320 valign=top>
 				<div id='midilist'>
@@ -97,7 +101,8 @@
 		</tr>
 		<tr>
 			<td colspan=4>
-				<pre id=debug></pre>
+				<button onclick='toggledebug()'>toggle debug</button>
+				<pre style='display:none' id=debug>debugdiv</pre>
 			</td>
 		</tr>
 	</table>

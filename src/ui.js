@@ -148,15 +148,17 @@ export class TrackUI {
     this.polylines = Array.from(container.querySelectorAll("polyline"));
     this.container = container;
     this._active = false;
+    this._midi = null;
   }
   set name(id) {
     this.nameLabel.value = id;
   }
   set midi(v) {
+    this._midi = v;
     this.meters[0].value = v;
   }
   get midi() {
-    return this.meters[0].value;
+    return this._midi;
   }
   set CC({ key, value }) {
     switch (key) {
@@ -186,7 +188,7 @@ export class TrackUI {
     return parseInt(this.velinput.value);
   }
   get active() {
-    return;
+    return this._active;
   }
   set active(b) {
     this._active = b;

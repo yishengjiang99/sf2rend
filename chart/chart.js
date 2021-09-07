@@ -47,7 +47,7 @@ export function mkcanvas(params = {}) {
   canvasCtx.font = "2em";
   const wrap = mkdiv("div", { style: "padding:2px" }, [
     title ? mkdiv("h5", {}, title) : "",
-    mkdiv("div", { class: "cp" }, [
+    mkdiv("div", { class: "cp", style: "position:absolute" }, [
       "y-zoom",
       mkdiv("input", {
         type: "range",
