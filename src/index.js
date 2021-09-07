@@ -254,7 +254,6 @@ export async function initMidiSink(ctx, sf2, controllers, pt) {
   const ccs = new Uint8Array(128 * 16);
   const canvases = [];
   const cancontainer = document.querySelector("#bigcan");
-  debugger;
   const bigcan = mkcanvas({
     container: document.querySelector("#bigcan"),
     width: cancontainer.clientWidth,

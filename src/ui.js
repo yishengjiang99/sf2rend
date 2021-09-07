@@ -13,7 +13,7 @@ export class TrackUI {
     const keyboard = mkdiv(
       "div",
       { class: "keyboards" },
-      range(55, 78).map((midi) =>
+      range(48, 72).map((midi) =>
         mkdiv(
           "a",
           {
@@ -29,7 +29,7 @@ export class TrackUI {
               );
             },
           },
-          [midi, " "]
+          [midi % 12 ? " " : mkdiv("br"), midi]
         )
       )
     );
@@ -39,7 +39,7 @@ export class TrackUI {
         class: "attrs",
 
         style:
-          "display:grid; grid-template-columns:1fr 1fr 1fr; grid-column-gap:10px;",
+          "display:grid; grid-template-columns:1fr 1fr; grid-column-gap:10px;",
       },
       [
         mkdiv(
@@ -68,47 +68,56 @@ export class TrackUI {
           ["channel " + i]
         ),
         mkdiv("input", { type: "checkbox" }),
-        mkdiv("meter", { min: 0, max: 127, step: 1, aria: "key" }),
-        mkdiv("div", {}, [
-          // mkdiv("label", { for: "velin" }, "velocity"),
-          mkdiv("input", {
-            type: "range",
-            id: "velin",
-            min: 1,
-            max: 127,
-            step: 1,
-            aria: "vel",
-          }),
-          mkdiv("label", { for: "vol" }, "volume"),
+        mkdiv(
+          "div",
+          {
+            style: "display:grid; grid-template-columns:1fr 1fr; ",
+          },
+          [
+            "midi",
+            mkdiv("meter", { min: 0, max: 127, step: 1, aria: "key" }),
 
-          mkdiv("input", {
-            min: 0,
-            max: 127,
-            value: 100,
-            step: 1,
-            id: "vol",
-            type: "range",
-            oninput: (e) => cb([0xb0 | idx, 7, e.target.value]),
-          }),
-          mkdiv("label", { for: "pan" }, "pan"),
-          mkdiv("input", {
-            min: 0,
-            max: 127,
-            step: 1,
-            type: "range",
-            value: 64,
-            oninput: (e) => cb([0xb0 | idx, 10, e.target.value]),
-          }),
-          mkdiv("label", { for: "expression" }, "expression"),
-          mkdiv("input", {
-            min: 0,
-            max: 127,
-            step: 1,
-            value: 127,
-            type: "range",
-            oninput: (e) => cb([0xb0 | idx, 11, e.target.value]),
-          }),
-        ]),
+            // mkdiv("label", { for: "velin" }, "velocity"),
+            "vel",
+            mkdiv("input", {
+              type: "range",
+              id: "velin",
+              min: 1,
+              max: 127,
+              step: 1,
+              aria: "vel",
+            }),
+            mkdiv("label", { for: "vol" }, "volume"),
+
+            mkdiv("input", {
+              min: 0,
+              max: 127,
+              value: 100,
+              step: 1,
+              id: "vol",
+              type: "range",
+              oninput: (e) => cb([0xb0 | idx, 7, e.target.value]),
+            }),
+            mkdiv("label", { for: "pan" }, "pan"),
+            mkdiv("input", {
+              min: 0,
+              max: 127,
+              step: 1,
+              type: "range",
+              value: 64,
+              oninput: (e) => cb([0xb0 | idx, 10, e.target.value]),
+            }),
+            mkdiv("label", { for: "expression" }, "expression"),
+            mkdiv("input", {
+              min: 0,
+              max: 127,
+              step: 1,
+              value: 127,
+              type: "range",
+              oninput: (e) => cb([0xb0 | idx, 11, e.target.value]),
+            }),
+          ]
+        ),
         mkdiv("div", {}, [
           mksvg(
             "svg",

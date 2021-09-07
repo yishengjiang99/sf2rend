@@ -252,9 +252,9 @@ zone_t *findPresetZones(int i, int nregions) {
             int add = 1;
             shdrcast *sh = (shdrcast *)shdrs + g->val.shAmount;
             for (int i = 0; i < 60; i++) {
-              if (attrs[ibg_attr_cache_index + i]) {
+              if (attrs[ibg_attr_cache_index + i] != defvals[i]) {
                 zoneattr[i] = attrs[ibg_attr_cache_index + i];
-              } else if (attrs[default_ibagcache_idex + i]) {
+              } else if (attrs[default_ibagcache_idex + i] != defvals[i]) {
                 zoneattr[i] = attrs[default_ibagcache_idex + i];
               }
               if (attrs[pbg_attr_cache_index + i] != defvals[i]) {
