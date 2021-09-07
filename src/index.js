@@ -11,7 +11,7 @@ let _loadProgram;
 const getParams = new URLSearchParams(document.location.search);
 let midif = getParams.get("midif") || "song.mid";
 let sf2f = getParams.get("sf2f") || sf2list[0];
-let sf2;
+let sf2, stdout, controllers, ctx, midiSink;
 const programNames = [];
 const cdnroot = `https://grep32bit.blob.core.windows.net/midi/`;
 
@@ -19,23 +19,31 @@ if (!document.location.href.includes("test.html")) {
   fetchAndLoadPlaylist();
   main(sf2f, midif, queryDivs());
   window.onerror = (event, source, lineno, colno, error) => {
-    document.querySelector("#debug").innerHTML = JSON.stringify([
-      event,
-      source,
-      lineno,
-      colno,
-      error,
-    ]);
+    document.querySelector("#debug").innerHTML = JSON.stringify(
+      {
+        event,
+        source,
+        lineno,
+        colno,
+        error,
+      },
+      null,
+      "\n"
+    );
   };
 }
 export function queryDivs() {
   const flist = document.querySelector("#sf2list");
   const cpanel = document.querySelector("#channelContainer");
   const cmdPanel = document.querySelector("#cmdPanel");
-  const rx = document.querySelector("#rx");
+  const rx1 = document.querySelector("#rx1");
+  const rx2 = document.querySelector("#rx2");
 
   const timeslide = document.querySelector("progress");
-  const { stdout } = logdiv(document.querySelector("pre"));
+  const logdivfn = logdiv(document.querySelector("pre"));
+  stdout = logdivfn.stdout;
+  window.stdout = stdout;
+
   const titleDiv = document.querySelector("#title");
   const sf2select = mkdiv(
     "select",
@@ -51,7 +59,7 @@ export function queryDivs() {
         : mkdiv("option", { value: f }, f)
     )
   );
-  cmdPanel.append(sf2select);
+  cmdPanel.parentElement.append(sf2select);
   return {
     flist,
     cpanel,
@@ -59,7 +67,8 @@ export function queryDivs() {
     timeslide,
     stdout,
     titleDiv,
-    rx,
+    rx1,
+    rx2,
     headerDiv: document.querySelector("#trktitle"),
   };
 }
@@ -69,11 +78,10 @@ export async function main(
   { cpanel, cmdPanel, stdout, flist, timeslide, titleDiv, rx, headerDiv }
 ) {
   if (!cpanel) cpanel = mkdiv("div");
-  window.stdout = stdout;
   const midiurl = cdnroot + midif;
   const pt = mkeventsPipe();
 
-  const controllers = mkui(cpanel, pt);
+  controllers = mkui(cpanel, pt);
   const programs = mkdiv("datalist", { id: "programs" });
   const drums = mkdiv("datalist", { id: "drums" });
   document.body.append(programs);
@@ -86,9 +94,9 @@ export async function main(
     },
   });
   if (!sf2.presetRefs) return;
-  const ctx = await initAudio();
+  ctx = await initAudio();
 
-  const midiSink = await initMidiSink(ctx, sf2, controllers, pt);
+  midiSink = await initMidiSink(ctx, sf2, controllers, pt);
   _loadProgram = async function (channel, pid, bankId) {
     const sf2pg = loadProgram(sf2, pid, bankId);
     midiSink.channels[channel].program = {
@@ -127,7 +135,8 @@ export async function main(
     cmdPanel,
     updateCanvas: null,
     titleDiv,
-    rx,
+    rx1,
+    rx2,
     headerDiv,
   });
   bindMidiAccess(pt);
@@ -173,16 +182,23 @@ export function bindMidiWorkerToAudioAndUI(
   midiworker,
   midiPort,
   ctx,
-  { timeslide, rx, cmdPanel, updateCanvas, titleDiv, headerDiv }
+  { timeslide, rx1, rx2, cmdPanel, updateCanvas, titleDiv, headerDiv }
 ) {
-  const rx1 = mkdiv("span").attachTo(rx);
-  const rx2 = mkdiv("span").attachTo(rx);
+  cmdPanel.innerHTML = "";
   let metaChannel = 0x00;
   midiworker.addEventListener("message", (e) => {
     if (e.data.channel) {
       midiPort.postMessage(e.data.channel);
     } else if (e.data.qn) {
       rx1.innerHTML = e.data.qn;
+      if (e.data.qn ^ 0xf) {
+        const seqrow = new Array(50).fill(" ");
+        for (const c of controllers) {
+          seqrow[c.midi - 50] = "#";
+          stdout(seqrow.join(""));
+        }
+        stdout(seqrow.join(""));
+      }
     } else if (e.data.tempo) {
       rx2.innerHTML = "Tempo:" + e.data.tempo;
     } else if (e.data.t) {
@@ -215,12 +231,7 @@ export function bindMidiWorkerToAudioAndUI(
             return parseInt(num).toString(16);
         }
       }
-      if (e.data.meta == 3) {
-        headerDiv.innerHTML = e.data.payload;
-      } else if (e.data.payload) {
-        titleDiv.innerHTML +=
-          "<br>" + metaDisplay(e.data.meta) + ": " + e.data.payload;
-      }
+      stdout(metaDisplay(e.data.meta) + ": " + e.data.payload);
     }
   });
   timeslide.value = 0;
@@ -233,14 +244,11 @@ export function bindMidiWorkerToAudioAndUI(
 
   cmdPanel.querySelectorAll("button.cmd").forEach((btn) =>
     btn.addEventListener("click", (e) => {
+      const cmd = e.target.getAttribute("cmd");
       if (ctx.ctx.state != "running") {
-        ctx.ctx
-          .resume()
-          .then(() =>
-            midiworker.postMessage({ cmd: e.target.getAttribute("cmd") })
-          );
+        ctx.ctx.resume().then(() => midiworker.postMessage({ cmd }));
       } else {
-        midiworker.postMessage({ cmd: e.target.getAttribute("cmd") });
+        midiworker.postMessage({ cmd });
       }
     })
   );

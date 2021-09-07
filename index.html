@@ -17,14 +17,9 @@
 		}
 
 		#midilist {
-			height: 720px;
+			height: 250px;
 			overflow-y: scroll;
 		}
-
-		header {
-			height: fit-content
-		}
-
 
 		.keyboards {
 			user-select: none;
@@ -41,9 +36,14 @@
 		}
 
 		#bigcan {
-			height: 500px;
+			height: 250px;
 			width: 1200px;
 			z-index: -1;
+		}
+
+		#stdout {
+			/* height: 250px; */
+			overflow-y: scroll;
 		}
 
 	</style>
@@ -55,24 +55,31 @@
 	<table>
 		<tr>
 			<td colspan=1>
-				<h3 id='trktitle'>not afraid - eminem<button style='margin-left:auto' onclick='toggledebug()'>toggle
-						debug</button>
-				</h3>
-			</td>
-			<td>
-				<div id='rx'><progress min="0" max="10000" step="1"></progress></div>
+				<span id='trktitle'>Performant WASM MIDI Player
+				</span>
+				<span id="title"></span>
+
 			</td>
 			<td colspan="1">
-				<div id='cmdPanel'></div>
+				<div id='cmdPanel'>loading...</div>
+				<div>
+					<span id='rx1'></span>
+					<progress min="0" max="10000" step="1"></progress> <span id='rx2'></span>
+				</div>
+
+			</td>
+			<td>
+			</td>
+			<td rowspan=3>
+				<pre id=stdout>welcome
+					
+				</pre>
 			</td>
 		</tr>
 
 		<tr>
-			<td colspan=2>
+			<td colspan=3>
 				<div id='bigcan'></div>
-			</td>
-			<td colspan=1>
-				<pre id=stdout></pre>
 			</td>
 		</tr>
 		<tr>
@@ -84,15 +91,13 @@
 				<div id='channelContainer'>
 				</div>
 			</td>
-			<td width=33% valign=top>
-				<div id="title"></div>
+			<td>
 
-				<pre id=debug></pre>
 			</td>
 		</tr>
 		<tr>
-			<td colspan=3>
-				<pre id=stdout></pre>
+			<td colspan=4>
+				<pre id=debug></pre>
 			</td>
 		</tr>
 	</table>

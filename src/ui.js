@@ -147,12 +147,16 @@ export class TrackUI {
     this.led = container.querySelector("input[type=checkbox]");
     this.polylines = Array.from(container.querySelectorAll("polyline"));
     this.container = container;
+    this._active = false;
   }
   set name(id) {
     this.nameLabel.value = id;
   }
   set midi(v) {
     this.meters[0].value = v;
+  }
+  get midi() {
+    return this.meters[0].value;
   }
   set CC({ key, value }) {
     switch (key) {
@@ -181,8 +185,12 @@ export class TrackUI {
   get velocityInput() {
     return parseInt(this.velinput.value);
   }
+  get active() {
+    return;
+  }
   set active(b) {
-    b === true
+    this._active = b;
+    b
       ? this.led.setAttribute("checked", "checked")
       : this.led.removeAttribute("checked");
   }

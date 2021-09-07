@@ -2,7 +2,7 @@ import { readMidi } from "./midiread.js";
 export async function scheduler(midi_u8, cb) {
   const { tempos, tracks, division, presets, ntracks } = readMidi(midi_u8);
   const ticksPerQuarterNote = division;
-  let microsecondPerQuarterNote = 500000;
+  let microsecondPerQuarterNote = tempos.length ? tempos[0].tempo : 500000;
   let timeSignature = 4;
   let qn = 0;
   const totalTicks = tracks
@@ -13,10 +13,6 @@ export async function scheduler(midi_u8, cb) {
   let clockTime = 0;
   let paused = false;
   async function run() {
-    if (tick >= tempos[0].t) {
-      microsecondPerQuarterNote = tempos.shift().tempo;
-      cb({ tempo: microsecondPerQuarterNote });
-    }
     while (tick < totalTicks) {
       for (let i in tracks) {
         const track = tracks[i];
@@ -44,6 +40,11 @@ export async function scheduler(midi_u8, cb) {
       clockTime += intervalMillisecond / 1000;
       qn++;
       cb({ clockTime, qn, tick });
+      if (tick >= tempos[0].t && tempos[1]) {
+        tempos.shift();
+        microsecondPerQuarterNote = tempos[0].tempo;
+        cb({ tempo: 60 / (microsecondPerQuarterNote / 1e6) });
+      }
     }
   }
   function rwd(amt) {
