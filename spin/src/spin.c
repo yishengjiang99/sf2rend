@@ -60,7 +60,7 @@ void reset(spinner* x) {
 }
 void set_zone(spinner* x, zone_t* z, unsigned int pcmSampleRate) {
   x->zone = z;
-  newLpf(x->lpf, timecent2hertz(z->FilterFc) / SAMPLE_RATE);
+  // newLpf(x->lpf, .40f);
 
   init_mod_eg(x->modeg, z, pcmSampleRate);
   init_vol_eg(x->voleg, z, pcmSampleRate);
@@ -160,7 +160,7 @@ void _spinblock(spinner* x, int n, int blockOffset) {
     }
 
     float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
-    outputf = process_input(x->lpf, outputf);
+    // outputf = process_input(x->lpf, outputf);
     x->outputf[i * 2 + blockOffset * 2] =
         applyCentible(outputf, (short)(db + kRateCB + panLeft));
     x->outputf[i * 2 + blockOffset * 2 + 1] =
