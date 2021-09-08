@@ -60,6 +60,7 @@ void reset(spinner* x) {
 }
 void set_zone(spinner* x, zone_t* z, unsigned int pcmSampleRate) {
   x->zone = z;
+  newLpf(x->lpf, timecent2hertz(z->FilterFc) / SAMPLE_RATE);
 
   init_mod_eg(x->modeg, z, pcmSampleRate);
   init_vol_eg(x->voleg, z, pcmSampleRate);
