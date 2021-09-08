@@ -1422,10 +1422,10 @@ define hidden void @_spinblock(%struct.spinner* nocapture %0, i32 %1, i32 %2) lo
   %184 = sext i8 %183 to i32
   %185 = getelementptr inbounds [128 x double], [128 x double]* @panleftLUT, i32 0, i32 %184
   %186 = load double, double* %185, align 8, !tbaa !2
-  %187 = fmul double %186, 2.500000e-01
+  %187 = fmul double %186, 5.000000e-01
   %188 = getelementptr inbounds [128 x double], [128 x double]* @panrightLUT, i32 0, i32 %184
   %189 = load double, double* %188, align 8, !tbaa !2
-  %190 = fmul double %189, 2.500000e-01
+  %190 = fmul double %189, 5.000000e-01
   %191 = icmp sgt i32 %1, 0
   br i1 %191, label %192, label %280
 

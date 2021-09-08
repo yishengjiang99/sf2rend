@@ -20,7 +20,6 @@ export function channel(aggCtx, channelId, ui) {
     },
     set midicc(midicc) {
       _midicc = midicc;
-      volEG.midiState = midicc;
     },
     set program({ pg, pid, bankId, name }) {
       _pg = pg;
@@ -35,6 +34,7 @@ export function channel(aggCtx, channelId, ui) {
 
       let zones = _pg.zMap.filter(
         (z) =>
+          z.SampleId > -1 &&
           (vel == -1 || (z.VelRange.lo < vel && z.VelRange.hi >= vel)) &&
           (key == -1 || (z.KeyRange.lo < key && z.KeyRange.hi >= key))
       );
@@ -45,11 +45,9 @@ export function channel(aggCtx, channelId, ui) {
         spinner.keyOn(channelId * 2 + i, zone, key, vel);
         if (i == 0) {
           requestAnimationFrame(() => {
-            volEG.zone = zone;
             ui.active = true;
             ui.velocity = vel;
             ui.midi = key;
-            ui.env1 = volEG.keyOn(vel);
             ui.zone = zone;
           });
         }

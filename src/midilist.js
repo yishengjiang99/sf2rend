@@ -18,7 +18,7 @@ var xml_attr = [
   "ContentLanguage",
 ];
 const cdnroot = `https://grep32bit.blob.core.windows.net/midi/`;
-export async function fetchAndLoadPlaylist() {
+export async function fetchAndLoadPlaylist(sf2f) {
   let listsdiv = document.querySelector("#midilist");
   if (!listsdiv) listsdiv = document.createElement("div");
   const playlist = await fetchmidilist();
@@ -27,7 +27,11 @@ export async function fetchAndLoadPlaylist() {
       mkdiv(
         "a",
         {
-          href: "index.html?midif=" + l.get("Url").replace(cdnroot, ""),
+          href:
+            "index.html?midif=" +
+            l.get("Url").replace(cdnroot, "") +
+            "&sf2f=" +
+            sf2f,
         },
         l.get("Name")
       ).wrapWith("li")

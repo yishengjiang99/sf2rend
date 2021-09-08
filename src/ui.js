@@ -199,9 +199,9 @@ export class TrackUI {
   set env1({ phases: [a, d, s, r], peak }) {
     const points = [
       [0, 0],
-      [a, 1],
-      [a + d, s / 100],
-      [a + d + r, 0],
+      [Math.max(a, 1 / 12), 1],
+      //    [a + d, s / 100],
+      [Math.max(a + d + r, 1), 0],
     ]
       .map(([x, y]) => [x * pixelPerSec, (1 - y) * 0.8 * rowheight].join(","))
       .join(" ");
@@ -212,6 +212,15 @@ export class TrackUI {
     return this.canc;
   }
   set zone(z) {
+    const [delay, attack, hold, decay, release] = [
+      z.VolEnvDelay,
+      z.VolEnvAttack,
+      z.VolEnvHold,
+      z.VolEnvDecay,
+      z.VolEnvRelease,
+    ].map((v) => (v == -1 || v <= -12000 ? 0.0001 : Math.pow(2, v / 1200)));
+    const sustain = Math.pow(10, z.VolEnvSustain / -200);
+    this.env1 = { phases: [attack, decay, sustain, release], peak: 100 };
     document.querySelector("#debug").innerHTML = attributeKeys.reduce(
       (str, key) => (str += `${key}: ${z[key]}\n`),
       ""

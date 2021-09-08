@@ -5,7 +5,7 @@ import { load, loadProgram } from "../sf2-service/read.js";
 import { chart, mkcanvas, renderFrames } from "../chart/chart.js";
 import { fetchAndLoadPlaylist } from "./midilist.js";
 import { channel } from "./channel.js";
-import { mkEnvelope } from "./adsr.js";
+// import { mkEnvelope } from "./adsr.js";
 import { sf2list } from "../api/v1_list.js";
 let _loadProgram;
 const getParams = new URLSearchParams(document.location.search);
@@ -16,7 +16,7 @@ const programNames = [];
 const cdnroot = `https://grep32bit.blob.core.windows.net/midi/`;
 
 if (!document.location.href.includes("test.html")) {
-  fetchAndLoadPlaylist();
+  fetchAndLoadPlaylist(sf2f);
   main(sf2f, midif, queryDivs());
   window.onerror = (event, source, lineno, colno, error) => {
     document.querySelector("#debug").innerHTML = JSON.stringify(
@@ -322,10 +322,6 @@ export async function initAudio() {
   const egs = [];
   const masterMixer = new GainNode(ctx, { gain: 1 });
   spinner.connect(ctx.destination);
-
-  for (let i = 0; i < 16; i++) {
-    egs[i] = mkEnvelope(ctx);
-  }
 
   document.addEventListener("mousedown", async () => await ctx.resume(), {
     once: true,

@@ -1,5 +1,5 @@
 import { downloadData } from "../fetch-drop-ship/download.js";
-
+import saturate from "../saturation/index.js";
 import { wasmbin } from "./spin.wasm.js";
 const CH_META_LEN = 24;
 const nchannels = 32;
@@ -140,10 +140,8 @@ class SpinProcessor extends AudioWorkletProcessor {
       }
     }
     for (let j = 0; j < 128; j++) {
-      o[0][0][j] =
-        o[0][0][j] > 1.0 ? 1.0 : o[0][0][j] < -1.0 ? -1.0 : o[0][0][j];
-      o[0][1][j] =
-        o[0][1][j] > 1.0 ? 1.0 : o[0][1][j] < -1.0 ? -1.0 : o[0][1][j];
+      o[0][0][j] = saturate(o[0][0][j]);
+      o[0][1][j] = saturate(o[0][1][j]);
     }
     if (
       o[0][0][15] > 0.00000001 ||
