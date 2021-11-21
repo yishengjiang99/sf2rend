@@ -128,7 +128,7 @@ export zone_t *getZone(int pset, int bankId, int key, int vel) {
   short deltas[60];
   short attrs[60];
   short defzonear[] = {defzone};
-  memcpy(attrs, defzonear, 120) l;
+  memcpy(attrs, defzonear, 120);
   pzone z = tunes[pset];
   int skipping = 0;
   int instId = -1;
