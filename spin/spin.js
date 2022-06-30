@@ -7,7 +7,7 @@ let k;
 
 export class SpinNode extends AudioWorkletNode {
   static async init(ctx) {
-    await ctx.audioWorklet.addModule("spin-proc.js");
+    await ctx.audioWorklet.addModule("spin/spin-proc.js");
   }
   static alloc(ctx) {
     if (!k) k = new SpinNode(ctx);
