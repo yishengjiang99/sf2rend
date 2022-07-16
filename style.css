@@ -1,0 +1,42 @@
+body {
+  background-color: #000;
+  color: #fff;
+  padding: 3px 6px;
+}
+
+a {
+  color: white;
+}
+
+#midilist {
+  height: 720px;
+  overflow-y: scroll;
+}
+
+.keyboards {
+  user-select: none;
+}
+
+.keyboards a:hover {
+  color: black;
+}
+
+#channelContainer {
+  height: 720px;
+  overflow-y: scroll;
+}
+
+#bigcan {
+  height: 250px;
+  width: 1200px;
+}
+
+#bigcan canvas {
+  z-index: -1;
+}
+
+#stdout {
+  height: 720px;
+
+  overflow-y: scroll;
+}
