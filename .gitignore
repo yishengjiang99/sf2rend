@@ -4,3 +4,7 @@ node_modules
 dist/*
 **/*/a.out
 */a.out
+cert.pem
+.gitignore
+bin/key.pem
+key.pem

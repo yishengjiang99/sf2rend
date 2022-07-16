@@ -4,56 +4,11 @@
 	<meta charset="UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Document</title>
-	<style>
-		body {
-			background-color: #000;
-			color: #fff;
-			padding: 3px 6px;
-		}
-
-		a {
-			color: white
-		}
-
-		#midilist {
-			height: 720px;
-			overflow-y: scroll;
-		}
-
-		.keyboards {
-			user-select: none;
-		}
-
-		.keyboards a:hover {
-			color: black;
-		}
-
-		#channelContainer {
-			height: 720px;
-			overflow-y: scroll;
-		}
-
-		#bigcan {
-			height: 250px;
-			width: 1200px;
-		}
-
-		#bigcan canvas {
-			z-index: -1;
-		}
-
-		#stdout {
-			height: 720px;
-
-			overflow-y: scroll;
-		}
-
-	</style>
+	<title>MIDI Rendering with SoundFont2</title>
+	<link href="style.css" rel="stylesheet" />
 </head>
 
 <body>
-
 
 	<table>
 		<tr>
@@ -71,7 +26,6 @@
 				<span id='trktitle'>Performant WASM MIDI Player
 				</span>
 				<span id="title"></span>
-
 			</td>
 			<td colspan="1">
 				<div id='cmdPanel'>loading...</div>
@@ -79,19 +33,15 @@
 					<span id='rx1'></span>
 					<progress min="0" max="10000" step="1"></progress> <span id='rx2'></span>
 				</div>
-
 			</td>
 			<td>
 			</td>
-
 		</tr>
-
 		<tr>
 			<td width=320 valign=top>
 				<div id='midilist'>
 			</td>
 			<td valign=top>
-
 				<div id='channelContainer'>
 				</div>
 			</td>
@@ -107,7 +57,7 @@
 		</tr>
 	</table>
 
-	<script type='module' src="./dist/main.js">
+	<script type='module' src="./src/index.js">
 
 	</script>
 	<script>

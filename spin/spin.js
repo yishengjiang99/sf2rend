@@ -4,13 +4,10 @@ const CH_META_LEN = 24;
 const RENDER_BLOCK = 128;
 const N_CHANNELS = 32;
 let k;
-function basename() {
-  const root = document.location.pathname.split("/sf2rend")[0];
-  return root + "/sf2rend/";
-}
+
 export class SpinNode extends AudioWorkletNode {
   static async init(ctx) {
-    await ctx.audioWorklet.addModule(basename() + "spin/spin-proc.js");
+    await ctx.audioWorklet.addModule("spin/spin-proc.js");
   }
   static alloc(ctx) {
     if (!k) k = new SpinNode(ctx);
