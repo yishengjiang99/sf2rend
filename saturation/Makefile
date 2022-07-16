@@ -1,7 +1,10 @@
 all: saturate.wasm.js
 
 saturate.wasm: clean
-	clang --target=wasm32 -O3 -flto -nostdlib -Wl,--no-entry -Wl,--export-all -Wl,--import-memory -o saturate.wasm saturate.c
+	clangwa --target=wasm32 -O3 -flto -nostdlib -Wl,--no-entry \
+	-Wl,--export-all -Wl,--import-memory \
+	-o saturate.wasm \
+	saturate.c
 
 saturate.wasm.js: saturate.wasm
 	cat saturate.wasm|npx encode-wasm-uint8 > saturate.wasm.js
