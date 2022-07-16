@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "build": "webpack"
+    "build": "export SET NODE_OPTIONS=--openssl-legacy-provider && webpack"
   },
   "keywords": [],
   "author": "Yisheng Jiang",
