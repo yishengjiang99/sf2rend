@@ -160,7 +160,7 @@ export function mkeventsPipe() {
 }
 export function initMidiReader(url) {
   return new Promise((resolve, reject) => {
-    const midiworker = new Worker("./dist/midiworker.js#" + url, {
+    const midiworker = new Worker("./src/midiworker.js#" + url, {
       type: "module",
     });
     midiworker.addEventListener(
@@ -187,6 +187,7 @@ export function bindMidiWorkerToAudioAndUI(
   cmdPanel.innerHTML = "";
   let metaChannel = 0x00;
   midiworker.addEventListener("message", (e) => {
+    console.log(e.data);
     if (e.data.channel) {
       midiPort.postMessage(e.data.channel);
     } else if (e.data.qn) {
@@ -235,17 +236,16 @@ export function bindMidiWorkerToAudioAndUI(
 
   mkdiv("button", { class: "cmd", cmd: "start" }, "start").attachTo(cmdPanel);
   mkdiv("button", { class: "cmd", cmd: "pause" }, "pause").attachTo(cmdPanel);
-  mkdiv("button", { class: "cmd", cmd: "rwd", amt: "rwd" }, "rwd").attachTo(
-    cmdPanel
-  );
 
   cmdPanel.querySelectorAll("button.cmd").forEach((btn) =>
-    btn.addEventListener("click", (e) => {
+    btn.addEventListener("click", async (e) => {
       const cmd = e.target.getAttribute("cmd");
-      if (ctx.ctx.state != "running") {
-        ctx.ctx.resume().then(() => midiworker.postMessage({ cmd }));
-      } else {
-        midiworker.postMessage({ cmd });
+      if (ctx.ctx.state !== "running") {
+        await ctx.ctx.resume();
+      }
+      midiworker.postMessage({ cmd });
+      if (cmd === "pause") {
+        midiSink.channels.forEach((channel) => channel.keyOff());
       }
     })
   );

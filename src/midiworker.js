@@ -22,9 +22,6 @@ const main = async (_url) => {
       pause();
       main(url);
     }
-    // if (evtPipe) {
-    //   debugger;
-    // }
     switch (cmd) {
       case "start":
         run();

@@ -14,6 +14,7 @@ export async function scheduler(midi_u8, cb) {
   let clockTime = 0;
   let paused = false;
   async function run() {
+    paused = false;
     while (tick < totalTicks) {
       for (let i in tracks) {
         const track = tracks[i];
@@ -21,12 +22,6 @@ export async function scheduler(midi_u8, cb) {
         while (track.length && track[0].t < tick) {
           const newevent = track.shift();
           cb(newevent);
-          // playedEvent.push({
-          //   track: i,
-          //   clockTime,
-          //   ...newevent,
-          // });
-
           if (newevent.timeSignature) {
             timeSignature =
               (newevent.timeSignature[0] / newevent.timeSignature[1]) * 4;
@@ -44,26 +39,11 @@ export async function scheduler(midi_u8, cb) {
       if (tempos && tempos.length > 1 && tick >= tempos[0].t) {
         tempos.shift();
         microsecondPerQuarterNote = tempos[0].tempo;
-        debugger;
         cb({ tempo: 60 / (microsecondPerQuarterNote / 1e6) });
       }
     }
   }
-  function rwd(amt) {
-    return false;
-    const rwd_events = [];
-    while (
-      playedEvent.length &&
-      playedEvent[playedEvent.pop()].clockTime > clockTime - amt
-    ) {
-      rwd_events.push(playedEvent.pop());
-    }
-    tick = rwd_events[0].tick;
-    clockTime -= amt;
-    while (rwd_events.length) {
-      tracks[rwd_events[0].track].push(rwd_events.shift());
-    }
-  }
+  function rwd(amt) {}
   function pause() {
     paused = true;
   }
