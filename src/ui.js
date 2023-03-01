@@ -78,8 +78,8 @@ export class TrackUI {
             mkdiv("meter", { min: 0, max: 127, step: 1, aria: "key" }),
 
             // mkdiv("label", { for: "velin" }, "velocity"),
-            "vel",
-            mkdiv("input", {
+            "velocity",
+            mkdiv("meter", {
               type: "range",
               id: "velin",
               min: 1,
@@ -139,7 +139,8 @@ export class TrackUI {
 
     this.nameLabel = container.querySelector("input[type='list']");
     this.meters = container.querySelectorAll("meter");
-    [this.velinput, ...this.sliders] = Array.from(
+
+    this.sliders = Array.from(
       container.querySelectorAll("input[type='range']")
     );
     this.labels = container.querySelectorAll("label");
@@ -182,7 +183,7 @@ export class TrackUI {
     }
   }
   set velocity(v) {
-    this.velinput.value = v;
+    this.meters[1].value = v;
   }
   get velocityInput() {
     return parseInt(this.velinput.value);
