@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "build": "export SET NODE_OPTIONS=--openssl-legacy-provider && webpack"
+    "build": "export SET NODE_OPTIONS=--openssl-legacy-provider && webpack",
+    "start": "export NODE_OPTIONS=--openssl-legacy-provider && npx webpack-dev-server"
   },
   "keywords": [],
   "author": "Yisheng Jiang",
@@ -15,6 +16,9 @@
     "webpack-cli": "^4.7.2"
   },
   "dependencies": {
-    "node-static": "^0.7.11"
+    "mkdiv": "^3.0.1",
+    "node-static": "^0.7.11",
+    "style-loader": "^3.3.1",
+    "webpack-dev-server": "^4.11.1"
   }
 }

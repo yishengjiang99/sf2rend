@@ -1,5 +1,14 @@
 import { load, loadProgram } from "../sf2-service/read.js";
+class Channel{
+  constructor(channelId)
+}
 export function channel(aggCtx, channelId, ui) {
+  return {
+
+  }
+};
+
+
   const activeNotes = [];
   const ctx = aggCtx.ctx;
   const spinner = aggCtx.spinner;

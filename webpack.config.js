@@ -1,5 +1,3 @@
-const path = require("path");
-const webpack = require("webpack");
 const Fs = require("fs");
 Fs.writeFileSync(
   "./api/v1_list.js",
@@ -11,18 +9,22 @@ Fs.writeFileSync(
       .split("\n")
   )}`
 );
+const path = require("path");
+
 module.exports = {
+  mode: "development",
   entry: {
-    main: "./src/index.js",
+    index: "./src/index.js",
     midiworker: "./src/midiworker.js",
   },
-  mode: "production",
-
-  resolve: { extensions: ["*", ".js", ".jsx"] },
+  devtool: "inline-source-map",
+  devServer: {
+    static: "./dist",
+  },
   output: {
-    publicPath: "dist/",
-
-    path: path.resolve(__dirname, "dist/"),
     filename: "[name].js",
+    path: path.resolve(__dirname, "dist"),
+    clean: true,
+    publicPath: "/",
   },
 };

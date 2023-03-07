@@ -85,6 +85,8 @@ export function readMidi(buffer) {
           channel: nextEvent.channel[0] & 0x0f,
           pid: nextEvent.channel[1] & 0x7f,
         });
+        const evtObj = { offset: reader.offset, t, delay, ...nextEvent };
+        track.push(evtObj);
       } else {
         const evtObj = { offset: reader.offset, t, delay, ...nextEvent };
         track.push(evtObj);

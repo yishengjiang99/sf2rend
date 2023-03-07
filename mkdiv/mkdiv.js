@@ -1,7 +1,10 @@
-export function mkdiv(type, attr = {}, children = "") {
+export function mkdiv2({ tag, children, ...attr }) {
+  return mkdiv(tag, attr, children);
+}
+export function mkdiv(tag, attr = {}, children = "") {
   // if (attr && typeof attr != "object" && !children)
   //   return mkdiv(type, {}, attr);
-  const div = document.createElement(type);
+  const div = document.createElement(tag);
   for (const key in attr) {
     if (key.match(/on(.*)/)) {
       div.addEventListener(key.match(/on(.*)/)[1], attr[key]);
