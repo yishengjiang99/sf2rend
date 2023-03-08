@@ -1,5 +1,3 @@
-import * as sf2Reader from "../sf2-service/read.js";
-
 export function createChannel(uiController, channelId, sf2, spinner) {
   let _sf2 = sf2;
   let program;
@@ -9,7 +7,7 @@ export function createChannel(uiController, channelId, sf2, spinner) {
       _sf2 = sf2;
     },
     async setProgram(pid, bid) {
-      program = sf2Reader.loadProgram(_sf2, pid, bid);
+      program = _sf2.loadProgram(pid, bid);
       await spinner.shipProgram(program, pid | bid);
       uiController.name = program.name;
     },

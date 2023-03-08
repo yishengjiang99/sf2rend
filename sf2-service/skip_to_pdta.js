@@ -5,7 +5,10 @@ export async function sfbkstream(url) {
 
   const [preample, r] = skipToSDTA(ab);
   const sdtaSize = r.get32();
-  const sdtaStart = r.offset + 8;
+  console.assert(bytesToString(r.readNString(4)) === "sdta");
+  console.assert(bytesToString(r.readNString(4)) === "smpl");
+
+  const sdtaStart = r.offset;
   const pdtastart = sdtaStart + sdtaSize + 4;
 
   const pdtaHeader = {
@@ -32,17 +35,29 @@ function skipToSDTA(ab) {
     r.readNString(4),
   ];
   let infosize = r.get32();
-  console.log(r.readNString(4), filesize, list, r.offset);
-  console.log(infosize, r.offset);
+  console.assert(bytesToString(r.readNString(4)) === "INFO");
+
   const infos = [];
   console.assert(infosize < 10000);
   while (infosize >= 8) {
-    const [section, size] = [r.readNString(4), r.get32()];
-    infos.push({ section, text: r.readNString(size) });
+    const [sb, size] = [r.readNString(4), r.get32()];
+    const section = bytesToString(sb);
+    const val = bytesToString(r.readNString(size));
+
+    infos.push([section, val]);
     infosize = infosize - 8 - size;
   }
-  r.readNString(4);
+  console.assert(bytesToString(r.readNString(4)) === "LIST");
   return [infos, r];
+}
+function bytesToString(ab) {
+  let str = "";
+  for (const b of Object.values(ab)) {
+    if (!b) break;
+    if (b < 10) str += b.toString();
+    else str += String.fromCharCode(b);
+  }
+  return str;
 }
 export function readAB(arb) {
   const u8b = new Uint8Array(arb);
@@ -53,7 +68,7 @@ export function readAB(arb) {
   function getStr(n) {
     const str = u8b.subarray(_offset, _offset + n); //.map((v) => atob(v));
     _offset += n;
-    return str; //uab.subarray(_offset,_offset+n).map(v=>v&0x7f);;
+    return str;
   }
   function get32() {
     return get8() | (get8() << 8) | (get8() << 16) | (get8() << 24);

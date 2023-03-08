@@ -48,20 +48,16 @@
 		</span>
 		<span id="title"></span>
 		<div id='cmdPanel' style='display:flex;flex-direction:column'></div>
-		<div> <progress value="0" max="100"></progress>
-
+		<div>
+			<progress value="0" max="100"></progress>
 			<span id='rx1'></span>
 			<span id='rx2'></span>
 		</div>
-		<pre id="stdout">dstdfiv</pre>
+		<pre id="stdout"></pre>
+
 		<input type="range" min="0" max="128" step="0" id='master_gain'/>
 		<div id='channelContainer'>
 		</div>
-		<button onclick='toggledebug()'>toggle debug</button>
-		<pre style='display:none' id=debug>debugdiv</pre>
 		<script type='module' src="./src/index.js"></script>
-		<script>
-
-	</script>
 	</body>
 </html>

@@ -1,7 +1,7 @@
 import { mkdiv, mkdiv2, logdiv } from "../mkdiv/mkdiv.js";
 import { SpinNode } from "../spin/spin.js";
 import { mkui } from "./ui.js";
-import * as sf2Reader from "../sf2-service/read.js";
+import SF2Service from "../sf2-service/index.js";
 import { chart, mkcanvas, renderFrames } from "../chart/chart.js";
 import { fetchmidilist, fetchSF2List } from "./midilist.js";
 import { mkeventsPipe } from "./mkeventsPipe.js";
@@ -31,7 +31,6 @@ async function main() {
       for (const preset of presets) {
         const { pid, channel } = preset;
         const bkid = channel == 9 ? 128 : 0;
-
         channels[channel].setProgram(pid, bkid);
       }
       rx1.innerHTML = JSON.stringify([totalTicks]);
@@ -94,7 +93,6 @@ async function main() {
 
   const eventPipe = mkeventsPipe();
   uiControllers = mkui(cpanel, eventPipe);
-  sf2 = await sf2Reader.load(sf2List[3].url);
   await SpinNode.init(ctx);
   spinner = new SpinNode(ctx);
   const masterMixer = new GainNode(ctx, { gain: 2.0 });
@@ -141,15 +139,19 @@ async function main() {
     };
   });
 
-  await loadSF2File("static/GeneralUserGS.sf2");
-  midiworker.postMessage({ cmd: "load", url: "../song.mid" });
+  await loadSF2File("test.sf2");
+  //midiworker.postMessage({ cmd: "load", url: "../song.mid" });
   async function loadSF2File(sf2url) {
-    sf2 = await sf2Reader.load(sf2url);
+    sf2 = new SF2Service(sf2url);
+    await sf2.load();
     channels.forEach((c) => c.setSF2(sf2));
     for (let i = 0; i <= 8; i++) {
       await channels[i].setProgram(i, 0);
     }
-    await channels[9].setProgram(1, 128);
+    await channels[9].setProgram(0, 128);
+    for (const [section, text] of sf2.meta) {
+      stdout(section + ": " + text);
+    }
   }
 }
 main();

@@ -1,8 +1,4 @@
 import { requestDownload } from "../fetch-drop-ship/fetch-drop-ship.js";
-let wasm = null;
-const CH_META_LEN = 24;
-const RENDER_BLOCK = 128;
-const N_CHANNELS = 32;
 let k;
 
 export class SpinNode extends AudioWorkletNode {

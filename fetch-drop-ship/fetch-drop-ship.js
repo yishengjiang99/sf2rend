@@ -5,6 +5,8 @@ export async function requestDownload(program, port) {
         headers: {
           Range: `bytes=${shdr.range.join("-")}`,
         },
+      }).catch((e) => {
+        console.error(e, shdr);
       });
 
       port.postMessage(
