@@ -1,63 +1,125 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8">
-		<meta http-equiv="X-UA-Compatible" content="IE=edge">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>MIDI Rendering with SoundFont2</title>
-		<style>body {
-			background-color: #000;
-			color: #fff;
-			padding: 3px 6px;
-		  }
-		  
-		  a {
-			color: white;
-		  }		  
-		  .keyboards {
-			user-select: none;
-		  }
-		  
-		  .keyboards a:hover {
-			color: black;
-		  }
-		  
-		  #channelContainer {
-			min-height: 720px;
-			background-color:gray;
-			overflow-y: scroll;
-		  }
-		  
-		  #bigcan {
-			height: 250px;
-			width: 1200px;
-		  }
-		  
-		  #bigcan canvas {
-			z-index: -1;
-		  }
-		  
-		  #stdout {
-			max-height: 120px;
-			overflow-y: scroll;
-		  }
-</style>
-	</head>
 
-	<body> <span id='trktitle'>Performant WASM MIDI Player
-		</span>
-		<span id="title"></span>
-		<div id='cmdPanel' style='display:flex;flex-direction:column'></div>
-		<div>
-			<progress value="0" max="100"></progress>
-			<span id='rx1'></span>
-			<span id='rx2'></span>
-		</div>
-		<pre id="stdout"></pre>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MIDI Rendering with SoundFont2</title>
+    <style>
+    .keyboards {
+      user-select: none;
+    }
 
-		<input type="range" min="0" max="128" step="0" id='master_gain'/>
-		<div id='channelContainer'>
-		</div>
-		<script type='module' src="./src/index.js"></script>
-	</body>
+    .keyboards a:hover {
+      color: black;
+    }
+
+    #channelContainer {
+      min-height: 720px;
+      background-color: gray;
+      overflow-y: scroll;
+    }
+
+    #bigcan {
+      height: 250px;
+      width: 1200px;
+    }
+
+    #bigcan canvas {
+      z-index: -1;
+    }
+
+    body {
+      display: grid;
+      width: 100vw;
+      height: 100vh;
+      grid-gap: 10px;
+      color: white;
+      margin: 0;
+    }
+
+    header {
+      grid-row: 1/2;
+      grid-column: 1 / 5;
+    }
+
+    aside {
+      grid-column: 1;
+      grid-row: 2 / 4;
+    }
+
+    main {
+      grid-column: 2 / 4;
+      grid-row: 2 / 8;
+    }
+
+    #stdout {
+      grid-column: 4 / 5;
+      grid-row: 2 / 8;
+    }
+
+    .localchannel {
+      grid-column: 1;
+      grid-row: 4;
+    }
+
+    .band_freq_out {
+      grid-column: 1;
+      grid-row: 5/6;
+    }
+  </style>
+    <link href="//cdn.muicss.com/mui-0.10.2/css/mui.min.css" rel="stylesheet"
+      type="text/css" />
+    <script src="//cdn.muicss.com/mui-0.10.2/js/mui.min.js"></script>
+    <link
+      href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+      rel="stylesheet"
+      crossorigin />
+  </head>
+
+  <body>
+    <header>
+      <h3>Performant WASM MIDI Playe</h3>
+      <div class="song-controls" style="display: grid; height: 50px; width:
+        300px; grid-gap: 10px">
+        <button id="rewind" class="rewind" style="grid-column: 1/2">
+          <i class="fa fa-backward"> </i>
+        </button>
+        <button id="play" class="play-btn" style="grid-column: 2/3">
+          <i class="fa fa-play"> </i>
+        </button>
+        <button id="stop" class="pause-btn" style="grid-column: 3/3; ">
+          <i class="fa fa-stop" aria-hidden="true"> </i>
+        </button>
+        Tempo: <span id="tempo"></span>
+
+      </div>
+      <div class="sliderr">
+        <span id="timeNow"></span>
+        <span><input id="timeSlider" type="range" min="0" max="100"/></span>
+        <span id="duration"></span>
+      </div>
+    </header>
+    <aside>
+      <select id="sf2select"></select>
+      <ul id="presetList"></ul>
+    </aside>
+    <main>
+      <span id="title"></span>
+      <div style="display: flex; flex-direction: row; height: 60vh">
+        <div id="channelContainer" style="width: 250px"></div>
+        <pre id="stdout" style="width: 40vw; height: 100%"></pre>
+      </div>
+    </main>
+    <datalist id="programs"></datalist>
+    <datalist id="drums"></datalist>
+    <div id="cmdPanel" style="display: flex; flex-direction: column">
+      <span id="rx1"></span>
+      <span id="rx2"></span>
+    </div>
+    <div id="debug"></div>
+    <script type="module" src="./src/index.js"></script>
+  </body>
+
 </html>

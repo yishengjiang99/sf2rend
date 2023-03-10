@@ -9,11 +9,11 @@ export class SpinNode extends AudioWorkletNode {
     if (!k) k = new SpinNode(ctx);
     return k;
   }
-  constructor(ctx) {
+  constructor(ctx, numberOfOutputs = 1) {
     super(ctx, "spin-proc", {
       numberOfInputs: 0,
-      numberOfOutputs: 1,
-      outputChannelCount: [2],
+      numberOfOutputs,
+      outputChannelCount: new Array(16).fill(2),
     });
   }
 

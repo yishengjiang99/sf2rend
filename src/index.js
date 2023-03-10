@@ -8,20 +8,29 @@ import { mkeventsPipe } from "./mkeventsPipe.js";
 import { createChannel } from "./createChannel.js";
 import { midi_ch_cmds } from "./midilist.js";
 async function main() {
-  let sf2,
-    uiControllers,
-    spinner,
-    ctx = new AudioContext({ sampleRate: 48000 });
+  let sf2, uiControllers;
+
+  const ctx = new AudioContext({ sampleRate: 48000 });
   let midiworker = new Worker("src/midiworker.js", {
     type: "module",
   });
   const channels = [];
+  const $ = (sel) => document.querySelector(sel);
+  const sf2select = $("#sf2select"),
+    timeslide = $("#timeSlider"),
+    playBtn = $("#play"),
+    pauseBtn = $("#stop"),
+    timeNow = $("#timeNow"),
+    tempo = $("#tempo"),
+    duration = $("#duration"),
+    timeSig = $("#timeSig");
+  let qnPerBeat = 4;
 
-  const rx1 = document.querySelector("#rx1");
-  const rx2 = document.querySelector("#rx2");
-  const timeslide = document.querySelector("progress");
   const cpanel = document.querySelector("#channelContainer");
   const cmdPanel = document.querySelector("#cmdPanel");
+  const drumList = document.querySelector("#drums");
+
+  const programList = document.querySelector("#programs");
   const logdivfn = logdiv(document.querySelector("#stdout"));
   const stdout = logdivfn.stdout;
 
@@ -33,39 +42,30 @@ async function main() {
         const bkid = channel == 9 ? 128 : 0;
         channels[channel].setProgram(pid, bkid);
       }
-      rx1.innerHTML = JSON.stringify([totalTicks]);
+      duration.innerHTML = totalTicks / 4;
+      timeslide.setAttribute("max", totalTicks);
     } else if (e.data.channel) {
       eventPipe.postMessage(e.data.channel);
     } else if (e.data.qn) {
-      rx1.innerHTML = e.data.qn;
+      timeslide.value = e.data.qn;
+      timeNow.innerHTML = e.data.qn;
+      if (e.data.qn % 4) return;
       const seqrow = new Array(88).fill(" ");
       for (const c of uiControllers) {
         if (c.active && c.midi) seqrow[c.midi - 21] = "#";
       }
       stdout(seqrow.join(""));
     } else if (e.data.tempo) {
-      rx2.innerHTML = "Tempo:" + (e.data.tempo | 0);
+      tempo.innerHTML = e.data.tempo;
     } else if (e.data.t) {
-      timeslide.value = e.data.t;
+      // timeslide.value = e.data.t;
     } else if (e.data.meta) {
       onMidiMeta(stdout, e);
     }
   });
 
-  mkdiv2({
-    tag: "button",
-    onclick: () => midiworker.postMessage({ cmd: "start" }),
-    children: "start",
-  }).attachTo(cmdPanel);
-
-  mkdiv2({
-    tag: "button",
-    onclick: () =>
-      midiworker.postMessage({ cmd: "pause" }) &&
-      channels.forEach((c) => c.keyOff()),
-    children: "pause",
-  }).attachTo(cmdPanel);
-
+  playBtn.onclick = () => midiworker.postMessage({ cmd: "start" });
+  pauseBtn.onclick = () => midiworker.postMessage({ cmd: "pause" });
   midiworker.postMessage({ cmd: "inited" });
 
   const midiList = await fetchmidilist();
@@ -79,24 +79,22 @@ async function main() {
   });
 
   const sf2List = await fetchSF2List();
-  const sf2select = mkdiv2({
-    tag: "select",
-    onchange: async (e) => {
-      const sf2url = e.target.value;
-      await loadSF2File(sf2url);
-    },
-    children: sf2List.map((f) => mkdiv("option", { value: f.url }, f.name)),
-  });
-  cmdPanel.append("sf2select");
-  cmdPanel.append(sf2select);
+  sf2select.onchange = (e) => loadSF2File(e.target.value);
+  for (const f of sf2List)
+    sf2select.append(mkdiv("option", { value: f.url }, f.name));
+
   cmdPanel.append(midiSelect);
 
   const eventPipe = mkeventsPipe();
   uiControllers = mkui(cpanel, eventPipe);
   await SpinNode.init(ctx);
-  spinner = new SpinNode(ctx);
-  const masterMixer = new GainNode(ctx, { gain: 2.0 });
-  spinner.connect(masterMixer).connect(ctx.destination);
+  const spinner = new SpinNode(ctx, 16);
+  const merger = new GainNode(ctx);
+  const masterMixer = new GainNode(ctx, { gain: 1.0 });
+  for (let i = 0; i < 16; i++) {
+    spinner.connect(merger, i, 0);
+  }
+  merger.connect(masterMixer).connect(ctx.destination);
   for (let i = 0; i < 16; i++) {
     channels.push(createChannel(uiControllers[i], i, sf2, spinner));
   }
@@ -119,7 +117,6 @@ async function main() {
         channels[ch].keyOff(key, velocity);
         break;
       case midi_ch_cmds.note_on:
-        console.log("key on ", ch);
         if (velocity == 0) {
           channels[ch].keyOff(key, velocity);
         } else {
@@ -140,10 +137,19 @@ async function main() {
   });
 
   await loadSF2File("test.sf2");
-  //midiworker.postMessage({ cmd: "load", url: "../song.mid" });
+  midiworker.postMessage({ cmd: "load", url: "../song.mid" });
   async function loadSF2File(sf2url) {
     sf2 = new SF2Service(sf2url);
     await sf2.load();
+    programList.innerHTML = "";
+    drumList.innerHTML = "";
+    sf2.programNames.forEach((n, presetIdx) => {
+      if (presetIdx < 128) {
+        mkdiv2({ tag: "option", value: n, children: n }).attachTo(programList);
+      } else {
+        mkdiv2({ tag: "option", value: n, children: n }).attachTo(drumList);
+      }
+    });
     channels.forEach((c) => c.setSF2(sf2));
     for (let i = 0; i <= 8; i++) {
       await channels[i].setProgram(i, 0);
@@ -152,10 +158,13 @@ async function main() {
     for (const [section, text] of sf2.meta) {
       stdout(section + ": " + text);
     }
+    stdout(sf2.programNames.join(","));
   }
 }
 main();
-
+function db2gain(decibel_level) {
+  return Math.pow(10, decibel_level / 20);
+}
 function onMidiMeta(stdout, e) {
   const metalist = [
     "seq num",
@@ -174,21 +183,19 @@ function onMidiMeta(stdout, e) {
         return "mc";
       case 0x21:
         return "port: ";
-      case 0x51:
-        return "tempo";
       case 0x2f:
         return "end of tack";
+      case 0x51:
+        return "tempo";
+      case 0x54:
+        return "SMPTE offset";
       case 0x58:
         return "time signature";
+      case 0x59:
+        return "Key Sig";
       default:
         return parseInt(num).toString(16);
     }
   };
-  stdout(
-    metaDisplay(e.data.meta) +
-      ": " +
-      e.data.payload +
-      "|" +
-      JSON.stringify(e.data)
-  );
+  stdout(metaDisplay(e.data.meta) + ": " + e.data.payload);
 }

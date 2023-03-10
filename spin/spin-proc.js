@@ -93,7 +93,7 @@ class SpinProcessor extends AudioWorkletProcessor {
             if (!this.spinners[channel]) {
               this.instantiate(this.presetRefs[zoneRef], channel);
             }
-            this.inst.exports.reset(this.spinners[channel]);
+            // this.inst.exports.reset(this.spinners[channel]);
             this.inst.exports.trigger_attack(
               this.spinners[channel],
               this.presetRefs[zoneRef],
@@ -127,36 +127,35 @@ class SpinProcessor extends AudioWorkletProcessor {
     return this.spinners[i];
   }
 
-  process(inputs, o, parameters) {
-    for (let i = 0; i < nchannels; i++) {
-      if (!this.spinners[i]) continue;
-      if (!this.outputs[i]) continue;
-      // if (!o[i]) continue;
+  process(inputs, outputs, parameters) {
+    for (let i = 0; i < outputs.length; i++) {
+      if (this.spinners[i]) continue;
+      if (this.outputs[i]) continue;
       for (let j = 0; j < 128 * 2; j++) this.outputs[i][j] = 0;
       this.inst.exports.spin(this.spinners[i], 128);
       for (let j = 0; j < 128; j++) {
-        o[0][0][j] += this.outputs[i][2 * j];
-        o[0][1][j] += this.outputs[i][2 * j + 1];
+        outputs[i][0][j] = this.outputs[i][2 * j];
+        outputs[i][1][j] = this.outputs[i][2 * j + 1];
       }
     }
     // for (let j = 0; j < 128; j++) {
     //   o[0][0][j] = saturate(o[0][0][j]);
     //   o[0][1][j] = saturate(o[0][1][j]);
     // }
-    if (
-      o[0][0][15] > 0.00000001 ||
-      o[0][0][44] > 0.00000001 ||
-      o[0][0][66] > 0.00000001 ||
-      o[0][0][22] > 0.00000001
-    ) {
-      const pcmplayback = new Float32Array(128 * 32);
-      pcmplayback.set(this.outputfff);
-      //round-about way to async invoke msg port when less verbose method unavailable in audioworklet scope
-      //thank god for my 21st century laptop for accommodating a horrendously inefficient way to do this
-      new Promise((r) => r()).then(() =>
-        this.port.postMessage({ pcmplayback: pcmplayback })
-      );
-    }
+    // if (
+    //   o[0][0][15] > 0.00000001 ||
+    //   o[0][0][44] > 0.00000001 ||
+    //   o[0][0][66] > 0.00000001 ||
+    //   o[0][0][22] > 0.00000001
+    // ) {
+    //   const pcmplayback = new Float32Array(128 * 32);
+    //   pcmplayback.set(this.outputfff);
+    //   //round-about way to async invoke msg port when less verbose method unavailable in audioworklet scope
+    //   //thank god for my 21st century laptop for accommodating a horrendously inefficient way to do this
+    //   new Promise((r) => r()).then(() =>
+    //     this.port.postMessage({ pcmplayback: pcmplayback })
+    //   );
+    // }
     return true;
   }
 }

@@ -33,7 +33,7 @@ export async function scheduler(midi_u8, cb) {
         microsecondPerQuarterNote / 1000 / timeSignature;
       await new Promise((resolve) => setTimeout(resolve, intervalMillisecond));
       tick += ticksPerQuarterNote / timeSignature;
-      clockTime += intervalMillisecond / 1000;
+      //clockTime += intervalMillisecond / 1000;
       qn++;
       cb({ clockTime, qn, tick });
       if (tempos && tempos.length > 1 && tick >= tempos[0].t) {

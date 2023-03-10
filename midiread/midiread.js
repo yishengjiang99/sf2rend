@@ -20,10 +20,14 @@ export function readMidi(buffer) {
           const meta = fgetc();
           const len = readVarLength();
           switch (meta) {
+            case 0x21:
+              return { port: fgetc() };
             case 0x51:
               return { tempo: read24() };
+            case 0x59:
+              return { meta, payload: [fgetc(), fgetc()] };
             default:
-              return { meta, payload: readString(len) };
+              return { meta, payload: readString(len), len };
           }
         }
         case 0xf0:
@@ -85,8 +89,8 @@ export function readMidi(buffer) {
           channel: nextEvent.channel[0] & 0x0f,
           pid: nextEvent.channel[1] & 0x7f,
         });
-        const evtObj = { offset: reader.offset, t, delay, ...nextEvent };
-        track.push(evtObj);
+        // const evtObj = { offset: reader.offset, t, delay, ...nextEvent };
+        // track.push(evtObj);
       } else {
         const evtObj = { offset: reader.offset, t, delay, ...nextEvent };
         track.push(evtObj);
@@ -120,7 +124,7 @@ function bufferReader2(bytes) {
       ? ` !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[~]^_@abcdefghijklmnopqrstuvwxyz`.split(
           ""
         )[code - 32]
-      : "";
+      : code;
   }
   const readString = (n) => {
     let str = "";

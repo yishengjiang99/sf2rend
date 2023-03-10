@@ -35,14 +35,19 @@ export class TrackUI {
     this.nameLabel = mkdiv2({
       tag: "input",
       type: "text",
-      list: "programs",
+      autocomplete: "off",
+      onfocus: (e) => (e.target.value = ""),
+      list: idx == 9 ? "drums" : "programs",
       onchange: (e) => {
-        const pid = Array.from(e.target.list.options).filter(
+        const pid = Array.from(e.target.list.options).findIndex(
           (d) => d.value == e.target.value
         );
-        if (!pid || !pid.length) throw "target not found";
-        const pidval = pid[0].getAttribute("pid");
-        cb([midi_ch_cmds.change_program | idx, pidval, 0]);
+        if (pid === null) {
+          debugger;
+          //          throw "target not found";
+        }
+        cb([midi_ch_cmds.change_program | idx, pid, idx == 9 ? 128 : 0]);
+        e.target.blur();
       },
     });
 
@@ -186,12 +191,26 @@ export class TrackUI {
       ? this.led.setAttribute("checked", "checked")
       : this.led.removeAttribute("checked");
   }
+  set zone(z) {
+    const [delay, attack, hold, decay, release] = [
+      z.VolEnvDelay,
+      z.VolEnvAttack,
+      z.VolEnvHold,
+      z.VolEnvDecay,
+      z.VolEnvRelease,
+    ].map((v) => (v == -1 || v <= -12000 ? 0.0001 : Math.pow(2, v / 1200)));
+    const sustain = Math.pow(10, z.VolEnvSustain / -200);
+    this.env1 = { phases: [attack, decay, sustain, release], peak: 100 };
+    document.querySelector("#debug").innerHTML = attributeKeys
+      .filter((key) => z[key])
+      .reduce((str, key) => (str += `${key}: ${z[key]}\n`), "");
+  }
   set env1({ phases: [a, d, s, r], peak }) {
     const points = [
       [0, 0],
-      [Math.max(a, 1 / 12), 1],
-      //    [a + d, s / 100],
-      [Math.max(a + d + r, 1), 0],
+      [a, 1],
+      [a + d, s / 100],
+      [a + d + r, 0],
     ]
       .map(([x, y]) => [x * pixelPerSec, (1 - y) * 0.8 * rowheight].join(","))
       .join(" ");

@@ -26,7 +26,7 @@ export function createChannel(uiController, channelId, sf2, spinner) {
         uiController.active = true;
         uiController.velocity = vel;
         uiController.midi = key;
-        uiController.zone = zones[0];
+        //  uiController.zone = zones[0];
       });
     },
     keyOff(key, vel) {
