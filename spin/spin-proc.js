@@ -129,9 +129,8 @@ class SpinProcessor extends AudioWorkletProcessor {
 
   process(inputs, outputs, parameters) {
     for (let i = 0; i < outputs.length; i++) {
-      if (this.spinners[i]) continue;
-      if (this.outputs[i]) continue;
-      for (let j = 0; j < 128 * 2; j++) this.outputs[i][j] = 0;
+      if (!this.spinners[i]) continue;
+      if (!this.outputs[i]) continue;
       this.inst.exports.spin(this.spinners[i], 128);
       for (let j = 0; j < 128; j++) {
         outputs[i][0][j] = this.outputs[i][2 * j];

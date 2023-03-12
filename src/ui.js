@@ -54,8 +54,7 @@ export class TrackUI {
     const container = mkdiv(
       "div",
       {
-        class: "attrs",
-        style: "padding:10px; background-color:blue",
+        class: "attrs",style:"width:500px"
       },
       [
         this.nameLabel,

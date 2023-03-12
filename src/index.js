@@ -1,4 +1,4 @@
-import { mkdiv, mkdiv2, logdiv } from "../mkdiv/mkdiv.js";
+import { mkdiv, logdiv } from "https://unpkg.com/mkdiv@3.1.0/mkdiv.js";
 import { SpinNode } from "../spin/spin.js";
 import { mkui } from "./ui.js";
 import SF2Service from "../sf2-service/index.js";
@@ -23,15 +23,15 @@ async function main() {
     timeNow = $("#timeNow"),
     tempo = $("#tempo"),
     duration = $("#duration"),
-    timeSig = $("#timeSig");
+    timeSig = $("#timeSig"),
+    msel = $("#msel")
   let qnPerBeat = 4;
 
   const cpanel = document.querySelector("#channelContainer");
-  const cmdPanel = document.querySelector("#cmdPanel");
   const drumList = document.querySelector("#drums");
-
   const programList = document.querySelector("#programs");
-  const logdivfn = logdiv(document.querySelector("#stdout"));
+  const logdivfn = logdiv();
+  logdivfn.infoPanel.attachTo(document.querySelector("#stdout"));
   const stdout = logdivfn.stdout;
 
   midiworker.addEventListener("message", async function (e) {
@@ -71,19 +71,20 @@ async function main() {
   const midiList = await fetchmidilist();
   const midiSelect = mkdiv2({
     tag: "select",
+    style:"width:300px",
     onchange: (e) =>
       midiworker.postMessage({ cmd: "load", url: e.target.value }),
     children: midiList.map((f) =>
       mkdiv("option", { value: f.get("Url") }, f.get("Name").substring(0, 80))
     ),
   });
+  midiSelect.attachTo(msel)
 
   const sf2List = await fetchSF2List();
   sf2select.onchange = (e) => loadSF2File(e.target.value);
   for (const f of sf2List)
     sf2select.append(mkdiv("option", { value: f.url }, f.name));
 
-  cmdPanel.append(midiSelect);
 
   const eventPipe = mkeventsPipe();
   uiControllers = mkui(cpanel, eventPipe);
@@ -198,4 +199,7 @@ function onMidiMeta(stdout, e) {
     }
   };
   stdout(metaDisplay(e.data.meta) + ": " + e.data.payload);
+}
+ function mkdiv2({ tag, children, ...attr }) {
+  return mkdiv(tag, attr, children);
 }
