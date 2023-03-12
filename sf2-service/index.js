@@ -16,9 +16,11 @@ export default class SF2Service {
     function devnull() {}
     const pdtaRef = module._malloc(pdtaBuffer.byteLength);
 
-    module.onHeader = (pid, bid, name) => (programNames[pid | bid] = name);
+    module.onHeader = (pid, bid, name) => {
+      programNames[pid | bid] = name;
+      if (onHeader) onHeader(pid, bid, name);
+    };
     module.onSample = (...args) => {
-      console.log(args);
       if (onSample) onSample(args);
     };
     module.onZone = onZone || devnull;
@@ -104,6 +106,7 @@ export default class SF2Service {
       const hdrRef = shdrref + SampleId * 46;
       const dv = heap.slice(hdrRef, hdrRef + 46);
       const ascii = new Uint8Array(dv, 0, 20);
+
       let nameStr = "";
       for (const b of ascii) {
         if (!b) break;

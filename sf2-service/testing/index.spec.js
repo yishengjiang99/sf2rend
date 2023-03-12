@@ -32,7 +32,13 @@ describe("load sf2 file", () => {
   it("can load sample pcm", async () => {
     const program = sf2.loadProgram(0, 0);
     const zones = program.filterKV(55, 55);
-    const pcms = await program.shdrMap[zones[0].SampleId].data();
   });
+  it("preload all", async () => {
+    const program = sf2.loadProgram(0, 0);
+    const gg = await program.preload();
+    for (const zone of program.zMap) {
+      expect(zone.shdr.nsamples).gt(0);
+    }
+  }).slow(10);
 });
 mocha.run();
