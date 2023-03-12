@@ -222,6 +222,13 @@ hr {
   padding: 0 30px;
   margin: 5px auto;
 }
+    .keyboards {
+      user-select: none;
+    }
+
+    .keyboards a:hover {
+      color: black;
+    }
 
 .col {
   height: 100%;

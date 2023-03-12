@@ -9,29 +9,6 @@ const pixelPerSec = 12;
 export class TrackUI {
   constructor(idx, cb) {
     const i = idx;
-    let refcnt = 0;
-    const keyboard = mkdiv(
-      "div",
-      { class: "keyboards" },
-      range(48, 72).map((midi, i) =>
-        mkdiv(
-          "a",
-          {
-            midi,
-            onmousedown: (e) => {
-              refcnt++;
-              cb([0x90 | idx, midi, this.velocityInput]);
-              e.target.addEventListener(
-                "mouseup",
-                () => refcnt >= 0 && cb([0x80 | idx, midi, this.velocityInput]),
-                { once: true }
-              );
-            },
-          },
-          [i % 12 ? " " : mkdiv("br"), midi]
-        )
-      )
-    );
     this.nameLabel = mkdiv2({
       tag: "input",
       type: "text",
@@ -42,10 +19,6 @@ export class TrackUI {
         const pid = Array.from(e.target.list.options).findIndex(
           (d) => d.value == e.target.value
         );
-        if (pid === null) {
-          debugger;
-          //          throw "target not found";
-        }
         cb([midi_ch_cmds.change_program | idx, pid, idx == 9 ? 128 : 0]);
         e.target.blur();
       },
@@ -112,7 +85,7 @@ export class TrackUI {
               type: "range",
               oninput: (e) => cb([0xb0 | idx, 11, e.target.value]),
             }),
-            keyboard,
+            
             mksvg(
               "svg",
               {
@@ -236,7 +209,31 @@ export function mkui(cpanel, eventPipe) {
     controllers.push(trackrow);
     tb.append(trackrow.container);
   }
+  let refcnt = 0;
 
-  tb.attachTo(cpanel);
+  const keyboard = mkdiv(
+    "div",
+    { class: "keyboards" },
+    range(48, 72).map((midi, i) =>
+      mkdiv(
+        "a",
+        {
+          midi,
+          onmousedown: (e) => {
+            refcnt++;
+            eventPipe.postMessage([0x90 | 0, midi, 120]);
+            e.target.addEventListener(
+              "mouseup",
+              () => refcnt >= 0 && eventPipe.postMessage([0x80 | 0, midi, 88]),
+              { once: true }
+            );
+          },
+        },
+        [i % 12 ? " " : mkdiv("br"), midi]
+      )
+    )
+  );
+  keyboard.attachTo(cpanel);  tb.attachTo(cpanel);
+
   return controllers;
 }

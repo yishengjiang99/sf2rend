@@ -1,4 +1,4 @@
-import { mkdiv, logdiv } from "https://unpkg.com/mkdiv@3.1.0/mkdiv.js";
+import { mkdiv, logdiv,mkdiv2 } from "../mkdiv/mkdiv.js"
 import { SpinNode } from "../spin/spin.js";
 import { mkui } from "./ui.js";
 import SF2Service from "../sf2-service/index.js";
@@ -121,6 +121,7 @@ async function main() {
         if (velocity == 0) {
           channels[ch].keyOff(key, velocity);
         } else {
+          stdout([ch, cmd, key, velocity].join("/"));
           channels[ch].keyOn(key, velocity);
         }
         break;
@@ -199,7 +200,4 @@ function onMidiMeta(stdout, e) {
     }
   };
   stdout(metaDisplay(e.data.meta) + ": " + e.data.payload);
-}
- function mkdiv2({ tag, children, ...attr }) {
-  return mkdiv(tag, attr, children);
 }
