@@ -1,9 +1,6 @@
 import { downloadData } from "../fetch-drop-ship/download.js";
 import saturate from "../saturation/index.js";
 import { wasmbin } from "./spin.wasm.js";
-const CH_META_LEN = 24;
-const nchannels = 32;
-const REND_BLOCK = 128;
 
 /* eslint-disable no-unused-vars */
 class SpinProcessor extends AudioWorkletProcessor {

@@ -1,5 +1,5 @@
 import { mkdiv, mkdiv2, mksvg } from "../mkdiv/mkdiv.js";
-import { midi_ch_cmds } from "./constants.js";
+import { midi_ch_cmds, midi_effects as effects } from "./constants.js";
 import { attributeKeys } from "../sf2-service/zoneProxy.js";
 const rowheight = 40,
   colwidth = 80;
@@ -27,7 +27,8 @@ export class TrackUI {
     const container = mkdiv(
       "div",
       {
-        class: "attrs",style:"width:500px"
+        class: "attrs",
+        style: "width:500px",
       },
       [
         this.nameLabel,
@@ -85,7 +86,17 @@ export class TrackUI {
               type: "range",
               oninput: (e) => cb([0xb0 | idx, 11, e.target.value]),
             }),
-            
+
+            mkdiv("label", { for: "other" }, "other"),
+            mkdiv("input", {
+              min: 0,
+              id: "other",
+              max: 127,
+              step: 1,
+              value: 127,
+              type: "range",
+              oninput: (e) => cb([0xb0 | idx, 11, e.target.value]),
+            }),
             mksvg(
               "svg",
               {
@@ -109,8 +120,9 @@ export class TrackUI {
     this.sliders = Array.from(
       container.querySelectorAll("input[type='range']")
     );
-    this.labels = container.querySelectorAll("label");
-
+    const [keyLabel, velLabel, ...ccLabels] =
+      container.querySelectorAll("label");
+    this.ccLabels = ccLabels;
     this.led = container.querySelector("input[type=checkbox]");
     this.polylines = Array.from(container.querySelectorAll("polyline"));
     this.container = container;
@@ -131,20 +143,24 @@ export class TrackUI {
     return this._midi;
   }
   set CC({ key, value }) {
+    console.log(value, key);
     switch (key) {
-      case 7:
+      case effects.volumecoarse:
         this.sliders[0].value = value;
-        this.labels[0].innerHTML = "volume" + value;
+        this.ccLabels[0].innerHTML = "volume" + value;
         break;
-      case 10:
+      case effects.pancoars:
         this.sliders[1].value = value;
-        this.labels[1].innerHTML = "pan" + value;
+        this.ccLabels[1].innerHTML = "pan" + value;
         break;
-      case 11:
+      case effects.expressioncoarse:
         this.sliders[2].value = value;
-        this.labels[2].innerHTML = "exp" + value;
+        this.ccLabels[2].innerHTML = "exp" + value;
         break;
       default:
+        this.sliders[3].value = "midi " + key;
+        this.ccLabels[3].innerHTML = "value" + value;
+        break;
         console.log(key, value);
     }
   }
@@ -233,7 +249,8 @@ export function mkui(cpanel, eventPipe) {
       )
     )
   );
-  keyboard.attachTo(cpanel);  tb.attachTo(cpanel);
+  keyboard.attachTo(cpanel);
+  tb.attachTo(cpanel);
 
   return controllers;
 }

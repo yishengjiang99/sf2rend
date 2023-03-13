@@ -1,4 +1,4 @@
-import { mkdiv, logdiv,mkdiv2 } from "../mkdiv/mkdiv.js"
+import { mkdiv, logdiv, mkdiv2 } from "../mkdiv/mkdiv.js";
 import { SpinNode } from "../spin/spin.js";
 import { mkui } from "./ui.js";
 import SF2Service from "../sf2-service/index.js";
@@ -24,7 +24,7 @@ async function main() {
     tempo = $("#tempo"),
     duration = $("#duration"),
     timeSig = $("#timeSig"),
-    msel = $("#msel")
+    msel = $("#msel");
   let qnPerBeat = 4;
 
   const cpanel = document.querySelector("#channelContainer");
@@ -71,20 +71,19 @@ async function main() {
   const midiList = await fetchmidilist();
   const midiSelect = mkdiv2({
     tag: "select",
-    style:"width:300px",
+    style: "width:300px",
     onchange: (e) =>
       midiworker.postMessage({ cmd: "load", url: e.target.value }),
     children: midiList.map((f) =>
       mkdiv("option", { value: f.get("Url") }, f.get("Name").substring(0, 80))
     ),
   });
-  midiSelect.attachTo(msel)
+  midiSelect.attachTo(msel);
 
   const sf2List = await fetchSF2List();
   sf2select.onchange = (e) => loadSF2File(e.target.value);
   for (const f of sf2List)
     sf2select.append(mkdiv("option", { value: f.url }, f.name));
-
 
   const eventPipe = mkeventsPipe();
   uiControllers = mkui(cpanel, eventPipe);
@@ -108,7 +107,7 @@ async function main() {
     const velocity = c & 0x7f;
     switch (cmd) {
       case midi_ch_cmds.continuous_change: // set CC
-        channels[ch].setCC(key, velocity);
+        channels[ch].setCC({ key, vel: velocity });
         stdout("midi set cc " + [ch, cmd, key, velocity].join("/"));
         break;
       case midi_ch_cmds.change_program: //change porg
@@ -137,7 +136,8 @@ async function main() {
       eventPipe.postMessage(data);
     };
   });
-
+  ctx.onstatechange = () => stdout("ctx state " + ctx.state);
+  window.addEventListener("click", () => ctx.resume(), { once: true });
   await loadSF2File("test.sf2");
   midiworker.postMessage({ cmd: "load", url: "../song.mid" });
   async function loadSF2File(sf2url) {
@@ -160,7 +160,6 @@ async function main() {
     for (const [section, text] of sf2.meta) {
       stdout(section + ": " + text);
     }
-    stdout(sf2.programNames.join(","));
   }
 }
 main();

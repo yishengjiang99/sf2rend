@@ -11,7 +11,7 @@ export function createChannel(uiController, channelId, sf2, spinner) {
       await spinner.shipProgram(program, pid | bid);
       uiController.name = program.name;
     },
-    setCC(key, vel) {
+    setCC({ key, vel }) {
       spinner.port.postMessage([0xb0, channelId, key, vel]);
       uiController.CC = { key, value: vel };
     },

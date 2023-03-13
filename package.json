@@ -10,6 +10,8 @@
   "author": "Yisheng Jiang",
   "license": "ISC",
   "devDependencies": {
+    "eslint": "^8.36.0",
+    "eslint-plugin-react": "^7.32.2",
     "webpack": "^5.50.0",
     "webpack-cli": "^4.10.0"
   }
