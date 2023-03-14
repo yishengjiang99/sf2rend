@@ -17,7 +17,7 @@ export function createChannel(uiController, channelId, sf2, spinner) {
     },
     keyOn(key, vel) {
       const zones = program.filterKV(key, vel);
-      zones.slice(0, 1).map((zone, i) => {
+      zones.slice(0, 2).map((zone, i) => {
         spinner.keyOn(channelId * 2 + i, zone, key, vel);
       });
 
@@ -31,6 +31,8 @@ export function createChannel(uiController, channelId, sf2, spinner) {
     },
     keyOff(key, vel) {
       spinner.keyOff(channelId * 2, key, vel);
+      spinner.keyOff(channelId * 2 + 1, key, vel);
+
       requestAnimationFrame(() => (uiController.active = false));
     },
   };
