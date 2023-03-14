@@ -1,75 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Mocha</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mocha/8.3.2/mocha.min.js"
-    integrity="sha512-TfAL33PtGUxii1awTCbr3qbzQT5fYi7ItCGUfzWlnMJ4cK5BA8JNY4gJzEs+tQVbyElVbtcI2Jlaf9EFVMvyeg=="
-    crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mocha/8.3.2/mocha.min.css"
-    crossorigin="anonymous" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chai/4.3.4/chai.min.js" crossorigin="anonymous"></script>
-</head>
-<body>
-  <div id="mocha">
-  </div>
-  <script type='module'>
-    import {load, loadProgram} from "../read.js";
-    import {wavHeader} from "./wavheader.js";
-
-    const sf2url = "./fixtures/VintageDreamsWaves-v2.sf2";
-    mocha.setup("bdd");
-    const expect = globalThis.chai.expect;
-
-    describe("load sf2 file", () => {
-      let sf2;
-
-      before(async () => sf2 = await load(sf2url));
-      it("dl blob", () => {
-        const z = loadProgram(sf2, 0, 0).zMap[0];
-        expect(z.arr.length).eq(60);
-        // document.body.querySelector("#mocha").innerHTML += z.arr.join(",");
-      })
-      it("sf2file is loaded", async () => {
-        expect(sf2).exists;
-        // document.body.innerHTML += JSON.stringify(sf2);
-        expect(sf2.url).includes("http")
-      }).slow(100);
-      it("sf2 zref ", () => {
-        expect(sf2.presetRefs[0]).exists;
-      });
-    });
-    describe('load program', () => {
-      let sf2, pg;
-      before(async () => {
-        sf2 = await load(sf2url);
-        pg = loadProgram(sf2, 0, 0);
-      });
-      it('progra loaded', (done) => {
-
-      });
-    });
-    mocha.run();
-    load(sf2url).then(sf2 => {
-      for (let i = 0;i < 128;i++) {
-        const pg = loadProgram(sf2, i, 0);
-        const zone = pg.filterKV(55, 111)[0];
-        const o = document.createElement("audio");
-        document.body.querySelector("#mocha").append(o)
-        zone.shdr.data().then(a => {
-          const blob = new Blob([wavHeader({
-            nSamples: a.length / 2,
-            numChannels: 1,
-            sampleRate: zone.shdr.sampleRate,
-          }), a], {type: 'audio/wav'});
-          o.controls = true;
-          o.src = URL.createObjectURL(blob);
-        })
-      }
-    })
-
-  </script>
-</body>
-</html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Mocha</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/mocha/8.3.2/mocha.min.js"
+      integrity="sha512-TfAL33PtGUxii1awTCbr3qbzQT5fYi7ItCGUfzWlnMJ4cK5BA8JNY4gJzEs+tQVbyElVbtcI2Jlaf9EFVMvyeg=="
+      crossorigin="anonymous"></script>
+    <link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/mocha/8.3.2/mocha.min.css"
+      crossorigin="anonymous" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chai/4.3.4/chai.min.js"
+      crossorigin="anonymous"></script>
+  </head>
+  <body>
+    <div id="mocha">
+    </div>
+    <script type='module' src="./index.spec.js"></script>
+  </body></html>

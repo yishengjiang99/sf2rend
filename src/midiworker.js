@@ -1,47 +1,51 @@
 import { scheduler } from "../midiread/scheduler.js";
-const main = async (_url) => {
-  const res = await fetch(_url);
+async function loadMidiURL(url) {
+  const res = await fetch(url);
   const ab = await res.arrayBuffer();
-  const {
-    ctrls: { run, rwd, pause },
-    totalTicks,
-    tracks,
-    presets,
-  } = await scheduler(new Uint8Array(ab), postMessage);
-  if (!tracks) return;
-  // @ts-ignore
-  postMessage({ totalTicks, presets });
-  for (const t of tracks) {
-    for (const et of t) {
-      if (et && et.t > 0) break;
-      if (!et.channel) postMessage(et);
-    }
-  }
-  onmessage = ({ data: { cmd, amt, url, evtPipe } }) => {
-    if (url) {
-      pause();
-      main(url);
-    }
-    switch (cmd) {
-      case "start":
-        run();
-        break;
-      case "pause":
-        pause();
-        break;
-      case "resume":
-        run();
-        break;
+  return scheduler(new Uint8Array(ab), postMessage);
+}
 
-      case "rwd":
-        rwd(amt || 16);
-        break;
-      case "ff":
-        break;
-    }
-  };
-};
+async function main() {
+  let scheduler;
+  addEventListener(
+    "message",
+    async function ({ data: { cmd, url, amt, evtPipe } }) {
+      switch (cmd) {
+        case "load":
+          if (scheduler) {
+            scheduler.ctrls.pause();
+          }
+          scheduler = await loadMidiURL(url);
+          const { totalTicks, tracks, presets } = scheduler;
+          if (!tracks) return;
+          // @ts-ignore
+          postMessage({ midifile: { totalTicks, presets, tracks } });
 
-const url = self.location.hash.split("#")[1];
-console.log(url);
-main(url);
+          for (const track of scheduler.tracks) {
+            for (const event of track) {
+              if (event && event.t > 0) break;
+              if (!event.channel) postMessage(event);
+            }
+          }
+          break;
+        case "start":
+          scheduler.ctrls.run();
+          break;
+        case "pause":
+          scheduler.ctrls.pause();
+          break;
+        case "resume":
+          scheduler.ctrls.run();
+          break;
+
+        case "rwd":
+          scheduler.ctrls.rwd(amt || 16);
+          break;
+        case "ff":
+          break;
+      }
+    }
+  );
+}
+
+main();

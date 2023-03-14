@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Mocha</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mocha/8.3.2/mocha.min.js"
+    integrity="sha512-TfAL33PtGUxii1awTCbr3qbzQT5fYi7ItCGUfzWlnMJ4cK5BA8JNY4gJzEs+tQVbyElVbtcI2Jlaf9EFVMvyeg=="
+    crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mocha/8.3.2/mocha.min.css"
+    crossorigin="anonymous" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chai/4.3.4/chai.min.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="r">
+    <audio controls src="./song.mp3"></audio>
+
+  </div>
+  <div id="mocha">
+  </div>
+  <script type="module">
+    import {mkcanvas, chart} from "https://unpkg.com/mk-60fps@1.1.0/chart.js";
+    import FFTNode from './fft-node.js';
+    mocha.setup('bdd');
+    const expect = chai.expect;
+    describe('proc', () => {
+      let procNode, ctx
+      before(async () => {
+        ctx = new AudioContext();
+        await FFTNode.init(ctx);
+      });
+      beforeEach(async () => procNode = new FFTNode(ctx, [2]));
+
+      it('is a node', async () => {
+        const audioElement = document.querySelector("audio");
+        let source = new MediaElementAudioSourceNode(ctx, {
+          mediaElement: audioElement,
+        });
+        source.connect(procNode).connect(ctx.destination);
+        audioElement.addEventListener("play", async () => {
+          if (ctx.state !== 'running') await ctx.resume();
+          requestAnimationFrame(draw);
+        }, {once: true});
+        const c1 = mkcanvas({title: 'in', container: document.querySelector('#r'), width: 1400, height: 1400});
+        function draw() {
+          chart(c1, procNode.getByteTimeDomainData());
+          requestAnimationFrame(draw);
+        }
+        expect(true)
+      })
+    });
+    mocha.run();
+  </script>
+</body>
+</html>

@@ -1,72 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>MIDI Rendering with SoundFont2</title>
-	<link href="style.css" rel="stylesheet" />
-</head>
 
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MIDI Rendering with SoundFont2</title>
+    <link
+      href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+      rel="stylesheet"
+      crossorigin />
+      <link rel="stylesheet" href="style.css">
+  </head>
 
-	<table>
-		<tr>
-			<td colspan=3>
-				<div id='bigcan'></div>
-			</td>
-			<td rowspan=4 valign=top>
-				<pre id=stdout>welcome
-					
-				</pre>
-			</td>
-		</tr>
-		<tr>
-			<td colspan=1>
-				<span id='trktitle'>Performant WASM MIDI Player
-				</span>
-				<span id="title"></span>
-			</td>
-			<td colspan="1">
-				<div id='cmdPanel'>loading...</div>
-				<div>
-					<span id='rx1'></span>
-					<progress min="0" max="10000" step="1"></progress> <span id='rx2'></span>
-				</div>
-			</td>
-			<td>
-			</td>
-		</tr>
-		<tr>
-			<td width=320 valign=top>
-				<div id='midilist'>
-			</td>
-			<td valign=top>
-				<div id='channelContainer'>
-				</div>
-			</td>
-			<td>
+  <body class="">
+    <header style="max-width: 1550px; margin: 0 auto;">      
+      <h3>Performant WASM MIDI Playe</h3>
+      <div style="display:flex; column-gap:40px; justify-content: space-between;">      
+      <div class="song-controls" style="display: grid; height: 50px; width:
+        300px; grid-gap: 10px">
+        <button id="rewind" class="rewind" style="grid-column: 1/2">
+          <i class="fa fa-backward"> </i>
+        </button>
+        <button id="play" class="play-btn" style="grid-column: 2/3">
+          <i class="fa fa-play"> </i>
+        </button>
+        <button id="stop" class="pause-btn" style="grid-column: 3/3; ">
+          <i class="fa fa-stop" aria-hidden="true"> </i>
+        </button>      
+      </div>
+      <div class="sliderr">
+        <span id="timeNow"></span>  Tempo: <span id="tempo"></span>
 
-			</td>
-		</tr>
-		<tr>
-			<td colspan=4>
-				<button onclick='toggledebug()'>toggle debug</button>
-				<pre style='display:none' id=debug>debugdiv</pre>
-			</td>
-		</tr>
-	</table>
+        <span><input id="timeSlider" type="range" min="0" max="100"/></span>
+        <span id="duration"></span>
+      </div>
+      <div id="msel">     
+         <select id="sf2select"></select>         
+         <select id="midilist"></select>
+         <ul id="presetList"></ul>
+      </div></div>
+   </header>
+    <main class="main" style="display:grid; grid-template-columns: 1fr 1fr;">
+      <div class="">
+        <div id="channelContainer" style="height:60vh;overflow-y:scroll"></div>
+      </div>
+      <div id="stdout" class=""></div>
+    </main>
+    <datalist id="programs"></datalist>
+    <datalist id="drums"></datalist>
+    <script type="module" src="./src/index.js"></script>
+  </body>
 
-	<script type='module' src="./src/index.js">
-
-	</script>
-	<script>
-		const debugdiv = document.querySelector("#debug");
-		let debugshow = false;
-		function toggledebug() {
-			debugshow = !debugshow;
-			debugdiv.style.display = debugshow ? "block" : "none";
-		}
-	</script>
-</body>
 </html>

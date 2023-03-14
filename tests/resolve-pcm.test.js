@@ -6,7 +6,7 @@ describe("sf2zone preload", async () => {
   it("load all pcm of a zone and convert from s16 to f32", async () => {
     sf2 = await load("file.sf2");
     zone = sf2.loadProgram(0, 0);
-    const { shdrMap, zMap, preload, filterKV } = zone;
+    const { shdrMap, zMap, preload } = zone;
     await preload();
     chai.expect(zMap[0].pcm).instanceof(Float32Array); // instanceof Float32Array);
     window.fetch = () => {

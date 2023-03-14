@@ -1,5 +1,5 @@
-import { mkdiv, mksvg } from "../mkdiv/mkdiv.js";
-import { midi_ch_cmds } from "./midilist.js";
+import { mkdiv, mkdiv2, mksvg } from "../mkdiv/mkdiv.js";
+import { midi_ch_cmds, midi_effects as effects } from "./constants.js";
 import { attributeKeys } from "../sf2-service/zoneProxy.js";
 const rowheight = 40,
   colwidth = 80;
@@ -9,64 +9,29 @@ const pixelPerSec = 12;
 export class TrackUI {
   constructor(idx, cb) {
     const i = idx;
-    let refcnt = 0;
-    const keyboard = mkdiv(
-      "div",
-      { class: "keyboards" },
-      range(48, 72).map((midi) =>
-        mkdiv(
-          "a",
-          {
-            midi,
-            onmousedown: (e) => {
-              refcnt++;
-              cb([0x90 | idx, midi, this.velocityInput]);
+    this.nameLabel = mkdiv2({
+      tag: "input",
+      type: "text",
+      autocomplete: "off",
+      onfocus: (e) => (e.target.value = ""),
+      list: idx == 9 ? "drums" : "programs",
+      onchange: (e) => {
+        const pid = Array.from(e.target.list.options).findIndex(
+          (d) => d.value == e.target.value
+        );
+        cb([midi_ch_cmds.change_program | idx, pid, idx == 9 ? 128 : 0]);
+        e.target.blur();
+      },
+    });
 
-              e.target.addEventListener(
-                "mouseup",
-                () => refcnt >= 0 && cb([0x80 | idx, midi, this.velocityInput]),
-                { once: true }
-              );
-            },
-          },
-          [midi % 12 ? " " : mkdiv("br"), midi]
-        )
-      )
-    );
     const container = mkdiv(
       "div",
       {
         class: "attrs",
-
-        style:
-          "display:grid; grid-template-columns:1fr 1fr; grid-column-gap:10px;",
+        style: "width:500px",
       },
       [
-        mkdiv(
-          "input",
-          {
-            type: "list",
-            list: "programs",
-            value: "",
-            class: "name",
-            onfocus: (e) => {
-              e.target.placeholder = e.target.value;
-              e.target.value = "";
-            },
-            onunfocus: (e) => {
-              if (e.target.value == "") e.target.value = e.target.placeholder;
-            },
-            onchange: (e) => {
-              const pid = Array.from(e.target.list.options).filter(
-                (d) => d.value == e.target.value
-              );
-              if (!pid || !pid.length) throw "target not found";
-              const pidval = pid[0].getAttribute("pid");
-              cb([midi_ch_cmds.change_program | idx, pidval, 0]);
-            },
-          },
-          ["channel " + i]
-        ),
+        this.nameLabel,
         mkdiv("input", { type: "checkbox" }),
         mkdiv(
           "div",
@@ -74,11 +39,15 @@ export class TrackUI {
             style: "display:grid; grid-template-columns:1fr 1fr; ",
           },
           [
-            "midi",
-            mkdiv("meter", { min: 0, max: 127, step: 1, aria: "key" }),
+            mkdiv("label", { for: "mkey" }, "key"),
+            mkdiv("meter", {
+              min: 0,
+              max: 127,
+              id: "mkey",
+              aria: "key",
+            }),
+            mkdiv("label", { for: "velin" }, "velocity"),
 
-            // mkdiv("label", { for: "velin" }, "velocity"),
-            "velocity",
             mkdiv("meter", {
               type: "range",
               id: "velin",
@@ -86,6 +55,7 @@ export class TrackUI {
               max: 127,
               step: 1,
               aria: "vel",
+              value: 60,
             }),
             mkdiv("label", { for: "vol" }, "volume"),
 
@@ -116,35 +86,43 @@ export class TrackUI {
               type: "range",
               oninput: (e) => cb([0xb0 | idx, 11, e.target.value]),
             }),
+
+            mkdiv("label", { for: "other" }, "other"),
+            mkdiv("input", {
+              min: 0,
+              id: "other",
+              max: 127,
+              step: 1,
+              value: 127,
+              type: "range",
+              oninput: (e) => cb([0xb0 | idx, 11, e.target.value]),
+            }),
+            mksvg(
+              "svg",
+              {
+                style: "width:80px;height:59px; display:inline;",
+                viewBox: "0 0 80 60",
+              },
+              [
+                mksvg("polyline", {
+                  fill: "red",
+                  stroke: "black",
+                }),
+              ]
+            ),
           ]
         ),
-        mkdiv("div", {}, [
-          mksvg(
-            "svg",
-            {
-              style: "width:80px;height:59px; display:inline;",
-              viewBox: "0 0 80 60",
-            },
-            [
-              mksvg("polyline", {
-                fill: "red",
-                stroke: "black",
-              }),
-            ]
-          ),
-          keyboard,
-        ]),
       ]
     );
 
-    this.nameLabel = container.querySelector("input[type='list']");
     this.meters = container.querySelectorAll("meter");
 
     this.sliders = Array.from(
       container.querySelectorAll("input[type='range']")
     );
-    this.labels = container.querySelectorAll("label");
-
+    const [keyLabel, velLabel, ...ccLabels] =
+      container.querySelectorAll("label");
+    this.ccLabels = ccLabels;
     this.led = container.querySelector("input[type=checkbox]");
     this.polylines = Array.from(container.querySelectorAll("polyline"));
     this.container = container;
@@ -154,6 +132,9 @@ export class TrackUI {
   set name(id) {
     this.nameLabel.value = id;
   }
+  get name() {
+    return this.nameLabel.value;
+  }
   set midi(v) {
     this._midi = v;
     this.meters[0].value = v;
@@ -162,23 +143,24 @@ export class TrackUI {
     return this._midi;
   }
   set CC({ key, value }) {
+    console.log(value, key);
     switch (key) {
-      case 7:
+      case effects.volumecoarse:
         this.sliders[0].value = value;
-        this.labels[0].innerHTML = "volume" + value;
-
+        this.ccLabels[0].innerHTML = "volume" + value;
         break;
-      case 10:
+      case effects.pancoars:
         this.sliders[1].value = value;
-        this.labels[1].innerHTML = "pan" + value;
-
+        this.ccLabels[1].innerHTML = "pan" + value;
         break;
-      case 11:
+      case effects.expressioncoarse:
         this.sliders[2].value = value;
-        this.labels[2].innerHTML = "exp" + value;
-
+        this.ccLabels[2].innerHTML = "exp" + value;
         break;
       default:
+        this.sliders[3].value = "midi " + key;
+        this.ccLabels[3].innerHTML = "value" + value;
+        break;
         console.log(key, value);
     }
   }
@@ -186,7 +168,7 @@ export class TrackUI {
     this.meters[1].value = v;
   }
   get velocityInput() {
-    return parseInt(this.velinput.value);
+    return this.meters[1].value;
   }
   get active() {
     return this._active;
@@ -196,21 +178,6 @@ export class TrackUI {
     b
       ? this.led.setAttribute("checked", "checked")
       : this.led.removeAttribute("checked");
-  }
-  set env1({ phases: [a, d, s, r], peak }) {
-    const points = [
-      [0, 0],
-      [Math.max(a, 1 / 12), 1],
-      //    [a + d, s / 100],
-      [Math.max(a + d + r, 1), 0],
-    ]
-      .map(([x, y]) => [x * pixelPerSec, (1 - y) * 0.8 * rowheight].join(","))
-      .join(" ");
-    this.polylines[0].setAttribute("points", points);
-  }
-
-  get canvasContainer() {
-    return this.canc;
   }
   set zone(z) {
     const [delay, attack, hold, decay, release] = [
@@ -222,12 +189,23 @@ export class TrackUI {
     ].map((v) => (v == -1 || v <= -12000 ? 0.0001 : Math.pow(2, v / 1200)));
     const sustain = Math.pow(10, z.VolEnvSustain / -200);
     this.env1 = { phases: [attack, decay, sustain, release], peak: 100 };
-    document.querySelector("#debug").innerHTML = attributeKeys.reduce(
-      (str, key) => (str += `${key}: ${z[key]}\n`),
-      ""
-    );
+    document.querySelector("#debug").innerHTML = attributeKeys
+      .filter((key) => z[key])
+      .reduce((str, key) => (str += `${key}: ${z[key]}\n`), "");
+  }
+  set env1({ phases: [a, d, s, r], peak }) {
+    const points = [
+      [0, 0],
+      [a, 1],
+      [a + d, s / 100],
+      [a + d + r, 0],
+    ]
+      .map(([x, y]) => [x * pixelPerSec, (1 - y) * 0.8 * rowheight].join(","))
+      .join(" ");
+    this.polylines[0].setAttribute("points", points);
   }
 }
+
 const range = (x, y) =>
   Array.from(
     (function* _(x, y) {
@@ -235,20 +213,44 @@ const range = (x, y) =>
     })(x, y)
   );
 
-export function mkui(cpanel, cb) {
-  cb = cb.postMessage;
+export function mkui(cpanel, eventPipe) {
   const controllers = [];
 
   const tb = mkdiv("div", {
     border: 1,
-    style: "display:grid;grid-template-columns:1fr 1fr; grid-row-gap:20px;",
   });
+
   for (let i = 0; i < 16; i++) {
-    const trackrow = new TrackUI(i, cb);
+    const trackrow = new TrackUI(i, eventPipe.postMessage);
     controllers.push(trackrow);
     tb.append(trackrow.container);
   }
+  let refcnt = 0;
 
+  const keyboard = mkdiv(
+    "div",
+    { class: "keyboards" },
+    range(48, 72).map((midi, i) =>
+      mkdiv(
+        "a",
+        {
+          midi,
+          onmousedown: (e) => {
+            refcnt++;
+            eventPipe.postMessage([0x90 | 0, midi, 120]);
+            e.target.addEventListener(
+              "mouseup",
+              () => refcnt >= 0 && eventPipe.postMessage([0x80 | 0, midi, 88]),
+              { once: true }
+            );
+          },
+        },
+        [i % 12 ? " " : mkdiv("br"), midi]
+      )
+    )
+  );
+  keyboard.attachTo(cpanel);
   tb.attachTo(cpanel);
+
   return controllers;
 }

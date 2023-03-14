@@ -1,23 +1,19 @@
 import { requestDownload } from "../fetch-drop-ship/fetch-drop-ship.js";
-let wasm = null;
-const CH_META_LEN = 24;
-const RENDER_BLOCK = 128;
-const N_CHANNELS = 32;
 let k;
 
 export class SpinNode extends AudioWorkletNode {
   static async init(ctx) {
-    await ctx.audioWorklet.addModule("spin/spin-proc.js");
+    await ctx.audioWorklet.addModule("./spin/spin-proc.js");
   }
   static alloc(ctx) {
     if (!k) k = new SpinNode(ctx);
     return k;
   }
-  constructor(ctx) {
+  constructor(ctx, numberOfOutputs = 1) {
     super(ctx, "spin-proc", {
       numberOfInputs: 0,
-      numberOfOutputs: 1,
-      outputChannelCount: [2],
+      numberOfOutputs,
+      outputChannelCount: new Array(16).fill(2),
     });
   }
 

@@ -1,4 +1,5 @@
-was1:
+all: was1
+was1: clean
 	emcc pdta.c -Oz -o pdta.js \
 	-s EXTRA_EXPORTED_RUNTIME_METHODS=['ccall','AsciiToString'] \
     -s EXPORTED_FUNCTIONS=['_filterForZone','_malloc','_free','_loadpdta','_findByPid','_shdrref','_presetRef'] \
@@ -13,7 +14,7 @@ was1:
 
 
 clean:
-	rm *wasm pdta.js pdta.wasm
+	rm -f *wasm pdta.js pdta.wasm
 
 check:
 	npx serve . -l 1234 > /dev/null 2>&1 && chrome-cli open 'http://localhost:1234'

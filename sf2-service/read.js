@@ -13,7 +13,11 @@ export function s16ArrayBuffer2f32(ab) {
 }
 
 export async function load(url, { onHeader, onSample, onZone } = {}) {
-  let heap, presetRef, shdrref, presetRefs;
+  let heap,
+    presetRef,
+    shdrref,
+    presetRefs,
+    programNames = [];
 
   const Module = await import("./pdta.js");
   const module = await Module.default();
@@ -22,7 +26,7 @@ export async function load(url, { onHeader, onSample, onZone } = {}) {
   function devnull() {}
   const a = module._malloc(pdtaBuffer.byteLength);
 
-  module.onHeader = onHeader || devnull;
+  module.onHeader = (pid, bid, name) => (programNames[pid | bid] = name);
   module.onSample = () => onSample || devnull;
   module.onZone = onZone || devnull;
 
@@ -32,6 +36,7 @@ export async function load(url, { onHeader, onSample, onZone } = {}) {
   presetRefs = new Uint32Array(module.HEAPU32.buffer, module._presetRef(), 255);
   heap = module.HEAPU8.buffer.slice(0, memend);
   return {
+    programNames,
     url: fullUrl,
     pdtaRef: a,
     presetRefs,
@@ -42,15 +47,13 @@ export async function load(url, { onHeader, onSample, onZone } = {}) {
 }
 
 export function loadProgram(
-  { url, presetRefs, heap, shdrref, sdtaStart },
+  { url, presetRefs, heap, shdrref, sdtaStart, programNames },
   pid,
   bkid = 0
 ) {
   const rootRef = presetRefs[pid | bkid];
   const zMap = [];
-  const f32buffers = {};
   const shdrMap = {};
-  const shdrDataMap = {};
   for (
     let zref = rootRef, zone = zref2Zone(zref);
     zone && zone.SampleId != -1;
@@ -117,5 +120,12 @@ export function loadProgram(
     shdrMap,
     url,
     zref: rootRef,
+    name: programNames[pid | bkid],
+    filterKV: (key, vel) =>
+      zMap.filter(
+        (z) =>
+          (vel == -1 || (z.VelRange.lo <= vel && z.VelRange.hi >= vel)) &&
+          (key == -1 || (z.KeyRange.lo <= key && z.KeyRange.hi >= key))
+      ),
   };
 }

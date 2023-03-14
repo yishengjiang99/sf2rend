@@ -2,6 +2,8 @@
 
 #include "gnames.h"
 #include "sf2.h"
+#include <emscripten/fetch.h>
+#include <stdio.h>
 
 #define export __attribute__((used))
 
@@ -127,7 +129,7 @@ export zone_t *getZone(int pset, int bankId, int key, int vel) {
 
   short deltas[60];
   short attrs[60];
-  short defzonear[] = {defzone};
+  short defzonear[]={518};
   memcpy(attrs, defzonear, 120);
   pzone z = tunes[pset];
   int skipping = 0;
@@ -161,28 +163,28 @@ export zone_t *getZone(int pset, int bankId, int key, int vel) {
   return 0;
 }
 
-// void downloadSucceeded(emscripten_fetch_t *fetch) {
-//   mkpdtaf((char *)fetch->data, fetch->numBytes - 1);
-//   emscripten_fetch_close(fetch);  // Free data associated with the fetch.
-//   zone_t *z = printset(0, 0, 55, 88);
-//   printf("%d", z->KeyRange.lo);
-// }
+void downloadSucceeded(emscripten_fetch_t *fetch) {
+  mkpdtaf((char *)fetch->data, fetch->numBytes - 1);
+  emscripten_fetch_close(fetch);  // Free data associated with the fetch.
+  //zone_t *z = printset(0, 0, 55, 88);
+//  printf("%d", z->KeyRange.lo);
+}
 
-// void downloadFailed(emscripten_fetch_t *fetch) {
-//   printf("Downloading %s failed, HTTP failure status code: %d.\n",
-//   fetch->url,
-//          fetch->status);
-//   emscripten_fetch_close(fetch);  // Also free data on failure.
-// }
-// int main(int argc, char **argv) {
-//   emscripten_fetch_attr_t attr;
-//   emscripten_fetch_attr_init(&attr);
-//   strcpy(attr.requestMethod, "GET");
-//   attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
-//   attr.onsuccess = downloadSucceeded;
-//   attr.onerror = downloadFailed;
-//   emscripten_fetch(&attr, "file.sf2");
-//   // mkpdtaf("file.sf2");
-//   // printset(55, 0, 66, 99);
-//   // printset(55, 0, 55, 99);
-// }
+void downloadFailed(emscripten_fetch_t *fetch) {
+  printf("Downloading %s failed, HTTP failure status code: %d.\n",
+  fetch->url,
+         fetch->status);
+  emscripten_fetch_close(fetch);  // Also free data on failure.
+}
+int main(int argc, char **argv) {
+  emscripten_fetch_attr_t attr;
+  emscripten_fetch_attr_init(&attr);
+  strcpy(attr.requestMethod, "GET");
+  attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
+  attr.onsuccess = downloadSucceeded;
+  attr.onerror = downloadFailed;
+  emscripten_fetch(&attr, "file.sf2");
+  // mkpdtaf("file.sf2");
+  // printset(55, 0, 66, 99);
+  // printset(55, 0, 55, 99);
+}
