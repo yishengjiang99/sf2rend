@@ -67,6 +67,7 @@ export default class SF2Service {
       zone && zone.SampleId != -1;
       zone = zref2Zone((zref += 120))
     ) {
+      if(zone.SampleId==0) continue;
       const mapKey = zone.SampleId;
       if (!shdrMap[mapKey]) {
         shdrMap[mapKey] = getShdr(zone.SampleId);

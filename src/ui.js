@@ -1,8 +1,8 @@
 import { mkdiv, logdiv, mksvg  } from "https://unpkg.com/mkdiv@3.1.0/mkdiv.js";
 import { midi_ch_cmds, midi_effects as effects } from "./constants.js";
 import { attributeKeys } from "../sf2-service/zoneProxy.js";
-function mkdiv2({tag,attr,children}){
-  return mkdiv(tag,attr,children)
+function mkdiv2({tag, children,...attr}){
+  return mkdiv(tag,attr,children);
 }
 const rowheight = 40,
   colwidth = 80;
@@ -27,8 +27,89 @@ export class TrackUI {
       },
     });
 
+ 
+    const details=mkdiv(
+      "details",
+      {
+        style: "display:grid; grid-template-columns:1fr 1fr;",
+        class:"instrPanels",
+      },
+      [
+        mkdiv("label", { for: "mkey" }, "key"),
+        mkdiv("meter", {
+          min: 0,
+          max: 127,
+          id: "mkey",
+          aria: "key",
+        }),
+        mkdiv("label", { for: "velin" }, "velocity"),
+
+        mkdiv("meter", {
+          type: "range",
+          id: "velin",
+          min: 1,
+          max: 127,
+          step: 1,
+          aria: "vel",
+          value: 60,
+        }),
+        mkdiv("label", { for: "vol" }, "volume"),
+
+        mkdiv("input", {
+          min: 0,
+          max: 127,
+          value: 100,
+          step: 1,
+          id: "vol",
+          type: "range",
+          oninput: (e) => cb([0xb0 | idx, 7, e.target.value]),
+        }),
+        mkdiv("label", { for: "pan" }, "pan"),
+        mkdiv("input", {
+          min: 0,
+          max: 127,
+          step: 1,
+          type: "range",
+          value: 64,
+          oninput: (e) => cb([0xb0 | idx, 10, e.target.value]),
+        }),
+        mkdiv("label", { for: "expression" }, "expression"),
+        mkdiv("input", {
+          min: 0,
+          max: 127,
+          step: 1,
+          value: 127,
+          type: "range",
+          oninput: (e) => cb([0xb0 | idx, 11, e.target.value]),
+        }),
+
+        mkdiv("label", { for: "other" }, "other"),
+        mkdiv("input", {
+          min: 0,
+          id: "other",
+          max: 127,
+          step: 1,
+          value: 127,
+          type: "range",
+          oninput: (e) => cb([0xb0 | idx, 11, e.target.value]),
+        }),
+        mksvg(
+          "svg",
+          {
+            style: "width:80px;height:59px; display:inline;",
+            viewBox: "0 0 80 60",
+          },
+          [
+            mksvg("polyline", {
+              fill: "red",
+              stroke: "black",
+            }),
+          ]
+        ),
+      ]
+    );
     const container = mkdiv(
-      "div",
+      "summary",
       {
         class: "attrs",
         style: "width:500px",
@@ -36,88 +117,10 @@ export class TrackUI {
       [
         this.nameLabel,
         mkdiv("input", { type: "checkbox" }),
-        mkdiv(
-          "div",
-          {
-            style: "display:grid; grid-template-columns:1fr 1fr; ",
-          },
-          [
-            mkdiv("label", { for: "mkey" }, "key"),
-            mkdiv("meter", {
-              min: 0,
-              max: 127,
-              id: "mkey",
-              aria: "key",
-            }),
-            mkdiv("label", { for: "velin" }, "velocity"),
-
-            mkdiv("meter", {
-              type: "range",
-              id: "velin",
-              min: 1,
-              max: 127,
-              step: 1,
-              aria: "vel",
-              value: 60,
-            }),
-            mkdiv("label", { for: "vol" }, "volume"),
-
-            mkdiv("input", {
-              min: 0,
-              max: 127,
-              value: 100,
-              step: 1,
-              id: "vol",
-              type: "range",
-              oninput: (e) => cb([0xb0 | idx, 7, e.target.value]),
-            }),
-            mkdiv("label", { for: "pan" }, "pan"),
-            mkdiv("input", {
-              min: 0,
-              max: 127,
-              step: 1,
-              type: "range",
-              value: 64,
-              oninput: (e) => cb([0xb0 | idx, 10, e.target.value]),
-            }),
-            mkdiv("label", { for: "expression" }, "expression"),
-            mkdiv("input", {
-              min: 0,
-              max: 127,
-              step: 1,
-              value: 127,
-              type: "range",
-              oninput: (e) => cb([0xb0 | idx, 11, e.target.value]),
-            }),
-
-            mkdiv("label", { for: "other" }, "other"),
-            mkdiv("input", {
-              min: 0,
-              id: "other",
-              max: 127,
-              step: 1,
-              value: 127,
-              type: "range",
-              oninput: (e) => cb([0xb0 | idx, 11, e.target.value]),
-            }),
-            mksvg(
-              "svg",
-              {
-                style: "width:80px;height:59px; display:inline;",
-                viewBox: "0 0 80 60",
-              },
-              [
-                mksvg("polyline", {
-                  fill: "red",
-                  stroke: "black",
-                }),
-              ]
-            ),
-          ]
-        ),
+        details
       ]
-    );
 
+    );
     this.meters = container.querySelectorAll("meter");
 
     this.sliders = Array.from(
@@ -218,9 +221,11 @@ const range = (x, y) =>
 
 export function mkui(cpanel, eventPipe) {
   const controllers = [];
+  let refcnt = 0, activeChannel=0;
 
   const tb = mkdiv("div", {
     border: 1,
+    style:`height:500px;overflow-y:scroll`
   });
 
   for (let i = 0; i < 16; i++) {
@@ -228,7 +233,6 @@ export function mkui(cpanel, eventPipe) {
     controllers.push(trackrow);
     tb.append(trackrow.container);
   }
-  let refcnt = 0;
 
   const keyboard = mkdiv(
     "div",
@@ -240,10 +244,10 @@ export function mkui(cpanel, eventPipe) {
           midi,
           onmousedown: (e) => {
             refcnt++;
-            eventPipe.postMessage([0x90 | 0, midi, 120]);
+            eventPipe.postMessage([0x90 | activeChannel, midi, 120]);
             e.target.addEventListener(
               "mouseup",
-              () => refcnt >= 0 && eventPipe.postMessage([0x80 | 0, midi, 88]),
+              () => refcnt >= 0 && eventPipe.postMessage([0x80 | activeChannel, midi, 88]),
               { once: true }
             );
           },
@@ -252,8 +256,12 @@ export function mkui(cpanel, eventPipe) {
       )
     )
   );
-  keyboard.attachTo(cpanel);
   tb.attachTo(cpanel);
+  keyboard.attachTo(cpanel);
+  
+  Array.from(cpanel.querySelectorAll(".instrPanels")).forEach((p,idx)=>{
+    p.onclick=()=>activeChannel=idx;
+  })
 
   return controllers;
 }

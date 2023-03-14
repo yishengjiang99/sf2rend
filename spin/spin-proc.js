@@ -7,8 +7,8 @@ class SpinProcessor extends AudioWorkletProcessor {
   constructor(options) {
     super(options);
     this.memory = new WebAssembly.Memory({
-      maximum: 1024,
-      initial: 1024,
+      maximum: 1024*4,
+      initial: 1024*4,
     });
     let lastfl;
     const imports = {
