@@ -8,7 +8,7 @@ import { fetchmidilist, fetchSF2List } from "./midilist.js";
 import { mkeventsPipe } from "./mkeventsPipe.js";
 import { createChannel } from "./createChannel.js";
 import { midi_ch_cmds } from "./midilist.js";
-function mkdiv2({tag,attr,children}){
+function mkdiv2({tag,children,...attr}){
   return mkdiv(tag,attr,children)
 }
 async function main() {
@@ -143,7 +143,7 @@ async function main() {
   ctx.onstatechange = () => stdout("ctx state " + ctx.state);
   window.addEventListener("click", () => ctx.resume(), { once: true });
   await loadSF2File("https://grep32bit.blob.core.windows.net/sf2/GeneralUserGS.sf2");
-  midiworker.postMessage({ cmd: "load", url: "../song.mid" });
+
   async function loadSF2File(sf2url) {
     sf2 = new SF2Service(sf2url);
     await sf2.load();
