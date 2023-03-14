@@ -2,10 +2,10 @@
   "name": "sf2-service",
   "version": "1.2.5",
   "description": "fast",
-  "main": "read.js",
+  "main": "index.js",
   "scripts": {
     "build": "make",
-    "test": "make check"
+    "test": "gcc pdta.spec.c; ./a.out"
   },
   "keywords": [],
   "author": "Yisheng Jiang",

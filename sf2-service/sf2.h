@@ -128,12 +128,9 @@ typedef struct
       ExclusiveClass, OverrideRootKey, Dummy;
 } zone_t;
 
-zone_t *findByPid(int pid, int bkid);
-
-zone_t *findPresetZones(int i, int nregions);
-zone_t *findPresetByName(const char *name);
-int findPresetZonesCount(int i);
-
+phdr* findPreset(int pid, int bank_id);
+zone_t *findPresetZones(phdr* phr,int n);
+int findPresetZonesCount(phdr* phr);
 zone_t *filterForZone(zone_t *pset, uint8_t key, uint8_t vel);
 
 enum grntypes

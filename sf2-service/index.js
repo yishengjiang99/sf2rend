@@ -17,6 +17,7 @@ export default class SF2Service {
     const pdtaRef = module._malloc(pdtaBuffer.byteLength);
 
     module.onHeader = (pid, bid, name) => {
+      console.log(pid, bid, name);
       programNames[pid | bid] = name;
       if (onHeader) onHeader(pid, bid, name);
     };
@@ -24,7 +25,6 @@ export default class SF2Service {
       if (onSample) onSample(args);
     };
     module.onZone = onZone || devnull;
-
     module.HEAPU8.set(pdtaBuffer, pdtaRef);
     const memend = module._loadpdta(pdtaRef);
     const shdrref = module._shdrref(pdtaRef);

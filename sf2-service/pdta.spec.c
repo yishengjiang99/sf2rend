@@ -4,20 +4,17 @@
 void emitHeader(int pid, int bid, void *p)
 {
     phdr *pset = (phdr *)p;
-    printf("\n\nheader %s", pset->name);
+    printf("\n\nheader %s %d %d", pset->name,pid,bid);
 }
 void emitZone(int pid, void *ref)
 {
     zone_t *zone = (zone_t *)ref;
     shdrcast *shdr = (shdrcast *)(shdrs + zone->SampleId);
-        printf("\n\tStart Addr: %u %u",zone->StartAddrOfs,zone->StartLoopAddrOfs);
-    printf("\n\t Val/key ranges %d %d  %u %u", zone->VelRange.lo, zone->VelRange.hi, zone->KeyRange.lo, zone->KeyRange.hi);
-    printf("\n\t sampleID %d \n\t Attentuation: %d\n\tFilterfc %d\n", zone->SampleId, zone->Attenuation, zone->FilterFc);
+
 }
-void emitSample(void *ref, int pid, void* name)
-{
-    shdrcast *shdr = (shdrcast *)ref;
-    printf("\n\tsample id: %s %d", shdr->name, shdr->start);
+void emitSample(int id, int pid, void* name)
+{    
+ printf("\n\tsample id: %d pid %d, %s",id, pid,name);
 }
 void emitFilter(int type, uint8_t lo, uint8_t hi) {}
 
@@ -43,7 +40,7 @@ int main()
     char *pdtabuffer = malloc(h2->size);
     fread(pdtabuffer, h2->size, h2->size, fd);
     loadpdta(pdtabuffer);
-
-    printf("\n");
+    zone_t*z = presets[0];
+    printf("%hd aaa", z->Attenuation);
     return 1;
 }

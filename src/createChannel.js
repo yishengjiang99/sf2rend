@@ -12,7 +12,9 @@ export function createChannel(uiController, channelId, sf2, spinner) {
       uiController.name = program.name;
     },
     setCC({ key, vel }) {
-      spinner.port.postMessage([0xb0, channelId, key, vel]);
+      spinner.port.postMessage([0xb0, channelId*2, key, vel]);
+      spinner.port.postMessage([0xb0, channelId*2+1, key, vel]);
+
       uiController.CC = { key, value: vel };
     },
     keyOn(key, vel) {

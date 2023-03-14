@@ -1,4 +1,5 @@
-import { mkdiv, logdiv, mkdiv2 } from "../mkdiv/mkdiv.js";
+import { mkdiv, logdiv  } from "https://unpkg.com/mkdiv@3.1.0/mkdiv.js"
+
 import { SpinNode } from "../spin/spin.js";
 import { mkui } from "./ui.js";
 import SF2Service from "../sf2-service/index.js";
@@ -7,6 +8,9 @@ import { fetchmidilist, fetchSF2List } from "./midilist.js";
 import { mkeventsPipe } from "./mkeventsPipe.js";
 import { createChannel } from "./createChannel.js";
 import { midi_ch_cmds } from "./midilist.js";
+function mkdiv2({tag,attr,children}){
+  return mkdiv(tag,attr,children)
+}
 async function main() {
   let sf2, uiControllers;
 
@@ -138,7 +142,7 @@ async function main() {
   });
   ctx.onstatechange = () => stdout("ctx state " + ctx.state);
   window.addEventListener("click", () => ctx.resume(), { once: true });
-  await loadSF2File("test.sf2");
+  await loadSF2File("https://grep32bit.blob.core.windows.net/sf2/GeneralUserGS.sf2");
   midiworker.postMessage({ cmd: "load", url: "../song.mid" });
   async function loadSF2File(sf2url) {
     sf2 = new SF2Service(sf2url);

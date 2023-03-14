@@ -1,7 +1,7 @@
 import { mkcanvas, chart } from "https://unpkg.com/mk-60fps@1.1.0/chart.js";
 import { mkdiv, wrapList } from "https://unpkg.com/mkdiv@3.1.0/mkdiv.js";
 import SF2Service from "../index.js";
-const sf2url = "./fixtures/VintageDreamsWaves-v2.sf2";
+const sf2url = "https://grep32bit.blob.core.windows.net/sf2/GeneralUserGS.sf2";
 
 const sf2file = new SF2Service(sf2url);
 const loadWait = sf2file.load();
@@ -39,7 +39,7 @@ async function renderMain() {
     mkdiv("div", { class: "col note-viewer" }),
   ];
   const main = mkdiv("div", { class: "main" }, [leftNav, rightPanel]);
-
+  console.log(sf2file.programNames);
   const [presetId, zref] = document.location.hash.substring(1).split("|");
   const pid = presetId % 128;
   const bid = presetId ^ 128;
@@ -49,7 +49,8 @@ async function renderMain() {
       `<option value=${z.ref} ${z.ref + "" == zref ? "selected" : ""}>${
         z.SampleId
       } ${
-        "key "+[z.KeyRange.lo, z.KeyRange.hi].join("-") +
+        "key " +
+        [z.KeyRange.lo, z.KeyRange.hi].join("-") +
         " vel " +
         [z.VelRange.lo, z.VelRange.hi].join("-")
       }</option>`
@@ -68,7 +69,6 @@ async function renderMain() {
         kRangeList
       )
     ),
-    mkdiv("div", { class: "note-title" }, [sf2file.programNames[presetId]]),
   ]);
 
   const zoneSelect = zref
@@ -86,7 +86,10 @@ async function renderMain() {
   const articleMain = mkdiv("div", { class: "note-preview" }, [
     mkdiv(
       "div",
-      { style: "display:flex flex-direction:row; max-height:50vh; overflow-y:scroll; gap:0 20px 20px" },
+      {
+        style:
+          "display:flex flex-direction:row; max-height:50vh; overflow-y:scroll; gap:0 20px 20px",
+      },
       [
         mkdiv("div", [
           "smpl: ",
@@ -101,21 +104,27 @@ async function renderMain() {
           "<br>",
           "loop: ",
           zoneSelect.shdr.loops.join("-"),
+
+          JSON.stringify(zoneSelect.KeyRange),
         ]),
-        ..."Addr,Attenuation,VolEnv,Filter,LFO".split(",").map((keyword) =>
-          mkdiv(
-            "div",{style:"padding:10px;color:gray;"},
-            zattrs
-              .filter(([k]) => k.includes(keyword))
-              .map(([k, v]) => k + ": " + v)
-              .join("<br>")
-          )
-        ),
+        ..."Addr,KeyRange,Attenuation,VolEnv,Filter,LFO"
+          .split(",")
+          .map((keyword) =>
+            mkdiv(
+              "div",
+              { style: "padding:10px;color:gray;" },
+              zattrs
+                .filter(([k]) => k.includes(keyword))
+                .map(([k, v]) => k + ": " + v)
+                .join("<br>")
+            )
+          ),
       ]
     ),
   ]);
 
   const mainRight = mkdiv("div", { class: "note" }, [
+    mkdiv("div", { class: "note-title" }, [sf2file.programNames[presetId]]),
     articleHeader,
     articleMain,
   ]);

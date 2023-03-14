@@ -1,6 +1,9 @@
-import { mkdiv, mkdiv2, mksvg } from "../mkdiv/mkdiv.js";
+import { mkdiv, logdiv, mksvg  } from "https://unpkg.com/mkdiv@3.1.0/mkdiv.js";
 import { midi_ch_cmds, midi_effects as effects } from "./constants.js";
 import { attributeKeys } from "../sf2-service/zoneProxy.js";
+function mkdiv2({tag,attr,children}){
+  return mkdiv(tag,attr,children)
+}
 const rowheight = 40,
   colwidth = 80;
 const pixelPerDecibel = rowheight;

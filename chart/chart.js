@@ -1,4 +1,4 @@
-import { mkdiv } from "../mkdiv/mkdiv.js";
+import { mkdiv } from "https://unpkg.com/mkdiv";
 
 export function chart(canvasCtx, dataArray) {
   resetCanvas(canvasCtx);

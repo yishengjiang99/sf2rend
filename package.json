@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
+    
     "build": "export SET NODE_OPTIONS=--openssl-legacy-provider && webpack",
     "start": "export NODE_OPTIONS=--openssl-legacy-provider && npx webpack-dev-server"
   },

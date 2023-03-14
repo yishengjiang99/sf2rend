@@ -39,9 +39,9 @@ spinner* newSpinner(int idx) {
 
 void gm_reset() {
   for (int idx = 0; idx < 128; idx++) {
-    midi_cc_vals[idx * 128 + TML_VOLUME_MSB] = 100;
-    midi_cc_vals[idx * 128 + TML_PAN_MSB] = 64;
-    midi_cc_vals[idx * 128 + TML_EXPRESSION_MSB] = 127;
+    midi_cc_vals[idx * nmidiChannels + TML_VOLUME_MSB] = 100;
+    midi_cc_vals[idx * nmidiChannels + TML_PAN_MSB] = 64;
+    midi_cc_vals[idx * nmidiChannels + TML_EXPRESSION_MSB] = 127;
   }
   for (int i = 0; i < nchannels; i++) {
     newSpinner(i);
@@ -86,8 +86,9 @@ LFOEffects lfo_effects(float lfoval, zone_t* z) {
 }
 float trigger_attack(spinner* x, zone_t* z, float ratio, int velocity) {
   pcm_t* pcm = pcms + z->SampleId;
-  x->loopStart = pcm->loopstart;
-  x->loopEnd = pcm->loopend;
+  x->position = z->StartAddrOfs + z->StartAddrCoarseOfs<<15;
+  x->loopStart = pcm->loopstart+ z->StartLoopAddrOfs + z->StartLoopAddrCoarseOfs<<15;
+  x->loopEnd = pcm->loopend + z->EndAddrOfs + z->EndLoopAddrCoarseOfs<<15;
   x->inputf = pcm->data;
 
   x->position = 0;

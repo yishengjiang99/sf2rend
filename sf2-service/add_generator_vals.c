@@ -70,6 +70,8 @@ static inline int add_pbag_val_to_zone(int genop, short *zoneAttr, short psetAtt
         case ModLFOFreq:
                   zoneAttr[genop] = (short)clamp(zoneAttr[genop]+psetAttr,-16000,4500);
                   break;
+        case Instrument:
+          zoneAttr[genop]=psetAttr;
       default:
         break;
    }

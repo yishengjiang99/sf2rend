@@ -1,4 +1,3 @@
-import { mkdiv } from "../mkdiv/mkdiv.js";
 export const midi_ch_cmds = {
   change_program: 0xc0,
   continuous_change: 0xb0,
@@ -18,27 +17,7 @@ var xml_attr = [
   "ContentLanguage",
 ];
 const cdnroot = `https://grep32bit.blob.core.windows.net/midi/`;
-export async function fetchAndLoadPlaylist(sf2f) {
-  let listsdiv = document.querySelector("#midilist");
-  if (!listsdiv) listsdiv = document.createElement("div");
-  const playlist = await fetchmidilist();
-  playlist.forEach((l) =>
-    listsdiv.append(
-      mkdiv(
-        "a",
-        {
-          href:
-            "index.html?midif=" +
-            l.get("Url").replace(cdnroot, "") +
-            "&sf2f=" +
-            sf2f,
-        },
-        l.get("Name")
-      ).wrapWith("li")
-    )
-  );
-  return listsdiv;
-}
+
 
 export function fetchmidilist(
   url = "https://grep32bit.blob.core.windows.net/midi?resttype=container&comp=list"
