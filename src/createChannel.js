@@ -8,8 +8,10 @@ export function createChannel(uiController, channelId, sf2, spinner) {
     },
     async setProgram(pid, bid) {
       program = _sf2.loadProgram(pid, bid);
+      debugger;
       await spinner.shipProgram(program, pid | bid);
       uiController.name = program.name;
+      uiController.presetId = pid;
     },
     setCC({ key, vel }) {
       spinner.port.postMessage([0xb0, channelId, key, vel]);
@@ -36,10 +38,4 @@ export function createChannel(uiController, channelId, sf2, spinner) {
       requestAnimationFrame(() => (uiController.active = false));
     },
   };
-}
-const debugdiv = document.querySelector("#debug");
-let debugshow = false;
-function toggledebug() {
-  debugshow = !debugshow;
-  debugdiv.style.display = debugshow ? "block" : "none";
 }

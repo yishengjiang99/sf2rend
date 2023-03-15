@@ -89,11 +89,11 @@ typedef struct {
 typedef struct {
   char name[20];
   uint32_t start, end, startloop, endloop, sampleRate;
-
   unsigned char originalPitch;
   signed char pitchCorrection;
   uint16_t wSampleLink, sampleType;
 } shdrcast;
+
 typedef struct {
   unsigned short StartAddrOfs, EndAddrOfs, StartLoopAddrOfs, EndLoopAddrOfs,
       StartAddrCoarseOfs;

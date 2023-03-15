@@ -1,4 +1,4 @@
-import { mkdiv, logdiv } from "https://unpkg.com/mkdiv@3.1.0/mkdiv.js";
+import { mkdiv, logdiv, mkdiv2 } from "https://unpkg.com/mkdiv@3.1.2/mkdiv.js";
 
 import { SpinNode } from "../spin/spin.js";
 import { mkui } from "./ui.js";
@@ -8,16 +8,15 @@ import { fetchmidilist, fetchSF2List } from "./midilist.js";
 import { mkeventsPipe } from "./mkeventsPipe.js";
 import { createChannel } from "./createChannel.js";
 import { midi_ch_cmds } from "./midilist.js";
-function mkdiv2({ tag, children, ...attr }) {
-  return mkdiv(tag, attr, children);
-}
-async function main() {
-  let sf2, uiControllers;
 
-  const ctx = new AudioContext({ sampleRate: 48000 });
-  let midiworker = new Worker("src/midiworker.js", {
-    type: "module",
-  });
+async function main() {
+  let sf2,
+    uiControllers,
+    ctx = new AudioContext({ sampleRate: 48000 }),
+    midiworker = new Worker("src/midiworker.js", {
+      type: "module",
+    });
+
   const channels = [];
   const $ = (sel) => document.querySelector(sel);
   const sf2select = $("#sf2select"),
@@ -31,7 +30,6 @@ async function main() {
     msel = $("#msel");
   let qnPerBeat = 4;
 
-  const cpanel = document.querySelector("#channelContainer");
   const drumList = document.querySelector("#drums");
   const programList = document.querySelector("#programs");
   const logdivfn = logdiv();
@@ -90,7 +88,7 @@ async function main() {
     sf2select.append(mkdiv("option", { value: f.url }, f.name));
 
   const eventPipe = mkeventsPipe();
-  uiControllers = mkui(cpanel, eventPipe);
+  uiControllers = mkui(eventPipe, $("#channelContainer"));
   await SpinNode.init(ctx);
   const spinner = new SpinNode(ctx, 16);
   const merger = new GainNode(ctx);
@@ -157,9 +155,7 @@ async function main() {
       }
     });
     channels.forEach((c) => c.setSF2(sf2));
-    for (let i = 0; i <= 8; i++) {
-      await channels[i].setProgram(i, 0);
-    }
+    await sf2.loadProgram(0, 0);
     await channels[9].setProgram(0, 128);
     for (const [section, text] of sf2.meta) {
       stdout(section + ": " + text);

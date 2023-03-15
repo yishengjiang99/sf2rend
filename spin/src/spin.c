@@ -7,7 +7,6 @@
 extern void debugFL(float fl);
 
 spinner sps[nchannels];
-lpf_t lpf[nchannels];
 EG eg[nchannels * 2];
 LFO lfos[nchannels * 2];
 pcm_t pcms[2222];
@@ -19,6 +18,15 @@ char pitch_bend_msb[nmidiChannels];
 float outputs[nchannels * RENDQ * 2];
 float silence[40];
 char spsIndx = 0;
+spinner* get_available_spinner(int channelId) {
+  spinner* sp;
+  for (int i = 0; i < nchannels; i++) {
+    if (sps[i].sp_avail == SP_AVAIL) {
+      sp = &sps[i];
+    }
+  }
+  return 0;
+}
 
 spinner* newSpinner(int idx) {
   spinner* x = &sps[idx];
@@ -28,12 +36,12 @@ spinner* newSpinner(int idx) {
   x->loopStart = 4;
   x->fract = 0.0f;
   x->position = 0;
-  x->lpf = &lpf[idx];
   x->voleg = &eg[idx * 2];
   x->modeg = &eg[idx * 2 + 1];
   x->modlfo = &lfos[idx * 2];
   x->vibrlfo = &lfos[idx * 2 + 1];
   x->channelId = idx;
+  x->availability = sp_avail;
   return x;
 }
 
@@ -54,14 +62,13 @@ void eg_release(spinner* x) {
 void reset(spinner* x) {
   x->position = 0;
   x->fract = 0.0f;
-  x->lpf->m1 = 0.00000f;
   x->modlfo->phase = 0;
   x->vibrlfo->phase = 0;
+  x->SP_AVAIL = SP_STARTING;
 }
+
 void set_zone(spinner* x, zone_t* z, unsigned int pcmSampleRate) {
   x->zone = z;
-  // newLpf(x->lpf, .40f);
-
   init_mod_eg(x->modeg, z, pcmSampleRate);
   init_vol_eg(x->voleg, z, pcmSampleRate);
   x->modlfo->delay = timecent2sample(z->ModLFODelay);
@@ -86,17 +93,16 @@ LFOEffects lfo_effects(float lfoval, zone_t* z) {
 }
 float trigger_attack(spinner* x, zone_t* z, float ratio, int velocity) {
   pcm_t* pcm = pcms + z->SampleId;
-  x->position = z->StartAddrOfs + z->StartAddrCoarseOfs<<15;
-  x->loopStart = pcm->loopstart+ z->StartLoopAddrOfs + z->StartLoopAddrCoarseOfs<<15;
-  x->loopEnd = pcm->loopend + z->EndAddrOfs + z->EndLoopAddrCoarseOfs<<15;
+  x->position = z->StartAddrOfs + (z->StartAddrCoarseOfs << 15);
+  x->loopStart =
+      pcm->loopstart + z->StartLoopAddrOfs + (z->StartLoopAddrCoarseOfs << 15);
+  x->loopEnd = pcm->loopend + z->EndAddrOfs + (z->EndLoopAddrCoarseOfs << 15);
   x->inputf = pcm->data;
-
   x->position = 0;
   x->fract = 0.0f;
-  x->lpf->m1 = 0.0f;
   x->stride = ratio;
   x->velocity = velocity & 0x7f;
-
+  x->availability = SP_SPINNING;
   set_zone(x, z, pcm->sampleRate);
   return x->stride;
 }

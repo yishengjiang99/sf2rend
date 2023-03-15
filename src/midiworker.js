@@ -1,4 +1,4 @@
-import { scheduler } from "../midiread/scheduler.js";
+import { scheduler } from "https://unpkg.com/midiread";
 async function loadMidiURL(url) {
   const res = await fetch(url);
   const ab = await res.arrayBuffer();

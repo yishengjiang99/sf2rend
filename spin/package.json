@@ -6,7 +6,7 @@
   "main": "spin.js",
   "scripts": {
     "build": "make",
-    "test": "cmake --build build; cd build; ctest; cd -"
+    "test": "gcc src/spin.test.c; ./fa.out"
   },
   "keywords": [],
   "author": "Yisheng Jiang",

@@ -13,6 +13,7 @@ typedef struct {
 
 void advanceStage(EG* eg);
 float update_eg(EG* eg, int n);
+
 /**
  * advances envelope generator by n steps..
  * shift to next stage and advance the remaining n steps

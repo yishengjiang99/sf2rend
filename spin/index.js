@@ -52,10 +52,7 @@ export async function mkspinner() {
       instance.exports.midi_cc_vals.value,
       128 * 16
     ),
+    mallocSpinner: () => new Uint32Array(),
     ...instance.exports,
   };
-}
-function basename() {
-  const root = document.location.pathname.split("/sf2rend")[0];
-  return root + "/sf2rend/";
 }

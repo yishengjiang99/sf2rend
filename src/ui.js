@@ -1,17 +1,21 @@
-import { mkdiv, logdiv, mksvg  } from "https://unpkg.com/mkdiv@3.1.0/mkdiv.js";
+/* eslint-disable react/prop-types */
+/* eslint-disable no-unused-vars */
+import {
+  mkdiv,
+  mkdiv2,
+  wrapDiv,
+  mksvg,
+} from "https://unpkg.com/mkdiv@3.1.2/mkdiv.js";
+import { mkcanvas, chart } from "https://unpkg.com/mk-60fps@1.1.0/chart.js";
 import { midi_ch_cmds, midi_effects as effects } from "./constants.js";
-import { attributeKeys } from "../sf2-service/zoneProxy.js";
-function mkdiv2({tag, children,...attr}){
-  return mkdiv(tag,attr,children);
-}
-const rowheight = 40,
-  colwidth = 80;
-const pixelPerDecibel = rowheight;
+
+const rowheight = 40;
 const pixelPerSec = 12;
+let ControllerState;
 
 export class TrackUI {
   constructor(idx, cb) {
-    const i = idx;
+    this.idx = idx;
     this.nameLabel = mkdiv2({
       tag: "input",
       type: "text",
@@ -27,14 +31,31 @@ export class TrackUI {
       },
     });
 
- 
-    const details=mkdiv(
+    const container = mkdiv(
       "details",
       {
         style: "display:grid; grid-template-columns:1fr 1fr;",
-        class:"instrPanels",
+        class: "instrPanels",
       },
       [
+        mkdiv(
+          "summary",
+          {
+            class: "attrs",
+            style: "width:320px;padding:20px",
+          },
+          [
+            mkdiv("input", { type: "checkbox" }),
+            this.nameLabel,
+            mkdiv(
+              "a",
+              {
+                onclick: () => (ControllerState.activeChannelUserInput = idx),
+              },
+              "play"
+            ),
+          ]
+        ),
         mkdiv("label", { for: "mkey" }, "key"),
         mkdiv("meter", {
           min: 0,
@@ -108,19 +129,7 @@ export class TrackUI {
         ),
       ]
     );
-    const container = mkdiv(
-      "summary",
-      {
-        class: "attrs",
-        style: "width:500px",
-      },
-      [
-        this.nameLabel,
-        mkdiv("input", { type: "checkbox" }),
-        details
-      ]
 
-    );
     this.meters = container.querySelectorAll("meter");
 
     this.sliders = Array.from(
@@ -135,9 +144,19 @@ export class TrackUI {
     this._active = false;
     this._midi = null;
   }
+  set presetId(presetId) {
+    ControllerState = {
+      ...ControllerState,
+      channels: {
+        ...ControllerState.channels,
+        [this.idx]: presetId,
+      },
+    };
+  }
   set name(id) {
     this.nameLabel.value = id;
   }
+  8;
   get name() {
     return this.nameLabel.value;
   }
@@ -167,7 +186,6 @@ export class TrackUI {
         this.sliders[3].value = "midi " + key;
         this.ccLabels[3].innerHTML = "value" + value;
         break;
-        console.log(key, value);
     }
   }
   set velocity(v) {
@@ -181,23 +199,11 @@ export class TrackUI {
   }
   set active(b) {
     this._active = b;
-    b
-      ? this.led.setAttribute("checked", "checked")
-      : this.led.removeAttribute("checked");
-  }
-  set zone(z) {
-    const [delay, attack, hold, decay, release] = [
-      z.VolEnvDelay,
-      z.VolEnvAttack,
-      z.VolEnvHold,
-      z.VolEnvDecay,
-      z.VolEnvRelease,
-    ].map((v) => (v == -1 || v <= -12000 ? 0.0001 : Math.pow(2, v / 1200)));
-    const sustain = Math.pow(10, z.VolEnvSustain / -200);
-    this.env1 = { phases: [attack, decay, sustain, release], peak: 100 };
-    document.querySelector("#debug").innerHTML = attributeKeys
-      .filter((key) => z[key])
-      .reduce((str, key) => (str += `${key}: ${z[key]}\n`), "");
+    if (b) {
+      this.led.setAttribute("checked", "checked");
+    } else {
+      this.led.removeAttribute("checked");
+    }
   }
   set env1({ phases: [a, d, s, r], peak }) {
     const points = [
@@ -205,36 +211,33 @@ export class TrackUI {
       [a, 1],
       [a + d, s / 100],
       [a + d + r, 0],
-    ]
+    ];
+    points
       .map(([x, y]) => [x * pixelPerSec, (1 - y) * 0.8 * rowheight].join(","))
       .join(" ");
     this.polylines[0].setAttribute("points", points);
   }
 }
 
-const range = (x, y) =>
-  Array.from(
-    (function* _(x, y) {
-      while (x < y) yield x++;
-    })(x, y)
-  );
-
-export function mkui(cpanel, eventPipe) {
+export function mkui(eventPipe, container) {
   const controllers = [];
-  let refcnt = 0, activeChannel=0;
-
+  let refcnt = 0,
+    activeChannel = 0;
   const tb = mkdiv("div", {
     border: 1,
-    style:`height:500px;overflow-y:scroll`
+    style: `height:500px;overflow-y:scroll`,
   });
 
   for (let i = 0; i < 16; i++) {
     const trackrow = new TrackUI(i, eventPipe.postMessage);
     controllers.push(trackrow);
     tb.append(trackrow.container);
+    trackrow.container.onclick = (e) => {
+      e.target.style.background_color = "pink";
+      ControllerState.activeChannelUserInput = i;
+    };
   }
-
-  const keyboard = mkdiv(
+  const mkKeyboard = mkdiv(
     "div",
     { class: "keyboards" },
     range(48, 72).map((midi, i) =>
@@ -247,7 +250,9 @@ export function mkui(cpanel, eventPipe) {
             eventPipe.postMessage([0x90 | activeChannel, midi, 120]);
             e.target.addEventListener(
               "mouseup",
-              () => refcnt >= 0 && eventPipe.postMessage([0x80 | activeChannel, midi, 88]),
+              () =>
+                refcnt >= 0 &&
+                eventPipe.postMessage([0x80 | activeChannel, midi, 88]),
               { once: true }
             );
           },
@@ -256,12 +261,100 @@ export function mkui(cpanel, eventPipe) {
       )
     )
   );
-  tb.attachTo(cpanel);
-  keyboard.attachTo(cpanel);
-  
-  Array.from(cpanel.querySelectorAll(".instrPanels")).forEach((p,idx)=>{
-    p.onclick=()=>activeChannel=idx;
-  })
+  const keyboard = mkKeyboard;
+  const zoneCardContainer = mkdiv("div");
+  ControllerState = new Proxy(
+    {
+      channels: {},
+      activeChannelUserInput: 1,
+      activeZoneDebug: 1,
+    },
+    {
+      async set(obj, prop, value) {
+        console.log(prop, value);
 
+        switch (prop) {
+          case "channels":
+            console.log(prop, value);
+            break;
+          case "activeChannelUserInput":
+            break;
+        }
+      },
+    }
+  );
+  const cpanel = mkdiv2({
+    tag: "div",
+    border: 1,
+    style: `height:500px;8display:grid;grid-area:a a a, b c c`,
+    children: [tb, keyboard, mkdiv()],
+  });
+
+  cpanel.attachTo(container);
   return controllers;
 }
+
+async function mkZoneInfoCard(zone) {
+  if (!zone) {
+    return Promise.resolve();
+  }
+  const zattrs = Object.entries(zone).filter(
+    ([_, val], idx) => val && idx < 60
+  );
+  const canvas = mkcanvas();
+  const cardStyle =
+    "display:flex flex-direction:row; max-height:50vh; overflow-y:scroll; gap:0 20px 20px";
+
+  const articleMain = mkdiv(
+    "div",
+    { class: "note-preview", style: cardStyle },
+    [
+      mkdiv(
+        "div",
+        {
+          style: cardStyle,
+        },
+        [
+          mkdiv("div", [
+            "smpl: ",
+            zone.shdr.SampleId,
+            " ",
+            zone.shdr.name,
+            "<br>nsample: ",
+            zone.shdr.nsamples,
+            "<br>srate: " + zone.shdr.originalPitch,
+            "<br>Range: ",
+            zone.shdr.range.join("-"),
+            "<br>",
+            "loop: ",
+            zone.shdr.loops.join("-"),
+
+            JSON.stringify(zone.KeyRange),
+          ]),
+          ..."Addr,KeyRange,Attenuation,VolEnv,Filter,LFO"
+            .split(",")
+            .map((keyword) =>
+              mkdiv(
+                "div",
+                { style: "padding:10px;color:gray;" },
+                zattrs
+                  .filter(([k]) => k.includes(keyword))
+                  .map(([k, v]) => k + ": " + v)
+                  .join("<br>")
+              )
+            ),
+        ]
+      ),
+    ]
+  );
+  const pcm = await zone.shdr.data();
+  chart(canvas, pcm);
+  return articleMain;
+}
+
+const range = (x, y) =>
+  Array.from(
+    (function* _(x, y) {
+      while (x < y) yield x++;
+    })(x, y)
+  );

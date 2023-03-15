@@ -1,22 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MIDI Rendering with SoundFont2</title>
-    <link
-      href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
-      rel="stylesheet"
-      crossorigin />
-      <link rel="stylesheet" href="style.css">
-  </head>
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MIDI Rendering with SoundFont2</title>
+  <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+    crossorigin />
+  <link rel="stylesheet" href="style.css">
+</head>
 
-  <body class="">
-    <header style="max-width: 1550px; margin: 0 auto;">      
-      <h3>Performant WASM MIDI Playe</h3>
-      <div style="display:flex; column-gap:40px; justify-content: space-between;">      
+<body class="">
+  <header style="max-width: 1550px; margin: 0 auto;">
+    <h3>Performant WASM MIDI Playe</h3>
+    <div style="display:flex; column-gap:40px; justify-content: space-between;">
       <div class="song-controls" style="display: grid; height: 50px; width:
         300px; grid-gap: 10px">
         <button id="rewind" class="rewind" style="grid-column: 1/2">
@@ -27,29 +25,29 @@
         </button>
         <button id="stop" class="pause-btn" style="grid-column: 3/3; ">
           <i class="fa fa-stop" aria-hidden="true"> </i>
-        </button>      
+        </button>
       </div>
       <div class="sliderr">
-        <span id="timeNow"></span>  Tempo: <span id="tempo"></span>
+        <span id="timeNow"></span> Tempo: <span id="tempo"></span>
 
-        <span><input id="timeSlider" type="range" min="0" max="100"/></span>
+        <span><input id="timeSlider" type="range" min="0" max="100" /></span>
         <span id="duration"></span>
       </div>
-      <div id="msel">     
-         <select id="sf2select"></select>         
-         <select id="midilist"></select>
-         <ul id="presetList"></ul>
-      </div></div>
-   </header>
-    <main class="main" style="display:grid; grid-template-columns: 1fr 1fr;">
-      <div class="">
-        <div id="channelContainer"></div>
+      <div id="msel">
+        <select id="sf2select"></select>
+        <select id="midilist"></select>
+        <ul id="presetList"></ul>
       </div>
-      <div id="stdout" class=""></div>
-    </main>
-    <datalist id="programs"></datalist>
-    <datalist id="drums"></datalist>
-    <script type="module" src="./src/index.js"></script>
-  </body>
+    </div>
+  </header>
+  <main class="main" style="display:grid; grid-template-columns: 1fr 1fr;">
+    <div id="channelContainer"></div>
+
+    <div id="stdout" class=""></div>
+  </main>
+  <datalist id="programs"></datalist>
+  <datalist id="drums"></datalist>
+  <script type="module" src="./src/index.js"></script>
+</body>
 
 </html>
