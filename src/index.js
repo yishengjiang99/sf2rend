@@ -47,13 +47,16 @@ async function main(sf2file, midifile) {
   midiworker.addEventListener("message", async function (e) {
     if (e.data.midifile) {
       const { totalTicks, tracks, presets } = e.data.midifile;
+      const ll=[]
       for (const preset of presets) {
         const { pid, channel } = preset;
         const bkid = channel == 9 ? 128 : 0;
-        channels[channel].setProgram(pid, bkid);
+      ll.push(  channels[channel].setProgram(pid, bkid));
       }
       duration.innerHTML = totalTicks / 4;
       timeslide.setAttribute("max", totalTicks);
+      await Promise.all(ll);
+      playBtn.removeAttribute("disabled");
     } else if (e.data.channel) {
       eventPipe.postMessage(e.data.channel);
     } else if (e.data.qn) {
@@ -174,7 +177,6 @@ async function main(sf2file, midifile) {
   playBtn.setAttribute("disabled",true);
   await loadSF2File(sf2file);  
   midiworker.postMessage({cmd:"load",url:midifile});
-  playBtn.removeAttribute("disabled");
 
 
 }
