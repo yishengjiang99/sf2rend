@@ -11,9 +11,8 @@ import { midi_ch_cmds } from "./midilist.js";
 
 const getParams = new URLSearchParams(document.location.search);
 main(
-  getParams.get("sf2file") || "https://unpkg.com/sf2-service@1.3.5/file.sf2",
-  getParams.get("midifile") || "https://grep32bit.blob.core.windows.net/midi/billie.mid");
-
+  getParams.get("sf2file") || "/sf2rend/file.sf2",
+  getParams.get("midifile") || "/sf2rend/song.mid");
 
 async function main(sf2file, midifile) {
   let sf2,
