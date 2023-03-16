@@ -38,11 +38,9 @@ async function main(sf2file, midifile) {
 
   const drumList = document.querySelector("#drums");
   const programList = document.querySelector("#programs");
-  const logdivfn = logdiv();
-  logdivfn.infoPanel.attachTo(document.querySelector("#stdout"));
-  logdivfn.errPanel.attachTo(document.querySelector("#stdout"));
-  const stdout = logdivfn.stdout;
-  const stderr = logdivfn.stderr;
+  const {infoPanel,errPanel,stdout,stderr} = logdiv();
+  infoPanel.attachTo(document.querySelector("#stdout"));
+  errPanel.attachTo(document.querySelector("#stderr"));
 
   midiworker.addEventListener("message", async function (e) {
     if (e.data.midifile) {
@@ -73,7 +71,7 @@ async function main(sf2file, midifile) {
     } else if (e.data.t) {
       // timeslide.value = e.data.t;
     } else if (e.data.meta) {
-      onMidiMeta(stdout, e);
+      onMidiMeta(stderr, e);
     }
   });
 
@@ -177,11 +175,9 @@ async function main(sf2file, midifile) {
   playBtn.setAttribute("disabled",true);
   await loadSF2File(sf2file);  
   midiworker.postMessage({cmd:"load",url:midifile});
-
-
 }
 
-function onMidiMeta(stdout, e) {
+function onMidiMeta(stderr, e) {
   const metalist = [
     "seq num",
     "text",
@@ -213,5 +209,5 @@ function onMidiMeta(stdout, e) {
         return parseInt(num).toString(16);
     }
   };
-  stdout(metaDisplay(e.data.meta) + ": " + e.data.payload);
+  stderr(metaDisplay(e.data.meta) + ": " + e.data.payload);
 }
