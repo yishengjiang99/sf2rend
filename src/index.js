@@ -11,8 +11,8 @@ import { midi_ch_cmds } from "./midilist.js";
 
 const getParams = new URLSearchParams(document.location.search);
 main(
-  getParams.get("sf2file") || "../file.sf2",
-getParams.get("midifile") || "../song.mid");
+  getParams.get("sf2file") || "https://unpkg.com/sf2-service@1.3.5/file.sf2",
+  getParams.get("midifile") || "https://grep32bit.blob.core.windows.net/midi/billie.mid");
 
 
 async function main(sf2file, midifile) {
@@ -45,15 +45,20 @@ async function main(sf2file, midifile) {
   midiworker.addEventListener("message", async function (e) {
     if (e.data.midifile) {
       const { totalTicks, tracks, presets } = e.data.midifile;
-      const ll=[]
+      const queues=[[],[],[]];
+      const [l1,l2,l3]=queues;
       for (const preset of presets) {
         const { pid, channel } = preset;
         const bkid = channel == 9 ? 128 : 0;
-      ll.push(  channels[channel].setProgram(pid, bkid));
+        queues[pid%3].push(channels[channel].setProgram(pid, bkid));
       }
       duration.innerHTML = totalTicks / 4;
       timeslide.setAttribute("max", totalTicks);
-      await Promise.all(ll);
+      //load sf2 files in 3 batchesd
+      await Promise.all(l1);
+      await Promise.all(l2);
+      await Promise.all(l3);
+      
       playBtn.removeAttribute("disabled");
     } else if (e.data.channel) {
       eventPipe.postMessage(e.data.channel);
