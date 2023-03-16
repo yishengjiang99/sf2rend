@@ -2,8 +2,7 @@ import { mkdiv, logdiv, mkdiv2 } from "https://unpkg.com/mkdiv@3.1.2/mkdiv.js";
 
 import { SpinNode } from "../spin/spin.js";
 import { mkui } from "./ui.js";
-import SF2Service from "https://unpkg.com/sf2-service@1.3.5/index.js";
-import { chart, mkcanvas, renderFrames } from "../chart/chart.js";
+import SF2Service from "https://unpkg.com/sf2-service@1.3.6/index.js";
 import { fetchmidilist, fetchSF2List } from "./midilist.js";
 import { mkeventsPipe } from "./mkeventsPipe.js";
 import { createChannel } from "./createChannel.js";
@@ -11,8 +10,8 @@ import { midi_ch_cmds } from "./midilist.js";
 
 const getParams = new URLSearchParams(document.location.search);
 main(
-  getParams.get("sf2file") || "/sf2rend/file.sf2",
-  getParams.get("midifile") || "/sf2rend/song.mid");
+  getParams.get("sf2file") || "file.sf2",
+  getParams.get("midifile") || "song.mid");
 
 async function main(sf2file, midifile) {
   let sf2,
@@ -170,8 +169,6 @@ async function main(sf2file, midifile) {
       }
     });
     channels.forEach((c) => c.setSF2(sf2));
-    await sf2.loadProgram(0, 0);
-    await channels[9].setProgram(0, 128);
     for (const [section, text] of sf2.meta) {
       stderr(section + ": " + text);
     }

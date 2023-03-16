@@ -6,7 +6,6 @@ import {
   wrapDiv,
   mksvg,
 } from "https://unpkg.com/mkdiv@3.1.2/mkdiv.js";
-import { mkcanvas, chart } from "https://unpkg.com/mk-60fps@1.1.0/chart.js";
 import { midi_ch_cmds, midi_effects as effects } from "./constants.js";
 
 const rowheight = 40;
@@ -294,63 +293,6 @@ export function mkui(eventPipe, container) {
   return controllers;
 }
 
-async function mkZoneInfoCard(zone) {
-  if (!zone) {
-    return Promise.resolve();
-  }
-  const zattrs = Object.entries(zone).filter(
-    ([_, val], idx) => val && idx < 60
-  );
-  const canvas = mkcanvas();
-  const cardStyle =
-    "display:flex flex-direction:row; max-height:50vh; overflow-y:scroll; gap:0 20px 20px";
-
-  const articleMain = mkdiv(
-    "div",
-    { class: "note-preview", style: cardStyle },
-    [
-      mkdiv(
-        "div",
-        {
-          style: cardStyle,
-        },
-        [
-          mkdiv("div", [
-            "smpl: ",
-            zone.shdr.SampleId,
-            " ",
-            zone.shdr.name,
-            "<br>nsample: ",
-            zone.shdr.nsamples,
-            "<br>srate: " + zone.shdr.originalPitch,
-            "<br>Range: ",
-            zone.shdr.range.join("-"),
-            "<br>",
-            "loop: ",
-            zone.shdr.loops.join("-"),
-
-            JSON.stringify(zone.KeyRange),
-          ]),
-          ..."Addr,KeyRange,Attenuation,VolEnv,Filter,LFO"
-            .split(",")
-            .map((keyword) =>
-              mkdiv(
-                "div",
-                { style: "padding:10px;color:gray;" },
-                zattrs
-                  .filter(([k]) => k.includes(keyword))
-                  .map(([k, v]) => k + ": " + v)
-                  .join("<br>")
-              )
-            ),
-        ]
-      ),
-    ]
-  );
-  const pcm = await zone.shdr.data();
-  chart(canvas, pcm);
-  return articleMain;
-}
 
 const range = (x, y) =>
   Array.from(
