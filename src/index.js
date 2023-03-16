@@ -2,14 +2,20 @@ import { mkdiv, logdiv, mkdiv2 } from "https://unpkg.com/mkdiv@3.1.2/mkdiv.js";
 
 import { SpinNode } from "../spin/spin.js";
 import { mkui } from "./ui.js";
-import SF2Service from "../sf2-service/index.js";
+import SF2Service from "https://unpkg.com/sf2-service@1.3.5/index.js";
 import { chart, mkcanvas, renderFrames } from "../chart/chart.js";
 import { fetchmidilist, fetchSF2List } from "./midilist.js";
 import { mkeventsPipe } from "./mkeventsPipe.js";
 import { createChannel } from "./createChannel.js";
 import { midi_ch_cmds } from "./midilist.js";
 
-async function main() {
+const getParams = new URLSearchParams(document.location.search);
+main(
+  getParams.get("sf2file") || "../file.sf2",
+getParams.get("midifile") || "../song.mid");
+
+
+async function main(sf2file, midifile) {
   let sf2,
     uiControllers,
     ctx = new AudioContext({ sampleRate: 48000 }),
@@ -34,7 +40,9 @@ async function main() {
   const programList = document.querySelector("#programs");
   const logdivfn = logdiv();
   logdivfn.infoPanel.attachTo(document.querySelector("#stdout"));
+  logdivfn.errPanel.attachTo(document.querySelector("#stdout"));
   const stdout = logdivfn.stdout;
+  const stderr = logdivfn.stderr;
 
   midiworker.addEventListener("message", async function (e) {
     if (e.data.midifile) {
@@ -74,16 +82,18 @@ async function main() {
   const midiSelect = mkdiv2({
     tag: "select",
     style: "width:300px",
-    onchange: (e) =>
-      midiworker.postMessage({ cmd: "load", url: e.target.value }),
+    value: midifile,
+    onchange: (e) =>{
+      document.location.href=`?midifile=${e.target.value}&sf2file=${sf2file}`;
+    },
     children: midiList.map((f) =>
-      mkdiv("option", { value: f.get("Url") }, f.get("Name").substring(0, 80))
+      mkdiv("option", { value: f.get("Url"), seleced: f.get("Url")===midifile }, f.get("Name").substring(0, 80))
     ),
   });
   midiSelect.attachTo(msel);
 
   const sf2List = await fetchSF2List();
-  sf2select.onchange = (e) => loadSF2File(e.target.value);
+  sf2select.onchange = (e) =>  document.location.href=`?midifile=${midifile}&sf2file=${e.target.value}`;
   for (const f of sf2List)
     sf2select.append(mkdiv("option", { value: f.url }, f.name));
 
@@ -113,6 +123,8 @@ async function main() {
         stdout("midi set cc " + [ch, cmd, key, velocity].join("/"));
         break;
       case midi_ch_cmds.change_program: //change porg
+        stdout("midi change program " + [ch, cmd, key, velocity].join("/"));
+
         channels[ch].setProgram(key, ch == 9 ? 128 : 0);
         break;
       case midi_ch_cmds.note_off:
@@ -122,7 +134,7 @@ async function main() {
         if (velocity == 0) {
           channels[ch].keyOff(key, velocity);
         } else {
-          stdout([ch, cmd, key, velocity].join("/"));
+          //stdout([ch, cmd, key, velocity].join("/"));
           channels[ch].keyOn(key, velocity);
         }
         break;
@@ -140,8 +152,6 @@ async function main() {
   });
   ctx.onstatechange = () => stdout("ctx state " + ctx.state);
   window.addEventListener("click", () => ctx.resume(), { once: true });
-  await loadSF2File("test.sf2");
-
   async function loadSF2File(sf2url) {
     sf2 = new SF2Service(sf2url);
     await sf2.load();
@@ -158,14 +168,17 @@ async function main() {
     await sf2.loadProgram(0, 0);
     await channels[9].setProgram(0, 128);
     for (const [section, text] of sf2.meta) {
-      stdout(section + ": " + text);
+      stderr(section + ": " + text);
     }
   }
+  playBtn.setAttribute("disabled",true);
+  await loadSF2File(sf2file);  
+  midiworker.postMessage({cmd:"load",url:midifile});
+  playBtn.removeAttribute("disabled");
+
+
 }
-main();
-function db2gain(decibel_level) {
-  return Math.pow(10, decibel_level / 20);
-}
+
 function onMidiMeta(stdout, e) {
   const metalist = [
     "seq num",

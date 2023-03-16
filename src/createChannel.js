@@ -8,7 +8,6 @@ export function createChannel(uiController, channelId, sf2, spinner) {
     },
     async setProgram(pid, bid) {
       program = _sf2.loadProgram(pid, bid);
-      debugger;
       await spinner.shipProgram(program, pid | bid);
       uiController.name = program.name;
       uiController.presetId = pid;
