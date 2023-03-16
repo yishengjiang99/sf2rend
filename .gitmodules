@@ -4,6 +4,3 @@
 [submodule "sf2-service"]
 	path = sf2-service
 	url = https://github.com/yishengjiang99/sf2-service
-[submodule "src/fft-64bit"]
-	path = src/fft-64bit
-	url = https://github.com/yishengjiang99/fft-64bit
