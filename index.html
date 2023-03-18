@@ -6,12 +6,25 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MIDI Rendering with SoundFont2</title>
-  <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
-    crossorigin />
-  <link rel="stylesheet" href="style.css">
+
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <link rel="stylesheet" href="src/keyboard/keyboard.css">
+  <script type="text/babel" src="./src/keyboard/like.jsx">  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/antd/5.3.1/reset.css"
+    integrity="sha512-pZC2IRT+WsRU/IqN5Bhe0rqQVQUOOQhMrChWriipYy+lcncFKe9C+7p+CI2bz+jqlMAxOulcioNxbvZcsD7erw=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style>
+    body {
+      background-color: black;
+      color: grey;
+    }
+
+  </style>
 </head>
 
-<body class="">
+<body>
   <header style="max-width: 1550px; margin: 0 auto;">
     <h3>Performant WASM MIDI Playe</h3>
     <div style="display:flex; column-gap:40px; justify-content: space-between;">
@@ -41,11 +54,16 @@
   </header>
   <main class="main" style="display:grid; grid-template-columns: 1fr 1fr 1fr">
     <div id="channelContainer"></div>
-    <div id="stdout" class=""></div>    <div id="stderr" class=""></div>
+    <div id="stdout" class=""></div>
   </main>
+  <aside></aside>
   <datalist id="programs"></datalist>
   <datalist id="drums"></datalist>
-  <script type="module" src="./bundle.js"></script>
+  <footer>
+
+  </footer>
+  <div id="stderr" class=""></div>
+  <script type="module" src="./src/index.js"></script>
 </body>
 
 </html>

@@ -1,3 +1,10 @@
+export const range = (x, y) =>
+  Array.from(
+    (function* _(x, y) {
+      while (x < y) yield x++;
+    })(x, y)
+  );
+
 export const midi_ch_cmds = {
   change_program: 0xc0,
   continuous_change: 0xb0,

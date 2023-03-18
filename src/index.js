@@ -6,8 +6,24 @@ import SF2Service from "https://unpkg.com/sf2-service@1.3.6/index.js";
 import { fetchmidilist, fetchSF2List } from "./midilist.js";
 import { mkeventsPipe } from "./mkeventsPipe.js";
 import { createChannel } from "./createChannel.js";
-import { midi_ch_cmds } from "./midilist.js";
+import { midi_ch_cmds, range } from "./constants.js";
+const $ = (sel) => document.querySelector(sel);
 
+const sf2select = $("#sf2select"),
+  timeslide = $("#timeSlider"),
+  playBtn = $("#play"),
+  pauseBtn = $("#stop"),
+  timeNow = $("#timeNow"),
+  tempo = $("#tempo"),
+  duration = $("#duration"),
+  timeSig = $("#timeSig"),
+  msel = $("#msel");
+
+const drumList = document.querySelector("#drums");
+const programList = document.querySelector("#programs");
+const { infoPanel, errPanel, stdout, stderr } = logdiv();
+infoPanel.attachTo(document.querySelector("#stdout"));
+window.stdout = stdout;
 const getParams = new URLSearchParams(document.location.search);
 main(
   getParams.get("sf2file") || "file.sf2",
@@ -23,23 +39,7 @@ async function main(sf2file, midifile) {
     });
 
   const channels = [];
-  const $ = (sel) => document.querySelector(sel);
-  const sf2select = $("#sf2select"),
-    timeslide = $("#timeSlider"),
-    playBtn = $("#play"),
-    pauseBtn = $("#stop"),
-    timeNow = $("#timeNow"),
-    tempo = $("#tempo"),
-    duration = $("#duration"),
-    timeSig = $("#timeSig"),
-    msel = $("#msel");
   let qnPerBeat = 4;
-
-  const drumList = document.querySelector("#drums");
-  const programList = document.querySelector("#programs");
-  const { infoPanel, errPanel, stdout, stderr } = logdiv();
-  infoPanel.attachTo(document.querySelector("#stdout"));
-  errPanel.attachTo(document.querySelector("#stderr"));
 
   midiworker.addEventListener("message", async function (e) {
     if (e.data.midifile) {
@@ -120,6 +120,7 @@ async function main(sf2file, midifile) {
   for (let i = 0; i < 16; i++) {
     channels.push(createChannel(uiControllers[i], i, sf2, spinner));
   }
+  //cpanel.attachTo(container);
 
   eventPipe.onmessage(function (data) {
     const [a, b, c] = data;
@@ -127,6 +128,7 @@ async function main(sf2file, midifile) {
     const ch = a & 0x0f;
     const key = b & 0x7f;
     const velocity = c & 0x7f;
+    console.log(cmd, ch, key);
     switch (cmd) {
       case midi_ch_cmds.continuous_change: // set CC
         channels[ch].setCC({ key, vel: velocity });
@@ -182,6 +184,11 @@ async function main(sf2file, midifile) {
   playBtn.setAttribute("disabled", true);
   await loadSF2File(sf2file);
   midiworker.postMessage({ cmd: "load", url: midifile });
+  window.mkTracks($("main"), {
+    programNames: range(0, 12).map((i) => "ch " + i),
+    keyRange: range(46, 80),
+    eventPipe,
+  });
 }
 
 function onMidiMeta(stderr, e) {
