@@ -11,7 +11,8 @@ import { midi_ch_cmds } from "./midilist.js";
 const getParams = new URLSearchParams(document.location.search);
 main(
   getParams.get("sf2file") || "file.sf2",
-  getParams.get("midifile") || "song.mid");
+  getParams.get("midifile") || "song.mid"
+);
 
 async function main(sf2file, midifile) {
   let sf2,
@@ -36,19 +37,19 @@ async function main(sf2file, midifile) {
 
   const drumList = document.querySelector("#drums");
   const programList = document.querySelector("#programs");
-  const {infoPanel,errPanel,stdout,stderr} = logdiv();
+  const { infoPanel, errPanel, stdout, stderr } = logdiv();
   infoPanel.attachTo(document.querySelector("#stdout"));
   errPanel.attachTo(document.querySelector("#stderr"));
 
   midiworker.addEventListener("message", async function (e) {
     if (e.data.midifile) {
       const { totalTicks, tracks, presets } = e.data.midifile;
-      const queues=[[],[],[]];
-      const [l1,l2,l3]=queues;
+      const queues = [[], [], []];
+      const [l1, l2, l3] = queues;
       for (const preset of presets) {
         const { pid, channel } = preset;
         const bkid = channel == 9 ? 128 : 0;
-        queues[pid%3].push(channels[channel].setProgram(pid, bkid));
+        queues[pid % 3].push(channels[channel].setProgram(pid, bkid));
       }
       duration.innerHTML = totalTicks / 4;
       timeslide.setAttribute("max", totalTicks);
@@ -56,7 +57,7 @@ async function main(sf2file, midifile) {
       await Promise.all(l1);
       await Promise.all(l2);
       await Promise.all(l3);
-      
+
       playBtn.removeAttribute("disabled");
     } else if (e.data.channel) {
       eventPipe.postMessage(e.data.channel);
@@ -87,17 +88,22 @@ async function main(sf2file, midifile) {
     tag: "select",
     style: "width:300px",
     value: midifile,
-    onchange: (e) =>{
-      document.location.href=`?midifile=${e.target.value}&sf2file=${sf2file}`;
+    onchange: (e) => {
+      document.location.href = `?midifile=${e.target.value}&sf2file=${sf2file}`;
     },
     children: midiList.map((f) =>
-      mkdiv("option", { value: f.get("Url"), seleced: f.get("Url")===midifile }, f.get("Name").substring(0, 80))
+      mkdiv(
+        "option",
+        { value: f.get("Url"), seleced: f.get("Url") === midifile },
+        f.get("Name").substring(0, 80)
+      )
     ),
   });
   midiSelect.attachTo(msel);
 
   const sf2List = await fetchSF2List();
-  sf2select.onchange = (e) =>  document.location.href=`?midifile=${midifile}&sf2file=${e.target.value}`;
+  sf2select.onchange = (e) =>
+    (document.location.href = `?midifile=${midifile}&sf2file=${e.target.value}`);
   for (const f of sf2List)
     sf2select.append(mkdiv("option", { value: f.url }, f.name));
 
@@ -173,9 +179,9 @@ async function main(sf2file, midifile) {
       stderr(section + ": " + text);
     }
   }
-  playBtn.setAttribute("disabled",true);
-  await loadSF2File(sf2file);  
-  midiworker.postMessage({cmd:"load",url:midifile});
+  playBtn.setAttribute("disabled", true);
+  await loadSF2File(sf2file);
+  midiworker.postMessage({ cmd: "load", url: midifile });
 }
 
 function onMidiMeta(stderr, e) {

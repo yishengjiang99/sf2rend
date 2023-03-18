@@ -33,86 +33,16 @@ export class TrackUI {
     const container = mkdiv(
       "details",
       {
-        style: "display:grid; grid-template-columns:1fr 1fr;",
-        class: "instrPanels",
+        style: "width:320px;",
       },
       [
         mkdiv(
           "summary",
           {
             class: "attrs",
-            style: "width:320px;padding:20px",
           },
-          [
-            mkdiv("input", { type: "checkbox" }),
-            this.nameLabel,
-            mkdiv(
-              "a",
-              {
-                onclick: () => (ControllerState.activeChannelUserInput = idx),
-              },
-              "play"
-            ),
-          ]
+          [mkdiv("input", { type: "checkbox" }), this.nameLabel]
         ),
-        mkdiv("label", { for: "mkey" }, "key"),
-        mkdiv("meter", {
-          min: 0,
-          max: 127,
-          id: "mkey",
-          aria: "key",
-        }),
-        mkdiv("label", { for: "velin" }, "velocity"),
-
-        mkdiv("meter", {
-          type: "range",
-          id: "velin",
-          min: 1,
-          max: 127,
-          step: 1,
-          aria: "vel",
-          value: 60,
-        }),
-        mkdiv("label", { for: "vol" }, "volume"),
-
-        mkdiv("input", {
-          min: 0,
-          max: 127,
-          value: 100,
-          step: 1,
-          id: "vol",
-          type: "range",
-          oninput: (e) => cb([0xb0 | idx, 7, e.target.value]),
-        }),
-        mkdiv("label", { for: "pan" }, "pan"),
-        mkdiv("input", {
-          min: 0,
-          max: 127,
-          step: 1,
-          type: "range",
-          value: 64,
-          oninput: (e) => cb([0xb0 | idx, 10, e.target.value]),
-        }),
-        mkdiv("label", { for: "expression" }, "expression"),
-        mkdiv("input", {
-          min: 0,
-          max: 127,
-          step: 1,
-          value: 127,
-          type: "range",
-          oninput: (e) => cb([0xb0 | idx, 11, e.target.value]),
-        }),
-
-        mkdiv("label", { for: "other" }, "other"),
-        mkdiv("input", {
-          min: 0,
-          id: "other",
-          max: 127,
-          step: 1,
-          value: 127,
-          type: "range",
-          oninput: (e) => cb([0xb0 | idx, 11, e.target.value]),
-        }),
         mksvg(
           "svg",
           {
@@ -224,7 +154,6 @@ export function mkui(eventPipe, container) {
     activeChannel = 0;
   const tb = mkdiv("div", {
     border: 1,
-    style: `height:500px;overflow-y:scroll`,
   });
 
   for (let i = 0; i < 16; i++) {
@@ -292,7 +221,6 @@ export function mkui(eventPipe, container) {
   cpanel.attachTo(container);
   return controllers;
 }
-
 
 const range = (x, y) =>
   Array.from(
