@@ -90,7 +90,7 @@ class SpinProcessor extends AudioWorkletProcessor {
             if (!this.spinners[channel]) {
               this.instantiate(this.presetRefs[zoneRef], channel);
             }
-            // this.inst.exports.reset(this.spinners[channel]);
+            this.inst.exports.reset(this.spinners[channel]);
             this.inst.exports.trigger_attack(
               this.spinners[channel],
               this.presetRefs[zoneRef],
