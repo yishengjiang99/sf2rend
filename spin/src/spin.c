@@ -41,7 +41,6 @@ spinner* newSpinner(int idx) {
   x->modlfo = &lfos[idx * 2];
   x->vibrlfo = &lfos[idx * 2 + 1];
   x->channelId = idx;
-  x->availability = sp_avail;
   return x;
 }
 
@@ -64,7 +63,6 @@ void reset(spinner* x) {
   x->fract = 0.0f;
   x->modlfo->phase = 0;
   x->vibrlfo->phase = 0;
-  x->SP_AVAIL = SP_STARTING;
 }
 
 void set_zone(spinner* x, zone_t* z, unsigned int pcmSampleRate) {
@@ -102,7 +100,6 @@ float trigger_attack(spinner* x, zone_t* z, float ratio, int velocity) {
   x->fract = 0.0f;
   x->stride = ratio;
   x->velocity = velocity & 0x7f;
-  x->availability = SP_SPINNING;
   set_zone(x, z, pcm->sampleRate);
   return x->stride;
 }
