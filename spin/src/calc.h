@@ -5,7 +5,7 @@
 #define log_2_10 3.321928094f
 #define bit23_normalize 1.000f / 0x7fffff
 #ifndef SAMPLE_RATE
-#define SAMPLE_RATE 48000.0f
+#define SAMPLE_RATE 44100.0f
 #endif
 #define SAMPLE_BLOCK 128
 #define BLOCKS_PER_SECOND SAMPLE_RATE / SAMPLE_BLOCK
@@ -32,7 +32,7 @@ double attack_db_inc(short attackRate) {
 
 float applyCentible(float signal, short centdb) {
   if (centdb > 0) return signal;
-  if (centdb <= -1440) return 0.0f;
+  if (centdb <= -1240) return 0.0f;
   return (float)signal * p10over200[centdb + 1440];
 }
 

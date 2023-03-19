@@ -1,5 +1,5 @@
 import { SpinNode } from "../spin/spin.js";
-export default async function mkpath(ctx) {
+export async function mkpath(ctx) {
   await SpinNode.init(ctx);
   const spinner = new SpinNode(ctx, 16);
   const merger = new GainNode(ctx);

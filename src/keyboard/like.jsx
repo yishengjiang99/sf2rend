@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 const keys = ["a", "w", "s", "e", "d", "f", "t", "g", "y", "h", "u", "j"];
 function Keyboard({ callback, channel, keyRange }) {
   React.useEffect(() => {
@@ -15,9 +16,11 @@ function Keyboard({ callback, channel, keyRange }) {
   }, []);
 
   return (
+    // eslint-disable-next-line react/react-in-jsx-scope
     <ul className="keylist">
       {keyRange.map((midi, i) => {
         return (
+          // eslint-disable-next-line react/react-in-jsx-scope
           <li
             key={midi + Math.random(45)}
             className={
@@ -84,17 +87,19 @@ function PresetList({ programNames, keyRange, eventPipe }) {
   }, []);
 
   return (
-    <div>
-      <div>
-        {channels.map((channel, pdx) => (
+    <React.Fragment>
+      {channels.map((channel, pdx) => (
+        <div style={{ padding: 10 }} key={pdx}>
           <Track
             key={channel.cid}
             callback={eventPipe.postMessage}
             channel={channel}
             isActive={channel.id === activeChannel}
           />
-        ))}
-      </div>
+          <button onClick={() => setActiveChannel(pdx)}>active</button>
+          {pdx === activeChannel ? "active channel" : ""}
+        </div>
+      ))}
       {ReactDOM.createPortal(
         <Keyboard
           callback={eventPipe.postMessage}
@@ -103,7 +108,7 @@ function PresetList({ programNames, keyRange, eventPipe }) {
         />,
         document.querySelector("footer")
       )}
-    </div>
+    </React.Fragment>
   );
 }
 window.mkTracks = function (elem, { programNames, keyRange, eventPipe }) {

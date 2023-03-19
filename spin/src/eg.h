@@ -22,6 +22,7 @@ float update_eg(EG* eg, int n);
  */
 float update_eg(EG* eg, int n) {
   if (eg->stage == done) return 0.0f;  // should not occur
+  if (eg->stage > 0) eg->stage = 0.0f;
   if (eg->egval < -1000.0) {
     eg->stage = done;
     return 0.0f;

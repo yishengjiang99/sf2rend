@@ -9,7 +9,6 @@ extern void debugFL(float fl);
 spinner sps[nchannels];
 EG eg[nchannels * 2];
 LFO lfos[nchannels * 2];
-pcm_t pcms[2222];
 
 char midi_cc_vals[nmidiChannels * 128];
 char pitch_bend_msb[nmidiChannels];
@@ -18,6 +17,8 @@ char pitch_bend_msb[nmidiChannels];
 float outputs[nchannels * RENDQ * 2];
 float silence[40];
 char spsIndx = 0;
+pcm_t pcms[2222];
+
 spinner* get_available_spinner(int channelId) {
   spinner* sp;
   for (int i = 0; i < nchannels; i++) {
@@ -155,7 +156,8 @@ void _spinblock(spinner* x, int n, int blockOffset) {
       fract -= 1.0f;
     }
 
-    if (position >= x->loopEnd && x->zone->SampleModes > 0) position -= looplen;
+    if (position >= x->loopEnd && x->zone->SampleModes > 0)
+      position -= looplen + 1;
     if (position >= nsamples - 1) {
       x->outputf[i * 2 + blockOffset * 2] = 0.0f;
       x->outputf[i * 2 + blockOffset * 2 + 1] = 0.0f;

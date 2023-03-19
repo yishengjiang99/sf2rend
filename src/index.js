@@ -20,35 +20,64 @@ const sf2select = $("#sf2select"),
 
 const drumList = document.querySelector("#drums");
 const programList = document.querySelector("#programs");
-const { infoPanel, errPanel, stdout, stderr } = logdiv();
+const { infoPanel, stdout, stderr } = logdiv();
 infoPanel.attachTo(document.querySelector("#stdout"));
 window.stdout = stdout;
+window.stderr = stdout;
 const getParams = new URLSearchParams(document.location.search);
 main(
   getParams.get("sf2file") || "file.sf2",
   getParams.get("midifile") || "song.mid"
 );
 
+const appState = {};
+globalThis.appState = new Proxy(appState, {
+  get(target, attr) {
+    return target[attr];
+  },
+  set(target, attr, value) {
+    target[attr] = value;
+    infoPanel.innerHTML = JSON.stringify(appState);
+    return true;
+  },
+});
+8;
+function updateAppState(newArr) {
+  try {
+    globalThis.appState = Object.assign({}, globalThis.appState, newArr);
+  } catch (e) {
+    console.error(e);
+    console.error(newArr);
+    console.error(e);
+  }
+}
 async function main(sf2file, midifile) {
   let sf2,
     uiControllers,
-    ctx = new AudioContext({ sampleRate: 48000 }),
+    ctx = new AudioContext(),
     midiworker = new Worker("src/midiworker.js", {
       type: "module",
     });
 
+  updateAppState({
+    midifile,
+    sf2file,
+    audioState: ctx.state,
+  });
+
   const channels = [];
-  let qnPerBeat = 4;
 
   midiworker.addEventListener("message", async function (e) {
     if (e.data.midifile) {
-      const { totalTicks, tracks, presets } = e.data.midifile;
+      const { totalTicks, presets } = e.data.midifile;
       const queues = [[], [], []];
       const [l1, l2, l3] = queues;
       for (const preset of presets) {
         const { pid, channel } = preset;
         const bkid = channel == 9 ? 128 : 0;
-        queues[pid % 3].push(channels[channel].setProgram(pid, bkid));
+        await channels[channel].setProgram(pid, bkid);
+
+        //queues[pid % 3].push(() => channels[channel].setProgram(pid, bkid));
       }
       duration.innerHTML = totalTicks / 4;
       timeslide.setAttribute("max", totalTicks);
@@ -56,7 +85,6 @@ async function main(sf2file, midifile) {
       await Promise.all(l1);
       await Promise.all(l2);
       await Promise.all(l3);
-
       playBtn.removeAttribute("disabled");
     } else if (e.data.channel) {
       eventPipe.postMessage(e.data.channel);
@@ -100,26 +128,21 @@ async function main(sf2file, midifile) {
   });
   midiSelect.attachTo(msel);
 
-  const sf2List = await fetchSF2List();
-  sf2select.onchange = (e) =>
-    (document.location.href = `?midifile=${midifile}&sf2file=${e.target.value}`);
+  const sf2List = ["GeneralUserGS.sf2", "VintageDreamsWaves-v2.sf2"];
   for (const f of sf2List)
     sf2select.append(mkdiv("option", { value: f.url }, f.name));
-
+  sf2select.onchange = (e) => {
+    updateAppState({ sf2file: e.target.value });
+  };
+  const { mkpath } = await import("./path.js");
+  const { spinner } = await mkpath(ctx);
+  updateAppState({
+    spinnerLoaded: true,
+  });
   const eventPipe = mkeventsPipe();
   uiControllers = mkui(eventPipe, $("#channelContainer"));
-  await SpinNode.init(ctx);
-  const spinner = new SpinNode(ctx, 16);
-  const merger = new GainNode(ctx);
-  const masterMixer = new GainNode(ctx, { gain: 1.0 });
-  for (let i = 0; i < 16; i++) {
-    spinner.connect(merger, i, 0);
-  }
-  merger.connect(masterMixer).connect(ctx.destination);
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < 16; i++)
     channels.push(createChannel(uiControllers[i], i, sf2, spinner));
-  }
-  //cpanel.attachTo(container);
 
   eventPipe.onmessage(function (data) {
     const [a, b, c] = data;
@@ -145,7 +168,7 @@ async function main(sf2file, midifile) {
         if (velocity == 0) {
           channels[ch].keyOff(key, velocity);
         } else {
-          //stdout([ch, cmd, key, velocity].join("/"));
+          stdout([ch, cmd, key, velocity].join("/"));
           channels[ch].keyOn(key, velocity);
         }
         break;
@@ -161,7 +184,9 @@ async function main(sf2file, midifile) {
       eventPipe.postMessage(data);
     };
   });
-  ctx.onstatechange = () => stdout("ctx state " + ctx.state);
+
+  ctx.onstatechange = () => updateAppState({ audioStatus: ctx.state });
+
   window.addEventListener("click", () => ctx.resume(), { once: true });
 
   async function loadSF2File(sf2url) {

@@ -18,9 +18,27 @@ export function createChannel(uiController, channelId, sf2, spinner) {
     },
     keyOn(key, vel) {
       const zones = program.filterKV(key, vel);
-      zones.slice(0, 2).map((zone, i) => {
+
+      zones.slice(2).map((zone, i) => {
         spinner.keyOn(channelId * 2 + i, zone, key, vel);
       });
+      // zones[0].shdr.data().then((pcm) => {
+      //   const abc = new AudioBufferSourceNode(spinner.context, {
+      //     buffer: spinner.context.createBuffer(1, pcm.length, 48000),
+      //     playbackRate: zones[0].calcPitchRatio(
+      //       key,
+      //       spinner.context.sampleRate
+      //     ),
+      //     loop: true,
+      //     gain: 1,
+      //   });
+      //   abc.connect(spinner.context.destination);
+      //   abc.start(0);
+      //   abc.stop(3);
+      // });
+      // zones.slice(2, 2).map((zone, i) => {
+      //   spinner.keyOn(channelId * 2 + 2 + i, zone, key, vel);
+      // });
 
       if (!zones[0]) return;
       requestAnimationFrame(() => {

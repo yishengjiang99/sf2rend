@@ -2,6 +2,7 @@
   "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools",
   "files.associations": {
     "*.js": "javascriptreact",
-    "p1200.h": "c"
+    "p1200.h": "c",
+    "spin.h": "c"
   }
 }
