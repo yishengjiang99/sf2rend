@@ -52,11 +52,13 @@ class SpinProcessor extends AudioWorkletProcessor {
       this.inst.exports.outputs.value,
       128 * 32
     );
+    this.port.postMessage({ init: 1 });
   }
   async handleMsg(e) {
     const { data } = e;
     if (data.stream && data.segments) {
       await this.loadsdta(data);
+      this.port.postMessage({ zack: 2 });
     } else if (data.zArr) {
       for (const { arr, ref } of data.zArr) {
         const ptr = this.malololc(120);

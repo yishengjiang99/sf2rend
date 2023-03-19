@@ -16,7 +16,6 @@ const sf2select = $("#sf2select"),
   timeNow = $("#timeNow"),
   tempo = $("#tempo"),
   duration = $("#duration"),
-  timeSig = $("#timeSig"),
   msel = $("#msel");
 
 const drumList = document.querySelector("#drums");
@@ -164,6 +163,7 @@ async function main(sf2file, midifile) {
   });
   ctx.onstatechange = () => stdout("ctx state " + ctx.state);
   window.addEventListener("click", () => ctx.resume(), { once: true });
+
   async function loadSF2File(sf2url) {
     sf2 = new SF2Service(sf2url);
     await sf2.load();
@@ -181,6 +181,7 @@ async function main(sf2file, midifile) {
       stderr(section + ": " + text);
     }
   }
+
   playBtn.setAttribute("disabled", true);
   await loadSF2File(sf2file);
   midiworker.postMessage({ cmd: "load", url: midifile });
