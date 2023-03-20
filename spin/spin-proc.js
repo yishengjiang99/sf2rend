@@ -1,11 +1,38 @@
 import { downloadData } from "../fetch-drop-ship/download.js";
 import saturate from "../saturation/index.js";
 import { wasmbin } from "./spin.wasm.js";
-
-/* eslint-disable no-unused-vars */
 class SpinProcessor extends AudioWorkletProcessor {
   constructor(options) {
     super(options);
+    this.setup_wasm();
+    this.inst.exports.gm_reset();
+    this.sampleIdRefs = [];
+    this.presetRefs = [];
+    this.port.onmessage = this.handleMsg.bind(this);
+    this.spinners = [];
+    this.outputs = [];
+    this.midiccRef = new Uint8Array(
+      this.memory.buffer,
+      this.inst.exports.midi_cc_vals,
+      128 * 16
+    );
+    this.outputfff = new Float32Array(
+      this.memory.buffer,
+      this.inst.exports.outputs.value,
+      128 * 32
+    );
+    this.port.postMessage({ init: 1 });
+    this.eg_vol_stag = new Array(16).fill(0);
+  }
+  sdtaRef(sampleId) {
+    return new Uint32Array(
+      this.memory.buffer,
+      this.inst.exports.pcms.value +
+        sampleId * 6 * Float32Array.BYTES_PER_ELEMENT
+    );
+  }
+
+  setup_wasm() {
     this.memory = new WebAssembly.Memory({
       maximum: 1024 * 4,
       initial: 1024 * 4,
@@ -29,32 +56,8 @@ class SpinProcessor extends AudioWorkletProcessor {
       if (this.brk > this.memory.buffer.byteLength) throw "no mem";
       return ret;
     };
-    this.sdtaRef = (spId) =>
-      new Uint32Array(
-        this.memory.buffer,
-        this.inst.exports.pcms.value +
-          spId * 6 * Float32Array.BYTES_PER_ELEMENT,
-        6
-      );
-    this.inst.exports.gm_reset();
-    this.sampleIdRefs = [];
-    this.presetRefs = [];
-    this.port.onmessage = this.handleMsg.bind(this);
-    this.spinners = [];
-    this.outputs = [];
-    this.midiccRef = new Uint8Array(
-      this.memory.buffer,
-      this.inst.exports.midi_cc_vals,
-      128 * 16
-    );
-    this.outputfff = new Float32Array(
-      this.memory.buffer,
-      this.inst.exports.outputs.value,
-      128 * 32
-    );
-    this.port.postMessage({ init: 1 });
-    this.eg_vol_stag = new Array(16).fill(0);
   }
+
   ch_occupied(ch) {
     return this.eg_vol_stag[ch] && this.eg_vol_stag[ch] < 99;
   }
@@ -74,18 +77,16 @@ class SpinProcessor extends AudioWorkletProcessor {
       this.port.postMessage({ zack: 1 });
     } else {
       const [cmd, channel, ...args] = data;
+      const [metric, value] = args;
       switch (cmd) {
         case 0xb0:
         case 0x00b0:
-          const [metric, value] = args;
           this.inst.exports.set_midi_cc_val(channel, metric, value);
           break;
         case 0x80:
-        case 0x0080: {
-          const [velocity] = args;
-          this.inst.exports.eg_release(this.spinners[channel]);
+        case 0x0080:
+          this.inst.exports.eg_release(channel);
           break;
-        }
         case 1:
         case 0x0090:
           {
@@ -93,20 +94,18 @@ class SpinProcessor extends AudioWorkletProcessor {
             if (!this.presetRefs[zoneRef]) {
               return;
             }
+            if (!this.spinners[channel]) {
+              this.instantiate(this.presetRefs[channel], channel);
+            }
             let ch = channel;
             for (
               let ch = channel;
-              ch < 32 && this.ch_occupied(ch); // channel occuppied
+              ch < 64 && this.ch_occupied(ch); // channel occuppied
               ch++ // find next one.
             );
-
-            if (!this.spinners[channel]) {
-              this.instantiate(this.presetRefs[zoneRef], channel);
-            }
-
-            this.inst.exports.reset(this.spinners[channel]);
+            this.inst.exports.reset(this.spinners[ch]);
             this.inst.exports.trigger_attack(
-              this.spinners[channel],
+              this.spinners[ch],
               this.presetRefs[zoneRef],
               ratio,
               velocity
@@ -147,23 +146,23 @@ class SpinProcessor extends AudioWorkletProcessor {
       }
       this.eg_vol_stag[i] = this.inst.exports.spin(this.spinners[i], 128);
       for (let j = 0; j < 128; j++) {
-        outputs[i][0][j] = saturate(this.outputs[i][2 * j]);
-        outputs[i][1][j] = saturate(this.outputs[i][2 * j + 1]);
+        outputs[i][0][j] = saturate(this.outputs[i][2 * j] * 0.5);
+        outputs[i][1][j] = saturate(this.outputs[i][2 * j + 1] * 0.5);
       }
     }
 
-    if (
-      outputs[0][15] > 0.00000001 ||
-      outputs[0][44] > 0.00000001 ||
-      outputs[0][66] > 0.00000001 ||
-      outputs[0][22] > 0.00000001
-    ) {
-      const pcmplayback = new Float32Array(128 * 32);
-      pcmplayback.set(this.outputfff);
-      new Promise((r) => r()).then(() =>
-        this.port.postMessage({ pcmplayback: pcmplayback })
-      );
-    }
+    // if (
+    //   outputs[0][15] > 0.00000001 ||
+    //   outputs[0][44] > 0.00000001 ||
+    //   outputs[0][66] > 0.00000001 ||
+    //   outputs[0][22] > 0.00000001
+    // ) {
+    //   const pcmplayback = new Float32Array(128 * 32);
+    //   pcmplayback.set(this.outputfff);
+    //   new Promise((r) => r()).then(() =>
+    //     this.port.postMessage({ pcmplayback: pcmplayback })
+    //   );
+    // }
     return true;
   }
 }

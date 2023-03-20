@@ -4,11 +4,19 @@
 #include "calc.h"
 #include "sf2.h"
 
-enum eg_stages { init = 0, delay, attack, hold, decay, release, done = 99 };
+enum eg_stages {
+  init = 0,
+  delay,
+  attack = 2,
+  hold = 3,
+  decay = 4,
+  release = 5,
+  done = 99
+};
 typedef struct {
+  float egval, egIncrement;
   int stage, nsamples_till_next_stage;
   short delay, attack, hold, decay, sustain, release, pad1, pad2;
-  float egval, egIncrement;
 } EG;
 
 void advanceStage(EG* eg);
@@ -22,10 +30,9 @@ float update_eg(EG* eg, int n);
  */
 float update_eg(EG* eg, int n) {
   if (eg->stage == done) return 0.0f;  // should not occur
-  if (eg->stage > 0) eg->stage = 0.0f;
-  if (eg->egval < -1000.0) {
+  if (eg->egval < -1360.0f) {
     eg->stage = done;
-    return 0.0f;
+    return eg->egval;
   }
   int n1 = n > eg->nsamples_till_next_stage ? eg->nsamples_till_next_stage : n;
   if (eg->nsamples_till_next_stage != 0xffff) {
@@ -58,26 +65,17 @@ void advanceStage(EG* eg) {
 
     case attack:
       eg->stage++;
-      eg->egval = 0.0f;
-
       eg->nsamples_till_next_stage = timecent2sample(eg->hold);
       eg->egIncrement = 0.0f;
       break;
-    case hold:
-      eg->egval = 0.0f;
-
-      eg->stage++;
-      if (eg->decay > -12000 && eg->sustain > 10) {
-        eg->egIncrement =
-            (0.0f - eg->sustain) / (float)timecent2sample(eg->decay);
-        eg->nsamples_till_next_stage =
-            (int)((eg->egval - eg->sustain) / eg->egIncrement);
-      } else {
-        eg->egIncrement = .0f;
-        eg->nsamples_till_next_stage = 0xffff;
-      }
+    case hold:  /// going to decay
+      // This is the time, in absolute timecents, for a 100% change in the
+      // Volume Envelope
+      // value during decay phase.eg->stage++;
+      eg->egIncrement = 1.0f / (float)timecent2sample(eg->decay);
+      eg->nsamples_till_next_stage = 1 / eg->egIncrement;
       break;
-    case decay:
+    case decay:  // headsing to released;
       eg->stage++;
       eg->egIncrement = -960.0f / (float)timecent2sample(eg->release);
       eg->nsamples_till_next_stage = timecent2sample(eg->release);

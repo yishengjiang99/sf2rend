@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -12,16 +11,8 @@
   <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
   <link rel="stylesheet" href="src/keyboard/keyboard.css">
   <script type="text/babel" src="./src/keyboard/like.jsx">  </script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/antd/5.3.1/reset.css"
-    integrity="sha512-pZC2IRT+WsRU/IqN5Bhe0rqQVQUOOQhMrChWriipYy+lcncFKe9C+7p+CI2bz+jqlMAxOulcioNxbvZcsD7erw=="
-    crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <style>
-    body {
-      background-color: black;
-      color: grey;
-    }
 
-  </style>
+
 </head>
 
 <body>
@@ -52,17 +43,18 @@
       </div>
     </div>
   </header>
-  <main class="main" style="display:grid; grid-template-columns: 1fr 1fr 1fr">
+  <main class="main">
     <div id="channelContainer"></div>
+    <div id="stdout"></div>
+    <div id="bigcan"><canvas id="c1"></canvas></div>
   </main>
   <aside></aside>
-  <datalist id="programs"></datalist>
-  <datalist id="drums"></datalist>
   <footer>
   </footer>
-  <div id="stdout"></div>
-  <script type="module" src="./src/index.js"></script>
 
+  <script type="module" src="./src/index.js"></script>
+  <datalist id="programs"></datalist>
+  <datalist id="drums"></datalist>
 </body>
 
 </html>

@@ -121,7 +121,7 @@ async function main(sf2file, midifile) {
     children: midiList.map((f) =>
       mkdiv(
         "option",
-        { value: f.get("Url"), seleced: f.get("Url") === midifile },
+        { value: f.get("Url"), seleced: f.get("Url").includes(midifile) },
         f.get("Name").substring(0, 80)
       )
     ),

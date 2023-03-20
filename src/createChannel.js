@@ -1,6 +1,7 @@
 export function createChannel(uiController, channelId, sf2, spinner) {
   let _sf2 = sf2;
   let program;
+  const key_on_map = [];
 
   return {
     setSF2(sf2) {
@@ -18,10 +19,11 @@ export function createChannel(uiController, channelId, sf2, spinner) {
     },
     keyOn(key, vel) {
       const zones = program.filterKV(key, vel);
-
       zones.slice(2).map((zone, i) => {
+        key_on_map[key] = channelId * +i;
         spinner.keyOn(channelId * 2 + i, zone, key, vel);
       });
+
       // zones[0].shdr.data().then((pcm) => {
       //   const abc = new AudioBufferSourceNode(spinner.context, {
       //     buffer: spinner.context.createBuffer(1, pcm.length, 48000),
@@ -49,8 +51,10 @@ export function createChannel(uiController, channelId, sf2, spinner) {
       });
     },
     keyOff(key, vel) {
-      spinner.keyOff(channelId * 2, key, vel);
-      spinner.keyOff(channelId * 2 + 1, key, vel);
+      while (key_on_map[key].length) {
+        spinner.keyOff(key_on_map[key].shift(), key, vel);
+      }
+      //      spinner.keyOff(channelId * 2 + 1, key, vel);
 
       requestAnimationFrame(() => (uiController.active = false));
     },
