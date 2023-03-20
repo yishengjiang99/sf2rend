@@ -11,8 +11,7 @@ EG eg[nchannels * 2];
 LFO lfos[nchannels * 2];
 
 char midi_cc_vals[nmidiChannels * 128];
-char pitch_bend_msb[nmidiChannels];
-char pitch_bend_msb[nmidiChannels];
+char pitch_bend_msb[nmidiChannels * 128];
 
 float outputs[nchannels * RENDQ * 2];
 float silence[40];
@@ -110,8 +109,8 @@ float lerp(float f1, float f2, float frac) { return f1 + (f2 - f1) * frac; }
 float kRateAttenuate(spinner* x, int ch) {
   float kRateCB = 0.0f;
   kRateCB -= (float)x->zone->Attenuation / 4;
-  kRateCB -= midi_volume_log10(midi_cc_vals[ch * 128 + TML_VOLUME_MSB]);
-  if (x->voleg->stage < decay)
+  kRateCB -= midi_volume_log10(midi_cc_vals[ch * 128 + TML_VOLUME_MSB]) / 4;
+  if (x->voleg->stage > decay)
     kRateCB -= midi_volume_log10(midi_cc_vals[ch * 128 + TML_EXPRESSION_MSB]);
   kRateCB -= midi_volume_log10(x->velocity) / 4;
   return kRateCB;
