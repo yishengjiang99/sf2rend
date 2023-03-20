@@ -1,6 +1,0 @@
-[submodule "mkdiv"]
-	path = mkdiv
-	url = https://github.com/yishengjiang99/mkdiv
-[submodule "sf2-service"]
-	path = sf2-service
-	url = https://github.com/yishengjiang99/sf2-service

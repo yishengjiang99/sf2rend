@@ -1,9 +1,7 @@
 import { mkdiv, logdiv, mkdiv2 } from "https://unpkg.com/mkdiv@3.1.2/mkdiv.js";
-
-import { SpinNode } from "../spin/spin.js";
 import { mkui } from "./ui.js";
 import SF2Service from "https://unpkg.com/sf2-service@1.3.6/index.js";
-import { fetchmidilist, fetchSF2List } from "./midilist.js";
+import { fetchmidilist } from "./midilist.js";
 import { mkeventsPipe } from "./mkeventsPipe.js";
 import { createChannel } from "./createChannel.js";
 import { midi_ch_cmds, range } from "./constants.js";
@@ -116,14 +114,11 @@ async function main(sf2file, midifile) {
     style: "width:300px",
     value: midifile,
     onchange: (e) => {
-      document.location.href = `?midifile=${e.target.value}&sf2file=${sf2file}`;
+      midiworker.postMessage({ cmd: "load", url: e.target.value });
+      e.preventDefault();
     },
     children: midiList.map((f) =>
-      mkdiv(
-        "option",
-        { value: f.get("Url"), seleced: f.get("Url").includes(midifile) },
-        f.get("Name").substring(0, 80)
-      )
+      mkdiv("option", { value: f.get("Url") }, f.get("Name").substring(0, 80))
     ),
   });
   midiSelect.attachTo(msel);

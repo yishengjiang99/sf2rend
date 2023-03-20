@@ -1,7 +1,7 @@
 import { mkcanvas, chart } from "https://unpkg.com/mk-60fps@1.1.0/chart.js";
 import { mkdiv } from "https://unpkg.com/mkdiv@3.1.0/mkdiv.js";
 import { SpinNode } from "./spin/spin.js";
-import mkpath from "./src/path.js";
+import { mkpath } from "./src/path.js";
 import SF2Service from "./sf2-service/index.js";
 const sf2url = "file.sf2";
 
