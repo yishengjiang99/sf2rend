@@ -196,7 +196,10 @@ async function main(sf2file, midifile) {
         mkdiv2({ tag: "option", value: n, children: n }).attachTo(drumList);
       }
     });
-    channels.forEach((c) => c.setSF2(sf2));
+    channels.forEach((c,i) => {
+      c.setSF2(sf2);
+      c.setProgram(i,i==9 ? 128 : 0);
+    });
     for (const [section, text] of sf2.meta) {
       stderr(section + ": " + text);
     }

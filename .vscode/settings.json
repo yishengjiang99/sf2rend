@@ -3,6 +3,9 @@
   "files.associations": {
     "*.js": "javascriptreact",
     "p1200.h": "c",
-    "spin.h": "c"
+    "spin.h": "c",
+    "sf2.h": "c",
+    "eg.h": "c",
+    "calc.h": "c"
   }
 }

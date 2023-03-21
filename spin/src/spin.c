@@ -5,6 +5,7 @@
 #define nchannels 64
 #define nmidiChannels 16
 extern void debugFL(float fl);
+#define export __attribute__((used))
 
 spinner sps[nchannels];
 EG eg[nchannels * 2];
@@ -18,16 +19,21 @@ float silence[40];
 char spsIndx = 0;
 pcm_t pcms[2222];
 
-spinner* get_available_spinner(int channelId) {
+export spinner* get_available_spinner(int channelId) {
   spinner* sp;
   for (int i = 0; i < nchannels; i++) {
     if (sps[i].sp_avail == SP_AVAIL) {
       sp = &sps[i];
+      sp->channelId=channelId;
+      sp->sp_avail=sp_NOT_AVAIL;
+      return sp;
     }
   }
   return 0;
 }
-
+export void set_available(spinner*x){
+  x->sp_avail=sp_NOT_AVAIL;
+}
 spinner* newSpinner(int idx) {
   spinner* x = &sps[idx];
   x->outputf = &outputs[idx * RENDQ * 2];
@@ -44,7 +50,7 @@ spinner* newSpinner(int idx) {
   return x;
 }
 
-void gm_reset() {
+export void gm_reset() {
   for (int idx = 0; idx < 128; idx++) {
     midi_cc_vals[idx * nmidiChannels + TML_VOLUME_MSB] = 100;
     midi_cc_vals[idx * nmidiChannels + TML_PAN_MSB] = 64;
@@ -82,6 +88,7 @@ void set_midi_cc_val(int channel, int metric, int val) {
 
 spinner* spRef(int idx) { return &sps[idx]; }
 pcm_t* pcmRef(int idx) { return &pcms[idx]; }
+export float* spOutput(spinner* sp) { return sp->outputf; }
 
 LFOEffects lfo_effects(float lfoval, zone_t* z) {
   float mod2vol = (1 - lfoval) * z->ModLFO2Vol;

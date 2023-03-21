@@ -1,10 +1,24 @@
 import { downloadData } from "../fetch-drop-ship/download.js";
 import saturate from "../saturation/index.js";
 import { wasmbin } from "./spin.wasm.js";
+const n_midi_channels = 16;
+const n_voices = 16 * 4;
+const EG_STAGES = {
+  INIT: 0,
+  DELAY: 1,
+  ATTACK: 2,
+  HOLD: 3,
+  DECAY: 4,
+  RELEASE: 5,
+  DONE: 99,
+};
+
 class SpinProcessor extends AudioWorkletProcessor {
   constructor(options) {
     super(options);
     this.setup_wasm();
+
+    this.active_voices = [];
     this.inst.exports.gm_reset();
     this.sampleIdRefs = [];
     this.presetRefs = [];
@@ -14,15 +28,14 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.midiccRef = new Uint8Array(
       this.memory.buffer,
       this.inst.exports.midi_cc_vals,
-      128 * 16
+      128 * n_midi_channels
     );
     this.outputfff = new Float32Array(
       this.memory.buffer,
       this.inst.exports.outputs.value,
-      128 * 32
+      128 * n_voices
     );
     this.port.postMessage({ init: 1 });
-    this.eg_vol_stag = new Array(16).fill(0);
   }
   sdtaRef(sampleId) {
     return new Uint32Array(
@@ -37,18 +50,11 @@ class SpinProcessor extends AudioWorkletProcessor {
       maximum: 1024 * 4,
       initial: 1024 * 4,
     });
-    let lastfl;
     const imports = {
       memory: this.memory,
-      debugFL: (fl) => {
-        if (!lastfl || fl != lastfl) {
-          lastfl = fl;
-        }
-      },
     };
-    this.inst = new WebAssembly.Instance(new WebAssembly.Module(wasmbin), {
-      env: imports,
-    });
+    const mdoule = new WebAssembly.Module(wasmbin)
+    this.inst = new WebAssembly.Instance(mdoule,{env:imports});
     this.brk = 0x30000;
     this.malololc = (len) => {
       const ret = this.brk;
@@ -59,7 +65,7 @@ class SpinProcessor extends AudioWorkletProcessor {
   }
 
   ch_occupied(ch) {
-    return this.eg_vol_stag[ch] && this.eg_vol_stag[ch] < 99;
+    return this.eg_vol_stag[ch] && this.eg_vol_stag[ch] < 6;
   }
   async handleMsg(e) {
     const { data } = e;
@@ -72,7 +78,7 @@ class SpinProcessor extends AudioWorkletProcessor {
         this.presetRefs[ref] = ptr;
         new Int16Array(this.memory.buffer, ptr, 60).set(
           new Int16Array(arr, 0, 60)
-        ); //.set
+        );
       }
       this.port.postMessage({ zack: 1 });
     } else {
@@ -94,18 +100,10 @@ class SpinProcessor extends AudioWorkletProcessor {
             if (!this.presetRefs[zoneRef]) {
               return;
             }
-            if (!this.spinners[channel]) {
-              this.instantiate(this.presetRefs[channel], channel);
-            }
-            let ch = channel;
-            for (
-              let ch = channel;
-              ch < 64 && this.ch_occupied(ch); // channel occuppied
-              ch++ // find next one.
-            );
-            this.inst.exports.reset(this.spinners[ch]);
+            const spinner = this.inst.exports.get_available_spinner(channel);
+            this.active_voices.push([spinner, channel]);
             this.inst.exports.trigger_attack(
-              this.spinners[ch],
+              spinner,
               this.presetRefs[zoneRef],
               ratio,
               velocity
@@ -130,39 +128,22 @@ class SpinProcessor extends AudioWorkletProcessor {
     );
   }
 
-  instantiate(zone, i) {
-    this.spinners[i] = this.inst.exports.newSpinner(i);
-    const spIO = new Uint32Array(this.memory.buffer, this.spinners[i], 2);
-    this.outputs[i] = new Float32Array(this.memory.buffer, spIO[1], 128 * 2);
-    return this.spinners[i];
-  }
-
   process(inputs, outputs, parameters) {
-    for (let i = 0; i < outputs.length; i++) {
-      if (!this.spinners[i]) continue;
-      if (!this.outputs[i]) continue;
-      for (let j = 0; j < 128 * 2; j++) {
-        this.outputs[i][j] = 0;
+    let sp_to_run=[];
+    for(let i=0; i<this.active_voices.length; i++){
+      const [spinner,channel]=this.active_voices[i];
+      const eg_stage = this.inst.exports.spin(spinner, 128);
+      var rendered = new Float32Array(this.memory.buffer, (spinner+32), 128*2);
+      if(eg_stage>=EG_STAGES.DONE){
+        this.active_voices.splice(i,1);
+        this.inst.exports.set_available(spinner);
       }
-      this.eg_vol_stag[i] = this.inst.exports.spin(this.spinners[i], 128);
       for (let j = 0; j < 128; j++) {
-        outputs[i][0][j] = saturate(this.outputs[i][2 * j] * 0.5);
-        outputs[i][1][j] = saturate(this.outputs[i][2 * j + 1] * 0.5);
+        outputs[channel][0][j] += rendered[2 * j];
+        outputs[channel][1][j] += rendered[2 * j + 1];
       }
-    }
-
-    // if (
-    //   outputs[0][15] > 0.00000001 ||
-    //   outputs[0][44] > 0.00000001 ||
-    //   outputs[0][66] > 0.00000001 ||
-    //   outputs[0][22] > 0.00000001
-    // ) {
-    //   const pcmplayback = new Float32Array(128 * 32);
-    //   pcmplayback.set(this.outputfff);
-    //   new Promise((r) => r()).then(() =>
-    //     this.port.postMessage({ pcmplayback: pcmplayback })
-    //   );
-    // }
+    }9
+    this.active_voices.push(sp_to_run)
     return true;
   }
 }
