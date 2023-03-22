@@ -1,3 +1,11 @@
+.main {
+  display: flex;
+  flex-direction: row;
+  place-items: space-between;
+}
+#stdout {
+  width: 80em;
+}
 /*
 html5doctor.com Reset Stylesheet
 v1.6.1

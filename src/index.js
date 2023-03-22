@@ -1,12 +1,11 @@
 import { mkdiv, logdiv, mkdiv2 } from "https://unpkg.com/mkdiv@3.1.2/mkdiv.js";
-
-import { SpinNode } from "../spin/spin.js";
 import { mkui } from "./ui.js";
 import SF2Service from "https://unpkg.com/sf2-service@1.3.6/index.js";
-import { fetchmidilist, fetchSF2List } from "./midilist.js";
+import { fetchmidilist } from "./midilist.js";
 import { mkeventsPipe } from "./mkeventsPipe.js";
 import { createChannel } from "./createChannel.js";
 import { midi_ch_cmds, range } from "./constants.js";
+import { chart, mkcanvas } from "https://unpkg.com/mk-60fps@1.1.0/chart.js";
 const $ = (sel) => document.querySelector(sel);
 
 const sf2select = $("#sf2select"),
@@ -16,7 +15,11 @@ const sf2select = $("#sf2select"),
   timeNow = $("#timeNow"),
   tempo = $("#tempo"),
   duration = $("#duration"),
-  msel = $("#msel");
+  msel = $("#msel"),
+  panel2 = document.querySelector("#col2"),
+  col4 = $("#col4"),
+  col5 = $("#col5"),
+  canvas1 = mkcanvas({ container: $("#col3") });
 
 const drumList = document.querySelector("#drums");
 const programList = document.querySelector("#programs");
@@ -41,7 +44,6 @@ globalThis.appState = new Proxy(appState, {
     return true;
   },
 });
-8;
 function updateAppState(newArr) {
   try {
     globalThis.appState = Object.assign({}, globalThis.appState, newArr);
@@ -58,6 +60,7 @@ async function main(sf2file, midifile) {
     midiworker = new Worker("src/midiworker.js", {
       type: "module",
     });
+  stdout("start");
 
   updateAppState({
     midifile,
@@ -72,12 +75,11 @@ async function main(sf2file, midifile) {
       const { totalTicks, presets } = e.data.midifile;
       const queues = [[], [], []];
       const [l1, l2, l3] = queues;
+
       for (const preset of presets) {
         const { pid, channel } = preset;
         const bkid = channel == 9 ? 128 : 0;
         await channels[channel].setProgram(pid, bkid);
-
-        //queues[pid % 3].push(() => channels[channel].setProgram(pid, bkid));
       }
       duration.innerHTML = totalTicks / 4;
       timeslide.setAttribute("max", totalTicks);
@@ -116,14 +118,11 @@ async function main(sf2file, midifile) {
     style: "width:300px",
     value: midifile,
     onchange: (e) => {
-      document.location.href = `?midifile=${e.target.value}&sf2file=${sf2file}`;
+      midiworker.postMessage({ cmd: "load", url: e.target.value });
+      e.preventDefault();
     },
     children: midiList.map((f) =>
-      mkdiv(
-        "option",
-        { value: f.get("Url"), seleced: f.get("Url").includes(midifile) },
-        f.get("Name").substring(0, 80)
-      )
+      mkdiv("option", { value: f.get("Url") }, f.get("Name").substring(0, 80))
     ),
   });
   midiSelect.attachTo(msel);
@@ -150,7 +149,6 @@ async function main(sf2file, midifile) {
     const ch = a & 0x0f;
     const key = b & 0x7f;
     const velocity = c & 0x7f;
-    console.log(cmd, ch, key);
     switch (cmd) {
       case midi_ch_cmds.continuous_change: // set CC
         channels[ch].setCC({ key, vel: velocity });
@@ -169,7 +167,8 @@ async function main(sf2file, midifile) {
           channels[ch].keyOff(key, velocity);
         } else {
           stdout([ch, cmd, key, velocity].join("/"));
-          channels[ch].keyOn(key, velocity);
+          const zone = channels[ch].keyOn(key, velocity);
+          //requestAnimationFrame(() => renderZ(panel2, canvas1, zone));
         }
         break;
       default:
@@ -201,20 +200,25 @@ async function main(sf2file, midifile) {
         mkdiv2({ tag: "option", value: n, children: n }).attachTo(drumList);
       }
     });
-    channels.forEach((c) => c.setSF2(sf2));
+    channels.forEach((c, i) => {
+      c.setSF2(sf2);
+      c.setProgram(i, i == 9 ? 128 : 0);
+    });
     for (const [section, text] of sf2.meta) {
       stderr(section + ": " + text);
     }
   }
 
-  playBtn.setAttribute("disabled", true);
   await loadSF2File(sf2file);
-  midiworker.postMessage({ cmd: "load", url: midifile });
   window.mkTracks($("main"), {
     programNames: range(0, 12).map((i) => "ch " + i),
     keyRange: range(46, 80),
     eventPipe,
   });
+  spinner.port.onmessage = ({ data }) => {
+    if (data.spState) col5.innerHTML = JSON.stringify(data.spState);
+    if (data.egStages) col4.innerHTML = Object.values(data.egStages).join(" ");
+  };
 }
 
 function onMidiMeta(stderr, e) {
@@ -250,4 +254,49 @@ function onMidiMeta(stderr, e) {
     }
   };
   stderr(metaDisplay(e.data.meta) + ": " + e.data.payload);
+}
+async function renderZ(container, canvas, zoneSelect) {
+  container.innerHTML = "";
+
+  if (zoneSelect) {
+    const zattrs = Object.entries(zoneSelect).filter(
+      ([attr, val], idx) => idx < 60
+    );
+
+    const pcm = await zoneSelect.shdr.data();
+    chart(canvas, pcm);
+
+    const zoneinfo = mkdiv("div", [
+      mkdiv("div", [
+        "smpl: ",
+        zoneSelect.shdr.SampleId,
+        " ",
+        zoneSelect.shdr.name,
+        "<br>nsample: ",
+        zoneSelect.shdr.nsamples,
+        "<br>srate: " + zoneSelect.shdr.originalPitch,
+        "<br>Range: ",
+        zoneSelect.shdr.range.join("-"),
+        "<br>",
+        "loop: ",
+        zoneSelect.shdr.loops.join("-"),
+        "<br>",
+
+        JSON.stringify(zoneSelect.KeyRange),
+        "<br>",
+        JSON.stringify(zoneSelect.VolRange),
+      ]),
+      ..."Sustain,Attenuation,VolEnv,Filter,LFO".split(",").map((keyword) =>
+        mkdiv(
+          "div",
+          { style: "padding:10px;color:gray;" },
+          zattrs
+            .filter(([k]) => k.includes(keyword))
+            .map(([k, v]) => k + ": " + v)
+            .join("<br>")
+        )
+      ),
+    ]);
+    zoneinfo.attachTo(container);
+  }
 }

@@ -1,3 +1,5 @@
+import { midi_ch_cmds } from "./constants.js";
+
 export function createChannel(uiController, channelId, sf2, spinner) {
   let _sf2 = sf2;
   let program;
@@ -18,10 +20,18 @@ export function createChannel(uiController, channelId, sf2, spinner) {
       uiController.CC = { key, value: vel };
     },
     keyOn(key, vel) {
+      console.log("ch chan ", channelId);
       const zones = program.filterKV(key, vel);
-      zones.slice(2).map((zone, i) => {
-        key_on_map[key] = channelId * +i;
-        spinner.keyOn(channelId * 2 + i, zone, key, vel);
+      zones.slice(0, 2).map((zone, i) => {
+        console.log("zone", i);
+        key_on_map[key] = channelId * 2 + i;
+        spinner.port.postMessage([
+          midi_ch_cmds.note_on,
+          channelId * 2 + i,
+          zone.ref,
+          zone.calcPitchRatio(key, spinner.context.sampleRate),
+          vel,
+        ]);
       });
 
       // zones[0].shdr.data().then((pcm) => {
@@ -49,8 +59,10 @@ export function createChannel(uiController, channelId, sf2, spinner) {
         uiController.midi = key;
         //  uiController.zone = zones[0];
       });
+      return zones[0];
     },
     keyOff(key, vel) {
+      if (!key_on_map[key]) return;
       while (key_on_map[key].length) {
         spinner.keyOff(key_on_map[key].shift(), key, vel);
       }

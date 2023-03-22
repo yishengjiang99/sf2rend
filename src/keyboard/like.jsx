@@ -3,7 +3,6 @@ const keys = ["a", "w", "s", "e", "d", "f", "t", "g", "y", "h", "u", "j"];
 function Keyboard({ callback, channel, keyRange }) {
   React.useEffect(() => {
     window.onkeydown = (e) => {
-      console.log(e.key);
       const index = keys.indexOf(e.key);
       if (index < 0) return;
       callback([0x90 | channel, index + 45, 120]);
@@ -29,6 +28,7 @@ function Keyboard({ callback, channel, keyRange }) {
                 : "keywhite"
             }
             onMouseDown={(e) => {
+              console.log("adsfds");
               callback([0x90 | channel, midi, 120]);
             }}
             onMouseUp={(e) => {

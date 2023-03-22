@@ -216,7 +216,7 @@ export function mkui(eventPipe, container) {
     "div",
     {
       border: 1,
-      style: `height:500px;overflow-y:scroll`,
+      style: `width:500px;overflow-y:scroll`,
     },
     [`<h4>${activeChannel}</h4>`]
   );
@@ -259,9 +259,7 @@ export function mkui(eventPipe, container) {
 
   const cpanel = mkdiv2({
     tag: "div",
-    border: 1,
     children: [tb, keyboard],
   });
-  container.append(cpanel);
   return controllers;
 }
