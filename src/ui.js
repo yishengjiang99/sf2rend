@@ -6,12 +6,12 @@ import {
   wrapDiv,
   mksvg,
 } from "https://unpkg.com/mkdiv@3.1.2/mkdiv.js";
-import { midi_ch_cmds, range, midi_effects as effects } from "./constants.js";
+import { midi_ch_cmds, midi_effects as effects } from "./constants.js";
 
 const rowheight = 40;
 const pixelPerSec = 12;
-let refcnt = 0,
-  activeChannel = 0;
+let ControllerState;
+
 export class TrackUI {
   constructor(idx, cb) {
     this.idx = idx;
@@ -31,29 +31,14 @@ export class TrackUI {
     });
 
     const container = mkdiv(
-      "details",
+      "div",
       {
         style: "display:grid; grid-template-columns:1fr 1fr;",
         class: "instrPanels",
       },
       [
-        mkdiv(
-          "summary",
-          {
-            class: "attrs",
-          },
-          [
-            mkdiv("input", { type: "checkbox" }),
-            this.nameLabel,
-            mkdiv(
-              "a",
-              {
-                onclick: () => (activeChannel = idx),
-              },
-              "play"
-            ),
-          ]
-        ),
+        mkdiv("input", { type: "checkbox" }),
+        this.nameLabel,
         mkdiv("label", { for: "mkey" }, "key"),
         mkdiv("meter", {
           min: 0,
@@ -142,10 +127,19 @@ export class TrackUI {
     this._active = false;
     this._midi = null;
   }
-  set presetId(presetId) {}
+  set presetId(presetId) {
+    ControllerState = {
+      ...ControllerState,
+      channels: {
+        ...ControllerState.channels,
+        [this.idx]: presetId,
+      },
+    };
+  }
   set name(id) {
     this.nameLabel.value = id;
   }
+  8;
   get name() {
     return this.nameLabel.value;
   }
@@ -212,24 +206,20 @@ export function mkui(eventPipe, container) {
   const controllers = [];
   let refcnt = 0,
     activeChannel = 0;
-  const tb = mkdiv(
-    "div",
-    {
-      border: 1,
-      style: `width:500px;overflow-y:scroll`,
-    },
-    [`<h4>${activeChannel}</h4>`]
-  );
+  const tb = mkdiv("div", {
+    border: 1,
+    style: `height:500px;overflow-y:scroll`,
+  });
 
   for (let i = 0; i < 16; i++) {
     const trackrow = new TrackUI(i, eventPipe.postMessage);
     controllers.push(trackrow);
     tb.append(trackrow.container);
     trackrow.container.onclick = (e) => {
-      activeChannel = i;
+      e.target.style.background_color = "pink";
+      ControllerState.activeChannelUserInput = i;
     };
   }
-
   const mkKeyboard = mkdiv(
     "div",
     { class: "keyboards" },
@@ -256,10 +246,40 @@ export function mkui(eventPipe, container) {
   );
   const keyboard = mkKeyboard;
   const zoneCardContainer = mkdiv("div");
+  ControllerState = new Proxy(
+    {
+      channels: {},
+      activeChannelUserInput: 1,
+      activeZoneDebug: 1,
+    },
+    {
+      async set(obj, prop, value) {
+        console.log(prop, value);
 
+        switch (prop) {
+          case "channels":
+            console.log(prop, value);
+            break;
+          case "activeChannelUserInput":
+            break;
+        }
+      },
+    }
+  );
   const cpanel = mkdiv2({
     tag: "div",
-    children: [tb, keyboard],
+    border: 1,
+    style: `height:500px;8display:grid;grid-area:a a a, b c c`,
+    children: [tb, keyboard, mkdiv()],
   });
+
+  cpanel.attachTo(container);
   return controllers;
 }
+
+const range = (x, y) =>
+  Array.from(
+    (function* _(x, y) {
+      while (x < y) yield x++;
+    })(x, y)
+  );

@@ -73,6 +73,7 @@ async function main(sf2file, midifile) {
   midiworker.addEventListener("message", async function (e) {
     if (e.data.midifile) {
       const { totalTicks, presets } = e.data.midifile;
+      spinner.port.postMessage({ cmd: "reset" });
       const queues = [[], [], []];
       const [l1, l2, l3] = queues;
 
@@ -109,7 +110,10 @@ async function main(sf2file, midifile) {
   });
 
   playBtn.onclick = () => midiworker.postMessage({ cmd: "start" });
-  pauseBtn.onclick = () => midiworker.postMessage({ cmd: "pause" });
+  pauseBtn.onclick = () =>
+    spinner.port.postMessage({ cmd: "panic" }) &&
+    midiworker.postMessage({ cmd: "pause" });
+
   midiworker.postMessage({ cmd: "inited" });
 
   const midiList = await fetchmidilist();

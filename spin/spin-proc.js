@@ -21,8 +21,9 @@ class SpinProcessor extends AudioWorkletProcessor {
       this.inst.exports.outputs.value,
       128 * 32
     );
+    this.spState = new Array(32);
     this.port.postMessage({ init: 1 });
-    this.eg_vol_stag = new Array(16).fill(0);
+    this.eg_vol_stag = new Array(32).fill(0);
   }
   sdtaRef(sampleId) {
     return new Uint32Array(
@@ -49,7 +50,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.inst = new WebAssembly.Instance(new WebAssembly.Module(wasmbin), {
       env: imports,
     });
-    this.brk = 0x30000;
+    this.brk = this.inst.exports.__heap_base;
     this.malololc = (len) => {
       const ret = this.brk;
       this.brk += len;
@@ -75,6 +76,15 @@ class SpinProcessor extends AudioWorkletProcessor {
         ); //.set
       }
       this.port.postMessage({ zack: 1 });
+    } else if (data.cmd) {
+      switch (data.cmd) {
+        case "reset":
+          this.brk = this.inst.exports.__heap_base;
+        //fallthrough
+        case "panic":
+          this.inst.exports.gm_reset();
+          break;
+      }
     } else {
       const [cmd, channel, ...args] = data;
       const [metric, value] = args;
@@ -91,19 +101,15 @@ class SpinProcessor extends AudioWorkletProcessor {
         case 0x0090:
           {
             const [zoneRef, ratio, velocity] = args;
+            console.log("trr att ", channel, ratio, velocity);
             if (!this.presetRefs[zoneRef]) {
               return;
             }
             if (!this.spinners[channel]) {
-              this.instantiate(this.presetRefs[channel], channel);
+              this.instantiate(channel);
             }
             let ch = channel;
-            for (
-              let ch = channel;
-              ch < 64 && this.ch_occupied(ch); // channel occuppied
-              ch++ // find next one.
-            );
-            this.inst.exports.reset(this.spinners[ch]);
+            this.inst.exports.reset();
             this.inst.exports.trigger_attack(
               this.spinners[ch],
               this.presetRefs[zoneRef],
@@ -130,15 +136,23 @@ class SpinProcessor extends AudioWorkletProcessor {
     );
   }
 
-  instantiate(zone, i) {
+  instantiate(i) {
+    console.log("instant sp", i);
     this.spinners[i] = this.inst.exports.newSpinner(i);
-    const spIO = new Uint32Array(this.memory.buffer, this.spinners[i], 2);
+    const spIO = new Uint32Array(this.memory.buffer, this.spinners[i], 3);
+    this.spState[i] = new Uint32Array(
+      this.memory.buffer,
+      this.spinners[i] + 12,
+      4
+    );
+
     this.outputs[i] = new Float32Array(this.memory.buffer, spIO[1], 128 * 2);
     return this.spinners[i];
   }
 
   process(inputs, outputs, parameters) {
-    for (let i = 0; i < outputs.length; i++) {
+    for (let i = 0; i < 32; i++) {
+      const chid = Math.floor(i / 2);
       if (!this.spinners[i]) continue;
       if (!this.outputs[i]) continue;
       for (let j = 0; j < 128 * 2; j++) {
@@ -146,10 +160,13 @@ class SpinProcessor extends AudioWorkletProcessor {
       }
       this.eg_vol_stag[i] = this.inst.exports.spin(this.spinners[i], 128);
       for (let j = 0; j < 128; j++) {
-        outputs[i][0][j] = saturate(this.outputs[i][2 * j] * 0.5);
-        outputs[i][1][j] = saturate(this.outputs[i][2 * j + 1] * 0.5);
+        outputs[chid][0][j] += saturate(this.outputs[i][2 * j]);
+        outputs[chid][1][j] += saturate(this.outputs[i][2 * j + 1]);
       }
     }
+    new Promise((r) => r()).then(
+      this.port.postMessage({ egStages: this.eg_vol_stag })
+    );
 
     // if (
     //   outputs[0][15] > 0.00000001 ||

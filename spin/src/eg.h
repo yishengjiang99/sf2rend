@@ -30,7 +30,7 @@ float update_eg(EG* eg, int n);
  */
 float update_eg(EG* eg, int n) {
   if (eg->stage == done) return 0.0f;  // should not occur
-  if (eg->egval < -1360.0f) {
+  if (eg->egval < -970.0f) {
     eg->stage = done;
     return eg->egval;
   }
@@ -73,7 +73,9 @@ void advanceStage(EG* eg) {
       // Volume Envelope
       // value during decay phase.eg->stage++;
       eg->egIncrement = 1.0f / (float)timecent2sample(eg->decay);
-      eg->nsamples_till_next_stage = 1 / eg->egIncrement;
+      eg->nsamples_till_next_stage = timecent2sample(eg->decay);
+      eg->stage++;
+
       break;
     case decay:  // headsing to released;
       eg->stage++;
@@ -107,13 +109,12 @@ void init_vol_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
   scaleTc(eg, pcmSampleRate);
 
   eg->stage = init;
-  if (eg->attack >= 0) eg->attack = 0;
   advanceStage(eg);
 }
 void init_mod_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
   char* sz = (char*)&z->ModEnvDelay;
   gmemcpy((char*)&eg->delay, sz, 12);
-  scaleTc(eg, pcmSampleRate);
+  // scaleTc(eg, pcmSampleRate);
 
   eg->stage = init;
   advanceStage(eg);
@@ -124,9 +125,5 @@ void _eg_set_stage(EG* e, int n) {
   e->nsamples_till_next_stage = 0;
   advanceStage(e);
 }
-void _eg_release(EG* e) {
-  if (e->stage == decay || e->stage == hold || e->stage == attack) {
-    _eg_set_stage(e, release);
-  }
-}
+void _eg_release(EG* eg) { _eg_set_stage(eg, release); }
 #endif
