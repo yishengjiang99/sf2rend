@@ -138,7 +138,7 @@ async function main(sf2file, midifile) {
     updateAppState({ sf2file: e.target.value });
   };
   const { mkpath } = await import("./path.js");
-  const { spinner } = await mkpath(ctx);
+  const spinner = await mkpath(ctx);
   updateAppState({
     spinnerLoaded: true,
   });

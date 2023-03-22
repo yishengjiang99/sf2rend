@@ -8,10 +8,5 @@ export async function mkpath(ctx) {
     spinner.connect(merger, i, 0);
   }
   merger.connect(masterMixer).connect(ctx.destination);
-
-  return {
-    spinner,
-    masterMixer,
-    merger,
-  };
+  return spinner;
 }
