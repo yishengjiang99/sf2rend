@@ -7,7 +7,6 @@ import { mkdiv } from "https://unpkg.com/mkdiv@3.1.0/mkdiv.js";
 import { SpinNode } from "./spin/spin.js";
 import { mkpath } from "./src/path.js";
 import SF2Service from "./sf2-service/index.js";
-import { newSFZone } from "./sf2-service/zoneProxy.js";
 const sf2url = "file.sf2";
 
 const sf2file = new SF2Service(sf2url);
@@ -231,3 +230,29 @@ const drawEV = async (zone, target) => {
   const rendbuff = await ctx.startRendering();
   chart(target, rendbuff.getChannelData(0));
 };
+
+/**
+ * proxys comma-separated str of attributes into
+ * dot-accessing objects to make beter autocompletes in vscode
+ * @param attrs csv strings
+ * @returns Proxy<string,number>
+ */
+export function newSFZone(attrs) {
+  const attributeValues = newSFZoneMap(1, attrs);
+  return new Proxy(attributeValues, {
+    get: (target, key) => {
+      if (key == "arr") return attributeValues.arr;
+      const idx = attributeKeys.indexOf(key);
+      return idx > -1 ? target[idx] : null;
+    },
+    set: (target, key, val) => {
+      const idx = attributeKeys.indexOf(key);
+      console.log(idx, key);
+      if (idx > -1) {
+        target.arr[idx] = parseInt(val);
+        return true;
+      }
+      return false;
+    },
+  });
+}
