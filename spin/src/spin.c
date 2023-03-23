@@ -40,6 +40,9 @@ spinner* newSpinner(int idx) {
   x->modeg = &eg[idx * 2 + 1];
   x->modlfo = &lfos[idx * 2];
   x->vibrlfo = &lfos[idx * 2 + 1];
+  x->voleg->egval = -960.0f;
+  x->voleg->stage = init;
+  x->voleg->egIncrement = 0;
   x->channelId = idx;
   return x;
 }
@@ -160,7 +163,6 @@ void _spinblock(spinner* x, int n, int blockOffset) {
       x->outputf[i * 2 + blockOffset * 2] = 0.0f;
       x->outputf[i * 2 + blockOffset * 2 + 1] = 0.0f;
       x->voleg->stage = done;
-      return;
     }
 
     float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
@@ -170,6 +172,7 @@ void _spinblock(spinner* x, int n, int blockOffset) {
     x->outputf[i * 2 + blockOffset * 2 + 1] =
         applyCentible(outputf, (short)(db + kRateCB + panRight));
     db += dbInc;
+    if (db <= -1360) dbInc = 0.0;
   }
   x->position = position;
   x->fract = fract;
@@ -177,6 +180,9 @@ void _spinblock(spinner* x, int n, int blockOffset) {
 }
 
 int spin(spinner* x, int n) {
+  if (x->voleg->stage == init || x->voleg->stage == done) {
+    return x->voleg->egIncrement;
+  }
   update_eg(x->voleg, 64);
 
   update_eg(x->modeg, 64);
@@ -187,5 +193,5 @@ int spin(spinner* x, int n) {
   update_eg(x->modeg, 64);
 
   _spinblock(x, 64, 64);
-  return x->voleg->egval;
+  return (int)(x->voleg->egIncrement * 1000);
 }

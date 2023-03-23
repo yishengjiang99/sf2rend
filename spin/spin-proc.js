@@ -69,11 +69,7 @@ class SpinProcessor extends AudioWorkletProcessor {
       this.port.postMessage({ zack: 2 });
     } else if (data.zArr) {
       for (const { arr, ref } of data.zArr) {
-        const ptr = this.malololc(120);
-        this.presetRefs[ref] = ptr;
-        new Int16Array(this.memory.buffer, ptr, 60).set(
-          new Int16Array(arr, 0, 60)
-        ); //.set
+        this.setZone(ref, arr); //.set
       }
       this.port.postMessage({ zack: 1 });
     } else if (data.cmd) {
@@ -83,6 +79,11 @@ class SpinProcessor extends AudioWorkletProcessor {
         //fallthrough
         case "panic":
           this.inst.exports.gm_reset();
+          break;
+        case "newZone":
+          this.setZone(data.zone.ref, data.zone.arr);
+          this.port.postMessage({ ack: 1 });
+
           break;
       }
     } else {
@@ -96,6 +97,7 @@ class SpinProcessor extends AudioWorkletProcessor {
         case 0x80:
         case 0x0080:
           this.inst.exports.eg_release(channel);
+          this.port.postMessage({ ack: [0x80, channel] });
           break;
         case 1:
         case 0x0090:
@@ -123,6 +125,12 @@ class SpinProcessor extends AudioWorkletProcessor {
       }
     }
   }
+  setZone(ref, arr) {
+    const ptr = this.malololc(120);
+    this.presetRefs[ref] = ptr;
+    new Int16Array(this.memory.buffer, ptr, 60).set(new Int16Array(arr, 0, 60));
+  }
+
   async loadsdta(data) {
     const {
       segments: { sampleId, nSamples, loops, originalPitch, sampleRate: sr },

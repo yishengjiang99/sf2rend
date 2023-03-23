@@ -215,161 +215,247 @@ define hidden float @centdb_val(ptr nocapture noundef readonly %0) local_unnamed
 
 ; Function Attrs: nofree nosync nounwind
 define hidden float @update_eg(ptr nocapture noundef %0, i32 noundef %1) local_unnamed_addr #5 {
-  %3 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 2
-  %4 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 3
+  %3 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 3
+  %4 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 2
   %5 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 1
   br label %6
 
-6:                                                ; preds = %26, %2
-  %7 = phi i32 [ %1, %2 ], [ %28, %26 ]
+6:                                                ; preds = %59, %2
+  %7 = phi i32 [ %1, %2 ], [ %60, %59 ]
   %8 = load i32, ptr %3, align 4, !tbaa !11
-  %9 = icmp eq i32 %8, 99
-  br i1 %9, label %32, label %10
+  %9 = tail call i32 @llvm.smin.i32(i32 %8, i32 %7)
+  %10 = sub nsw i32 %8, %9
+  store i32 %10, ptr %3, align 4, !tbaa !11
+  %11 = load i32, ptr %4, align 4, !tbaa !15
+  switch i32 %11, label %46 [
+    i32 6, label %12
+    i32 4, label %12
+  ]
 
-10:                                               ; preds = %6
-  %11 = load float, ptr %0, align 4, !tbaa !15
-  %12 = fcmp olt float %11, -9.700000e+02
-  br i1 %12, label %13, label %14
+12:                                               ; preds = %6, %6
+  %13 = icmp eq i32 %9, 0
+  br i1 %13, label %54, label %14
 
-13:                                               ; preds = %10
-  store i32 99, ptr %3, align 4, !tbaa !11
-  br label %32
+14:                                               ; preds = %12
+  %15 = load float, ptr %5, align 4, !tbaa !16
+  %16 = load float, ptr %0, align 4, !tbaa !17
+  %17 = add i32 %9, -1
+  %18 = and i32 %9, 7
+  %19 = icmp eq i32 %18, 0
+  br i1 %19, label %28, label %20
 
-14:                                               ; preds = %10
-  %15 = load i32, ptr %4, align 4, !tbaa !16
-  %16 = tail call i32 @llvm.smin.i32(i32 %15, i32 %7)
-  %17 = icmp eq i32 %15, 65535
-  br i1 %17, label %23, label %18
+20:                                               ; preds = %14, %20
+  %21 = phi float [ %25, %20 ], [ %16, %14 ]
+  %22 = phi i32 [ %24, %20 ], [ %9, %14 ]
+  %23 = phi i32 [ %26, %20 ], [ 0, %14 ]
+  %24 = add nsw i32 %22, -1
+  %25 = fmul float %15, %21
+  %26 = add i32 %23, 1
+  %27 = icmp eq i32 %26, %18
+  br i1 %27, label %28, label %20, !llvm.loop !18
 
-18:                                               ; preds = %14
-  %19 = sub nsw i32 %15, %16
-  store i32 %19, ptr %4, align 4, !tbaa !16
-  %20 = load float, ptr %5, align 4, !tbaa !17
-  %21 = sitofp i32 %16 to float
-  %22 = tail call float @llvm.fmuladd.f32(float %20, float %21, float %11)
-  store float %22, ptr %0, align 4, !tbaa !15
-  br label %23
+28:                                               ; preds = %20, %14
+  %29 = phi float [ undef, %14 ], [ %25, %20 ]
+  %30 = phi float [ %16, %14 ], [ %25, %20 ]
+  %31 = phi i32 [ %9, %14 ], [ %24, %20 ]
+  %32 = icmp ult i32 %17, 7
+  br i1 %32, label %51, label %33
 
-23:                                               ; preds = %18, %14
-  %24 = phi float [ %22, %18 ], [ %11, %14 ]
-  %25 = icmp slt i32 %15, %7
-  br i1 %25, label %26, label %32
+33:                                               ; preds = %28, %33
+  %34 = phi float [ %44, %33 ], [ %30, %28 ]
+  %35 = phi i32 [ %43, %33 ], [ %31, %28 ]
+  %36 = fmul float %15, %34
+  %37 = fmul float %15, %36
+  %38 = fmul float %15, %37
+  %39 = fmul float %15, %38
+  %40 = fmul float %15, %39
+  %41 = fmul float %15, %40
+  %42 = fmul float %15, %41
+  %43 = add nsw i32 %35, -8
+  %44 = fmul float %15, %42
+  %45 = icmp eq i32 %43, 0
+  br i1 %45, label %51, label %33, !llvm.loop !20
 
-26:                                               ; preds = %23
-  %27 = xor i32 %16, -1
-  %28 = add i32 %7, %27
+46:                                               ; preds = %6
+  %47 = load float, ptr %5, align 4, !tbaa !16
+  %48 = sitofp i32 %9 to float
+  %49 = load float, ptr %0, align 4, !tbaa !17
+  %50 = tail call float @llvm.fmuladd.f32(float %47, float %48, float %49)
+  br label %51
+
+51:                                               ; preds = %28, %33, %46
+  %52 = phi float [ %50, %46 ], [ %29, %28 ], [ %44, %33 ]
+  %53 = phi i32 [ %9, %46 ], [ -1, %33 ], [ -1, %28 ]
+  store float %52, ptr %0, align 4, !tbaa !17
+  br label %54
+
+54:                                               ; preds = %51, %12
+  %55 = phi i32 [ -1, %12 ], [ %53, %51 ]
+  %56 = icmp eq i32 %7, %55
+  br i1 %56, label %57, label %59
+
+57:                                               ; preds = %54
+  %58 = load float, ptr %0, align 4, !tbaa !17
+  ret float %58
+
+59:                                               ; preds = %54
+  %60 = sub nsw i32 %7, %55
   tail call void @advanceStage(ptr noundef nonnull %0)
-  %29 = icmp sgt i32 %28, 0
-  br i1 %29, label %6, label %30
-
-30:                                               ; preds = %26
-  %31 = load float, ptr %0, align 4, !tbaa !15
-  br label %32
-
-32:                                               ; preds = %6, %23, %30, %13
-  %33 = phi float [ %11, %13 ], [ %31, %30 ], [ 0.000000e+00, %6 ], [ %24, %23 ]
-  ret float %33
+  br label %6
 }
 
 ; Function Attrs: nofree nosync nounwind
 define hidden void @advanceStage(ptr nocapture noundef %0) local_unnamed_addr #5 {
   %2 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 2
-  %3 = load i32, ptr %2, align 4, !tbaa !11
-  switch i32 %3, label %58 [
+  %3 = load i32, ptr %2, align 4, !tbaa !15
+  switch i32 %3, label %96 [
     i32 0, label %4
-    i32 1, label %12
-    i32 2, label %22
-    i32 3, label %30
-    i32 4, label %43
-    i32 5, label %56
+    i32 1, label %15
+    i32 2, label %28
+    i32 3, label %37
+    i32 4, label %59
+    i32 5, label %67
+    i32 6, label %94
   ]
 
 4:                                                ; preds = %1
-  store i32 1, ptr %2, align 4, !tbaa !11
+  store i32 1, ptr %2, align 4, !tbaa !15
   %5 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 4
-  %6 = load i16, ptr %5, align 4, !tbaa !18
-  %7 = tail call double @timecent2second(i16 noundef signext %6)
-  %8 = fmul double %7, 4.410000e+04
-  %9 = fptosi double %8 to i32
-  %10 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 3
-  store i32 %9, ptr %10, align 4, !tbaa !16
-  store float -9.600000e+02, ptr %0, align 4, !tbaa !15
-  %11 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 1
-  store float 0.000000e+00, ptr %11, align 4, !tbaa !17
-  br label %58
+  %6 = load i16, ptr %5, align 4, !tbaa !22
+  %7 = icmp slt i16 %6, -11999
+  br i1 %7, label %8, label %9
 
-12:                                               ; preds = %1
-  store i32 2, ptr %2, align 4, !tbaa !11
-  store float -9.600000e+02, ptr %0, align 4, !tbaa !15
-  %13 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 5
-  %14 = load i16, ptr %13, align 2, !tbaa !19
-  %15 = tail call double @timecent2second(i16 noundef signext %14)
-  %16 = fmul double %15, 4.410000e+04
-  %17 = fptosi double %16 to i32
-  %18 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 3
-  store i32 %17, ptr %18, align 4, !tbaa !16
-  %19 = sitofp i32 %17 to float
-  %20 = fdiv float 9.600000e+02, %19
-  %21 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 1
-  store float %20, ptr %21, align 4, !tbaa !17
-  br label %58
+8:                                                ; preds = %4
+  store i32 2, ptr %2, align 4, !tbaa !15
+  br label %15
 
-22:                                               ; preds = %1
-  store i32 3, ptr %2, align 4, !tbaa !11
-  %23 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 6
-  %24 = load i16, ptr %23, align 4, !tbaa !20
-  %25 = tail call double @timecent2second(i16 noundef signext %24)
-  %26 = fmul double %25, 4.410000e+04
-  %27 = fptosi double %26 to i32
-  %28 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 3
-  store i32 %27, ptr %28, align 4, !tbaa !16
-  %29 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 1
-  store float 0.000000e+00, ptr %29, align 4, !tbaa !17
-  br label %58
+9:                                                ; preds = %4
+  %10 = tail call double @timecent2second(i16 noundef signext %6)
+  %11 = fmul double %10, 4.410000e+04
+  %12 = fptosi double %11 to i32
+  %13 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 3
+  store i32 %12, ptr %13, align 4, !tbaa !11
+  %14 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 1
+  store float 0.000000e+00, ptr %14, align 4, !tbaa !16
+  br label %96
 
-30:                                               ; preds = %1
-  %31 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 7
-  %32 = load i16, ptr %31, align 2, !tbaa !21
-  %33 = tail call double @timecent2second(i16 noundef signext %32)
-  %34 = fmul double %33, 4.410000e+04
-  %35 = fptosi double %34 to i32
-  %36 = sitofp i32 %35 to float
-  %37 = fdiv float 1.000000e+00, %36
-  %38 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 1
-  store float %37, ptr %38, align 4, !tbaa !17
-  %39 = tail call double @timecent2second(i16 noundef signext %32)
-  %40 = fmul double %39, 4.410000e+04
-  %41 = fptosi double %40 to i32
-  %42 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 3
-  store i32 %41, ptr %42, align 4, !tbaa !16
-  store i32 4, ptr %2, align 4, !tbaa !11
-  br label %58
+15:                                               ; preds = %1, %8
+  %16 = phi i32 [ 3, %1 ], [ 4, %8 ]
+  %17 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 5
+  %18 = load i16, ptr %17, align 2, !tbaa !23
+  %19 = icmp slt i16 %18, -11999
+  br i1 %19, label %28, label %20
 
-43:                                               ; preds = %1
-  store i32 5, ptr %2, align 4, !tbaa !11
-  %44 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 9
-  %45 = load i16, ptr %44, align 2, !tbaa !22
-  %46 = tail call double @timecent2second(i16 noundef signext %45)
-  %47 = fmul double %46, 4.410000e+04
-  %48 = fptosi double %47 to i32
-  %49 = sitofp i32 %48 to float
-  %50 = fdiv float -9.600000e+02, %49
-  %51 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 1
-  store float %50, ptr %51, align 4, !tbaa !17
-  %52 = tail call double @timecent2second(i16 noundef signext %45)
-  %53 = fmul double %52, 4.410000e+04
-  %54 = fptosi double %53 to i32
-  %55 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 3
-  store i32 %54, ptr %55, align 4, !tbaa !16
-  br label %58
+20:                                               ; preds = %15
+  %21 = tail call double @timecent2second(i16 noundef signext %18)
+  %22 = fmul double %21, 4.410000e+04
+  %23 = fptosi double %22 to i32
+  %24 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 3
+  store i32 %23, ptr %24, align 4, !tbaa !11
+  store float -9.600000e+02, ptr %0, align 4, !tbaa !17
+  %25 = sitofp i32 %23 to float
+  %26 = fdiv float 9.600000e+02, %25
+  %27 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 1
+  store float %26, ptr %27, align 4, !tbaa !16
+  br label %96
 
-56:                                               ; preds = %1
-  store i32 6, ptr %2, align 4, !tbaa !11
-  %57 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 3
-  store i32 65535, ptr %57, align 4, !tbaa !16
-  br label %58
+28:                                               ; preds = %15, %1
+  %29 = phi i32 [ 3, %1 ], [ %16, %15 ]
+  store i32 %29, ptr %2, align 4, !tbaa !15
+  store float 0.000000e+00, ptr %0, align 4, !tbaa !17
+  %30 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 6
+  %31 = load i16, ptr %30, align 4, !tbaa !24
+  %32 = tail call double @timecent2second(i16 noundef signext %31)
+  %33 = fmul double %32, 4.410000e+04
+  %34 = fptosi double %33 to i32
+  %35 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 3
+  store i32 %34, ptr %35, align 4, !tbaa !11
+  %36 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 1
+  store float 0.000000e+00, ptr %36, align 4, !tbaa !16
+  br label %96
 
-58:                                               ; preds = %1, %56, %43, %30, %22, %12, %4
+37:                                               ; preds = %1
+  %38 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 7
+  %39 = load i16, ptr %38, align 2, !tbaa !25
+  %40 = tail call double @timecent2second(i16 noundef signext %39)
+  %41 = fmul double %40, 4.410000e+04
+  %42 = fptosi double %41 to i32
+  %43 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 3
+  store i32 %42, ptr %43, align 4, !tbaa !11
+  %44 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 8
+  %45 = load i16, ptr %44, align 4, !tbaa !26
+  %46 = sdiv i16 %45, 5
+  %47 = sext i16 %46 to i32
+  %48 = getelementptr inbounds [1441 x double], ptr @p10over200, i32 0, i32 %47
+  %49 = load double, ptr %48, align 8, !tbaa !2
+  %50 = sitofp i32 %42 to double
+  %51 = fdiv double %49, %50
+  %52 = fptrunc double %51 to float
+  %53 = fmul float %52, 2.000000e+02
+  %54 = fptosi float %53 to i32
+  %55 = getelementptr inbounds [1441 x double], ptr @p10over200, i32 0, i32 %54
+  %56 = load double, ptr %55, align 8, !tbaa !2
+  %57 = fptrunc double %56 to float
+  %58 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 1
+  store float %57, ptr %58, align 4, !tbaa !16
+  br label %96
+
+59:                                               ; preds = %1
+  store i32 5, ptr %2, align 4, !tbaa !15
+  %60 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 9
+  %61 = load i16, ptr %60, align 2, !tbaa !27
+  %62 = tail call double @timecent2second(i16 noundef signext %61)
+  %63 = fmul double %62, 4.410000e+04
+  %64 = fptosi double %63 to i32
+  %65 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 3
+  store i32 %64, ptr %65, align 4, !tbaa !11
+  %66 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 1
+  store float 0.000000e+00, ptr %66, align 4, !tbaa !16
+  br label %96
+
+67:                                               ; preds = %1
+  %68 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 9
+  %69 = load i16, ptr %68, align 2, !tbaa !27
+  %70 = icmp slt i16 %69, -11999
+  br i1 %70, label %77, label %71
+
+71:                                               ; preds = %67
+  %72 = tail call double @timecent2second(i16 noundef signext %69)
+  %73 = fmul double %72, 4.410000e+04
+  %74 = fptosi double %73 to i32
+  %75 = sitofp i32 %74 to float
+  %76 = fptosi float %75 to i32
+  br label %77
+
+77:                                               ; preds = %67, %71
+  %78 = phi i32 [ %76, %71 ], [ 441, %67 ]
+  %79 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 3
+  store i32 %78, ptr %79, align 4, !tbaa !11
+  %80 = load float, ptr %0, align 4, !tbaa !17
+  %81 = fdiv float %80, 1.000000e+03
+  %82 = fptosi float %81 to i32
+  %83 = getelementptr inbounds [1441 x double], ptr @p10over200, i32 0, i32 %82
+  %84 = load double, ptr %83, align 8, !tbaa !2
+  %85 = sitofp i32 %78 to double
+  %86 = fdiv double %84, %85
+  %87 = fptrunc double %86 to float
+  %88 = fmul float %87, 2.000000e+02
+  %89 = fptosi float %88 to i32
+  %90 = getelementptr inbounds [1441 x double], ptr @p10over200, i32 0, i32 %89
+  %91 = load double, ptr %90, align 8, !tbaa !2
+  %92 = fptrunc double %91 to float
+  %93 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 1
+  store float %92, ptr %93, align 4, !tbaa !16
+  store i32 6, ptr %2, align 4, !tbaa !15
+  br label %96
+
+94:                                               ; preds = %1
+  store i32 7, ptr %2, align 4, !tbaa !15
+  %95 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 3
+  store i32 65535, ptr %95, align 4, !tbaa !11
+  br label %96
+
+96:                                               ; preds = %1, %94, %77, %59, %37, %28, %20, %9
   ret void
 }
 
@@ -397,13 +483,13 @@ define hidden ptr @gmemcpy(ptr noundef returned writeonly %0, ptr nocapture noun
   %15 = phi i32 [ %20, %14 ], [ %12, %11 ]
   %16 = phi i32 [ %21, %14 ], [ 0, %11 ]
   %17 = getelementptr inbounds i8, ptr %1, i32 %15
-  %18 = load i8, ptr %17, align 1, !tbaa !23
+  %18 = load i8, ptr %17, align 1, !tbaa !28
   %19 = getelementptr inbounds i8, ptr %0, i32 %15
-  store i8 %18, ptr %19, align 1, !tbaa !23
+  store i8 %18, ptr %19, align 1, !tbaa !28
   %20 = add nuw nsw i32 %15, 1
   %21 = add i32 %16, 1
   %22 = icmp eq i32 %21, %7
-  br i1 %22, label %23, label %14, !llvm.loop !24
+  br i1 %22, label %23, label %14, !llvm.loop !29
 
 23:                                               ; preds = %11, %14, %3
   ret ptr %0
@@ -412,28 +498,28 @@ define hidden ptr @gmemcpy(ptr noundef returned writeonly %0, ptr nocapture noun
   %25 = phi i32 [ 0, %9 ], [ %42, %24 ]
   %26 = phi i32 [ 0, %9 ], [ %43, %24 ]
   %27 = getelementptr inbounds i8, ptr %1, i32 %25
-  %28 = load i8, ptr %27, align 1, !tbaa !23
+  %28 = load i8, ptr %27, align 1, !tbaa !28
   %29 = getelementptr inbounds i8, ptr %0, i32 %25
-  store i8 %28, ptr %29, align 1, !tbaa !23
+  store i8 %28, ptr %29, align 1, !tbaa !28
   %30 = or i32 %25, 1
   %31 = getelementptr inbounds i8, ptr %1, i32 %30
-  %32 = load i8, ptr %31, align 1, !tbaa !23
+  %32 = load i8, ptr %31, align 1, !tbaa !28
   %33 = getelementptr inbounds i8, ptr %0, i32 %30
-  store i8 %32, ptr %33, align 1, !tbaa !23
+  store i8 %32, ptr %33, align 1, !tbaa !28
   %34 = or i32 %25, 2
   %35 = getelementptr inbounds i8, ptr %1, i32 %34
-  %36 = load i8, ptr %35, align 1, !tbaa !23
+  %36 = load i8, ptr %35, align 1, !tbaa !28
   %37 = getelementptr inbounds i8, ptr %0, i32 %34
-  store i8 %36, ptr %37, align 1, !tbaa !23
+  store i8 %36, ptr %37, align 1, !tbaa !28
   %38 = or i32 %25, 3
   %39 = getelementptr inbounds i8, ptr %1, i32 %38
-  %40 = load i8, ptr %39, align 1, !tbaa !23
+  %40 = load i8, ptr %39, align 1, !tbaa !28
   %41 = getelementptr inbounds i8, ptr %0, i32 %38
-  store i8 %40, ptr %41, align 1, !tbaa !23
+  store i8 %40, ptr %41, align 1, !tbaa !28
   %42 = add nuw nsw i32 %25, 4
   %43 = add i32 %26, 4
   %44 = icmp eq i32 %43, %10
-  br i1 %44, label %11, label %24, !llvm.loop !26
+  br i1 %44, label %11, label %24, !llvm.loop !30
 }
 
 ; Function Attrs: argmemonly mustprogress nofree norecurse nosync nounwind willreturn
@@ -441,35 +527,35 @@ define hidden void @scaleTc(ptr nocapture noundef %0, i32 noundef %1) local_unna
   %3 = uitofp i32 %1 to float
   %4 = fdiv float 4.410000e+04, %3
   %5 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 5
-  %6 = load i16, ptr %5, align 2, !tbaa !19
+  %6 = load i16, ptr %5, align 2, !tbaa !23
   %7 = sitofp i16 %6 to float
   %8 = fmul float %4, %7
   %9 = fptosi float %8 to i16
-  store i16 %9, ptr %5, align 2, !tbaa !19
+  store i16 %9, ptr %5, align 2, !tbaa !23
   %10 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 4
-  %11 = load i16, ptr %10, align 4, !tbaa !18
+  %11 = load i16, ptr %10, align 4, !tbaa !22
   %12 = sitofp i16 %11 to float
   %13 = fmul float %4, %12
   %14 = fptosi float %13 to i16
-  store i16 %14, ptr %10, align 4, !tbaa !18
+  store i16 %14, ptr %10, align 4, !tbaa !22
   %15 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 7
-  %16 = load i16, ptr %15, align 2, !tbaa !21
+  %16 = load i16, ptr %15, align 2, !tbaa !25
   %17 = sitofp i16 %16 to float
   %18 = fmul float %4, %17
   %19 = fptosi float %18 to i16
-  store i16 %19, ptr %15, align 2, !tbaa !21
+  store i16 %19, ptr %15, align 2, !tbaa !25
   %20 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 9
-  %21 = load i16, ptr %20, align 2, !tbaa !22
+  %21 = load i16, ptr %20, align 2, !tbaa !27
   %22 = sitofp i16 %21 to float
   %23 = fmul float %4, %22
   %24 = fptosi float %23 to i16
-  store i16 %24, ptr %20, align 2, !tbaa !22
+  store i16 %24, ptr %20, align 2, !tbaa !27
   %25 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 6
-  %26 = load i16, ptr %25, align 4, !tbaa !20
+  %26 = load i16, ptr %25, align 4, !tbaa !24
   %27 = sitofp i16 %26 to float
   %28 = fmul float %4, %27
   %29 = fptosi float %28 to i16
-  store i16 %29, ptr %25, align 4, !tbaa !20
+  store i16 %29, ptr %25, align 4, !tbaa !24
   ret void
 }
 
@@ -477,85 +563,85 @@ define hidden void @scaleTc(ptr nocapture noundef %0, i32 noundef %1) local_unna
 define hidden void @init_vol_eg(ptr nocapture noundef %0, ptr nocapture noundef readonly %1, i32 noundef %2) local_unnamed_addr #5 {
   %4 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 33
   %5 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 4
-  %6 = load i8, ptr %4, align 1, !tbaa !23
-  store i8 %6, ptr %5, align 1, !tbaa !23
+  %6 = load i8, ptr %4, align 1, !tbaa !28
+  store i8 %6, ptr %5, align 1, !tbaa !28
   %7 = getelementptr inbounds i8, ptr %1, i32 67
-  %8 = load i8, ptr %7, align 1, !tbaa !23
+  %8 = load i8, ptr %7, align 1, !tbaa !28
   %9 = getelementptr inbounds i8, ptr %0, i32 17
-  store i8 %8, ptr %9, align 1, !tbaa !23
+  store i8 %8, ptr %9, align 1, !tbaa !28
   %10 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 34
-  %11 = load i8, ptr %10, align 1, !tbaa !23
+  %11 = load i8, ptr %10, align 1, !tbaa !28
   %12 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 5
-  store i8 %11, ptr %12, align 1, !tbaa !23
+  store i8 %11, ptr %12, align 1, !tbaa !28
   %13 = getelementptr inbounds i8, ptr %1, i32 69
-  %14 = load i8, ptr %13, align 1, !tbaa !23
+  %14 = load i8, ptr %13, align 1, !tbaa !28
   %15 = getelementptr inbounds i8, ptr %0, i32 19
-  store i8 %14, ptr %15, align 1, !tbaa !23
+  store i8 %14, ptr %15, align 1, !tbaa !28
   %16 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 35
-  %17 = load i8, ptr %16, align 1, !tbaa !23
+  %17 = load i8, ptr %16, align 1, !tbaa !28
   %18 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 6
-  store i8 %17, ptr %18, align 1, !tbaa !23
+  store i8 %17, ptr %18, align 1, !tbaa !28
   %19 = getelementptr inbounds i8, ptr %1, i32 71
-  %20 = load i8, ptr %19, align 1, !tbaa !23
+  %20 = load i8, ptr %19, align 1, !tbaa !28
   %21 = getelementptr inbounds i8, ptr %0, i32 21
-  store i8 %20, ptr %21, align 1, !tbaa !23
+  store i8 %20, ptr %21, align 1, !tbaa !28
   %22 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 36
-  %23 = load i8, ptr %22, align 1, !tbaa !23
+  %23 = load i8, ptr %22, align 1, !tbaa !28
   %24 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 7
-  store i8 %23, ptr %24, align 1, !tbaa !23
+  store i8 %23, ptr %24, align 1, !tbaa !28
   %25 = getelementptr inbounds i8, ptr %1, i32 73
-  %26 = load i8, ptr %25, align 1, !tbaa !23
+  %26 = load i8, ptr %25, align 1, !tbaa !28
   %27 = getelementptr inbounds i8, ptr %0, i32 23
-  store i8 %26, ptr %27, align 1, !tbaa !23
+  store i8 %26, ptr %27, align 1, !tbaa !28
   %28 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 37
-  %29 = load i8, ptr %28, align 1, !tbaa !23
+  %29 = load i8, ptr %28, align 1, !tbaa !28
   %30 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 8
-  store i8 %29, ptr %30, align 1, !tbaa !23
+  store i8 %29, ptr %30, align 1, !tbaa !28
   %31 = getelementptr inbounds i8, ptr %1, i32 75
-  %32 = load i8, ptr %31, align 1, !tbaa !23
+  %32 = load i8, ptr %31, align 1, !tbaa !28
   %33 = getelementptr inbounds i8, ptr %0, i32 25
-  store i8 %32, ptr %33, align 1, !tbaa !23
+  store i8 %32, ptr %33, align 1, !tbaa !28
   %34 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 38
-  %35 = load i8, ptr %34, align 1, !tbaa !23
+  %35 = load i8, ptr %34, align 1, !tbaa !28
   %36 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 9
-  store i8 %35, ptr %36, align 1, !tbaa !23
+  store i8 %35, ptr %36, align 1, !tbaa !28
   %37 = getelementptr inbounds i8, ptr %1, i32 77
-  %38 = load i8, ptr %37, align 1, !tbaa !23
+  %38 = load i8, ptr %37, align 1, !tbaa !28
   %39 = getelementptr inbounds i8, ptr %0, i32 27
-  store i8 %38, ptr %39, align 1, !tbaa !23
+  store i8 %38, ptr %39, align 1, !tbaa !28
   %40 = uitofp i32 %2 to float
   %41 = fdiv float 4.410000e+04, %40
   %42 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 5
-  %43 = load i16, ptr %42, align 2, !tbaa !19
+  %43 = load i16, ptr %42, align 2, !tbaa !23
   %44 = sitofp i16 %43 to float
   %45 = fmul float %41, %44
   %46 = fptosi float %45 to i16
-  store i16 %46, ptr %42, align 2, !tbaa !19
-  %47 = load i16, ptr %5, align 4, !tbaa !18
+  store i16 %46, ptr %42, align 2, !tbaa !23
+  %47 = load i16, ptr %5, align 4, !tbaa !22
   %48 = sitofp i16 %47 to float
   %49 = fmul float %41, %48
   %50 = fptosi float %49 to i16
-  store i16 %50, ptr %5, align 4, !tbaa !18
+  store i16 %50, ptr %5, align 4, !tbaa !22
   %51 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 7
-  %52 = load i16, ptr %51, align 2, !tbaa !21
+  %52 = load i16, ptr %51, align 2, !tbaa !25
   %53 = sitofp i16 %52 to float
   %54 = fmul float %41, %53
   %55 = fptosi float %54 to i16
-  store i16 %55, ptr %51, align 2, !tbaa !21
+  store i16 %55, ptr %51, align 2, !tbaa !25
   %56 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 9
-  %57 = load i16, ptr %56, align 2, !tbaa !22
+  %57 = load i16, ptr %56, align 2, !tbaa !27
   %58 = sitofp i16 %57 to float
   %59 = fmul float %41, %58
   %60 = fptosi float %59 to i16
-  store i16 %60, ptr %56, align 2, !tbaa !22
+  store i16 %60, ptr %56, align 2, !tbaa !27
   %61 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 6
-  %62 = load i16, ptr %61, align 4, !tbaa !20
+  %62 = load i16, ptr %61, align 4, !tbaa !24
   %63 = sitofp i16 %62 to float
   %64 = fmul float %41, %63
   %65 = fptosi float %64 to i16
-  store i16 %65, ptr %61, align 4, !tbaa !20
+  store i16 %65, ptr %61, align 4, !tbaa !24
   %66 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 2
-  store i32 0, ptr %66, align 4, !tbaa !11
+  store i32 0, ptr %66, align 4, !tbaa !15
   tail call void @advanceStage(ptr noundef nonnull %0)
   ret void
 }
@@ -564,54 +650,54 @@ define hidden void @init_vol_eg(ptr nocapture noundef %0, ptr nocapture noundef 
 define hidden void @init_mod_eg(ptr nocapture noundef %0, ptr nocapture noundef readonly %1, i32 %2) local_unnamed_addr #5 {
   %4 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 25
   %5 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 4
-  %6 = load i8, ptr %4, align 1, !tbaa !23
-  store i8 %6, ptr %5, align 1, !tbaa !23
+  %6 = load i8, ptr %4, align 1, !tbaa !28
+  store i8 %6, ptr %5, align 1, !tbaa !28
   %7 = getelementptr inbounds i8, ptr %1, i32 51
-  %8 = load i8, ptr %7, align 1, !tbaa !23
+  %8 = load i8, ptr %7, align 1, !tbaa !28
   %9 = getelementptr inbounds i8, ptr %0, i32 17
-  store i8 %8, ptr %9, align 1, !tbaa !23
+  store i8 %8, ptr %9, align 1, !tbaa !28
   %10 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 26
-  %11 = load i8, ptr %10, align 1, !tbaa !23
+  %11 = load i8, ptr %10, align 1, !tbaa !28
   %12 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 5
-  store i8 %11, ptr %12, align 1, !tbaa !23
+  store i8 %11, ptr %12, align 1, !tbaa !28
   %13 = getelementptr inbounds i8, ptr %1, i32 53
-  %14 = load i8, ptr %13, align 1, !tbaa !23
+  %14 = load i8, ptr %13, align 1, !tbaa !28
   %15 = getelementptr inbounds i8, ptr %0, i32 19
-  store i8 %14, ptr %15, align 1, !tbaa !23
+  store i8 %14, ptr %15, align 1, !tbaa !28
   %16 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 27
-  %17 = load i8, ptr %16, align 1, !tbaa !23
+  %17 = load i8, ptr %16, align 1, !tbaa !28
   %18 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 6
-  store i8 %17, ptr %18, align 1, !tbaa !23
+  store i8 %17, ptr %18, align 1, !tbaa !28
   %19 = getelementptr inbounds i8, ptr %1, i32 55
-  %20 = load i8, ptr %19, align 1, !tbaa !23
+  %20 = load i8, ptr %19, align 1, !tbaa !28
   %21 = getelementptr inbounds i8, ptr %0, i32 21
-  store i8 %20, ptr %21, align 1, !tbaa !23
+  store i8 %20, ptr %21, align 1, !tbaa !28
   %22 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 28
-  %23 = load i8, ptr %22, align 1, !tbaa !23
+  %23 = load i8, ptr %22, align 1, !tbaa !28
   %24 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 7
-  store i8 %23, ptr %24, align 1, !tbaa !23
+  store i8 %23, ptr %24, align 1, !tbaa !28
   %25 = getelementptr inbounds i8, ptr %1, i32 57
-  %26 = load i8, ptr %25, align 1, !tbaa !23
+  %26 = load i8, ptr %25, align 1, !tbaa !28
   %27 = getelementptr inbounds i8, ptr %0, i32 23
-  store i8 %26, ptr %27, align 1, !tbaa !23
+  store i8 %26, ptr %27, align 1, !tbaa !28
   %28 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 29
-  %29 = load i8, ptr %28, align 1, !tbaa !23
+  %29 = load i8, ptr %28, align 1, !tbaa !28
   %30 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 8
-  store i8 %29, ptr %30, align 1, !tbaa !23
+  store i8 %29, ptr %30, align 1, !tbaa !28
   %31 = getelementptr inbounds i8, ptr %1, i32 59
-  %32 = load i8, ptr %31, align 1, !tbaa !23
+  %32 = load i8, ptr %31, align 1, !tbaa !28
   %33 = getelementptr inbounds i8, ptr %0, i32 25
-  store i8 %32, ptr %33, align 1, !tbaa !23
+  store i8 %32, ptr %33, align 1, !tbaa !28
   %34 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 30
-  %35 = load i8, ptr %34, align 1, !tbaa !23
+  %35 = load i8, ptr %34, align 1, !tbaa !28
   %36 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 9
-  store i8 %35, ptr %36, align 1, !tbaa !23
+  store i8 %35, ptr %36, align 1, !tbaa !28
   %37 = getelementptr inbounds i8, ptr %1, i32 61
-  %38 = load i8, ptr %37, align 1, !tbaa !23
+  %38 = load i8, ptr %37, align 1, !tbaa !28
   %39 = getelementptr inbounds i8, ptr %0, i32 27
-  store i8 %38, ptr %39, align 1, !tbaa !23
+  store i8 %38, ptr %39, align 1, !tbaa !28
   %40 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 2
-  store i32 0, ptr %40, align 4, !tbaa !11
+  store i32 0, ptr %40, align 4, !tbaa !15
   tail call void @advanceStage(ptr noundef nonnull %0)
   ret void
 }
@@ -620,9 +706,9 @@ define hidden void @init_mod_eg(ptr nocapture noundef %0, ptr nocapture noundef 
 define hidden void @_eg_set_stage(ptr nocapture noundef %0, i32 noundef %1) local_unnamed_addr #5 {
   %3 = add nsw i32 %1, -1
   %4 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 2
-  store i32 %3, ptr %4, align 4, !tbaa !11
+  store i32 %3, ptr %4, align 4, !tbaa !15
   %5 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 3
-  store i32 0, ptr %5, align 4, !tbaa !16
+  store i32 0, ptr %5, align 4, !tbaa !11
   tail call void @advanceStage(ptr noundef %0)
   ret void
 }
@@ -630,9 +716,9 @@ define hidden void @_eg_set_stage(ptr nocapture noundef %0, i32 noundef %1) loca
 ; Function Attrs: nofree nosync nounwind
 define hidden void @_eg_release(ptr nocapture noundef %0) local_unnamed_addr #5 {
   %2 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 2
-  store i32 4, ptr %2, align 4, !tbaa !11
+  store i32 4, ptr %2, align 4, !tbaa !15
   %3 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 3
-  store i32 0, ptr %3, align 4, !tbaa !16
+  store i32 0, ptr %3, align 4, !tbaa !11
   tail call void @advanceStage(ptr noundef %0)
   ret void
 }
@@ -642,38 +728,43 @@ define hidden noalias ptr @get_available_spinner(i32 noundef %0) local_unnamed_a
   ret ptr null
 }
 
-; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn writeonly
+; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn
 define hidden nonnull ptr @newSpinner(i32 noundef %0) local_unnamed_addr #9 {
   %2 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %0
   %3 = shl nsw i32 %0, 8
   %4 = getelementptr inbounds [16384 x float], ptr @outputs, i32 0, i32 %3
   %5 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %0, i32 1
-  store ptr %4, ptr %5, align 4, !tbaa !28
-  store ptr @silence, ptr %2, align 8, !tbaa !31
+  store ptr %4, ptr %5, align 4, !tbaa !31
+  store ptr @silence, ptr %2, align 8, !tbaa !34
   %6 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %0, i32 5
-  store i32 36, ptr %6, align 4, !tbaa !32
+  store i32 36, ptr %6, align 4, !tbaa !35
   %7 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %0, i32 4
-  store i32 4, ptr %7, align 8, !tbaa !33
+  store i32 4, ptr %7, align 8, !tbaa !36
   %8 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %0, i32 2
-  store float 0.000000e+00, ptr %8, align 8, !tbaa !34
+  store float 0.000000e+00, ptr %8, align 8, !tbaa !37
   %9 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %0, i32 3
-  store i32 0, ptr %9, align 4, !tbaa !35
+  store i32 0, ptr %9, align 4, !tbaa !38
   %10 = shl nsw i32 %0, 1
   %11 = getelementptr inbounds [128 x %struct.EG], ptr @eg, i32 0, i32 %10
   %12 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %0, i32 10
-  store ptr %11, ptr %12, align 8, !tbaa !36
+  store ptr %11, ptr %12, align 8, !tbaa !39
   %13 = or i32 %10, 1
   %14 = getelementptr inbounds [128 x %struct.EG], ptr @eg, i32 0, i32 %13
   %15 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %0, i32 11
-  store ptr %14, ptr %15, align 4, !tbaa !37
+  store ptr %14, ptr %15, align 4, !tbaa !40
   %16 = getelementptr inbounds [128 x %struct.LFO], ptr @lfos, i32 0, i32 %10
   %17 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %0, i32 12
-  store ptr %16, ptr %17, align 8, !tbaa !38
+  store ptr %16, ptr %17, align 8, !tbaa !41
   %18 = getelementptr inbounds [128 x %struct.LFO], ptr @lfos, i32 0, i32 %13
   %19 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %0, i32 13
-  store ptr %18, ptr %19, align 4, !tbaa !39
-  %20 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %0, i32 14
-  store i32 %0, ptr %20, align 8, !tbaa !40
+  store ptr %18, ptr %19, align 4, !tbaa !42
+  store float -9.600000e+02, ptr %11, align 16, !tbaa !17
+  %20 = getelementptr inbounds [128 x %struct.EG], ptr @eg, i32 0, i32 %10, i32 2
+  store i32 0, ptr %20, align 8, !tbaa !15
+  %21 = getelementptr inbounds [128 x %struct.EG], ptr @eg, i32 0, i32 %10, i32 1
+  store float 0.000000e+00, ptr %21, align 4, !tbaa !16
+  %22 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %0, i32 14
+  store i32 %0, ptr %22, align 8, !tbaa !43
   ret ptr %2
 }
 
@@ -686,125 +777,130 @@ define hidden void @gm_reset() local_unnamed_addr #10 {
   %3 = shl nuw nsw i32 %2, 4
   %4 = or i32 %3, 7
   %5 = getelementptr inbounds [2048 x i8], ptr @midi_cc_vals, i32 0, i32 %4
-  store i8 100, ptr %5, align 1, !tbaa !23
+  store i8 100, ptr %5, align 1, !tbaa !28
   %6 = or i32 %3, 10
   %7 = getelementptr inbounds [2048 x i8], ptr @midi_cc_vals, i32 0, i32 %6
-  store i8 64, ptr %7, align 2, !tbaa !23
+  store i8 64, ptr %7, align 2, !tbaa !28
   %8 = or i32 %3, 11
   %9 = getelementptr inbounds [2048 x i8], ptr @midi_cc_vals, i32 0, i32 %8
-  store i8 127, ptr %9, align 1, !tbaa !23
+  store i8 127, ptr %9, align 1, !tbaa !28
   %10 = shl i32 %2, 4
   %11 = or i32 %10, 23
   %12 = getelementptr inbounds [2048 x i8], ptr @midi_cc_vals, i32 0, i32 %11
-  store i8 100, ptr %12, align 1, !tbaa !23
+  store i8 100, ptr %12, align 1, !tbaa !28
   %13 = or i32 %10, 26
   %14 = getelementptr inbounds [2048 x i8], ptr @midi_cc_vals, i32 0, i32 %13
-  store i8 64, ptr %14, align 2, !tbaa !23
+  store i8 64, ptr %14, align 2, !tbaa !28
   %15 = or i32 %10, 27
   %16 = getelementptr inbounds [2048 x i8], ptr @midi_cc_vals, i32 0, i32 %15
-  store i8 127, ptr %16, align 1, !tbaa !23
+  store i8 127, ptr %16, align 1, !tbaa !28
   %17 = add nuw nsw i32 %2, 2
   %18 = icmp eq i32 %17, 128
-  br i1 %18, label %20, label %1, !llvm.loop !41
+  br i1 %18, label %20, label %1, !llvm.loop !44
 
 19:                                               ; preds = %20
   ret void
 
 20:                                               ; preds = %1, %20
-  %21 = phi i32 [ %41, %20 ], [ 0, %1 ]
+  %21 = phi i32 [ %43, %20 ], [ 0, %1 ]
   %22 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %21
   %23 = shl nuw nsw i32 %21, 8
   %24 = getelementptr inbounds [16384 x float], ptr @outputs, i32 0, i32 %23
   %25 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %21, i32 1
-  store ptr %24, ptr %25, align 4, !tbaa !28
-  store ptr @silence, ptr %22, align 8, !tbaa !31
+  store ptr %24, ptr %25, align 4, !tbaa !31
+  store ptr @silence, ptr %22, align 8, !tbaa !34
   %26 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %21, i32 5
-  store i32 36, ptr %26, align 4, !tbaa !32
+  store i32 36, ptr %26, align 4, !tbaa !35
   %27 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %21, i32 4
-  store i32 4, ptr %27, align 8, !tbaa !33
+  store i32 4, ptr %27, align 8, !tbaa !36
   %28 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %21, i32 2
-  store float 0.000000e+00, ptr %28, align 8, !tbaa !34
+  store float 0.000000e+00, ptr %28, align 8, !tbaa !37
   %29 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %21, i32 3
-  store i32 0, ptr %29, align 4, !tbaa !35
+  store i32 0, ptr %29, align 4, !tbaa !38
   %30 = shl nuw nsw i32 %21, 1
   %31 = getelementptr inbounds [128 x %struct.EG], ptr @eg, i32 0, i32 %30
   %32 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %21, i32 10
-  store ptr %31, ptr %32, align 8, !tbaa !36
+  store ptr %31, ptr %32, align 8, !tbaa !39
   %33 = or i32 %30, 1
   %34 = getelementptr inbounds [128 x %struct.EG], ptr @eg, i32 0, i32 %33
   %35 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %21, i32 11
-  store ptr %34, ptr %35, align 4, !tbaa !37
+  store ptr %34, ptr %35, align 4, !tbaa !40
   %36 = getelementptr inbounds [128 x %struct.LFO], ptr @lfos, i32 0, i32 %30
   %37 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %21, i32 12
-  store ptr %36, ptr %37, align 8, !tbaa !38
+  store ptr %36, ptr %37, align 8, !tbaa !41
   %38 = getelementptr inbounds [128 x %struct.LFO], ptr @lfos, i32 0, i32 %33
   %39 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %21, i32 13
-  store ptr %38, ptr %39, align 4, !tbaa !39
-  %40 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %21, i32 14
-  store i32 %21, ptr %40, align 8, !tbaa !40
-  %41 = add nuw nsw i32 %21, 1
-  %42 = icmp eq i32 %41, 64
-  br i1 %42, label %19, label %20, !llvm.loop !42
+  store ptr %38, ptr %39, align 4, !tbaa !42
+  store float -9.600000e+02, ptr %31, align 16, !tbaa !17
+  %40 = getelementptr inbounds [128 x %struct.EG], ptr @eg, i32 0, i32 %30, i32 2
+  store i32 0, ptr %40, align 8, !tbaa !15
+  %41 = getelementptr inbounds [128 x %struct.EG], ptr @eg, i32 0, i32 %30, i32 1
+  store float 0.000000e+00, ptr %41, align 4, !tbaa !16
+  %42 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %21, i32 14
+  store i32 %21, ptr %42, align 8, !tbaa !43
+  %43 = add nuw nsw i32 %21, 1
+  %44 = icmp eq i32 %43, 64
+  br i1 %44, label %19, label %20, !llvm.loop !45
 }
 
 ; Function Attrs: nofree nosync nounwind
 define hidden void @eg_release(ptr nocapture noundef readonly %0) local_unnamed_addr #5 {
   %2 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 10
-  %3 = load ptr, ptr %2, align 4, !tbaa !36
+  %3 = load ptr, ptr %2, align 4, !tbaa !39
   %4 = getelementptr inbounds %struct.EG, ptr %3, i32 0, i32 2
-  store i32 4, ptr %4, align 4, !tbaa !11
+  store i32 4, ptr %4, align 4, !tbaa !15
   %5 = getelementptr inbounds %struct.EG, ptr %3, i32 0, i32 3
-  store i32 0, ptr %5, align 4, !tbaa !16
+  store i32 0, ptr %5, align 4, !tbaa !11
   tail call void @advanceStage(ptr noundef %3)
   %6 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 11
-  %7 = load ptr, ptr %6, align 4, !tbaa !37
+  %7 = load ptr, ptr %6, align 4, !tbaa !40
   %8 = getelementptr inbounds %struct.EG, ptr %7, i32 0, i32 2
-  store i32 4, ptr %8, align 4, !tbaa !11
+  store i32 4, ptr %8, align 4, !tbaa !15
   %9 = getelementptr inbounds %struct.EG, ptr %7, i32 0, i32 3
-  store i32 0, ptr %9, align 4, !tbaa !16
+  store i32 0, ptr %9, align 4, !tbaa !11
   tail call void @advanceStage(ptr noundef %7)
   ret void
 }
 
 ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn
-define hidden void @reset(ptr nocapture noundef %0) local_unnamed_addr #11 {
+define hidden void @reset(ptr nocapture noundef %0) local_unnamed_addr #9 {
   %2 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 3
-  store i32 0, ptr %2, align 4, !tbaa !35
+  store i32 0, ptr %2, align 4, !tbaa !38
   %3 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 2
-  store float 0.000000e+00, ptr %3, align 4, !tbaa !34
+  store float 0.000000e+00, ptr %3, align 4, !tbaa !37
   %4 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 12
-  %5 = load ptr, ptr %4, align 4, !tbaa !38
+  %5 = load ptr, ptr %4, align 4, !tbaa !41
   store i16 0, ptr %5, align 2, !tbaa !9
   %6 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 13
-  %7 = load ptr, ptr %6, align 4, !tbaa !39
+  %7 = load ptr, ptr %6, align 4, !tbaa !42
   store i16 0, ptr %7, align 2, !tbaa !9
   ret void
 }
 
 ; Function Attrs: mustprogress nofree norecurse nosync nounwind readnone willreturn
-define hidden void @set_zone(ptr nocapture noundef %0, ptr nocapture noundef %1, i32 noundef %2) local_unnamed_addr #12 {
+define hidden void @set_zone(ptr nocapture noundef %0, ptr nocapture noundef %1, i32 noundef %2) local_unnamed_addr #11 {
   ret void
 }
 
 ; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn writeonly
-define hidden void @set_midi_cc_val(i32 noundef %0, i32 noundef %1, i32 noundef %2) local_unnamed_addr #9 {
+define hidden void @set_midi_cc_val(i32 noundef %0, i32 noundef %1, i32 noundef %2) local_unnamed_addr #12 {
   %4 = trunc i32 %2 to i8
   %5 = and i8 %4, 127
   %6 = shl nsw i32 %0, 7
   %7 = add nsw i32 %6, %1
   %8 = getelementptr inbounds [2048 x i8], ptr @midi_cc_vals, i32 0, i32 %7
-  store i8 %5, ptr %8, align 1, !tbaa !23
+  store i8 %5, ptr %8, align 1, !tbaa !28
   ret void
 }
 
 ; Function Attrs: mustprogress nofree norecurse nosync nounwind readnone willreturn
-define hidden nonnull ptr @spRef(i32 noundef %0) local_unnamed_addr #12 {
+define hidden nonnull ptr @spRef(i32 noundef %0) local_unnamed_addr #11 {
   %2 = getelementptr inbounds [64 x %struct.spinner], ptr @sps, i32 0, i32 %0
   ret ptr %2
 }
 
 ; Function Attrs: mustprogress nofree norecurse nosync nounwind readnone willreturn
-define hidden nonnull ptr @pcmRef(i32 noundef %0) local_unnamed_addr #12 {
+define hidden nonnull ptr @pcmRef(i32 noundef %0) local_unnamed_addr #11 {
   %2 = getelementptr inbounds [2222 x %struct.pcm_t], ptr @pcms, i32 0, i32 %0
   ret ptr %2
 }
@@ -813,137 +909,137 @@ define hidden nonnull ptr @pcmRef(i32 noundef %0) local_unnamed_addr #12 {
 define hidden void @lfo_effects(ptr noalias nocapture writeonly sret(%struct.LFOEffects) align 4 %0, float noundef %1, ptr nocapture noundef readonly %2) local_unnamed_addr #7 {
   %4 = fsub float 1.000000e+00, %1
   %5 = getelementptr inbounds %struct.zone_t, ptr %2, i32 0, i32 13
-  %6 = load i16, ptr %5, align 2, !tbaa !43
+  %6 = load i16, ptr %5, align 2, !tbaa !46
   %7 = sitofp i16 %6 to float
   %8 = fmul float %4, %7
   %9 = getelementptr inbounds %struct.zone_t, ptr %2, i32 0, i32 7
-  %10 = load i16, ptr %9, align 2, !tbaa !46
+  %10 = load i16, ptr %9, align 2, !tbaa !49
   %11 = sitofp i16 %10 to float
   %12 = fmul float %11, %1
   %13 = getelementptr inbounds %struct.zone_t, ptr %2, i32 0, i32 11
-  %14 = load i16, ptr %13, align 2, !tbaa !47
+  %14 = load i16, ptr %13, align 2, !tbaa !50
   %15 = sitofp i16 %14 to float
   %16 = fmul float %15, %1
   %17 = fmul float %16, 0x40219999A0000000
-  store float %8, ptr %0, align 4, !tbaa !48
+  store float %8, ptr %0, align 4, !tbaa !51
   %18 = getelementptr inbounds %struct.LFOEffects, ptr %0, i32 0, i32 1
-  store float %12, ptr %18, align 4, !tbaa !50
+  store float %12, ptr %18, align 4, !tbaa !53
   %19 = getelementptr inbounds %struct.LFOEffects, ptr %0, i32 0, i32 2
-  store float %17, ptr %19, align 4, !tbaa !51
+  store float %17, ptr %19, align 4, !tbaa !54
   ret void
 }
 
 ; Function Attrs: nofree nosync nounwind
 define hidden float @trigger_attack(ptr nocapture noundef %0, ptr noundef %1, float noundef %2, i32 noundef %3) local_unnamed_addr #5 {
   %5 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 53
-  %6 = load i16, ptr %5, align 2, !tbaa !52
+  %6 = load i16, ptr %5, align 2, !tbaa !55
   %7 = sext i16 %6 to i32
   %8 = getelementptr inbounds %struct.pcm_t, ptr @pcms, i32 %7
   %9 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 3
-  %10 = load i32, ptr %8, align 8, !tbaa !53
+  %10 = load i32, ptr %8, align 8, !tbaa !56
   %11 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 2
-  %12 = load i16, ptr %11, align 2, !tbaa !55
+  %12 = load i16, ptr %11, align 2, !tbaa !58
   %13 = zext i16 %12 to i32
   %14 = add i32 %10, %13
   %15 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 45
-  %16 = load i16, ptr %15, align 2, !tbaa !56
+  %16 = load i16, ptr %15, align 2, !tbaa !59
   %17 = zext i16 %16 to i32
   %18 = shl nuw nsw i32 %17, 15
   %19 = add i32 %14, %18
   %20 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 4
-  store i32 %19, ptr %20, align 4, !tbaa !33
+  store i32 %19, ptr %20, align 4, !tbaa !36
   %21 = getelementptr inbounds %struct.pcm_t, ptr @pcms, i32 %7, i32 1
-  %22 = load i32, ptr %21, align 4, !tbaa !57
+  %22 = load i32, ptr %21, align 4, !tbaa !60
   %23 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 1
-  %24 = load i16, ptr %23, align 2, !tbaa !58
+  %24 = load i16, ptr %23, align 2, !tbaa !61
   %25 = zext i16 %24 to i32
   %26 = add i32 %22, %25
   %27 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 50
-  %28 = load i16, ptr %27, align 2, !tbaa !59
+  %28 = load i16, ptr %27, align 2, !tbaa !62
   %29 = sext i16 %28 to i32
   %30 = shl nsw i32 %29, 15
   %31 = add i32 %26, %30
   %32 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 5
-  store i32 %31, ptr %32, align 4, !tbaa !32
+  store i32 %31, ptr %32, align 4, !tbaa !35
   %33 = getelementptr inbounds %struct.pcm_t, ptr @pcms, i32 %7, i32 5
-  %34 = load ptr, ptr %33, align 4, !tbaa !60
-  store ptr %34, ptr %0, align 4, !tbaa !31
-  store i32 0, ptr %9, align 4, !tbaa !35
+  %34 = load ptr, ptr %33, align 4, !tbaa !63
+  store ptr %34, ptr %0, align 4, !tbaa !34
+  store i32 0, ptr %9, align 4, !tbaa !38
   %35 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 2
-  store float 0.000000e+00, ptr %35, align 4, !tbaa !34
+  store float 0.000000e+00, ptr %35, align 4, !tbaa !37
   %36 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 6
-  store float %2, ptr %36, align 4, !tbaa !61
+  store float %2, ptr %36, align 4, !tbaa !64
   %37 = and i32 %3, 127
   %38 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 16
-  store i32 %37, ptr %38, align 4, !tbaa !62
+  store i32 %37, ptr %38, align 4, !tbaa !65
   %39 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 9
-  store ptr %1, ptr %39, align 4, !tbaa !63
+  store ptr %1, ptr %39, align 4, !tbaa !66
   %40 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 11
-  %41 = load ptr, ptr %40, align 4, !tbaa !37
+  %41 = load ptr, ptr %40, align 4, !tbaa !40
   %42 = getelementptr inbounds %struct.pcm_t, ptr @pcms, i32 %7, i32 3
   %43 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 25
   %44 = getelementptr inbounds %struct.EG, ptr %41, i32 0, i32 4
-  %45 = load i8, ptr %43, align 1, !tbaa !23
-  store i8 %45, ptr %44, align 1, !tbaa !23
+  %45 = load i8, ptr %43, align 1, !tbaa !28
+  store i8 %45, ptr %44, align 1, !tbaa !28
   %46 = getelementptr inbounds i8, ptr %1, i32 51
-  %47 = load i8, ptr %46, align 1, !tbaa !23
+  %47 = load i8, ptr %46, align 1, !tbaa !28
   %48 = getelementptr inbounds i8, ptr %41, i32 17
-  store i8 %47, ptr %48, align 1, !tbaa !23
+  store i8 %47, ptr %48, align 1, !tbaa !28
   %49 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 26
-  %50 = load i8, ptr %49, align 1, !tbaa !23
+  %50 = load i8, ptr %49, align 1, !tbaa !28
   %51 = getelementptr inbounds %struct.EG, ptr %41, i32 0, i32 5
-  store i8 %50, ptr %51, align 1, !tbaa !23
+  store i8 %50, ptr %51, align 1, !tbaa !28
   %52 = getelementptr inbounds i8, ptr %1, i32 53
-  %53 = load i8, ptr %52, align 1, !tbaa !23
+  %53 = load i8, ptr %52, align 1, !tbaa !28
   %54 = getelementptr inbounds i8, ptr %41, i32 19
-  store i8 %53, ptr %54, align 1, !tbaa !23
+  store i8 %53, ptr %54, align 1, !tbaa !28
   %55 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 27
-  %56 = load i8, ptr %55, align 1, !tbaa !23
+  %56 = load i8, ptr %55, align 1, !tbaa !28
   %57 = getelementptr inbounds %struct.EG, ptr %41, i32 0, i32 6
-  store i8 %56, ptr %57, align 1, !tbaa !23
+  store i8 %56, ptr %57, align 1, !tbaa !28
   %58 = getelementptr inbounds i8, ptr %1, i32 55
-  %59 = load i8, ptr %58, align 1, !tbaa !23
+  %59 = load i8, ptr %58, align 1, !tbaa !28
   %60 = getelementptr inbounds i8, ptr %41, i32 21
-  store i8 %59, ptr %60, align 1, !tbaa !23
+  store i8 %59, ptr %60, align 1, !tbaa !28
   %61 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 28
-  %62 = load i8, ptr %61, align 1, !tbaa !23
+  %62 = load i8, ptr %61, align 1, !tbaa !28
   %63 = getelementptr inbounds %struct.EG, ptr %41, i32 0, i32 7
-  store i8 %62, ptr %63, align 1, !tbaa !23
+  store i8 %62, ptr %63, align 1, !tbaa !28
   %64 = getelementptr inbounds i8, ptr %1, i32 57
-  %65 = load i8, ptr %64, align 1, !tbaa !23
+  %65 = load i8, ptr %64, align 1, !tbaa !28
   %66 = getelementptr inbounds i8, ptr %41, i32 23
-  store i8 %65, ptr %66, align 1, !tbaa !23
+  store i8 %65, ptr %66, align 1, !tbaa !28
   %67 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 29
-  %68 = load i8, ptr %67, align 1, !tbaa !23
+  %68 = load i8, ptr %67, align 1, !tbaa !28
   %69 = getelementptr inbounds %struct.EG, ptr %41, i32 0, i32 8
-  store i8 %68, ptr %69, align 1, !tbaa !23
+  store i8 %68, ptr %69, align 1, !tbaa !28
   %70 = getelementptr inbounds i8, ptr %1, i32 59
-  %71 = load i8, ptr %70, align 1, !tbaa !23
+  %71 = load i8, ptr %70, align 1, !tbaa !28
   %72 = getelementptr inbounds i8, ptr %41, i32 25
-  store i8 %71, ptr %72, align 1, !tbaa !23
+  store i8 %71, ptr %72, align 1, !tbaa !28
   %73 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 30
-  %74 = load i8, ptr %73, align 1, !tbaa !23
+  %74 = load i8, ptr %73, align 1, !tbaa !28
   %75 = getelementptr inbounds %struct.EG, ptr %41, i32 0, i32 9
-  store i8 %74, ptr %75, align 1, !tbaa !23
+  store i8 %74, ptr %75, align 1, !tbaa !28
   %76 = getelementptr inbounds i8, ptr %1, i32 61
-  %77 = load i8, ptr %76, align 1, !tbaa !23
+  %77 = load i8, ptr %76, align 1, !tbaa !28
   %78 = getelementptr inbounds i8, ptr %41, i32 27
-  store i8 %77, ptr %78, align 1, !tbaa !23
+  store i8 %77, ptr %78, align 1, !tbaa !28
   %79 = getelementptr inbounds %struct.EG, ptr %41, i32 0, i32 2
-  store i32 0, ptr %79, align 4, !tbaa !11
+  store i32 0, ptr %79, align 4, !tbaa !15
   tail call void @advanceStage(ptr noundef nonnull %41)
   %80 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 10
-  %81 = load ptr, ptr %80, align 4, !tbaa !36
-  %82 = load i32, ptr %42, align 4, !tbaa !64
+  %81 = load ptr, ptr %80, align 4, !tbaa !39
+  %82 = load i32, ptr %42, align 4, !tbaa !67
   tail call void @init_vol_eg(ptr noundef %81, ptr noundef nonnull %1, i32 noundef %82)
   %83 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 21
-  %84 = load i16, ptr %83, align 2, !tbaa !65
+  %84 = load i16, ptr %83, align 2, !tbaa !68
   %85 = tail call double @timecent2second(i16 noundef signext %84)
   %86 = fmul double %85, 4.410000e+04
   %87 = fptosi double %86 to i32
   %88 = trunc i32 %87 to i16
   %89 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 12
-  %90 = load ptr, ptr %89, align 4, !tbaa !38
+  %90 = load ptr, ptr %89, align 4, !tbaa !41
   %91 = getelementptr inbounds %struct.LFO, ptr %90, i32 0, i32 2
   store i16 %88, ptr %91, align 2, !tbaa !6
   %92 = tail call double @timecent2second(i16 noundef signext %84)
@@ -951,11 +1047,11 @@ define hidden float @trigger_attack(ptr nocapture noundef %0, ptr noundef %1, fl
   %94 = fptosi double %93 to i32
   %95 = trunc i32 %94 to i16
   %96 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 13
-  %97 = load ptr, ptr %96, align 4, !tbaa !39
+  %97 = load ptr, ptr %96, align 4, !tbaa !42
   %98 = getelementptr inbounds %struct.LFO, ptr %97, i32 0, i32 2
   store i16 %95, ptr %98, align 2, !tbaa !6
   %99 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 22
-  %100 = load i16, ptr %99, align 2, !tbaa !66
+  %100 = load i16, ptr %99, align 2, !tbaa !69
   %101 = tail call double @timecent2second(i16 noundef signext %100)
   %102 = fmul double %101, 4.410000e+04
   %103 = fptosi double %102 to i32
@@ -965,7 +1061,7 @@ define hidden float @trigger_attack(ptr nocapture noundef %0, ptr noundef %1, fl
   %107 = getelementptr inbounds %struct.LFO, ptr %90, i32 0, i32 1
   store i16 %106, ptr %107, align 2, !tbaa !10
   %108 = getelementptr inbounds %struct.zone_t, ptr %1, i32 0, i32 24
-  %109 = load i16, ptr %108, align 2, !tbaa !67
+  %109 = load i16, ptr %108, align 2, !tbaa !70
   %110 = tail call double @timecent2second(i16 noundef signext %109)
   %111 = fmul double %110, 4.410000e+04
   %112 = fptosi double %111 to i32
@@ -974,7 +1070,7 @@ define hidden float @trigger_attack(ptr nocapture noundef %0, ptr noundef %1, fl
   %115 = fptoui float %114 to i16
   %116 = getelementptr inbounds %struct.LFO, ptr %97, i32 0, i32 1
   store i16 %115, ptr %116, align 2, !tbaa !10
-  %117 = load float, ptr %36, align 4, !tbaa !61
+  %117 = load float, ptr %36, align 4, !tbaa !64
   ret float %117
 }
 
@@ -988,16 +1084,16 @@ define hidden float @lerp(float noundef %0, float noundef %1, float noundef %2) 
 ; Function Attrs: mustprogress nofree norecurse nosync nounwind readonly willreturn
 define hidden float @kRateAttenuate(ptr nocapture noundef readonly %0, i32 noundef %1) local_unnamed_addr #0 {
   %3 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 9
-  %4 = load ptr, ptr %3, align 4, !tbaa !63
+  %4 = load ptr, ptr %3, align 4, !tbaa !66
   %5 = getelementptr inbounds %struct.zone_t, ptr %4, i32 0, i32 48
-  %6 = load i16, ptr %5, align 2, !tbaa !68
+  %6 = load i16, ptr %5, align 2, !tbaa !71
   %7 = sitofp i16 %6 to float
   %8 = fmul float %7, 2.500000e-01
   %9 = fsub float 0.000000e+00, %8
   %10 = shl nsw i32 %1, 7
   %11 = or i32 %10, 7
   %12 = getelementptr inbounds [2048 x i8], ptr @midi_cc_vals, i32 0, i32 %11
-  %13 = load i8, ptr %12, align 1, !tbaa !23
+  %13 = load i8, ptr %12, align 1, !tbaa !28
   %14 = icmp slt i8 %13, 0
   br i1 %14, label %20, label %15
 
@@ -1014,16 +1110,16 @@ define hidden float @kRateAttenuate(ptr nocapture noundef readonly %0, i32 nound
   %23 = fsub double %22, %21
   %24 = fptrunc double %23 to float
   %25 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 10
-  %26 = load ptr, ptr %25, align 4, !tbaa !36
+  %26 = load ptr, ptr %25, align 4, !tbaa !39
   %27 = getelementptr inbounds %struct.EG, ptr %26, i32 0, i32 2
-  %28 = load i32, ptr %27, align 4, !tbaa !11
+  %28 = load i32, ptr %27, align 4, !tbaa !15
   %29 = icmp sgt i32 %28, 4
   br i1 %29, label %30, label %44
 
 30:                                               ; preds = %20
   %31 = or i32 %10, 11
   %32 = getelementptr inbounds [2048 x i8], ptr @midi_cc_vals, i32 0, i32 %31
-  %33 = load i8, ptr %32, align 1, !tbaa !23
+  %33 = load i8, ptr %32, align 1, !tbaa !28
   %34 = icmp slt i8 %33, 0
   br i1 %34, label %39, label %35
 
@@ -1043,7 +1139,7 @@ define hidden float @kRateAttenuate(ptr nocapture noundef readonly %0, i32 nound
 44:                                               ; preds = %39, %20
   %45 = phi float [ %43, %39 ], [ %24, %20 ]
   %46 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 16
-  %47 = load i32, ptr %46, align 4, !tbaa !62
+  %47 = load i32, ptr %46, align 4, !tbaa !65
   %48 = icmp slt i32 %47, 0
   br i1 %48, label %55, label %49
 
@@ -1068,7 +1164,7 @@ define hidden float @kRateAttenuate(ptr nocapture noundef readonly %0, i32 nound
 ; Function Attrs: nofree nosync nounwind
 define hidden void @_spinblock(ptr nocapture noundef %0, i32 noundef %1, i32 noundef %2) local_unnamed_addr #5 {
   %4 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 12
-  %5 = load ptr, ptr %4, align 4, !tbaa !38
+  %5 = load ptr, ptr %4, align 4, !tbaa !41
   %6 = getelementptr inbounds %struct.LFO, ptr %5, i32 0, i32 2
   %7 = load i16, ptr %6, align 2, !tbaa !6
   %8 = icmp ugt i16 %7, 64
@@ -1107,7 +1203,7 @@ define hidden void @_spinblock(ptr nocapture noundef %0, i32 noundef %1, i32 nou
 26:                                               ; preds = %9, %22
   %27 = phi float [ 0.000000e+00, %9 ], [ %25, %22 ]
   %28 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 13
-  %29 = load ptr, ptr %28, align 4, !tbaa !39
+  %29 = load ptr, ptr %28, align 4, !tbaa !42
   %30 = getelementptr inbounds %struct.LFO, ptr %29, i32 0, i32 2
   %31 = load i16, ptr %30, align 2, !tbaa !6
   %32 = icmp ugt i16 %31, 64
@@ -1146,28 +1242,28 @@ define hidden void @_spinblock(ptr nocapture noundef %0, i32 noundef %1, i32 nou
 50:                                               ; preds = %33, %46
   %51 = phi float [ 0.000000e+00, %33 ], [ %49, %46 ]
   %52 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 9
-  %53 = load ptr, ptr %52, align 4, !tbaa !63
+  %53 = load ptr, ptr %52, align 4, !tbaa !66
   %54 = getelementptr inbounds %struct.zone_t, ptr %53, i32 0, i32 7
-  %55 = load i16, ptr %54, align 2, !tbaa !46, !noalias !69
+  %55 = load i16, ptr %54, align 2, !tbaa !49, !noalias !72
   %56 = sitofp i16 %55 to float
   %57 = fmul float %27, %56
   %58 = fmul float %51, %56
   %59 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 3
-  %60 = load i32, ptr %59, align 4, !tbaa !35
+  %60 = load i32, ptr %59, align 4, !tbaa !38
   %61 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 2
-  %62 = load float, ptr %61, align 4, !tbaa !34
+  %62 = load float, ptr %61, align 4, !tbaa !37
   %63 = getelementptr inbounds %struct.zone_t, ptr %53, i32 0, i32 53
-  %64 = load i16, ptr %63, align 2, !tbaa !52
+  %64 = load i16, ptr %63, align 2, !tbaa !55
   %65 = sext i16 %64 to i32
   %66 = getelementptr inbounds [2222 x %struct.pcm_t], ptr @pcms, i32 0, i32 %65, i32 2
-  %67 = load i32, ptr %66, align 8, !tbaa !72
+  %67 = load i32, ptr %66, align 8, !tbaa !75
   %68 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 5
-  %69 = load i32, ptr %68, align 4, !tbaa !32
+  %69 = load i32, ptr %68, align 4, !tbaa !35
   %70 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 4
-  %71 = load i32, ptr %70, align 4, !tbaa !33
+  %71 = load i32, ptr %70, align 4, !tbaa !36
   %72 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 11
-  %73 = load ptr, ptr %72, align 4, !tbaa !37
-  %74 = load float, ptr %73, align 4, !tbaa !15
+  %73 = load ptr, ptr %72, align 4, !tbaa !40
+  %74 = load float, ptr %73, align 4, !tbaa !17
   %75 = fcmp ogt float %74, 0.000000e+00
   br i1 %75, label %82, label %76
 
@@ -1186,38 +1282,38 @@ define hidden void @_spinblock(ptr nocapture noundef %0, i32 noundef %1, i32 nou
   %84 = getelementptr inbounds [1441 x double], ptr @p10over200, i32 0, i32 %83
   %85 = load double, ptr %84, align 8, !tbaa !2
   %86 = getelementptr inbounds %struct.zone_t, ptr %53, i32 0, i32 54
-  %87 = load i16, ptr %86, align 2, !tbaa !73
+  %87 = load i16, ptr %86, align 2, !tbaa !76
   %88 = icmp eq i16 %87, 0
   %89 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 10
-  %90 = load ptr, ptr %89, align 4, !tbaa !36
+  %90 = load ptr, ptr %89, align 4, !tbaa !39
   br i1 %88, label %91, label %101
 
 91:                                               ; preds = %82
   %92 = getelementptr inbounds %struct.EG, ptr %90, i32 0, i32 2
-  %93 = load i32, ptr %92, align 4, !tbaa !11
-  %94 = icmp slt i32 %93, 5
+  %93 = load i32, ptr %92, align 4, !tbaa !15
+  %94 = icmp slt i32 %93, 6
   br i1 %94, label %111, label %95
 
 95:                                               ; preds = %91
-  %96 = load float, ptr %90, align 4, !tbaa !15
+  %96 = load float, ptr %90, align 4, !tbaa !17
   %97 = fpext float %96 to double
   %98 = getelementptr inbounds %struct.EG, ptr %90, i32 0, i32 1
-  %99 = load float, ptr %98, align 4, !tbaa !17
+  %99 = load float, ptr %98, align 4, !tbaa !16
   %100 = fpext float %99 to double
   br label %111
 
 101:                                              ; preds = %82
-  %102 = load float, ptr %90, align 4, !tbaa !15
+  %102 = load float, ptr %90, align 4, !tbaa !17
   %103 = fpext float %102 to double
   %104 = getelementptr inbounds %struct.EG, ptr %90, i32 0, i32 1
-  %105 = load float, ptr %104, align 4, !tbaa !17
+  %105 = load float, ptr %104, align 4, !tbaa !16
   %106 = fpext float %105 to double
   %107 = icmp sgt i16 %87, 0
   br i1 %107, label %108, label %111
 
 108:                                              ; preds = %101
   %109 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 6
-  %110 = load float, ptr %109, align 4, !tbaa !61
+  %110 = load float, ptr %109, align 4, !tbaa !64
   br label %111
 
 111:                                              ; preds = %91, %95, %101, %108
@@ -1226,7 +1322,7 @@ define hidden void @_spinblock(ptr nocapture noundef %0, i32 noundef %1, i32 nou
   %114 = phi double [ %106, %108 ], [ %106, %101 ], [ %100, %95 ], [ 0.000000e+00, %91 ]
   %115 = phi float [ %110, %108 ], [ 1.000000e+00, %101 ], [ 1.000000e+00, %95 ], [ 1.000000e+00, %91 ]
   %116 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 14
-  %117 = load i32, ptr %116, align 4, !tbaa !40
+  %117 = load i32, ptr %116, align 4, !tbaa !43
   %118 = sdiv i32 %117, 2
   %119 = sitofp i16 %55 to double
   %120 = fmul double %85, %119
@@ -1240,14 +1336,14 @@ define hidden void @_spinblock(ptr nocapture noundef %0, i32 noundef %1, i32 nou
   %128 = fmul float %127, %115
   %129 = fdiv float %128, 1.200000e+01
   %130 = getelementptr inbounds %struct.zone_t, ptr %53, i32 0, i32 48
-  %131 = load i16, ptr %130, align 2, !tbaa !68
+  %131 = load i16, ptr %130, align 2, !tbaa !71
   %132 = sitofp i16 %131 to float
   %133 = fmul float %132, 2.500000e-01
   %134 = fsub float 0.000000e+00, %133
   %135 = shl nsw i32 %118, 7
   %136 = or i32 %135, 7
   %137 = getelementptr inbounds [2048 x i8], ptr @midi_cc_vals, i32 0, i32 %136
-  %138 = load i8, ptr %137, align 1, !tbaa !23
+  %138 = load i8, ptr %137, align 1, !tbaa !28
   %139 = icmp slt i8 %138, 0
   br i1 %139, label %145, label %140
 
@@ -1264,14 +1360,14 @@ define hidden void @_spinblock(ptr nocapture noundef %0, i32 noundef %1, i32 nou
   %148 = fsub double %147, %146
   %149 = fptrunc double %148 to float
   %150 = getelementptr inbounds %struct.EG, ptr %90, i32 0, i32 2
-  %151 = load i32, ptr %150, align 4, !tbaa !11
+  %151 = load i32, ptr %150, align 4, !tbaa !15
   %152 = icmp sgt i32 %151, 4
   br i1 %152, label %153, label %167
 
 153:                                              ; preds = %145
   %154 = or i32 %135, 11
   %155 = getelementptr inbounds [2048 x i8], ptr @midi_cc_vals, i32 0, i32 %154
-  %156 = load i8, ptr %155, align 1, !tbaa !23
+  %156 = load i8, ptr %155, align 1, !tbaa !28
   %157 = icmp slt i8 %156, 0
   br i1 %157, label %162, label %158
 
@@ -1291,7 +1387,7 @@ define hidden void @_spinblock(ptr nocapture noundef %0, i32 noundef %1, i32 nou
 167:                                              ; preds = %162, %145
   %168 = phi float [ %166, %162 ], [ %149, %145 ]
   %169 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 16
-  %170 = load i32, ptr %169, align 4, !tbaa !62
+  %170 = load i32, ptr %169, align 4, !tbaa !65
   %171 = icmp slt i32 %170, 0
   br i1 %171, label %178, label %172
 
@@ -1309,7 +1405,7 @@ define hidden void @_spinblock(ptr nocapture noundef %0, i32 noundef %1, i32 nou
   %179 = phi double [ %177, %174 ], [ 3.600000e+02, %167 ], [ 0.000000e+00, %172 ]
   %180 = or i32 %135, 10
   %181 = getelementptr inbounds [2048 x i8], ptr @midi_cc_vals, i32 0, i32 %180
-  %182 = load i8, ptr %181, align 2, !tbaa !23
+  %182 = load i8, ptr %181, align 2, !tbaa !28
   %183 = sext i8 %182 to i32
   %184 = getelementptr inbounds [128 x double], ptr @panleftLUT, i32 0, i32 %183
   %185 = load double, ptr %184, align 8, !tbaa !2
@@ -1318,7 +1414,7 @@ define hidden void @_spinblock(ptr nocapture noundef %0, i32 noundef %1, i32 nou
   %188 = load double, ptr %187, align 8, !tbaa !2
   %189 = fmul double %188, 5.000000e-01
   %190 = icmp sgt i32 %1, 0
-  br i1 %190, label %191, label %279
+  br i1 %190, label %191, label %202
 
 191:                                              ; preds = %178
   %192 = fpext float %168 to double
@@ -1327,331 +1423,499 @@ define hidden void @_spinblock(ptr nocapture noundef %0, i32 noundef %1, i32 nou
   %195 = sub i32 -2, %69
   %196 = add i32 %195, %71
   %197 = add i32 %67, -1
-  %198 = fpext float %194 to double
-  %199 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 1
-  br label %200
+  %198 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 1
+  %199 = load ptr, ptr %0, align 4, !tbaa !34
+  %200 = fpext float %194 to double
+  %201 = load ptr, ptr %198, align 4, !tbaa !31
+  br label %206
 
-200:                                              ; preds = %191, %264
-  %201 = phi i1 [ true, %191 ], [ %270, %264 ]
-  %202 = phi double [ %113, %191 ], [ %268, %264 ]
-  %203 = phi i32 [ 0, %191 ], [ %269, %264 ]
-  %204 = phi i32 [ %60, %191 ], [ %220, %264 ]
-  %205 = phi float [ %62, %191 ], [ %215, %264 ]
-  %206 = fadd float %129, %205
-  %207 = fcmp ult float %206, 1.000000e+00
-  br i1 %207, label %214, label %208
-
-208:                                              ; preds = %200, %208
-  %209 = phi i32 [ %211, %208 ], [ %204, %200 ]
-  %210 = phi float [ %212, %208 ], [ %206, %200 ]
-  %211 = add i32 %209, 1
-  %212 = fadd float %210, -1.000000e+00
-  %213 = fcmp ult float %212, 1.000000e+00
-  br i1 %213, label %214, label %208, !llvm.loop !74
-
-214:                                              ; preds = %208, %200
-  %215 = phi float [ %206, %200 ], [ %212, %208 ]
-  %216 = phi i32 [ %204, %200 ], [ %211, %208 ]
-  %217 = icmp ult i32 %216, %69
-  %218 = or i1 %112, %217
-  %219 = select i1 %218, i32 0, i32 %196
-  %220 = add i32 %219, %216
-  %221 = icmp ult i32 %220, %197
-  br i1 %221, label %222, label %272
-
-222:                                              ; preds = %214
-  %223 = load ptr, ptr %0, align 4, !tbaa !31
-  %224 = getelementptr inbounds float, ptr %223, i32 %220
-  %225 = load float, ptr %224, align 4, !tbaa !75
-  %226 = add nuw i32 %220, 1
-  %227 = getelementptr inbounds float, ptr %223, i32 %226
-  %228 = load float, ptr %227, align 4, !tbaa !75
-  %229 = fsub float %228, %225
-  %230 = tail call float @llvm.fmuladd.f32(float %229, float %215, float %225)
-  %231 = fadd double %202, %198
-  %232 = fadd double %186, %231
-  %233 = fptosi double %232 to i16
-  %234 = sext i16 %233 to i32
-  %235 = icmp sgt i16 %233, 0
-  br i1 %235, label %245, label %236
-
-236:                                              ; preds = %222
-  %237 = icmp slt i16 %233, -1239
-  br i1 %237, label %245, label %238
-
-238:                                              ; preds = %236
-  %239 = fpext float %230 to double
-  %240 = add nsw i32 %234, 1440
-  %241 = getelementptr inbounds [1441 x double], ptr @p10over200, i32 0, i32 %240
-  %242 = load double, ptr %241, align 8, !tbaa !2
-  %243 = fmul double %242, %239
-  %244 = fptrunc double %243 to float
-  br label %245
-
-245:                                              ; preds = %222, %236, %238
-  %246 = phi float [ %244, %238 ], [ %230, %222 ], [ 0.000000e+00, %236 ]
-  %247 = load ptr, ptr %199, align 4, !tbaa !28
-  %248 = add i32 %203, %2
-  %249 = shl i32 %248, 1
-  %250 = getelementptr inbounds float, ptr %247, i32 %249
-  store float %246, ptr %250, align 4, !tbaa !75
-  %251 = fadd double %189, %231
-  %252 = fptosi double %251 to i16
-  %253 = sext i16 %252 to i32
-  %254 = icmp sgt i16 %252, 0
-  br i1 %254, label %264, label %255
-
-255:                                              ; preds = %245
-  %256 = icmp slt i16 %252, -1239
-  br i1 %256, label %264, label %257
-
-257:                                              ; preds = %255
-  %258 = fpext float %230 to double
-  %259 = add nsw i32 %253, 1440
-  %260 = getelementptr inbounds [1441 x double], ptr @p10over200, i32 0, i32 %259
-  %261 = load double, ptr %260, align 8, !tbaa !2
-  %262 = fmul double %261, %258
-  %263 = fptrunc double %262 to float
-  br label %264
-
-264:                                              ; preds = %245, %255, %257
-  %265 = phi float [ %263, %257 ], [ %230, %245 ], [ 0.000000e+00, %255 ]
-  %266 = or i32 %249, 1
-  %267 = getelementptr inbounds float, ptr %247, i32 %266
-  store float %265, ptr %267, align 4, !tbaa !75
-  %268 = fadd double %114, %202
-  %269 = add nuw nsw i32 %203, 1
-  %270 = icmp slt i32 %269, %1
-  %271 = icmp eq i32 %269, %1
-  br i1 %271, label %279, label %200, !llvm.loop !76
-
-272:                                              ; preds = %214
-  %273 = load ptr, ptr %199, align 4, !tbaa !28
-  %274 = add i32 %203, %2
-  %275 = shl i32 %274, 1
-  %276 = getelementptr inbounds float, ptr %273, i32 %275
-  store float 0.000000e+00, ptr %276, align 4, !tbaa !75
-  %277 = or i32 %275, 1
-  %278 = getelementptr inbounds float, ptr %273, i32 %277
-  store float 0.000000e+00, ptr %278, align 4, !tbaa !75
-  store i32 99, ptr %150, align 4, !tbaa !11
-  br i1 %201, label %283, label %279
-
-279:                                              ; preds = %264, %178, %272
-  %280 = phi i32 [ %220, %272 ], [ %60, %178 ], [ %220, %264 ]
-  %281 = phi float [ %215, %272 ], [ %62, %178 ], [ %215, %264 ]
-  store i32 %280, ptr %59, align 4, !tbaa !35
-  store float %281, ptr %61, align 4, !tbaa !34
-  %282 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 6
-  store float %129, ptr %282, align 4, !tbaa !61
-  br label %283
-
-283:                                              ; preds = %272, %279
+202:                                              ; preds = %274, %178
+  %203 = phi float [ %62, %178 ], [ %221, %274 ]
+  %204 = phi i32 [ %60, %178 ], [ %226, %274 ]
+  store i32 %204, ptr %59, align 4, !tbaa !38
+  store float %203, ptr %61, align 4, !tbaa !37
+  %205 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 6
+  store float %129, ptr %205, align 4, !tbaa !64
   ret void
+
+206:                                              ; preds = %191, %274
+  %207 = phi double [ %113, %191 ], [ %278, %274 ]
+  %208 = phi i32 [ 0, %191 ], [ %281, %274 ]
+  %209 = phi double [ %114, %191 ], [ %280, %274 ]
+  %210 = phi i32 [ %60, %191 ], [ %226, %274 ]
+  %211 = phi float [ %62, %191 ], [ %221, %274 ]
+  %212 = fadd float %129, %211
+  %213 = fcmp ult float %212, 1.000000e+00
+  br i1 %213, label %220, label %214
+
+214:                                              ; preds = %206, %214
+  %215 = phi i32 [ %217, %214 ], [ %210, %206 ]
+  %216 = phi float [ %218, %214 ], [ %212, %206 ]
+  %217 = add i32 %215, 1
+  %218 = fadd float %216, -1.000000e+00
+  %219 = fcmp ult float %218, 1.000000e+00
+  br i1 %219, label %220, label %214, !llvm.loop !77
+
+220:                                              ; preds = %214, %206
+  %221 = phi float [ %212, %206 ], [ %218, %214 ]
+  %222 = phi i32 [ %210, %206 ], [ %217, %214 ]
+  %223 = icmp ult i32 %222, %69
+  %224 = or i1 %112, %223
+  %225 = select i1 %224, i32 0, i32 %196
+  %226 = add i32 %225, %222
+  %227 = icmp ult i32 %226, %197
+  br i1 %227, label %234, label %228
+
+228:                                              ; preds = %220
+  %229 = add i32 %208, %2
+  %230 = shl i32 %229, 1
+  %231 = getelementptr inbounds float, ptr %201, i32 %230
+  store float 0.000000e+00, ptr %231, align 4, !tbaa !78
+  %232 = or i32 %230, 1
+  %233 = getelementptr inbounds float, ptr %201, i32 %232
+  store float 0.000000e+00, ptr %233, align 4, !tbaa !78
+  store i32 99, ptr %150, align 4, !tbaa !15
+  br label %234
+
+234:                                              ; preds = %228, %220
+  %235 = getelementptr inbounds float, ptr %199, i32 %226
+  %236 = load float, ptr %235, align 4, !tbaa !78
+  %237 = add i32 %226, 1
+  %238 = getelementptr inbounds float, ptr %199, i32 %237
+  %239 = load float, ptr %238, align 4, !tbaa !78
+  %240 = fsub float %239, %236
+  %241 = tail call float @llvm.fmuladd.f32(float %240, float %221, float %236)
+  %242 = fadd double %207, %200
+  %243 = fadd double %186, %242
+  %244 = fptosi double %243 to i16
+  %245 = sext i16 %244 to i32
+  %246 = icmp sgt i16 %244, 0
+  br i1 %246, label %256, label %247
+
+247:                                              ; preds = %234
+  %248 = icmp slt i16 %244, -1239
+  br i1 %248, label %256, label %249
+
+249:                                              ; preds = %247
+  %250 = fpext float %241 to double
+  %251 = add nsw i32 %245, 1440
+  %252 = getelementptr inbounds [1441 x double], ptr @p10over200, i32 0, i32 %251
+  %253 = load double, ptr %252, align 8, !tbaa !2
+  %254 = fmul double %253, %250
+  %255 = fptrunc double %254 to float
+  br label %256
+
+256:                                              ; preds = %234, %247, %249
+  %257 = phi float [ %255, %249 ], [ %241, %234 ], [ 0.000000e+00, %247 ]
+  %258 = add i32 %208, %2
+  %259 = shl i32 %258, 1
+  %260 = getelementptr inbounds float, ptr %201, i32 %259
+  store float %257, ptr %260, align 4, !tbaa !78
+  %261 = fadd double %189, %242
+  %262 = fptosi double %261 to i16
+  %263 = sext i16 %262 to i32
+  %264 = icmp sgt i16 %262, 0
+  br i1 %264, label %274, label %265
+
+265:                                              ; preds = %256
+  %266 = icmp slt i16 %262, -1239
+  br i1 %266, label %274, label %267
+
+267:                                              ; preds = %265
+  %268 = fpext float %241 to double
+  %269 = add nsw i32 %263, 1440
+  %270 = getelementptr inbounds [1441 x double], ptr @p10over200, i32 0, i32 %269
+  %271 = load double, ptr %270, align 8, !tbaa !2
+  %272 = fmul double %271, %268
+  %273 = fptrunc double %272 to float
+  br label %274
+
+274:                                              ; preds = %256, %265, %267
+  %275 = phi float [ %273, %267 ], [ %241, %256 ], [ 0.000000e+00, %265 ]
+  %276 = or i32 %259, 1
+  %277 = getelementptr inbounds float, ptr %201, i32 %276
+  store float %275, ptr %277, align 4, !tbaa !78
+  %278 = fadd double %209, %207
+  %279 = fcmp ugt double %278, -1.360000e+03
+  %280 = select i1 %279, double %209, double 0.000000e+00
+  %281 = add nuw nsw i32 %208, 1
+  %282 = icmp eq i32 %281, %1
+  br i1 %282, label %202, label %206, !llvm.loop !79
 }
 
 ; Function Attrs: nofree nosync nounwind
 define hidden i32 @spin(ptr nocapture noundef %0, i32 noundef %1) local_unnamed_addr #5 {
   %3 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 10
-  %4 = load ptr, ptr %3, align 4, !tbaa !36
+  %4 = load ptr, ptr %3, align 4, !tbaa !39
   %5 = getelementptr inbounds %struct.EG, ptr %4, i32 0, i32 2
-  %6 = getelementptr inbounds %struct.EG, ptr %4, i32 0, i32 3
-  %7 = getelementptr inbounds %struct.EG, ptr %4, i32 0, i32 1
-  br label %8
+  %6 = load i32, ptr %5, align 4, !tbaa !15
+  switch i32 %6, label %10 [
+    i32 0, label %7
+    i32 99, label %7
+  ]
 
-8:                                                ; preds = %27, %2
-  %9 = phi i32 [ 64, %2 ], [ %29, %27 ]
-  %10 = load i32, ptr %5, align 4, !tbaa !11
-  %11 = icmp eq i32 %10, 99
-  br i1 %11, label %31, label %12
+7:                                                ; preds = %2, %2
+  %8 = getelementptr inbounds %struct.EG, ptr %4, i32 0, i32 1
+  %9 = load float, ptr %8, align 4, !tbaa !16
+  br label %247
 
-12:                                               ; preds = %8
-  %13 = load float, ptr %4, align 4, !tbaa !15
-  %14 = fcmp olt float %13, -9.700000e+02
-  br i1 %14, label %15, label %16
+10:                                               ; preds = %2
+  %11 = getelementptr inbounds %struct.EG, ptr %4, i32 0, i32 3
+  %12 = getelementptr inbounds %struct.EG, ptr %4, i32 0, i32 1
+  br label %13
 
-15:                                               ; preds = %12
-  store i32 99, ptr %5, align 4, !tbaa !11
-  br label %31
+13:                                               ; preds = %64, %10
+  %14 = phi i32 [ %66, %64 ], [ %6, %10 ]
+  %15 = phi i32 [ %65, %64 ], [ 64, %10 ]
+  %16 = load i32, ptr %11, align 4, !tbaa !11
+  %17 = tail call i32 @llvm.smin.i32(i32 %16, i32 %15)
+  %18 = sub nsw i32 %16, %17
+  store i32 %18, ptr %11, align 4, !tbaa !11
+  switch i32 %14, label %53 [
+    i32 6, label %19
+    i32 4, label %19
+  ]
 
-16:                                               ; preds = %12
-  %17 = load i32, ptr %6, align 4, !tbaa !16
-  %18 = tail call i32 @llvm.smin.i32(i32 %17, i32 %9)
-  %19 = icmp eq i32 %17, 65535
-  br i1 %19, label %25, label %20
+19:                                               ; preds = %13, %13
+  %20 = icmp eq i32 %17, 0
+  br i1 %20, label %61, label %21
 
-20:                                               ; preds = %16
-  %21 = sub nsw i32 %17, %18
-  store i32 %21, ptr %6, align 4, !tbaa !16
-  %22 = load float, ptr %7, align 4, !tbaa !17
-  %23 = sitofp i32 %18 to float
-  %24 = tail call float @llvm.fmuladd.f32(float %22, float %23, float %13)
-  store float %24, ptr %4, align 4, !tbaa !15
-  br label %25
+21:                                               ; preds = %19
+  %22 = load float, ptr %12, align 4, !tbaa !16
+  %23 = load float, ptr %4, align 4, !tbaa !17
+  %24 = add i32 %17, -1
+  %25 = and i32 %17, 7
+  %26 = icmp eq i32 %25, 0
+  br i1 %26, label %35, label %27
 
-25:                                               ; preds = %20, %16
-  %26 = icmp slt i32 %17, %9
-  br i1 %26, label %27, label %31
+27:                                               ; preds = %21, %27
+  %28 = phi float [ %32, %27 ], [ %23, %21 ]
+  %29 = phi i32 [ %31, %27 ], [ %17, %21 ]
+  %30 = phi i32 [ %33, %27 ], [ 0, %21 ]
+  %31 = add nsw i32 %29, -1
+  %32 = fmul float %22, %28
+  %33 = add i32 %30, 1
+  %34 = icmp eq i32 %33, %25
+  br i1 %34, label %35, label %27, !llvm.loop !80
 
-27:                                               ; preds = %25
-  %28 = xor i32 %18, -1
-  %29 = add i32 %9, %28
+35:                                               ; preds = %27, %21
+  %36 = phi float [ undef, %21 ], [ %32, %27 ]
+  %37 = phi float [ %23, %21 ], [ %32, %27 ]
+  %38 = phi i32 [ %17, %21 ], [ %31, %27 ]
+  %39 = icmp ult i32 %24, 7
+  br i1 %39, label %58, label %40
+
+40:                                               ; preds = %35, %40
+  %41 = phi float [ %51, %40 ], [ %37, %35 ]
+  %42 = phi i32 [ %50, %40 ], [ %38, %35 ]
+  %43 = fmul float %22, %41
+  %44 = fmul float %22, %43
+  %45 = fmul float %22, %44
+  %46 = fmul float %22, %45
+  %47 = fmul float %22, %46
+  %48 = fmul float %22, %47
+  %49 = fmul float %22, %48
+  %50 = add nsw i32 %42, -8
+  %51 = fmul float %22, %49
+  %52 = icmp eq i32 %50, 0
+  br i1 %52, label %58, label %40, !llvm.loop !20
+
+53:                                               ; preds = %13
+  %54 = load float, ptr %12, align 4, !tbaa !16
+  %55 = sitofp i32 %17 to float
+  %56 = load float, ptr %4, align 4, !tbaa !17
+  %57 = tail call float @llvm.fmuladd.f32(float %54, float %55, float %56)
+  br label %58
+
+58:                                               ; preds = %35, %40, %53
+  %59 = phi float [ %57, %53 ], [ %36, %35 ], [ %51, %40 ]
+  %60 = phi i32 [ %17, %53 ], [ -1, %40 ], [ -1, %35 ]
+  store float %59, ptr %4, align 4, !tbaa !17
+  br label %61
+
+61:                                               ; preds = %58, %19
+  %62 = phi i32 [ -1, %19 ], [ %60, %58 ]
+  %63 = icmp eq i32 %15, %62
+  br i1 %63, label %67, label %64
+
+64:                                               ; preds = %61
+  %65 = sub nsw i32 %15, %62
   tail call void @advanceStage(ptr noundef nonnull %4)
-  %30 = icmp sgt i32 %29, 0
-  br i1 %30, label %8, label %31
+  %66 = load i32, ptr %5, align 4, !tbaa !15
+  br label %13
 
-31:                                               ; preds = %27, %8, %25, %15
-  %32 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 11
-  %33 = load ptr, ptr %32, align 4, !tbaa !37
-  %34 = getelementptr inbounds %struct.EG, ptr %33, i32 0, i32 2
-  %35 = getelementptr inbounds %struct.EG, ptr %33, i32 0, i32 3
-  %36 = getelementptr inbounds %struct.EG, ptr %33, i32 0, i32 1
-  br label %37
+67:                                               ; preds = %61
+  %68 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 11
+  %69 = load ptr, ptr %68, align 4, !tbaa !40
+  %70 = getelementptr inbounds %struct.EG, ptr %69, i32 0, i32 3
+  %71 = getelementptr inbounds %struct.EG, ptr %69, i32 0, i32 2
+  %72 = getelementptr inbounds %struct.EG, ptr %69, i32 0, i32 1
+  br label %73
 
-37:                                               ; preds = %56, %31
-  %38 = phi i32 [ 64, %31 ], [ %58, %56 ]
-  %39 = load i32, ptr %34, align 4, !tbaa !11
-  %40 = icmp eq i32 %39, 99
-  br i1 %40, label %60, label %41
+73:                                               ; preds = %124, %67
+  %74 = phi i32 [ 64, %67 ], [ %125, %124 ]
+  %75 = load i32, ptr %70, align 4, !tbaa !11
+  %76 = tail call i32 @llvm.smin.i32(i32 %75, i32 %74)
+  %77 = sub nsw i32 %75, %76
+  store i32 %77, ptr %70, align 4, !tbaa !11
+  %78 = load i32, ptr %71, align 4, !tbaa !15
+  switch i32 %78, label %113 [
+    i32 6, label %79
+    i32 4, label %79
+  ]
 
-41:                                               ; preds = %37
-  %42 = load float, ptr %33, align 4, !tbaa !15
-  %43 = fcmp olt float %42, -9.700000e+02
-  br i1 %43, label %44, label %45
+79:                                               ; preds = %73, %73
+  %80 = icmp eq i32 %76, 0
+  br i1 %80, label %121, label %81
 
-44:                                               ; preds = %41
-  store i32 99, ptr %34, align 4, !tbaa !11
-  br label %60
+81:                                               ; preds = %79
+  %82 = load float, ptr %72, align 4, !tbaa !16
+  %83 = load float, ptr %69, align 4, !tbaa !17
+  %84 = add i32 %76, -1
+  %85 = and i32 %76, 7
+  %86 = icmp eq i32 %85, 0
+  br i1 %86, label %95, label %87
 
-45:                                               ; preds = %41
-  %46 = load i32, ptr %35, align 4, !tbaa !16
-  %47 = tail call i32 @llvm.smin.i32(i32 %46, i32 %38)
-  %48 = icmp eq i32 %46, 65535
-  br i1 %48, label %54, label %49
+87:                                               ; preds = %81, %87
+  %88 = phi float [ %92, %87 ], [ %83, %81 ]
+  %89 = phi i32 [ %91, %87 ], [ %76, %81 ]
+  %90 = phi i32 [ %93, %87 ], [ 0, %81 ]
+  %91 = add nsw i32 %89, -1
+  %92 = fmul float %82, %88
+  %93 = add i32 %90, 1
+  %94 = icmp eq i32 %93, %85
+  br i1 %94, label %95, label %87, !llvm.loop !81
 
-49:                                               ; preds = %45
-  %50 = sub nsw i32 %46, %47
-  store i32 %50, ptr %35, align 4, !tbaa !16
-  %51 = load float, ptr %36, align 4, !tbaa !17
-  %52 = sitofp i32 %47 to float
-  %53 = tail call float @llvm.fmuladd.f32(float %51, float %52, float %42)
-  store float %53, ptr %33, align 4, !tbaa !15
-  br label %54
+95:                                               ; preds = %87, %81
+  %96 = phi float [ undef, %81 ], [ %92, %87 ]
+  %97 = phi float [ %83, %81 ], [ %92, %87 ]
+  %98 = phi i32 [ %76, %81 ], [ %91, %87 ]
+  %99 = icmp ult i32 %84, 7
+  br i1 %99, label %118, label %100
 
-54:                                               ; preds = %49, %45
-  %55 = icmp slt i32 %46, %38
-  br i1 %55, label %56, label %60
+100:                                              ; preds = %95, %100
+  %101 = phi float [ %111, %100 ], [ %97, %95 ]
+  %102 = phi i32 [ %110, %100 ], [ %98, %95 ]
+  %103 = fmul float %82, %101
+  %104 = fmul float %82, %103
+  %105 = fmul float %82, %104
+  %106 = fmul float %82, %105
+  %107 = fmul float %82, %106
+  %108 = fmul float %82, %107
+  %109 = fmul float %82, %108
+  %110 = add nsw i32 %102, -8
+  %111 = fmul float %82, %109
+  %112 = icmp eq i32 %110, 0
+  br i1 %112, label %118, label %100, !llvm.loop !20
 
-56:                                               ; preds = %54
-  %57 = xor i32 %47, -1
-  %58 = add i32 %38, %57
-  tail call void @advanceStage(ptr noundef nonnull %33)
-  %59 = icmp sgt i32 %58, 0
-  br i1 %59, label %37, label %60
+113:                                              ; preds = %73
+  %114 = load float, ptr %72, align 4, !tbaa !16
+  %115 = sitofp i32 %76 to float
+  %116 = load float, ptr %69, align 4, !tbaa !17
+  %117 = tail call float @llvm.fmuladd.f32(float %114, float %115, float %116)
+  br label %118
 
-60:                                               ; preds = %56, %37, %54, %44
+118:                                              ; preds = %95, %100, %113
+  %119 = phi float [ %117, %113 ], [ %96, %95 ], [ %111, %100 ]
+  %120 = phi i32 [ %76, %113 ], [ -1, %100 ], [ -1, %95 ]
+  store float %119, ptr %69, align 4, !tbaa !17
+  br label %121
+
+121:                                              ; preds = %118, %79
+  %122 = phi i32 [ -1, %79 ], [ %120, %118 ]
+  %123 = icmp eq i32 %74, %122
+  br i1 %123, label %126, label %124
+
+124:                                              ; preds = %121
+  %125 = sub nsw i32 %74, %122
+  tail call void @advanceStage(ptr noundef nonnull %69)
+  br label %73
+
+126:                                              ; preds = %121
   tail call void @_spinblock(ptr noundef %0, i32 noundef 64, i32 noundef 0)
-  %61 = load ptr, ptr %3, align 4, !tbaa !36
-  %62 = getelementptr inbounds %struct.EG, ptr %61, i32 0, i32 2
-  %63 = getelementptr inbounds %struct.EG, ptr %61, i32 0, i32 3
-  %64 = getelementptr inbounds %struct.EG, ptr %61, i32 0, i32 1
-  br label %65
+  %127 = load ptr, ptr %3, align 4, !tbaa !39
+  %128 = getelementptr inbounds %struct.EG, ptr %127, i32 0, i32 3
+  %129 = getelementptr inbounds %struct.EG, ptr %127, i32 0, i32 2
+  %130 = getelementptr inbounds %struct.EG, ptr %127, i32 0, i32 1
+  br label %131
 
-65:                                               ; preds = %84, %60
-  %66 = phi i32 [ 64, %60 ], [ %86, %84 ]
-  %67 = load i32, ptr %62, align 4, !tbaa !11
-  %68 = icmp eq i32 %67, 99
-  br i1 %68, label %88, label %69
+131:                                              ; preds = %182, %126
+  %132 = phi i32 [ 64, %126 ], [ %183, %182 ]
+  %133 = load i32, ptr %128, align 4, !tbaa !11
+  %134 = tail call i32 @llvm.smin.i32(i32 %133, i32 %132)
+  %135 = sub nsw i32 %133, %134
+  store i32 %135, ptr %128, align 4, !tbaa !11
+  %136 = load i32, ptr %129, align 4, !tbaa !15
+  switch i32 %136, label %171 [
+    i32 6, label %137
+    i32 4, label %137
+  ]
 
-69:                                               ; preds = %65
-  %70 = load float, ptr %61, align 4, !tbaa !15
-  %71 = fcmp olt float %70, -9.700000e+02
-  br i1 %71, label %72, label %73
+137:                                              ; preds = %131, %131
+  %138 = icmp eq i32 %134, 0
+  br i1 %138, label %179, label %139
 
-72:                                               ; preds = %69
-  store i32 99, ptr %62, align 4, !tbaa !11
-  br label %88
+139:                                              ; preds = %137
+  %140 = load float, ptr %130, align 4, !tbaa !16
+  %141 = load float, ptr %127, align 4, !tbaa !17
+  %142 = add i32 %134, -1
+  %143 = and i32 %134, 7
+  %144 = icmp eq i32 %143, 0
+  br i1 %144, label %153, label %145
 
-73:                                               ; preds = %69
-  %74 = load i32, ptr %63, align 4, !tbaa !16
-  %75 = tail call i32 @llvm.smin.i32(i32 %74, i32 %66)
-  %76 = icmp eq i32 %74, 65535
-  br i1 %76, label %82, label %77
+145:                                              ; preds = %139, %145
+  %146 = phi float [ %150, %145 ], [ %141, %139 ]
+  %147 = phi i32 [ %149, %145 ], [ %134, %139 ]
+  %148 = phi i32 [ %151, %145 ], [ 0, %139 ]
+  %149 = add nsw i32 %147, -1
+  %150 = fmul float %140, %146
+  %151 = add i32 %148, 1
+  %152 = icmp eq i32 %151, %143
+  br i1 %152, label %153, label %145, !llvm.loop !82
 
-77:                                               ; preds = %73
-  %78 = sub nsw i32 %74, %75
-  store i32 %78, ptr %63, align 4, !tbaa !16
-  %79 = load float, ptr %64, align 4, !tbaa !17
-  %80 = sitofp i32 %75 to float
-  %81 = tail call float @llvm.fmuladd.f32(float %79, float %80, float %70)
-  store float %81, ptr %61, align 4, !tbaa !15
-  br label %82
+153:                                              ; preds = %145, %139
+  %154 = phi float [ undef, %139 ], [ %150, %145 ]
+  %155 = phi float [ %141, %139 ], [ %150, %145 ]
+  %156 = phi i32 [ %134, %139 ], [ %149, %145 ]
+  %157 = icmp ult i32 %142, 7
+  br i1 %157, label %176, label %158
 
-82:                                               ; preds = %77, %73
-  %83 = icmp slt i32 %74, %66
-  br i1 %83, label %84, label %88
+158:                                              ; preds = %153, %158
+  %159 = phi float [ %169, %158 ], [ %155, %153 ]
+  %160 = phi i32 [ %168, %158 ], [ %156, %153 ]
+  %161 = fmul float %140, %159
+  %162 = fmul float %140, %161
+  %163 = fmul float %140, %162
+  %164 = fmul float %140, %163
+  %165 = fmul float %140, %164
+  %166 = fmul float %140, %165
+  %167 = fmul float %140, %166
+  %168 = add nsw i32 %160, -8
+  %169 = fmul float %140, %167
+  %170 = icmp eq i32 %168, 0
+  br i1 %170, label %176, label %158, !llvm.loop !20
 
-84:                                               ; preds = %82
-  %85 = xor i32 %75, -1
-  %86 = add i32 %66, %85
-  tail call void @advanceStage(ptr noundef nonnull %61)
-  %87 = icmp sgt i32 %86, 0
-  br i1 %87, label %65, label %88
+171:                                              ; preds = %131
+  %172 = load float, ptr %130, align 4, !tbaa !16
+  %173 = sitofp i32 %134 to float
+  %174 = load float, ptr %127, align 4, !tbaa !17
+  %175 = tail call float @llvm.fmuladd.f32(float %172, float %173, float %174)
+  br label %176
 
-88:                                               ; preds = %84, %65, %82, %72
-  %89 = load ptr, ptr %32, align 4, !tbaa !37
-  %90 = getelementptr inbounds %struct.EG, ptr %89, i32 0, i32 2
-  %91 = getelementptr inbounds %struct.EG, ptr %89, i32 0, i32 3
-  %92 = getelementptr inbounds %struct.EG, ptr %89, i32 0, i32 1
-  br label %93
+176:                                              ; preds = %153, %158, %171
+  %177 = phi float [ %175, %171 ], [ %154, %153 ], [ %169, %158 ]
+  %178 = phi i32 [ %134, %171 ], [ -1, %158 ], [ -1, %153 ]
+  store float %177, ptr %127, align 4, !tbaa !17
+  br label %179
 
-93:                                               ; preds = %112, %88
-  %94 = phi i32 [ 64, %88 ], [ %114, %112 ]
-  %95 = load i32, ptr %90, align 4, !tbaa !11
-  %96 = icmp eq i32 %95, 99
-  br i1 %96, label %116, label %97
+179:                                              ; preds = %176, %137
+  %180 = phi i32 [ -1, %137 ], [ %178, %176 ]
+  %181 = icmp eq i32 %132, %180
+  br i1 %181, label %184, label %182
 
-97:                                               ; preds = %93
-  %98 = load float, ptr %89, align 4, !tbaa !15
-  %99 = fcmp olt float %98, -9.700000e+02
-  br i1 %99, label %100, label %101
+182:                                              ; preds = %179
+  %183 = sub nsw i32 %132, %180
+  tail call void @advanceStage(ptr noundef nonnull %127)
+  br label %131
 
-100:                                              ; preds = %97
-  store i32 99, ptr %90, align 4, !tbaa !11
-  br label %116
+184:                                              ; preds = %179
+  %185 = load ptr, ptr %68, align 4, !tbaa !40
+  %186 = getelementptr inbounds %struct.EG, ptr %185, i32 0, i32 3
+  %187 = getelementptr inbounds %struct.EG, ptr %185, i32 0, i32 2
+  %188 = getelementptr inbounds %struct.EG, ptr %185, i32 0, i32 1
+  br label %189
 
-101:                                              ; preds = %97
-  %102 = load i32, ptr %91, align 4, !tbaa !16
-  %103 = tail call i32 @llvm.smin.i32(i32 %102, i32 %94)
-  %104 = icmp eq i32 %102, 65535
-  br i1 %104, label %110, label %105
+189:                                              ; preds = %240, %184
+  %190 = phi i32 [ 64, %184 ], [ %241, %240 ]
+  %191 = load i32, ptr %186, align 4, !tbaa !11
+  %192 = tail call i32 @llvm.smin.i32(i32 %191, i32 %190)
+  %193 = sub nsw i32 %191, %192
+  store i32 %193, ptr %186, align 4, !tbaa !11
+  %194 = load i32, ptr %187, align 4, !tbaa !15
+  switch i32 %194, label %229 [
+    i32 6, label %195
+    i32 4, label %195
+  ]
 
-105:                                              ; preds = %101
-  %106 = sub nsw i32 %102, %103
-  store i32 %106, ptr %91, align 4, !tbaa !16
-  %107 = load float, ptr %92, align 4, !tbaa !17
-  %108 = sitofp i32 %103 to float
-  %109 = tail call float @llvm.fmuladd.f32(float %107, float %108, float %98)
-  store float %109, ptr %89, align 4, !tbaa !15
-  br label %110
+195:                                              ; preds = %189, %189
+  %196 = icmp eq i32 %192, 0
+  br i1 %196, label %237, label %197
 
-110:                                              ; preds = %105, %101
-  %111 = icmp slt i32 %102, %94
-  br i1 %111, label %112, label %116
+197:                                              ; preds = %195
+  %198 = load float, ptr %188, align 4, !tbaa !16
+  %199 = load float, ptr %185, align 4, !tbaa !17
+  %200 = add i32 %192, -1
+  %201 = and i32 %192, 7
+  %202 = icmp eq i32 %201, 0
+  br i1 %202, label %211, label %203
 
-112:                                              ; preds = %110
-  %113 = xor i32 %103, -1
-  %114 = add i32 %94, %113
-  tail call void @advanceStage(ptr noundef nonnull %89)
-  %115 = icmp sgt i32 %114, 0
-  br i1 %115, label %93, label %116
+203:                                              ; preds = %197, %203
+  %204 = phi float [ %208, %203 ], [ %199, %197 ]
+  %205 = phi i32 [ %207, %203 ], [ %192, %197 ]
+  %206 = phi i32 [ %209, %203 ], [ 0, %197 ]
+  %207 = add nsw i32 %205, -1
+  %208 = fmul float %198, %204
+  %209 = add i32 %206, 1
+  %210 = icmp eq i32 %209, %201
+  br i1 %210, label %211, label %203, !llvm.loop !83
 
-116:                                              ; preds = %112, %93, %110, %100
+211:                                              ; preds = %203, %197
+  %212 = phi float [ undef, %197 ], [ %208, %203 ]
+  %213 = phi float [ %199, %197 ], [ %208, %203 ]
+  %214 = phi i32 [ %192, %197 ], [ %207, %203 ]
+  %215 = icmp ult i32 %200, 7
+  br i1 %215, label %234, label %216
+
+216:                                              ; preds = %211, %216
+  %217 = phi float [ %227, %216 ], [ %213, %211 ]
+  %218 = phi i32 [ %226, %216 ], [ %214, %211 ]
+  %219 = fmul float %198, %217
+  %220 = fmul float %198, %219
+  %221 = fmul float %198, %220
+  %222 = fmul float %198, %221
+  %223 = fmul float %198, %222
+  %224 = fmul float %198, %223
+  %225 = fmul float %198, %224
+  %226 = add nsw i32 %218, -8
+  %227 = fmul float %198, %225
+  %228 = icmp eq i32 %226, 0
+  br i1 %228, label %234, label %216, !llvm.loop !20
+
+229:                                              ; preds = %189
+  %230 = load float, ptr %188, align 4, !tbaa !16
+  %231 = sitofp i32 %192 to float
+  %232 = load float, ptr %185, align 4, !tbaa !17
+  %233 = tail call float @llvm.fmuladd.f32(float %230, float %231, float %232)
+  br label %234
+
+234:                                              ; preds = %211, %216, %229
+  %235 = phi float [ %233, %229 ], [ %212, %211 ], [ %227, %216 ]
+  %236 = phi i32 [ %192, %229 ], [ -1, %216 ], [ -1, %211 ]
+  store float %235, ptr %185, align 4, !tbaa !17
+  br label %237
+
+237:                                              ; preds = %234, %195
+  %238 = phi i32 [ -1, %195 ], [ %236, %234 ]
+  %239 = icmp eq i32 %190, %238
+  br i1 %239, label %242, label %240
+
+240:                                              ; preds = %237
+  %241 = sub nsw i32 %190, %238
+  tail call void @advanceStage(ptr noundef nonnull %185)
+  br label %189
+
+242:                                              ; preds = %237
   tail call void @_spinblock(ptr noundef %0, i32 noundef 64, i32 noundef 64)
-  %117 = load ptr, ptr %3, align 4, !tbaa !36
-  %118 = load float, ptr %117, align 4, !tbaa !15
-  %119 = fptosi float %118 to i32
-  ret i32 %119
+  %243 = load ptr, ptr %3, align 4, !tbaa !39
+  %244 = getelementptr inbounds %struct.EG, ptr %243, i32 0, i32 1
+  %245 = load float, ptr %244, align 4, !tbaa !16
+  %246 = fmul float %245, 1.000000e+03
+  br label %247
+
+247:                                              ; preds = %242, %7
+  %248 = phi float [ %9, %7 ], [ %246, %242 ]
+  %249 = fptosi float %248 to i32
+  ret i32 %249
 }
 
 ; Function Attrs: nocallback nofree nosync nounwind readnone speculatable willreturn
@@ -1666,10 +1930,10 @@ attributes #5 = { nofree nosync nounwind "frame-pointer"="none" "min-legal-vecto
 attributes #6 = { argmemonly mustprogress nofree norecurse nosync nounwind readonly willreturn "frame-pointer"="none" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="generic" }
 attributes #7 = { argmemonly mustprogress nofree norecurse nosync nounwind willreturn "frame-pointer"="none" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="generic" }
 attributes #8 = { nofree norecurse nosync nounwind readonly "frame-pointer"="none" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="generic" }
-attributes #9 = { mustprogress nofree norecurse nosync nounwind willreturn writeonly "frame-pointer"="none" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="generic" }
+attributes #9 = { mustprogress nofree norecurse nosync nounwind willreturn "frame-pointer"="none" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="generic" }
 attributes #10 = { nofree norecurse nosync nounwind writeonly "frame-pointer"="none" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="generic" }
-attributes #11 = { mustprogress nofree norecurse nosync nounwind willreturn "frame-pointer"="none" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="generic" }
-attributes #12 = { mustprogress nofree norecurse nosync nounwind readnone willreturn "frame-pointer"="none" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="generic" }
+attributes #11 = { mustprogress nofree norecurse nosync nounwind readnone willreturn "frame-pointer"="none" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="generic" }
+attributes #12 = { mustprogress nofree norecurse nosync nounwind willreturn writeonly "frame-pointer"="none" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="generic" }
 attributes #13 = { nocallback nofree nosync nounwind readnone speculatable willreturn }
 
 !llvm.module.flags = !{!0}
@@ -1686,69 +1950,76 @@ attributes #13 = { nocallback nofree nosync nounwind readnone speculatable willr
 !8 = !{!"short", !4, i64 0}
 !9 = !{!7, !8, i64 0}
 !10 = !{!7, !8, i64 2}
-!11 = !{!12, !14, i64 8}
+!11 = !{!12, !14, i64 12}
 !12 = !{!"", !13, i64 0, !13, i64 4, !14, i64 8, !14, i64 12, !8, i64 16, !8, i64 18, !8, i64 20, !8, i64 22, !8, i64 24, !8, i64 26, !8, i64 28, !8, i64 30}
 !13 = !{!"float", !4, i64 0}
 !14 = !{!"int", !4, i64 0}
-!15 = !{!12, !13, i64 0}
-!16 = !{!12, !14, i64 12}
-!17 = !{!12, !13, i64 4}
-!18 = !{!12, !8, i64 16}
-!19 = !{!12, !8, i64 18}
-!20 = !{!12, !8, i64 20}
-!21 = !{!12, !8, i64 22}
-!22 = !{!12, !8, i64 26}
-!23 = !{!4, !4, i64 0}
-!24 = distinct !{!24, !25}
-!25 = !{!"llvm.loop.unroll.disable"}
-!26 = distinct !{!26, !27}
-!27 = !{!"llvm.loop.mustprogress"}
-!28 = !{!29, !30, i64 4}
-!29 = !{!"", !30, i64 0, !30, i64 4, !13, i64 8, !14, i64 12, !14, i64 16, !14, i64 20, !13, i64 24, !13, i64 28, !14, i64 32, !30, i64 36, !30, i64 40, !30, i64 44, !30, i64 48, !30, i64 52, !14, i64 56, !14, i64 60, !14, i64 64, !4, i64 68}
-!30 = !{!"any pointer", !4, i64 0}
-!31 = !{!29, !30, i64 0}
-!32 = !{!29, !14, i64 20}
-!33 = !{!29, !14, i64 16}
-!34 = !{!29, !13, i64 8}
-!35 = !{!29, !14, i64 12}
-!36 = !{!29, !30, i64 40}
-!37 = !{!29, !30, i64 44}
-!38 = !{!29, !30, i64 48}
-!39 = !{!29, !30, i64 52}
-!40 = !{!29, !14, i64 56}
-!41 = distinct !{!41, !27}
-!42 = distinct !{!42, !27}
-!43 = !{!44, !8, i64 26}
-!44 = !{!"", !8, i64 0, !8, i64 2, !8, i64 4, !8, i64 6, !8, i64 8, !8, i64 10, !8, i64 12, !8, i64 14, !8, i64 16, !8, i64 18, !8, i64 20, !8, i64 22, !8, i64 24, !8, i64 26, !8, i64 28, !8, i64 30, !8, i64 32, !8, i64 34, !8, i64 36, !8, i64 38, !8, i64 40, !8, i64 42, !8, i64 44, !8, i64 46, !8, i64 48, !8, i64 50, !8, i64 52, !8, i64 54, !8, i64 56, !8, i64 58, !8, i64 60, !8, i64 62, !8, i64 64, !8, i64 66, !8, i64 68, !8, i64 70, !8, i64 72, !8, i64 74, !8, i64 76, !8, i64 78, !8, i64 80, !8, i64 82, !8, i64 84, !45, i64 86, !45, i64 88, !8, i64 90, !8, i64 92, !8, i64 94, !8, i64 96, !8, i64 98, !8, i64 100, !8, i64 102, !8, i64 104, !8, i64 106, !8, i64 108, !8, i64 110, !8, i64 112, !8, i64 114, !8, i64 116, !8, i64 118}
-!45 = !{!"", !4, i64 0, !4, i64 1}
-!46 = !{!44, !8, i64 14}
-!47 = !{!44, !8, i64 22}
-!48 = !{!49, !13, i64 0}
-!49 = !{!"", !13, i64 0, !13, i64 4, !13, i64 8}
-!50 = !{!49, !13, i64 4}
-!51 = !{!49, !13, i64 8}
-!52 = !{!44, !8, i64 106}
-!53 = !{!54, !14, i64 0}
-!54 = !{!"", !14, i64 0, !14, i64 4, !14, i64 8, !14, i64 12, !14, i64 16, !30, i64 20}
-!55 = !{!44, !8, i64 4}
-!56 = !{!44, !8, i64 90}
-!57 = !{!54, !14, i64 4}
-!58 = !{!44, !8, i64 2}
-!59 = !{!44, !8, i64 100}
-!60 = !{!54, !30, i64 20}
-!61 = !{!29, !13, i64 24}
-!62 = !{!29, !14, i64 64}
-!63 = !{!29, !30, i64 36}
-!64 = !{!54, !14, i64 12}
-!65 = !{!44, !8, i64 42}
-!66 = !{!44, !8, i64 44}
-!67 = !{!44, !8, i64 48}
-!68 = !{!44, !8, i64 96}
-!69 = !{!70}
-!70 = distinct !{!70, !71, !"lfo_effects: argument 0"}
-!71 = distinct !{!71, !"lfo_effects"}
-!72 = !{!54, !14, i64 8}
-!73 = !{!44, !8, i64 108}
-!74 = distinct !{!74, !27}
-!75 = !{!13, !13, i64 0}
-!76 = distinct !{!76, !27}
+!15 = !{!12, !14, i64 8}
+!16 = !{!12, !13, i64 4}
+!17 = !{!12, !13, i64 0}
+!18 = distinct !{!18, !19}
+!19 = !{!"llvm.loop.unroll.disable"}
+!20 = distinct !{!20, !21}
+!21 = !{!"llvm.loop.mustprogress"}
+!22 = !{!12, !8, i64 16}
+!23 = !{!12, !8, i64 18}
+!24 = !{!12, !8, i64 20}
+!25 = !{!12, !8, i64 22}
+!26 = !{!12, !8, i64 24}
+!27 = !{!12, !8, i64 26}
+!28 = !{!4, !4, i64 0}
+!29 = distinct !{!29, !19}
+!30 = distinct !{!30, !21}
+!31 = !{!32, !33, i64 4}
+!32 = !{!"", !33, i64 0, !33, i64 4, !13, i64 8, !14, i64 12, !14, i64 16, !14, i64 20, !13, i64 24, !13, i64 28, !14, i64 32, !33, i64 36, !33, i64 40, !33, i64 44, !33, i64 48, !33, i64 52, !14, i64 56, !14, i64 60, !14, i64 64, !4, i64 68}
+!33 = !{!"any pointer", !4, i64 0}
+!34 = !{!32, !33, i64 0}
+!35 = !{!32, !14, i64 20}
+!36 = !{!32, !14, i64 16}
+!37 = !{!32, !13, i64 8}
+!38 = !{!32, !14, i64 12}
+!39 = !{!32, !33, i64 40}
+!40 = !{!32, !33, i64 44}
+!41 = !{!32, !33, i64 48}
+!42 = !{!32, !33, i64 52}
+!43 = !{!32, !14, i64 56}
+!44 = distinct !{!44, !21}
+!45 = distinct !{!45, !21}
+!46 = !{!47, !8, i64 26}
+!47 = !{!"", !8, i64 0, !8, i64 2, !8, i64 4, !8, i64 6, !8, i64 8, !8, i64 10, !8, i64 12, !8, i64 14, !8, i64 16, !8, i64 18, !8, i64 20, !8, i64 22, !8, i64 24, !8, i64 26, !8, i64 28, !8, i64 30, !8, i64 32, !8, i64 34, !8, i64 36, !8, i64 38, !8, i64 40, !8, i64 42, !8, i64 44, !8, i64 46, !8, i64 48, !8, i64 50, !8, i64 52, !8, i64 54, !8, i64 56, !8, i64 58, !8, i64 60, !8, i64 62, !8, i64 64, !8, i64 66, !8, i64 68, !8, i64 70, !8, i64 72, !8, i64 74, !8, i64 76, !8, i64 78, !8, i64 80, !8, i64 82, !8, i64 84, !48, i64 86, !48, i64 88, !8, i64 90, !8, i64 92, !8, i64 94, !8, i64 96, !8, i64 98, !8, i64 100, !8, i64 102, !8, i64 104, !8, i64 106, !8, i64 108, !8, i64 110, !8, i64 112, !8, i64 114, !8, i64 116, !8, i64 118}
+!48 = !{!"", !4, i64 0, !4, i64 1}
+!49 = !{!47, !8, i64 14}
+!50 = !{!47, !8, i64 22}
+!51 = !{!52, !13, i64 0}
+!52 = !{!"", !13, i64 0, !13, i64 4, !13, i64 8}
+!53 = !{!52, !13, i64 4}
+!54 = !{!52, !13, i64 8}
+!55 = !{!47, !8, i64 106}
+!56 = !{!57, !14, i64 0}
+!57 = !{!"", !14, i64 0, !14, i64 4, !14, i64 8, !14, i64 12, !14, i64 16, !33, i64 20}
+!58 = !{!47, !8, i64 4}
+!59 = !{!47, !8, i64 90}
+!60 = !{!57, !14, i64 4}
+!61 = !{!47, !8, i64 2}
+!62 = !{!47, !8, i64 100}
+!63 = !{!57, !33, i64 20}
+!64 = !{!32, !13, i64 24}
+!65 = !{!32, !14, i64 64}
+!66 = !{!32, !33, i64 36}
+!67 = !{!57, !14, i64 12}
+!68 = !{!47, !8, i64 42}
+!69 = !{!47, !8, i64 44}
+!70 = !{!47, !8, i64 48}
+!71 = !{!47, !8, i64 96}
+!72 = !{!73}
+!73 = distinct !{!73, !74, !"lfo_effects: argument 0"}
+!74 = distinct !{!74, !"lfo_effects"}
+!75 = !{!57, !14, i64 8}
+!76 = !{!47, !8, i64 108}
+!77 = distinct !{!77, !21}
+!78 = !{!13, !13, i64 0}
+!79 = distinct !{!79, !21}
+!80 = distinct !{!80, !19}
+!81 = distinct !{!81, !19}
+!82 = distinct !{!82, !19}
+!83 = distinct !{!83, !19}
