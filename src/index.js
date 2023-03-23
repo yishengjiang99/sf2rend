@@ -131,7 +131,6 @@ async function main(sf2file, midifile) {
   });
   midiSelect.attachTo(msel);
 
-  const sf2List = ["GeneralUserGS.sf2", "VintageDreamsWaves-v2.sf2"];
   for (const f of sf2List)
     sf2select.append(mkdiv("option", { value: f.url }, f.name));
   sf2select.onchange = (e) => {

@@ -1,12 +1,11 @@
 import { mkcanvas, chart } from "./node_modules/mk-60fps/chart.js";
 import { mkdiv } from "https://unpkg.com/mkdiv@3.1.0/mkdiv.js";
-import { SpinNode } from "./spin/spin.js";
 import { mkpath } from "./src/path.js";
 import SF2Service from "./sf2-service/index.js";
 import { newSFZone } from "./sf2-service/zoneProxy.js";
 import { timeseries } from "./timeseries.js";
 
-const sf2url = "file.sf2";
+const sf2url = "http://localhost:4000/SalCSLight2.sf2";
 
 const sf2file = new SF2Service(sf2url);
 const loadWait = sf2file.load();
@@ -190,7 +189,7 @@ function renderArticle(keyword, zone) {
   let canvas;
   const zoneObj = newSFZone(zone);
   const zattrs = Object.entries(zone)
-    .filter(([attr, val], idx) => idx < 60)
+    .filterIndex((idx) => idx < 60)
     .filter(([k]) => k.includes(keyword));
 
   const attrVals = mkdiv(

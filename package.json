@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "build": "export SET NODE_OPTIONS=--openssl-legacy-provider && webpack",
-    "start": "export NODE_OPTIONS=--openssl-legacy-provider && npx webpack-dev-server"
+    "build": "webpack"
   },
   "keywords": [],
   "author": "Yisheng Jiang",
@@ -17,6 +16,8 @@
     "webpack-cli": "^4.10.0"
   },
   "dependencies": {
-    "mk-60fps": "^1.1.0"
+    "mk-60fps": "^1.1.0",
+    "pupeteer": "^0.0.1",
+    "puppeteer": "^19.7.5"
   }
 }
