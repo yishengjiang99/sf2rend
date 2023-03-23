@@ -7,8 +7,7 @@
 #define printvoleg(x)                                                    \
   {                                                                      \
     printf("=>increment %f, egval:%f\t %d\t%d\n", x->voleg->egIncrement, \
-           x->voleg->egval, x->voleg->nsamples_till_next_stage,          \
-           x->voleg->stage);                                             \
+           x->voleg->egval, x->voleg->nsteps, x->voleg->stage);          \
   }
 
 int main() {

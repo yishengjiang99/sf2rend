@@ -53,7 +53,7 @@ async function* main2() {
     await ctx.resume();
   }
 
-  const { spinner } = await mkpath(ctx);
+  const spinner = await mkpath(ctx);
   const sf2 = new SF2Service("file.sf2");
   await sf2.load();
   const p = sf2.loadProgram(4, 0);

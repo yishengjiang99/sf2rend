@@ -46,6 +46,9 @@ spinner* newSpinner(int idx) {
   x->modeg = &eg[idx * 2 + 1];
   x->modlfo = &lfos[idx * 2];
   x->vibrlfo = &lfos[idx * 2 + 1];
+  x->voleg->egval = -960.0f;
+  x->voleg->stage = init;
+  x->voleg->egIncrement = 0;
   x->channelId = idx;
   return x;
 }
@@ -71,16 +74,7 @@ void reset(spinner* x) {
   x->vibrlfo->phase = 0;
 }
 
-void set_zone(spinner* x, zone_t* z, unsigned int pcmSampleRate) {
-  x->zone = z;
-  init_mod_eg(x->modeg, z, pcmSampleRate);
-  init_vol_eg(x->voleg, z, pcmSampleRate);
-  x->modlfo->delay = timecent2sample(z->ModLFODelay);
-  x->vibrlfo->delay = timecent2sample(z->ModLFODelay);
-
-  set_frequency(x->modlfo, z->ModLFOFreq);
-  set_frequency(x->vibrlfo, z->VibLFOFreq);
-}
+void set_zone(spinner* x, zone_t* z, unsigned int pcmSampleRate) {}
 
 void set_midi_cc_val(int channel, int metric, int val) {
   midi_cc_vals[channel * 128 + metric] = (char)(val & 0x7f);
@@ -107,7 +101,15 @@ float trigger_attack(spinner* x, zone_t* z, float ratio, int velocity) {
   x->fract = 0.0f;
   x->stride = ratio;
   x->velocity = velocity & 0x7f;
-  set_zone(x, z, pcm->sampleRate);
+  x->zone = z;
+  init_mod_eg(x->modeg, z, pcm->sampleRate);
+
+  init_vol_eg(x->voleg, z, pcm->sampleRate);
+  x->modlfo->delay = timecent2sample(z->ModLFODelay);
+  x->vibrlfo->delay = timecent2sample(z->ModLFODelay);
+
+  set_frequency(x->modlfo, z->ModLFOFreq);
+  set_frequency(x->vibrlfo, z->VibLFOFreq);
   return x->stride;
 }
 
@@ -168,7 +170,6 @@ void _spinblock(spinner* x, int n, int blockOffset) {
       x->outputf[i * 2 + blockOffset * 2] = 0.0f;
       x->outputf[i * 2 + blockOffset * 2 + 1] = 0.0f;
       x->voleg->stage = done;
-      return;
     }
 
     float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
@@ -178,6 +179,7 @@ void _spinblock(spinner* x, int n, int blockOffset) {
     x->outputf[i * 2 + blockOffset * 2 + 1] =
         applyCentible(outputf, (short)(db + kRateCB + panRight));
     db += dbInc;
+    if (db <= -1360) dbInc = 0.0;
   }
   x->position = position;
   x->fract = fract;
@@ -185,6 +187,9 @@ void _spinblock(spinner* x, int n, int blockOffset) {
 }
 
 int spin(spinner* x, int n) {
+  if (x->voleg->stage == init || x->voleg->stage == done) {
+    return x->voleg->egIncrement;
+  }
   update_eg(x->voleg, 64);
 
   update_eg(x->modeg, 64);
@@ -195,5 +200,5 @@ int spin(spinner* x, int n) {
   update_eg(x->modeg, 64);
 
   _spinblock(x, 64, 64);
-  return x->voleg->stage;
+  return (int)(x->voleg->egIncrement * 1000);
 }
