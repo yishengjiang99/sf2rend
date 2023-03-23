@@ -1,11 +1,11 @@
-import { mkcanvas, chart } from "./node_modules/mk-60fps/chart.js";
+import { mkcanvas, chart } from "./chart/chart.js";
 import { mkdiv } from "https://unpkg.com/mkdiv@3.1.0/mkdiv.js";
 import { mkpath } from "./src/path.js";
 import SF2Service from "./sf2-service/index.js";
 import { newSFZone } from "./sf2-service/zoneProxy.js";
 import { timeseries } from "./timeseries.js";
 
-const sf2url = "http://localhost:4000/SalCSLight2.sf2";
+const sf2url = "./static/SoundBlasterOld.sf2";
 
 const sf2file = new SF2Service(sf2url);
 const loadWait = sf2file.load();
@@ -23,6 +23,10 @@ let program,
 renderMain();
 window.addEventListener("hashchange", rendProgram);
 Array(16).map((i) => mkdiv("span"));
+let activeCanvas = 0;
+Array.from(document.querySelectorAll("canvas")).map((can) =>
+  can.context.pause()
+);
 async function renderMain() {
   await loadWait;
   document.body.innerHTML = "";
@@ -101,30 +105,33 @@ function rendProgram() {
         [z.VelRange.lo, z.VelRange.hi].join("-")
       }</option>`
   );
-  const articleHeader = mkdiv("div", { class: "note-header" }, [
-    mkdiv(
+  const articleHeader = mkdiv(
       "div",
-      { class: "note-menu" },
+      { class: "note-header" },
+
       mkdiv(
-        "select",
-        {
-          oninput: (e) =>
-            renderZ(program.zMap.filter((z) => e.target.value)[0]),
-        },
-        kRangeList
+        "div",
+        { class: "note-menu" },
+        mkdiv(
+          "select",
+          {
+            oninput: (e) =>
+              renderZ(program.zMap.filter((z) => e.target.value)[0]),
+          },
+          kRangeList
+        )
       )
     ),
-  ]);
-  articleMain = mkdiv("div", { class: "note-preview" }, [
-    mkdiv(
-      "div",
-      {
-        style:
-          "display:flex flex-direction:row; max-height:50vh; overflow-y:scroll; gap:0 20px 20px",
-      },
-      []
-    ),
-  ]);
+    articleMain = mkdiv("div", { class: "note-preview" }, [
+      mkdiv(
+        "div",
+        {
+          style:
+            "display:flex flex-direction:row; max-height:50vh; overflow-y:scroll; gap:0 20px 20px",
+        },
+        []
+      ),
+    ]);
   const mainRight = mkdiv("div", { class: "note" }, [
     mkdiv("div", { class: "note-title" }, [sf2file.programNames[presetId]]),
     articleHeader,
@@ -176,21 +183,34 @@ async function renderZ(zoneSelect) {
 
 //drawEV(zone.arr.slice(33, 39), volEGCanvas);
 function min_max_vals(k) {
-  if (k.includes("Sustain")) {
-    return { min: 0, max: 1000, step: 10 };
-  } else
-    return {
-      min: -12000,
-      max: 5000,
-      step: 10,
-    };
+  switch (k) {
+    case "Sustain":
+      return { min: 0, max: 1000, step: 10 };
+    case "FilterFc":
+      return { min: 1500, max: 13400, value: 13500 };
+    case "FilterQ":
+      return { min: 0, value: 10, max: 960 };
+    default:
+      return {
+        min: -12000,
+        max: 5000,
+        step: 10,
+      };
+  }
+}
+function renderFilterPanel(zone) {
+  const tic2hz = (tc) => 0.178 * Math.pow(2, tc / 1200);
+  const btc = new BiquadFilterNode(ctx, {
+    type: "biquad",
+    Q: Math.pow(10, zone.FilterQ / 10000),
+    frequency: tic2hz(zone.FilterFc),
+  });
+  spinner.connect(btc, 0, 0).connect(ctx.destination);
 }
 function renderArticle(keyword, zone) {
   let canvas;
   const zoneObj = newSFZone(zone);
-  const zattrs = Object.entries(zone)
-    .filterIndex((idx) => idx < 60)
-    .filter(([k]) => k.includes(keyword));
+  const zattrs = Object.entries(zone).filter(([k]) => k.includes(keyword));
 
   const attrVals = mkdiv(
     "ul",
@@ -216,8 +236,10 @@ function renderArticle(keyword, zone) {
   const details = mkdiv("div");
   const article = mkdiv("article", { class: "article" }, [attrVals, details]);
   if (keyword === "VolEnv") {
-    canvas = mkcanvas({ container: details, title: "amp eg" });
+    canvas = mkcanvas({ container: details });
     drawEV(zoneObj, canvas);
+  } else if (keyword == "VolEnv") {
+    c("voleg", zoneObj;);
   }
   return article;
 }
@@ -249,7 +271,6 @@ async function rendSample(e) {
     cmd: "newZone",
     zone: { arr, ref },
   });
-  console.log(1);
   spinner.port.postMessage([
     0x90,
     0,
@@ -267,18 +288,16 @@ async function rendSample(e) {
 }
 const drawEV = async (zone, target) => {
   const [delay, att, hold, decay, sustain, release] = zone.arr.slice(33, 39);
-  console.log(delay, att, hold, decay, sustain, release);
   const tc2time = (t) => Math.pow(2, t / 1200);
   const ctx = new OfflineAudioContext(1, 6000, 3000);
   const amp = new GainNode(ctx, { gain: 0 });
   const o = new ConstantSourceNode(ctx, { offset: 0.2 });
   o.connect(new DelayNode(ctx, { delayTime: tc2time(delay) }));
 
-  // amp.gain.setValueAtTime(0, tc2time(delay));
   amp.gain.linearRampToValueAtTime(1, tc2time(att));
   amp.gain.cancelAndHoldAtTime(tc2time(att));
   amp.gain.setTargetAtTime(
-    (1440 - sustain) / 1440,
+    -sustain / tc2time(decay),
     tc2time(att) + tc2time(hold),
     tc2time(decay)
   );
@@ -288,6 +307,7 @@ const drawEV = async (zone, target) => {
   amp.gain.cancelAndHoldAtTime(
     tc2time(att) + tc2time(tc2time(decay)) + tc2time(hold) + 0.1
   );
+  amp.gain.linearRampToValueAtTime(1 - sustain, tc2time(sustain));
 
   o.connect(amp);
   amp.connect(ctx.destination);
