@@ -1,68 +1,8 @@
-/* eslint-disable no-unused-vars */
 import { readMidi } from "./midiread.js";
 
-
-run("song.mid");
-
-export async function run(url){
-  const info = await loadMidiURL(url);
-  const {pause, rwd, run, resume} = scheduleMidiPlayer(jfno);
-  return {
-    ...{presets, meta, ntracks, totalticks},
-    scheduler:{ pause, rwd, run, resume }
-  }
-
+export function scheduler(midi_u8, cb) {
+  return scheduleMidiPlayer(readMidi(midi_u8), cb);
 }
-
-async function loadMidiURL(url) {
-  const res = await fetch(url);
-  const ab = await res.arrayBuffer();
-  return scheduleMidiPlayer(new Uint8Array(ab), postMessage);
-}
-
-async function main() {
-  let scheduler, midinfo;
-  addEventListener("message", async function (e) {
-    const {
-      data: { cmd, url, amt },
-    } = e;
-    switch (cmd) {
-      case "load":
-        if (scheduler) {
-          scheduler.ctrls.pause();
-        }
-         { presets, totalTicks, tracks } = (midiinfo = await loadMidiURL(
-          url
-        ));
-
-        postMessage({ presets, totalTicks });
-
-        for (const track of midifile.tracks) {
-          for (const event of track) {
-            if (event && event.t > 0) break;
-            if (!event.channel) postMessage(event);
-          }
-        }
-        break;
-      case "run":
-        scheduler.ctrls.run();
-        break;
-      case "pause":
-        scheduler.ctrls.pause();
-        break;
-      case "resume":
-        scheduler.ctrls.run();
-        break;
-
-      case "rwd":
-        scheduler.ctrls.rwd(amt || 16);
-        break;
-      case "ff":
-        break;
-    }
-  });
-}
-
 export function scheduleMidiPlayer(midiInfo, cb) {
   const { tempos, tracks, division, presets, ntracks } = readMidi(midiInfo);
 
@@ -81,6 +21,8 @@ export function scheduleMidiPlayer(midiInfo, cb) {
   const trackEventIndex = new Array(ntracks).fill(0);
   const clockTimeMap = [];
   const markClockTime = () => clockTimeMap.push([clockTime, currentTick]);
+
+  timeSignature = (newevent.timeSignature[0] / newevent.timeSignature[1]) * 4;
 
   async function run() {
     paused = false;
@@ -153,3 +95,4 @@ export function scheduleMidiPlayer(midiInfo, cb) {
     totalTicks,
   };
 }
+6;

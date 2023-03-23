@@ -33,7 +33,8 @@ void set_zone(spinner* x, zone_t* z, unsigned int pcm_sampleRate);
 spinner* newSpinner(int idx);
 void eg_release(spinner* x);
 void reset(spinner* x);
-int spin(spinner* x, int n);
+int spin(spinner* x, int n);  
+float* spOutput(spinner*x);
 
 // borrowed from tml.h
 enum TMLController {

@@ -1,5 +1,6 @@
 import { mkcanvas, chart } from "./chart/chart.js";
 import { mkdiv } from "https://unpkg.com/mkdiv@3.1.0/mkdiv.js";
+import { SpinNode } from "./spin/spin.js";
 import { mkpath } from "./src/path.js";
 import SF2Service from "./sf2-service/index.js";
 import { newSFZone } from "./sf2-service/zoneProxy.js";

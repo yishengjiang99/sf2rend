@@ -1,10 +1,24 @@
 import { downloadData } from "../fetch-drop-ship/download.js";
 import saturate from "../saturation/index.js";
 import { wasmbin } from "./spin.wasm.js";
+const n_midi_channels = 16;
+const n_voices = 16 * 4;
+const EG_STAGES = {
+  INIT: 0,
+  DELAY: 1,
+  ATTACK: 2,
+  HOLD: 3,
+  DECAY: 4,
+  RELEASE: 5,
+  DONE: 99,
+};
+
 class SpinProcessor extends AudioWorkletProcessor {
   constructor(options) {
     super(options);
     this.setup_wasm();
+
+    this.active_voices = [];
     this.inst.exports.gm_reset();
     this.sampleIdRefs = [];
     this.presetRefs = [];
@@ -14,12 +28,12 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.midiccRef = new Uint8Array(
       this.memory.buffer,
       this.inst.exports.midi_cc_vals,
-      128 * 16
+      128 * n_midi_channels
     );
     this.outputfff = new Float32Array(
       this.memory.buffer,
       this.inst.exports.outputs.value,
-      128 * 32
+      128 * n_voices
     );
     this.spState = new Array(32);
     this.port.postMessage({ init: 1 });
@@ -38,14 +52,8 @@ class SpinProcessor extends AudioWorkletProcessor {
       maximum: 1024 * 4,
       initial: 1024 * 4,
     });
-    let lastfl;
     const imports = {
       memory: this.memory,
-      debugFL: (fl) => {
-        if (!lastfl || fl != lastfl) {
-          lastfl = fl;
-        }
-      },
     };
     this.inst = new WebAssembly.Instance(new WebAssembly.Module(wasmbin), {
       env: imports,
@@ -60,7 +68,7 @@ class SpinProcessor extends AudioWorkletProcessor {
   }
 
   ch_occupied(ch) {
-    return this.eg_vol_stag[ch] && this.eg_vol_stag[ch] < 99;
+    return this.eg_vol_stag[ch] && this.eg_vol_stag[ch] < 6;
   }
   async handleMsg(e) {
     const { data } = e;
@@ -113,7 +121,7 @@ class SpinProcessor extends AudioWorkletProcessor {
             let ch = channel;
             this.inst.exports.reset();
             this.inst.exports.trigger_attack(
-              this.spinners[ch],
+              spinner,
               this.presetRefs[zoneRef],
               ratio,
               velocity
@@ -166,7 +174,6 @@ class SpinProcessor extends AudioWorkletProcessor {
       for (let j = 0; j < 128 * 2; j++) {
         this.outputs[i][j] = 0;
       }
-      this.eg_vol_stag[i] = this.inst.exports.spin(this.spinners[i], 128);
       for (let j = 0; j < 128; j++) {
         outputs[chid][0][j] += saturate(this.outputs[i][2 * j]);
         outputs[chid][1][j] += saturate(this.outputs[i][2 * j + 1]);

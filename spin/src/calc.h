@@ -1,7 +1,7 @@
+#include "p1200.h"
 #ifndef CALC_H
 #define CALC_H
 
-#include "p1200.h"
 #define log_2_10 3.321928094f
 #define bit23_normalize 1.000f / 0x7fffff
 #ifndef SAMPLE_RATE
@@ -9,13 +9,12 @@
 #endif
 #define SAMPLE_BLOCK 128
 #define BLOCKS_PER_SECOND SAMPLE_RATE / SAMPLE_BLOCK
-#define clamp(val, min, max) val > max ? max : val < min ? min : val
 
-double midi_volume_log10(int val) {
-  if (val < 0) return 1440;
-  if (val > 128) return 0;
-  return midi_log_10[val];
-}
+#ifndef
+#define clamp(val, min, max) val > max ? max : val < min ? min : val
+#endif
+
+
 
 double timecent2second(short tc) {
   if (tc < 0) return 1.0f / timecent2second(-1 * tc);
@@ -50,5 +49,10 @@ static inline short sf2midiPan(short sf2pan) {
   if (sf2pan > 500) return 128;
   if (sf2pan < -500) return 1;
   return (short)64 + sf2pan / 500 * 64;
+}
+double midi_volume_log10(int val) {
+  if (val < 0) return 1440;
+  if (val > 128) return 0;
+  return midi_log_10[val];
 }
 #endif
