@@ -15,6 +15,7 @@ export class SpinNode extends AudioWorkletNode {
       numberOfOutputs,
       outputChannelCount: new Array(16).fill(2),
     });
+    this.port.onmessageerror = (e) => alert("adfasfd", e.message); // e; // e.message;
   }
 
   keyOn(channel, zone, key, vel) {

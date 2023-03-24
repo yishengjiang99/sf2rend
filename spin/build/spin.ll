@@ -244,7 +244,7 @@ define hidden float @update_eg(ptr nocapture noundef %0, i32 noundef %1) local_u
   br label %20
 
 20:                                               ; preds = %13, %6
-  %21 = phi float [ %19, %13 ], [ %12, %6 ]
+  %21 = phi float [ %12, %6 ], [ %19, %13 ]
   ret float %21
 }
 
@@ -605,10 +605,18 @@ define hidden void @_eg_set_stage(ptr nocapture noundef %0, i32 noundef %1) loca
 ; Function Attrs: nofree nosync nounwind
 define hidden void @_eg_release(ptr nocapture noundef %0) local_unnamed_addr #5 {
   %2 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 2
+  %3 = load i32, ptr %2, align 4, !tbaa !17
+  %4 = icmp sgt i32 %3, -1
+  br i1 %4, label %5, label %7
+
+5:                                                ; preds = %1
   store i32 5, ptr %2, align 4, !tbaa !17
-  %3 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 3
-  store i32 0, ptr %3, align 4, !tbaa !11
-  tail call void @advanceStage(ptr noundef %0)
+  %6 = getelementptr inbounds %struct.EG, ptr %0, i32 0, i32 3
+  store i32 0, ptr %6, align 4, !tbaa !11
+  tail call void @advanceStage(ptr noundef nonnull %0)
+  br label %7
+
+7:                                                ; preds = %5, %1
   ret void
 }
 
@@ -737,17 +745,33 @@ define hidden void @eg_release(ptr nocapture noundef readonly %0) local_unnamed_
   %2 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 10
   %3 = load ptr, ptr %2, align 4, !tbaa !37
   %4 = getelementptr inbounds %struct.EG, ptr %3, i32 0, i32 2
+  %5 = load i32, ptr %4, align 4, !tbaa !17
+  %6 = icmp sgt i32 %5, -1
+  br i1 %6, label %7, label %9
+
+7:                                                ; preds = %1
   store i32 5, ptr %4, align 4, !tbaa !17
-  %5 = getelementptr inbounds %struct.EG, ptr %3, i32 0, i32 3
-  store i32 0, ptr %5, align 4, !tbaa !11
-  tail call void @advanceStage(ptr noundef %3)
-  %6 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 11
-  %7 = load ptr, ptr %6, align 4, !tbaa !38
-  %8 = getelementptr inbounds %struct.EG, ptr %7, i32 0, i32 2
-  store i32 5, ptr %8, align 4, !tbaa !17
-  %9 = getelementptr inbounds %struct.EG, ptr %7, i32 0, i32 3
-  store i32 0, ptr %9, align 4, !tbaa !11
-  tail call void @advanceStage(ptr noundef %7)
+  %8 = getelementptr inbounds %struct.EG, ptr %3, i32 0, i32 3
+  store i32 0, ptr %8, align 4, !tbaa !11
+  tail call void @advanceStage(ptr noundef nonnull %3)
+  br label %9
+
+9:                                                ; preds = %1, %7
+  %10 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 11
+  %11 = load ptr, ptr %10, align 4, !tbaa !38
+  %12 = getelementptr inbounds %struct.EG, ptr %11, i32 0, i32 2
+  %13 = load i32, ptr %12, align 4, !tbaa !17
+  %14 = icmp sgt i32 %13, -1
+  br i1 %14, label %15, label %17
+
+15:                                               ; preds = %9
+  store i32 5, ptr %12, align 4, !tbaa !17
+  %16 = getelementptr inbounds %struct.EG, ptr %11, i32 0, i32 3
+  store i32 0, ptr %16, align 4, !tbaa !11
+  tail call void @advanceStage(ptr noundef nonnull %11)
+  br label %17
+
+17:                                               ; preds = %9, %15
   ret void
 }
 
@@ -1496,11 +1520,11 @@ define hidden i32 @spin(ptr nocapture noundef %0, i32 noundef %1) local_unnamed_
   %4 = load ptr, ptr %3, align 4, !tbaa !37
   %5 = getelementptr inbounds %struct.EG, ptr %4, i32 0, i32 2
   %6 = load i32, ptr %5, align 4, !tbaa !17
-  %7 = icmp eq i32 %6, 0
-  br i1 %7, label %86, label %8
+  %7 = icmp slt i32 %6, 0
+  br i1 %7, label %88, label %8
 
 8:                                                ; preds = %2
-  %9 = icmp sgt i32 %6, 98
+  %9 = icmp ugt i32 %6, 98
   br i1 %9, label %10, label %17
 
 10:                                               ; preds = %8
@@ -1514,8 +1538,8 @@ define hidden i32 @spin(ptr nocapture noundef %0, i32 noundef %1) local_unnamed_
   %15 = getelementptr inbounds %struct.spinner, ptr %0, i32 0, i32 13
   %16 = load ptr, ptr %15, align 4, !tbaa !40
   store i16 0, ptr %16, align 2, !tbaa !9
-  store i32 0, ptr %5, align 4, !tbaa !17
-  br label %86
+  store i32 -1, ptr %5, align 4, !tbaa !17
+  br label %88
 
 17:                                               ; preds = %8
   %18 = getelementptr inbounds %struct.EG, ptr %4, i32 0, i32 3
@@ -1631,12 +1655,14 @@ define hidden i32 @spin(ptr nocapture noundef %0, i32 noundef %1) local_unnamed_
   %82 = load ptr, ptr %3, align 4, !tbaa !37
   %83 = getelementptr inbounds %struct.EG, ptr %82, i32 0, i32 1
   %84 = load float, ptr %83, align 4, !tbaa !15
-  %85 = fptosi float %84 to i32
-  br label %86
+  %85 = fpext float %84 to double
+  %86 = fadd double %85, 1.000000e-03
+  %87 = fptosi double %86 to i32
+  br label %88
 
-86:                                               ; preds = %2, %81, %10
-  %87 = phi i32 [ 0, %10 ], [ %85, %81 ], [ 0, %2 ]
-  ret i32 %87
+88:                                               ; preds = %2, %81, %10
+  %89 = phi i32 [ 9999, %10 ], [ %87, %81 ], [ 0, %2 ]
+  ret i32 %89
 }
 
 attributes #0 = { mustprogress nofree norecurse nosync nounwind readonly willreturn "frame-pointer"="none" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="generic" }

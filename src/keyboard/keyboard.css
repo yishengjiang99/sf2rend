@@ -1,6 +1,6 @@
 .keylist {
-  height: 12em;
-  width: 50em;
+  height: max-content
+  width: min-content;
   left: 14em;
   position: relative;
   border: 1px solid #160801;

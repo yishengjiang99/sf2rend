@@ -4,7 +4,7 @@
   "description": "",
   "main": "lpf.js",
   "scripts": {
-    "build": "emcc lpf.c -o lpf.wasm --no-entry -s TOTAL_STACK=32kb -s INITIAL_MEMORY=64kb"
+    "build": "make"
   },
   "keywords": [],
   "author": "Yisheng Jiang",

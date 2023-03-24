@@ -1,33 +1,44 @@
+
 typedef struct {
-  float fc;
-  float b1, m1;
+  /*
+X = exp(-2.0 * pi * Fc)
+*     A = 1 - X
+*     B = X
+*     Fc = cutoff freq / sample rate*/
+  float input;
+  float output;
+  float m1;
+  float X;
 } lpf_t;
 #ifndef M_PI
-#define M_PI 3.1415926
+#define M_PI 3.1415926f
 #endif
-
-#define emcc_fck_off __attribute__((used))
-
+lpf_t filters[1];
+float inputArray[128];
+float dynamicFC[128];
+float sr;
 static float exp1(float x) { return (6 + x * (6 + x * (3 + x))) * 0.16666666f; }
 
-emcc_fck_off void newLpf(lpf_t *l, float fc) {
-  l->fc = fc;
-  l->m1 = 0.0000;
-  l->b1 = (1 - 2.0f * fc) * (1 - 2.0f * fc);
+lpf_t *newLpf(int idx, float cutoff_freq, int sample_rate) {
+  lpf_t *l = &filters[idx & 0xff];
+  l->m1 = 0;
+  l->X = exp1(-2.0f * M_PI * (float)cutoff_freq / sample_rate);
+  sr = -2.f * M_PI / sample_rate;
+  return l;
 }
 
-emcc_fck_off float process_input(lpf_t *l, float input, float detune) {
-  float output = (1 - l->b1) * input + l->b1 * l->m1;
-  if (output < -1.0) output = -1.0;
-  if (output > 1.0) output = 1.0;
-  l->m1 = output;
-
-  return output;
+void process_input(lpf_t *l) {
+  l->output = l->input * (1 - l->X) + l->m1 * l->X;
+  l->m1 = l->output;
 }
-emcc_fck_off void process_LIST(lpf_t *l, float *input, int n, float fc) {
+
+void process_LIST(lpf_t *l, int n, float *input, float *fcs) {
   while (n-- > 0) {
-    l->m1 = (1 - l->b1) * *input + l->b1 * l->m1;
+    l->X = exp1(*fcs * sr);
+    l->input = *input;
+    l->m1 = (1 - l->X) * *input + l->X * l->m1;
     *input = l->m1;
     input++;
   }
 }
+unsigned int struct_size = sizeof(lpf_t);

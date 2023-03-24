@@ -61,7 +61,7 @@ export function timeseries(_params) {
       }
     }
     canvasCtx.stroke();
-    requestAnimationFrame(draw);
+    //    requestAnimationFrame(draw);
   }
   draw();
 }

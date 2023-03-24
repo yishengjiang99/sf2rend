@@ -110,6 +110,7 @@ class SpinProcessor extends AudioWorkletProcessor {
               this.instantiate(channel);
             }
             let ch = channel;
+            this.eg_vol_stag[ch] = 1;
             this.inst.exports.reset(this.spinners[ch]);
             this.inst.exports.trigger_attack(
               this.spinners[ch],
@@ -160,17 +161,19 @@ class SpinProcessor extends AudioWorkletProcessor {
   process(inputs, outputs, parameters) {
     for (let i = 0; i < 32; i++) {
       const chid = Math.floor(i / 2);
+      // if (this.eg_vol_stag[i] === 9999) continue;
       if (!this.spinners[i]) continue;
       if (!this.outputs[i]) continue;
-      for (let j = 0; j < 128 * 2; j++) {
-        this.outputs[i][j] = 0;
-      }
+
       this.eg_vol_stag[i] = this.inst.exports.spin(this.spinners[i], 128);
       for (let j = 0; j < 128; j++) {
         outputs[chid][0][j] += saturate(this.outputs[i][2 * j]);
         outputs[chid][1][j] += saturate(this.outputs[i][2 * j + 1]);
       }
     }
+    new Promise((r) => r()).then(() => {
+      this.port.postMessage({ egStages: this.eg_vol_stag });
+    });
     return true;
   }
 }

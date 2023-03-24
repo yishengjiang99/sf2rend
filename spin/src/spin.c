@@ -116,6 +116,7 @@ float kRateAttenuate(spinner* x, int ch) {
   if (x->voleg->stage > decay)
     kRateCB -= midi_volume_log10(midi_cc_vals[ch * 128 + TML_EXPRESSION_MSB]);
   kRateCB -= midi_volume_log10(x->velocity) / 4;
+
   return kRateCB;
 }
 void _spinblock(spinner* x, int n, int blockOffset) {
@@ -179,14 +180,13 @@ void _spinblock(spinner* x, int n, int blockOffset) {
 }
 
 int spin(spinner* x, int n) {
-  if (x->voleg->stage == init) {
+  if (x->voleg->stage < init) {
     return 0;
   }
   if (x->voleg->stage >= done) {
     reset(x);
-    x->voleg->stage = init;
-
-    return 0;
+    x->voleg->stage = pre_init;
+    return 9999;
   }
   update_eg(x->voleg, 64);
 
@@ -198,5 +198,5 @@ int spin(spinner* x, int n) {
   update_eg(x->modeg, 64);
 
   _spinblock(x, 64, 64);
-  return x->voleg->egIncrement;
+  return x->voleg->egIncrement + .001;
 }

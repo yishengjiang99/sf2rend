@@ -34,22 +34,20 @@ int main() {
   z->VolEnvSustain = 1000;
   z->SampleId = 0;
   z->SampleModes = 1;
-  z->VolEnvRelease = 814;
+  z->VolEnvRelease = 95;
   printvoleg(x);
   trigger_attack(x, z, 1.0, 123);
 
   printvoleg(x);
 
-  for (int i = 0; x->voleg->stage < 5; i++) {
-    update_eg(x->voleg, 64);
-    _spinblock(x, 64, 0);
+  for (int i = 0; x->voleg->stage < 3; i++) {
+    spin(x, 128);
     printvoleg(x);
   }
-  printf("....");
   eg_release(x);
-  for (int i = 0; x->voleg->stage < 6; i++) {
-    update_eg(x->voleg, 4);
-    _spinblock(x, 4, 0);
+  for (int i = 0; x->voleg->stage < done; i++) {
+    spin(x, 128);
+    if (x->voleg->stage < init) break;
     printvoleg(x);
   }
   return 1;

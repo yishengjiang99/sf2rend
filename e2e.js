@@ -3,7 +3,6 @@ import { mkdiv } from "https://unpkg.com/mkdiv@3.1.0/mkdiv.js";
 import { mkpath } from "./src/path.js";
 import SF2Service from "./sf2-service/index.js";
 import { newSFZone } from "./sf2-service/zoneProxy.js";
-import { timeseries } from "./timeseries.js";
 
 const sf2url = "file.sf2";
 
@@ -18,16 +17,21 @@ let program,
   main,
   rightPanel,
   zoneObj,
-  vrPanel;
+  audioPath,
+  volMeters;
 
 renderMain();
 window.addEventListener("hashchange", rendProgram);
 Array(16).map((i) => mkdiv("span"));
 async function renderMain() {
   await loadWait;
+  if (!spinner) {
+    audioPath = await startSpinner();
+    spinner = audioPath.spinner;
+  }
   document.body.innerHTML = "";
   mkdiv("nav", [
-    mkdiv("div", { id: "volmeter", style: "min-height:2em" }),
+    (volMeters = mkdiv("div", { id: "volmeter", style: "min-height:2em" })),
     mkdiv("div", [
       mkdiv(
         "button",
@@ -75,10 +79,12 @@ async function renderMain() {
       mkdiv("nav", {}, progList),
     ]
   );
-  vrPanel = mkdiv("div", { class: "col" });
+  const vrPanel = mkdiv("div", { class: "col" });
   main = mkdiv("div", { class: "main" }, [leftNav, rightPanel, vrPanel]);
   document.body.append(main);
-  await startSpinner();
+  audioPath.viewTimeseries({ container: vrPanel });
+  await audioPath.startAudio();
+
   rendProgram();
 }
 
@@ -88,7 +94,7 @@ function rendProgram() {
   const pid = intpre;
   const bid = 0;
   program = sf2file.loadProgram(pid, bid);
-  if (!zone) zone = program.filterKV(55, 55)[0];
+  if (!zone) zone = program.filterKV(55, 98)[0];
 
   const kRangeList = program.zMap.map(
     (z) =>
@@ -140,38 +146,39 @@ async function renderZ(zoneSelect) {
     return;
   }
   zoneObj = newSFZone(zoneSelect);
-
-  const zattrs = Object.entries(zoneObj).filter(([attr, val], idx) => idx < 60);
-
   const pcm = await zoneSelect.shdr.data();
   chart(canvas, pcm);
 
   const zoneinfo = mkdiv("div", [
-    mkdiv("div", [
-      "smpl: ",
-      zoneSelect.shdr.SampleId,
-      " ",
-      zoneSelect.shdr.name,
-      "<br>nsample: ",
-      zoneSelect.shdr.nsamples,
-      "<br>srate: " + zoneSelect.shdr.originalPitch,
-      "<br>Range: ",
-      zoneSelect.shdr.range.join("-"),
-      "<br>",
-      "loop: ",
-      zoneSelect.shdr.loops.join("-"),
-      "<br>",
-
-      JSON.stringify(zoneSelect.KeyRange),
-      "<br>",
-      JSON.stringify(zoneSelect.VolRange),
-    ]),
+    renderSampleView(zoneSelect),
     ..."Attenuation,VolEnv,Filter,LFO"
       .split(",")
       .map((keyword) => renderArticle(keyword, zoneSelect)),
   ]);
 
   articleMain.replaceChildren(zoneinfo);
+}
+
+function renderSampleView(zoneSelect) {
+  return mkdiv("div", [
+    "smpl: ",
+    zoneSelect.shdr.SampleId,
+    " ",
+    zoneSelect.shdr.name,
+    "<br>nsample: ",
+    zoneSelect.shdr.nsamples,
+    "<br>srate: " + zoneSelect.shdr.originalPitch,
+    "<br>Range: ",
+    zoneSelect.shdr.range.join("-"),
+    "<br>",
+    "loop: ",
+    zoneSelect.shdr.loops.join("-"),
+    "<br>",
+
+    JSON.stringify(zoneSelect.KeyRange),
+    "<br>",
+    JSON.stringify(zoneSelect.VolRange),
+  ]);
 }
 
 //drawEV(zone.arr.slice(33, 39), volEGCanvas);
@@ -185,6 +192,7 @@ function min_max_vals(k) {
       step: 10,
     };
 }
+function renderLPFView(zone) {}
 function renderArticle(keyword, zone) {
   let canvas;
   const zoneObj = newSFZone(zone);
@@ -194,8 +202,7 @@ function renderArticle(keyword, zone) {
     "ul",
     zattrs.map(([k, v]) =>
       mkdiv("li", [
-        k,
-        ": ",
+        mkdiv("label", [k, ":"]),
         mkdiv("label", [v]),
         mkdiv("input", {
           type: "range",
@@ -223,14 +230,9 @@ let ctx;
 async function startSpinner() {
   ctx = ctx || new AudioContext();
   const analyzer = new AnalyserNode(ctx, { fft: 1024 });
-  if (!spinner) spinner = await mkpath(ctx, [analyzer]);
-  timeseries({
-    analyzer,
-    width: 540,
-    height: 255,
-    canvas: mkcanvas({ container: vrPanel }).canvas,
-  });
-  const volMeters = document.querySelector("#volmeter");
+  const audioPath = await mkpath(ctx, [analyzer]);
+  spinner = audioPath.spinner;
+
   spinner.port.onmessage = ({ data }) => {
     if (data.egStages) {
       volMeters.innerHTML = data.egStages.join("&nbsp");
@@ -239,9 +241,11 @@ async function startSpinner() {
       console.log(data.ack);
     }
   };
+  return audioPath;
 }
 async function rendSample(e) {
   if (ctx.state !== "running") await ctx.resume();
+  if (!zoneObj) return;
   const { arr, ref } = zoneObj;
   spinner.port.postMessage({
     cmd: "newZone",

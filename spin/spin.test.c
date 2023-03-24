@@ -49,7 +49,7 @@ int main() {
   eg_release(x);
   for (int i = 0; x->voleg->stage < 6 || i < 1000; i++) {
     update_eg(x->voleg, 4);
-    _spinblock(x, 4, 0);
+    spi(x, 4, 0);
     printvoleg(x);
   }
   return 1;

@@ -1,7 +1,7 @@
 import { mkdiv, logdiv, mkdiv2 } from "https://unpkg.com/mkdiv@3.1.2/mkdiv.js";
 import { mkui } from "./ui.js";
 import SF2Service from "https://unpkg.com/sf2-service@1.3.6/index.js";
-import { fetchmidilist } from "./midilist.js";
+import { fetchmidilist, fetchSF2List } from "./midilist.js";
 import { mkeventsPipe } from "./mkeventsPipe.js";
 import { createChannel } from "./createChannel.js";
 import { midi_ch_cmds, range } from "./constants.js";
@@ -131,13 +131,13 @@ async function main(sf2file, midifile) {
   });
   midiSelect.attachTo(msel);
 
-  for (const f of sf2List)
+  for (const f of await fetchSF2List())
     sf2select.append(mkdiv("option", { value: f.url }, f.name));
   sf2select.onchange = (e) => {
     updateAppState({ sf2file: e.target.value });
   };
   const { mkpath } = await import("./path.js");
-  const spinner = await mkpath(ctx);
+  const { spinner } = await mkpath(ctx);
   updateAppState({
     spinnerLoaded: true,
   });

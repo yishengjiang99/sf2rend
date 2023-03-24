@@ -3,6 +3,7 @@
 #include "sf2.h"
 #include "spin.h"
 enum eg_stages {
+  pre_init = -1,
   init = 0,
   delay,
   attack = 2,
@@ -34,13 +35,14 @@ float update_eg(EG* eg, int n) {
   if (n < eg->nsteps) {
     eg->nsteps -= n;
     eg->egval += eg->egIncrement * n;
+    return eg->egval;
   } else {
     int leftOver = n - eg->nsteps;
     eg->egval += eg->egIncrement * n;
     eg->nsteps = 0;
     advanceStage(eg);
+    return eg->egval;
   }
-  return eg->egval;
 }
 void advanceStage(EG* eg) {
   switch (eg->stage) {
@@ -122,5 +124,7 @@ void _eg_set_stage(EG* e, int n) {
   e->nsteps = 0;
   advanceStage(e);
 }
-void _eg_release(EG* eg) { _eg_set_stage(eg, release); }
+void _eg_release(EG* eg) {
+  if (eg->stage > pre_init) _eg_set_stage(eg, release);
+}
 #endif

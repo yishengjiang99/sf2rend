@@ -15,8 +15,8 @@ async function main() {
           if (scheduler) {
             scheduler.ctrls.pause();
           }
-          scheduler = await loadMidiURL(url);
-          const { totalTicks, tracks, presets } = scheduler;
+          const midiInfo = await loadMidiURL(url);
+          const { totalTicks, tracks, presets } = midiInfo;
           if (!tracks) return;
           // @ts-ignore
           postMessage({ midifile: { totalTicks, presets, tracks } });
