@@ -5,7 +5,7 @@ import SF2Service from "./sf2-service/index.js";
 import { newSFZone } from "./sf2-service/zoneProxy.js";
 import { timeseries } from "./timeseries.js";
 
-const sf2url = "http://localhost:4000/SalCSLight2.sf2";
+const sf2url = "file.sf2";
 
 const sf2file = new SF2Service(sf2url);
 const loadWait = sf2file.load();
@@ -188,9 +188,7 @@ function min_max_vals(k) {
 function renderArticle(keyword, zone) {
   let canvas;
   const zoneObj = newSFZone(zone);
-  const zattrs = Object.entries(zone)
-    .filterIndex((idx) => idx < 60)
-    .filter(([k]) => k.includes(keyword));
+  const zattrs = Object.entries(zone).filter(([k]) => k.includes(keyword));
 
   const attrVals = mkdiv(
     "ul",

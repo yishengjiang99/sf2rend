@@ -66,6 +66,7 @@ void reset(spinner* x) {
   x->fract = 0.0f;
   x->modlfo->phase = 0;
   x->vibrlfo->phase = 0;
+  x->voleg->stage = init;
 }
 
 void set_zone(spinner* x, zone_t* z, unsigned int pcmSampleRate) {}
@@ -157,8 +158,7 @@ void _spinblock(spinner* x, int n, int blockOffset) {
       fract -= 1.0f;
     }
 
-    if (position >= x->loopEnd && x->zone->SampleModes > 0)
-      position -= looplen + 1;
+    if (position >= x->loopEnd && x->zone->SampleModes > 0) position -= looplen;
     if (position >= nsamples - 1) {
       x->outputf[i * 2 + blockOffset * 2] = 0.0f;
       x->outputf[i * 2 + blockOffset * 2 + 1] = 0.0f;
@@ -172,7 +172,6 @@ void _spinblock(spinner* x, int n, int blockOffset) {
     x->outputf[i * 2 + blockOffset * 2 + 1] =
         applyCentible(outputf, (short)(db + kRateCB + panRight));
     db += dbInc;
-    if (db <= -1360) dbInc = 0.0;
   }
   x->position = position;
   x->fract = fract;
@@ -180,8 +179,14 @@ void _spinblock(spinner* x, int n, int blockOffset) {
 }
 
 int spin(spinner* x, int n) {
-  if (x->voleg->stage == init || x->voleg->stage == done) {
-    return x->voleg->egIncrement;
+  if (x->voleg->stage == init) {
+    return 0;
+  }
+  if (x->voleg->stage >= done) {
+    reset(x);
+    x->voleg->stage = init;
+
+    return 0;
   }
   update_eg(x->voleg, 64);
 
@@ -193,5 +198,5 @@ int spin(spinner* x, int n) {
   update_eg(x->modeg, 64);
 
   _spinblock(x, 64, 64);
-  return (int)(x->voleg->egIncrement * 1000);
+  return x->voleg->egIncrement;
 }

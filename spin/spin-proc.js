@@ -103,7 +103,6 @@ class SpinProcessor extends AudioWorkletProcessor {
         case 0x0090:
           {
             const [zoneRef, ratio, velocity] = args;
-            console.log("trr att ", channel, ratio, velocity);
             if (!this.presetRefs[zoneRef]) {
               return;
             }
@@ -111,7 +110,7 @@ class SpinProcessor extends AudioWorkletProcessor {
               this.instantiate(channel);
             }
             let ch = channel;
-            this.inst.exports.reset();
+            this.inst.exports.reset(this.spinners[ch]);
             this.inst.exports.trigger_attack(
               this.spinners[ch],
               this.presetRefs[zoneRef],
@@ -172,22 +171,6 @@ class SpinProcessor extends AudioWorkletProcessor {
         outputs[chid][1][j] += saturate(this.outputs[i][2 * j + 1]);
       }
     }
-    new Promise((r) => r()).then(
-      this.port.postMessage({ egStages: this.eg_vol_stag })
-    );
-
-    // if (
-    //   outputs[0][15] > 0.00000001 ||
-    //   outputs[0][44] > 0.00000001 ||
-    //   outputs[0][66] > 0.00000001 ||
-    //   outputs[0][22] > 0.00000001
-    // ) {
-    //   const pcmplayback = new Float32Array(128 * 32);
-    //   pcmplayback.set(this.outputfff);
-    //   new Promise((r) => r()).then(() =>
-    //     this.port.postMessage({ pcmplayback: pcmplayback })
-    //   );
-    // }
     return true;
   }
 }

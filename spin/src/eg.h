@@ -1,8 +1,7 @@
 #ifndef EG_H
 #define EG_H
-
-#include "calc.h"
 #include "sf2.h"
+#include "spin.h"
 enum eg_stages {
   init = 0,
   delay,
@@ -19,8 +18,11 @@ typedef struct {
   short delay, attack, hold, decay, sustain, release, pad1, pad2;
 } EG;
 
+#define invert_lg2_of_e 0.6931471805599453f
 void advanceStage(EG* eg);
 float update_eg(EG* eg, int n);
+extern void ccclog(char* s);
+extern void debugFL(float fl);
 
 /**
  * advances envelope generator by n steps..
@@ -29,42 +31,34 @@ float update_eg(EG* eg, int n);
  *
  */
 float update_eg(EG* eg, int n) {
-  int n1 = n > eg->nsteps ? eg->nsteps : n;
-  eg->nsteps -= n1;
-
-  if (eg->stage == release || eg->stage == decay) {
-    while (n1--) {
-      eg->egval *= eg->egIncrement;
-    }
+  if (n < eg->nsteps) {
+    eg->nsteps -= n;
+    eg->egval += eg->egIncrement * n;
   } else {
-    eg->egval += eg->egIncrement * n1;
+    int leftOver = n - eg->nsteps;
+    eg->egval += eg->egIncrement * n;
+    eg->nsteps = 0;
+    advanceStage(eg);
   }
-  if (n1 == n) return eg->egval;
-
-  int leftover = n - n1;
-  advanceStage(eg);
-  return update_eg(eg, leftover);
+  return eg->egval;
 }
 void advanceStage(EG* eg) {
   switch (eg->stage) {
     case init:
       eg->stage++;
-      if (eg->delay <= -12000) {
-        eg->stage++;
-      } else {
-        eg->nsteps = timecent2sample(eg->delay);
-        eg->egIncrement = 0.0f;
-        break;
-      }
+      eg->nsteps = timecent2sample(eg->delay);
+      eg->egIncrement = 0.0f;
+      break;
     case delay:
       if (eg->attack <= -12000) {
-        eg->stage++;
-      } else {
-        eg->nsteps = timecent2sample(eg->attack);
-        eg->egval = -960.f;
-        eg->egIncrement = 960.f / (float)eg->nsteps;
-        break;
+        eg->attack = -11000;
       }
+      eg->stage++;
+
+      eg->nsteps = timecent2sample(eg->attack);
+      eg->egval = -960.f;
+      eg->egIncrement = 960.f / (float)eg->nsteps;
+      break;
     case attack:
       eg->stage++;
       eg->egval = 0.0;
@@ -72,35 +66,24 @@ void advanceStage(EG* eg) {
       eg->egIncrement = 0.0f;
       break;
     case hold:
-      /* decay go from
-        PEAK*r*r*r*...*r=sustain
-        PEAK*r^n=sustain
-        r^n = sustain/PEAK
-        n * ln(r) =   ln(sus/1000)
-
-        n = timecent2sampe(eg->decay)
-        log(r)
-       in */
-      eg->nsteps = timecent2sample(eg->decay);
-      float log_r = p10over200[(int)(eg->sustain / 5)] / eg->nsteps;
-      eg->egIncrement = p10over200[(int)(log_r * 200)];
-      break;
-    case decay:  // headsing to released;
       eg->stage++;
-      eg->nsteps = timecent2sample(eg->release);
+      eg->nsteps = timecent2sample(eg->decay);
+      eg->egIncrement = (eg->sustain - 960.f) / eg->nsteps;
+      break;
+    case decay:  // headsing to sustain;
+      eg->stage++;
+      eg->egval = eg->sustain - 960.f;
+      eg->nsteps = SAMPLE_RATE;
       eg->egIncrement = 0.0f;
       break;
-    case sustain:
-      eg->nsteps = eg->release <= -12000 ? .01f * SAMPLE_RATE
-                                         : timecent2sample(eg->release);
+    case sustain:  // heading to release
+      eg->nsteps = timecent2sample(eg->release);
 
-      log_r = p10over200[(int)(eg->egval / 1000.0f)] / eg->nsteps;
-      eg->egIncrement = p10over200[(int)(log_r * 200)];
+      eg->egIncrement = -960.0f / eg->nsteps;
       eg->stage++;
       break;
     case release:
       eg->stage++;
-      eg->nsteps = 0xffff;
       break;
     case done:
       break;
@@ -122,8 +105,7 @@ void scaleTc(EG* eg, unsigned int pcmSampleRate) {
 void init_vol_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
   char* sz = (char*)&z->VolEnvDelay;
   gmemcpy((char*)&eg->delay, sz, 12);
-  scaleTc(eg, pcmSampleRate);
-
+  if (eg->sustain > 960) eg->sustain = 960;
   eg->stage = init;
   advanceStage(eg);
 }
@@ -140,5 +122,5 @@ void _eg_set_stage(EG* e, int n) {
   e->nsteps = 0;
   advanceStage(e);
 }
-void _eg_release(EG* eg) { _eg_set_stage(eg, release - 1); }
+void _eg_release(EG* eg) { _eg_set_stage(eg, release); }
 #endif
