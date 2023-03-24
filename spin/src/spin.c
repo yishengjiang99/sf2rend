@@ -180,14 +180,6 @@ void _spinblock(spinner* x, int n, int blockOffset) {
 }
 
 int spin(spinner* x, int n) {
-  if (x->voleg->stage < init) {
-    return 0;
-  }
-  if (x->voleg->stage >= done) {
-    reset(x);
-    x->voleg->stage = pre_init;
-    return 9999;
-  }
   update_eg(x->voleg, 64);
 
   update_eg(x->modeg, 64);

@@ -1,29 +1,28 @@
 #ifndef EG_H
 #define EG_H
+
+#include "calc.h"
 #include "sf2.h"
-#include "spin.h"
+
 enum eg_stages {
-  pre_init = -1,
-  init = 0,
-  delay,
-  attack = 2,
-  hold = 3,
-  decay = 4,
-  sustain = 5,
-  release = 6,
+  inactive = 0,  //
+  init = 1,  // this is for key on message sent and will go next render cycle
+  delay = 2,
+  attack = 3,
+  hold = 4,
+  decay = 5,
+  sustain = 6,
+  release = 7,
   done = 99
 };
 typedef struct {
   float egval, egIncrement;
-  int stage, nsteps;
+  int hasReleased, stage, nsamples_till_next_stage;
   short delay, attack, hold, decay, sustain, release, pad1, pad2;
 } EG;
 
-#define invert_lg2_of_e 0.6931471805599453f
 void advanceStage(EG* eg);
 float update_eg(EG* eg, int n);
-extern void ccclog(char* s);
-extern void debugFL(float fl);
 
 /**
  * advances envelope generator by n steps..
@@ -32,60 +31,67 @@ extern void debugFL(float fl);
  *
  */
 float update_eg(EG* eg, int n) {
-  if (n < eg->nsteps) {
-    eg->nsteps -= n;
-    eg->egval += eg->egIncrement * n;
-    return eg->egval;
-  } else {
-    int leftOver = n - eg->nsteps;
-    eg->egval += eg->egIncrement * n;
-    eg->nsteps = 0;
-    advanceStage(eg);
+  if (eg->stage == done) return 0.0f;  // should not occur
+  if (eg->egval < -1360.0f) {
+    eg->stage = done;
     return eg->egval;
   }
+  int n1 = n > eg->nsamples_till_next_stage ? eg->nsamples_till_next_stage : n;
+  if (eg->nsamples_till_next_stage != 0xffff) {
+    eg->nsamples_till_next_stage -= n1;
+
+    eg->egval += eg->egIncrement * n1;
+  }
+
+  if (n1 == n) return eg->egval;
+
+  int leftover = n - n1 - 1;
+  advanceStage(eg);
+  if (leftover > 0) return update_eg(eg, leftover);
+  return eg->egval;
 }
 void advanceStage(EG* eg) {
   switch (eg->stage) {
-    case init:
+    case inactive:
+      return;
+    case init:  // cannot advance
       eg->stage++;
-      eg->nsteps = timecent2sample(eg->delay);
+      eg->nsamples_till_next_stage = timecent2sample(eg->delay);
+      eg->egval = -960.0f;
       eg->egIncrement = 0.0f;
       break;
     case delay:
-      if (eg->attack <= -12000) {
-        eg->attack = -11000;
-      }
       eg->stage++;
-
-      eg->nsteps = timecent2sample(eg->attack);
-      eg->egval = -960.f;
-      eg->egIncrement = 960.f / (float)eg->nsteps;
+      eg->egval = -960.0f;
+      eg->nsamples_till_next_stage = timecent2sample(eg->attack);
+      eg->egIncrement = 960.0f / (float)eg->nsamples_till_next_stage;
       break;
+
     case attack:
       eg->stage++;
-      eg->egval = 0.0;
-      eg->nsteps = timecent2sample(eg->hold);
+      eg->nsamples_till_next_stage = timecent2sample(eg->hold);
       eg->egIncrement = 0.0f;
       break;
     case hold:
+      // log(1) - log(sustain %)
+      eg->egIncrement = 1.0f / (float)timecent2sample(eg->decay);
+      eg->nsamples_till_next_stage = 1 / eg->egIncrement;
       eg->stage++;
-      eg->nsteps = timecent2sample(eg->decay);
-      eg->egIncrement = (eg->sustain - 960.f) / eg->nsteps;
       break;
-    case decay:  // headsing to sustain;
+    case decay:  // headsing to released;
       eg->stage++;
-      eg->egval = eg->sustain - 960.f;
-      eg->nsteps = SAMPLE_RATE;
+      eg->egIncrement = -960.0f / (float)timecent2sample(eg->sustain);
+      eg->nsamples_till_next_stage = timecent2sample(eg->sustain);
+      break;
+    case sustain:
       eg->egIncrement = 0.0f;
-      break;
-    case sustain:  // heading to release
-      eg->nsteps = timecent2sample(eg->release);
-
-      eg->egIncrement = -960.0f / eg->nsteps;
-      eg->stage++;
-      break;
+      eg->nsamples_till_next_stage = timecent2sample(eg->release);
+      if (eg->hasReleased) {
+        eg->stage++;
+      }
     case release:
       eg->stage++;
+      eg->nsamples_till_next_stage = 0xffff;
       break;
     case done:
       break;
@@ -107,24 +113,30 @@ void scaleTc(EG* eg, unsigned int pcmSampleRate) {
 void init_vol_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
   char* sz = (char*)&z->VolEnvDelay;
   gmemcpy((char*)&eg->delay, sz, 12);
-  if (eg->sustain > 960) eg->sustain = 960;
+  scaleTc(eg, pcmSampleRate);
+
   eg->stage = init;
+  if (eg->attack >= 0) eg->attack = 0;
   advanceStage(eg);
 }
 void init_mod_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
   char* sz = (char*)&z->ModEnvDelay;
   gmemcpy((char*)&eg->delay, sz, 12);
-
+  scaleTc(eg, pcmSampleRate);
   eg->stage = init;
+  eg->hasReleased = 0;
   advanceStage(eg);
 }
 
 void _eg_set_stage(EG* e, int n) {
   e->stage = n - 1;
-  e->nsteps = 0;
+  e->nsamples_till_next_stage = 0;
   advanceStage(e);
 }
-void _eg_release(EG* eg) {
-  if (eg->stage > pre_init) _eg_set_stage(eg, release);
+void _eg_release(EG* e) {
+  if (e->stage >= release || e->stage <= attack) return;
+  e->nsamples_till_next_stage = 0;
+  e->hasReleased = 1;
+  e->stage = sustain;
 }
 #endif
