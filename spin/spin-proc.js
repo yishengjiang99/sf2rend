@@ -99,31 +99,38 @@ class SpinProcessor extends AudioWorkletProcessor {
           this.inst.exports.eg_release(channel);
           this.port.postMessage({ ack: [0x80, channel] });
           break;
-        case 1:
+        case 0x9000: {
+          const [cmd, channel, ratio, velocity, zoneRef] = data;
+          this.triggerAttack(zoneRef, ratio, velocity, channel);
+          break;
+        }
         case 0x0090:
           {
             const [zoneRef, ratio, velocity] = args;
-            if (!this.presetRefs[zoneRef]) {
-              return;
-            }
-            if (!this.spinners[channel]) {
-              this.instantiate(channel);
-            }
-            let ch = channel;
-            this.eg_vol_stag[ch] = 1;
-            this.inst.exports.reset(this.spinners[ch]);
-            this.inst.exports.trigger_attack(
-              this.spinners[ch],
-              this.presetRefs[zoneRef],
-              ratio,
-              velocity
-            );
+            this.triggerAttack(zoneRef, ratio, velocity, channel);
           }
           break;
         default:
           break;
       }
     }
+  }
+  triggerAttack(zoneRef, ratio, velocity, channel) {
+    if (!this.presetRefs[zoneRef]) {
+      return;
+    }
+    if (!this.spinners[channel]) {
+      this.instantiate(channel);
+    }
+    let ch = channel;
+    this.eg_vol_stag[ch] = 1;
+    this.inst.exports.reset(this.spinners[ch]);
+    this.inst.exports.trigger_attack(
+      this.spinners[ch],
+      this.presetRefs[zoneRef],
+      ratio,
+      velocity
+    );
   }
   setZone(ref, arr) {
     const ptr = this.malololc(120);

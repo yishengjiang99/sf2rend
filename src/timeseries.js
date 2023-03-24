@@ -21,14 +21,13 @@ export function timeseries(_params) {
   let max = 1,
     min = -1,
     range = 2;
+  let activeDraw = true;
   var convertY = (y) => (((y - min) / range) * height * zoomScale) / 100;
+  let timer;
   canvasCtx.moveTo(0, convertY(0));
 
-  canvas.onwheel = function (e) {
-    e.preventDefault();
-    if (e.deltaY < 0) zoomScale -= 0.05;
-    else zoomScale += 0.05;
-  };
+  draw();
+
   function draw() {
     analyzer.getByteTimeDomainData(dataArray);
     var bufferLength = dataArray.length;
@@ -61,7 +60,16 @@ export function timeseries(_params) {
       }
     }
     canvasCtx.stroke();
-    //    requestAnimationFrame(draw);
+    if (activeDraw) activeDraw = requestAnimationFrame(draw);
   }
-  draw();
+  return {
+    set active(setActive) {
+      if (!activeDraw && setActive) {
+        requestAnimationFrame(draw);
+        activeDraw = true;
+      } else if (!setActive) {
+        cancelAnimationFrame(timer);
+      }
+    },
+  };
 }

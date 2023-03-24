@@ -51,23 +51,29 @@ class LowPassFilterProc extends AudioWorkletProcessor {
   constructor(options) {
     super(options);
     const {
-      processorOptions: { frequency, Q, wasmbin },
+      processorOptions: { frequency, wasmbin },
     } = options;
     this.initialFC = frequency;
     const instance = new WebAssembly.Instance(new WebAssembly.Module(wasmbin));
     const { memory, fcArray, newLpf, inputArray, process_LIST } =
       instance.exports;
-    this.lpf = newLpf(0, frequency, 48000);
+    this.lpf = newLpf(0, frequency, globalThis.sampleRate);
     this.lpfData = new Float32Array(memory.buffer, this.lpf, 4);
     this.process_LIST = process_LIST;
     this.inputArray = new Float32Array(memory.buffer, inputArray, 128);
-    this.dynamicFcArray = new Float32Array(memory.buffer, fcArray, 129);
+    this.dynamicFcArray = new Float32Array(memory.buffer, fcArray, 128);
   }
   onmsg({ data }) {
     console.log(data);
   }
   process([inputs], [outputs], params) {
     if (!inputs.length) return true;
+    const active = params.FilterFC[-1] || this.frequency < 13500;
+    if (!active) {
+      outputs[0].set(inputs[1]);
+      outputs[1].set(inputs[1]);
+      return true;
+    }
     this.inputArray.set(inputs[0]);
     this.dynamicFcArray.set(params.FilterFC);
     for (let i = 0; i < 1; i++)

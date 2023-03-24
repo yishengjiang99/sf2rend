@@ -1,6 +1,6 @@
 import { mkcanvas, chart } from "./node_modules/mk-60fps/chart.js";
 import { mkdiv } from "https://unpkg.com/mkdiv@3.1.0/mkdiv.js";
-import { mkpath } from "./src/path.js";
+import { mkpath } from "./src/mkpath.js";
 import SF2Service from "./sf2-service/index.js";
 import { newSFZone } from "./sf2-service/zoneProxy.js";
 
@@ -18,11 +18,10 @@ let program,
   rightPanel,
   zoneObj,
   audioPath,
-  volMeters;
-
+  volMeters,
+  activeChannel = 0;
 renderMain();
-window.addEventListener("hashchange", rendProgram);
-Array(16).map((i) => mkdiv("span"));
+window.addEventListener("hashchange", () => rendProgram(activeChannel));
 async function renderMain() {
   await loadWait;
   if (!spinner) {
@@ -36,8 +35,12 @@ async function renderMain() {
       mkdiv(
         "button",
         {
-          onmousedown: (e) => {
-            rendSample(e);
+          "data-channel": 0,
+          "data-key": 60,
+          "data-vel": 88,
+          onmousedown: ({ target: { dataset } }) => {
+            dataset.channel;
+            rendSample(dataset.channel, dataset.key, dataset.vel);
           },
         },
         "play"
@@ -84,18 +87,19 @@ async function renderMain() {
   document.body.append(main);
   audioPath.viewTimeseries({ container: vrPanel });
   await audioPath.startAudio();
-
-  rendProgram();
+  rendProgram(0);
 }
 
-function rendProgram() {
+function rendProgram(channel) {
   const presetId = document.location.hash.substring(1).split("|");
   const intpre = parseInt(presetId);
-  const pid = intpre;
-  const bid = 0;
+  const pid = intpre || channel;
+  const bid = intpre & 0x7f;
+
   program = sf2file.loadProgram(pid, bid);
   if (!zone) zone = program.filterKV(55, 98)[0];
-
+  audioPath.channelState[channel].program = program;
+  audioPath.channelState[channel].zoneObj = newSFZone(zone);
   const kRangeList = program.zMap.map(
     (z) =>
       `<option value=${z.ref} ${z.ref + "" == zone.ref ? "selected" : ""}>${
@@ -139,7 +143,9 @@ function rendProgram() {
 
   canvas = mkcanvas({ container: articleHeader });
   renderZ(zone);
-  spinner.shipProgram(program, intpre);
+  spinner
+    .shipProgram(program, intpre)
+    .then((ee) => audioPath.bindKeyboard(channel));
 }
 async function renderZ(zoneSelect) {
   if (!zoneSelect) {
@@ -151,7 +157,7 @@ async function renderZ(zoneSelect) {
 
   const zoneinfo = mkdiv("div", [
     renderSampleView(zoneSelect),
-    ..."Attenuation,VolEnv,Filter,LFO"
+    ..."Attenuation,VolEnv,Filter,LFO,Sample"
       .split(",")
       .map((keyword) => renderArticle(keyword, zoneSelect)),
   ]);
@@ -163,6 +169,7 @@ function renderSampleView(zoneSelect) {
   return mkdiv("div", [
     "smpl: ",
     zoneSelect.shdr.SampleId,
+    zoneSelect.SampleModes,
     " ",
     zoneSelect.shdr.name,
     "<br>nsample: ",
@@ -203,13 +210,13 @@ function renderArticle(keyword, zone) {
     zattrs.map(([k, v]) =>
       mkdiv("li", [
         mkdiv("label", [k, ":"]),
-        mkdiv("label", [v]),
+        mkdiv("dd", [v]),
         mkdiv("input", {
           type: "range",
           ...min_max_vals(k),
           value: v,
           oninput: (e) => {
-            e.target.parentElement.querySelector("label").textContent =
+            e.target.parentElement.querySelector("dd").textContent =
               e.target.value;
             zoneObj[k] = e.target.value;
             if (canvas) drawEV(zoneObj, canvas);
@@ -219,7 +226,11 @@ function renderArticle(keyword, zone) {
     )
   );
   const details = mkdiv("div");
-  const article = mkdiv("article", { class: "article" }, [attrVals, details]);
+  const article = mkdiv("details", { class: "article" }, [
+    mkdiv("summary", keyword),
+    attrVals,
+    details,
+  ]);
   if (keyword === "VolEnv") {
     canvas = mkcanvas({ container: details, title: "amp eg" });
     drawEV(zoneObj, canvas);
@@ -243,10 +254,12 @@ async function startSpinner() {
   };
   return audioPath;
 }
-async function rendSample(e) {
+async function rendSample(chan, key, vel) {
   if (ctx.state !== "running") await ctx.resume();
   if (!zoneObj) return;
   const { arr, ref } = zoneObj;
+  audioPath.channelState[parseInt(chan)] = { key, vel, zoneObj };
+
   spinner.port.postMessage({
     cmd: "newZone",
     zone: { arr, ref },
@@ -259,13 +272,6 @@ async function rendSample(e) {
     zoneObj.calcPitchRatio(55, spinner.context.sampleRate),
     122,
   ]);
-  e.target.addEventListener(
-    "mousedown",
-    () => {
-      spinner.port.postMessage([0x80, 0, 123]);
-    },
-    { once: true }
-  );
 }
 const drawEV = async (zone, target) => {
   const [delay, att, hold, decay, sustain, release] = zone.arr.slice(33, 39);
@@ -297,3 +303,4 @@ const drawEV = async (zone, target) => {
   const rendbuff = await ctx.startRendering();
   chart(target, rendbuff.getChannelData(0));
 };
+/* eslint-disable no-undef */
