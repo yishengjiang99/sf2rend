@@ -72,11 +72,16 @@ class SpinProcessor extends AudioWorkletProcessor {
         this.setZone(ref, arr); //.set
       }
       this.port.postMessage({ zack: 1 });
+    } else if (data.pcmCheck) {
+      this.port.postMessage({
+        shdr: this.sampleIdRefs(data.pcmCheck.sampleId),
+      });
     } else if (data.cmd) {
       switch (data.cmd) {
         case "reset":
-          this.brk = this.inst.exports.__heap_base;
-        //fallthrough
+          this.setup_wasm();
+          //fallthrough
+          break;
         case "panic":
           this.inst.exports.gm_reset();
           break;
@@ -171,6 +176,7 @@ class SpinProcessor extends AudioWorkletProcessor {
       // if (this.eg_vol_stag[i] === 9999) continue;
       if (!this.spinners[i]) continue;
       if (!this.outputs[i]) continue;
+      this.outputs[i].set(new Float32Array(128 * 2).fill(0));
 
       this.eg_vol_stag[i] = this.inst.exports.spin(this.spinners[i], 128);
       for (let j = 0; j < 128; j++) {
@@ -178,9 +184,13 @@ class SpinProcessor extends AudioWorkletProcessor {
         outputs[chid][1][j] += saturate(this.outputs[i][2 * j + 1]);
       }
     }
-    new Promise((r) => r()).then(() => {
-      this.port.postMessage({ egStages: this.eg_vol_stag });
-    });
+    if (!this.lastReport || globalThis.currentFrame - this.lastReport > 4400) {
+      this.lastReport = globalThis.currentFrame;
+      new Promise((r) => r()).then(() => {
+        this.port.postMessage({ currentFrame: globalThis.currentFrame });
+      });
+    }
+
     return true;
   }
 }

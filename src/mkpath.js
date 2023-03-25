@@ -2,16 +2,20 @@ import { SpinNode } from "../spin/spin.js";
 import { LowPassFilterNode } from "../lpf/lpf.js";
 import { mkcanvas } from "../chart/chart.js";
 import { timeseries } from "./timeseries.js";
-import { midi_ch_cmds } from "./midilist.js";
+import { midi_ch_cmds } from "./constants.js";
 import calcPitchRatio from "./calcPitchRatio.js";
+import FFTNode from "../fft-64bit/fft-node.js";
 export async function mkpath(ctx, additional_nodes = []) {
   await SpinNode.init(ctx);
+  await FFTNode.init(ctx);
   await LowPassFilterNode.init(ctx);
   const spinner = new SpinNode(ctx, 16);
   const merger = new GainNode(ctx);
   const gainNodes = Array(16).fill(new GainNode(ctx, { gain: 1 }));
   const lpfs = Array(16).fill(new LowPassFilterNode(ctx));
   const channelIds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+  const fft = new FFTNode(ctx);
+
   const channelState = channelIds.map(
     (index) =>
       new Proxy(
@@ -43,18 +47,20 @@ export async function mkpath(ctx, additional_nodes = []) {
         }
       )
   );
-  const masterMixer = new GainNode(ctx, { gain: 1.0 });
   for (let i = 0; i < 16; i++) {
-    spinner.connect(gainNodes[i], i, 0).connect(merger);
+    spinner.connect(lpfs[i], i, 0).connect(gainNodes[i]).connect(merger);
   }
-  let head = merger;
-  while (additional_nodes.length) {
-    const node = additional_nodes.shift();
-    head.connect(node);
-    head = node;
-  }
+  merger.connect(fft).connect(ctx.destination);
   const msg_cmd = (cmd, args) => spinner.port.postMessage({ ...args, cmd });
   return {
+    analysis: {
+      get waveForm() {
+        return fft.getWaveForm();
+      },
+      get frequencyBins() {
+        return fft.getFloatFrequencyData();
+      },
+    },
     spinner,
     loadPreset: spinner.shipProgram,
     channelState,
@@ -68,22 +74,11 @@ export async function mkpath(ctx, additional_nodes = []) {
       );
       return lpfs[channel];
     },
-    viewTimeseries({ container }) {
-      container.classList.add("timerseries");
-      const analyzer = new AnalyserNode(ctx, { fft: 1024 });
-      additional_nodes.push(analyzer);
-      timeseries({
-        analyzer,
-        width: 540,
-        height: 255,
-        canvas: mkcanvas({ container }).canvas,
-      });
-    },
+
     mute(channel) {
       gainNodes[channel].linearRampToValueAtTime(0, 0.05);
     },
     async startAudio() {
-      head.connect(masterMixer).connect(ctx.destination);
       if (ctx.state !== "running") await ctx.resume();
     },
     /* forwards and enhances midi messages */

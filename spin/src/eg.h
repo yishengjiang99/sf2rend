@@ -17,7 +17,7 @@ enum eg_stages {
 };
 typedef struct {
   float egval, egIncrement;
-  int hasReleased, stage, nsamples_till_next_stage;
+  int hasReleased, stage, nsteps;
   short delay, attack, hold, decay, sustain, release, pad1, pad2;
 } EG;
 
@@ -36,9 +36,9 @@ float update_eg(EG* eg, int n) {
     eg->stage = done;
     return eg->egval;
   }
-  int n1 = n > eg->nsamples_till_next_stage ? eg->nsamples_till_next_stage : n;
-  if (eg->nsamples_till_next_stage != 0xffff) {
-    eg->nsamples_till_next_stage -= n1;
+  int n1 = n > eg->nsteps ? eg->nsteps : n;
+  if (eg->nsteps != 0xffff) {
+    eg->nsteps -= n1;
 
     eg->egval += eg->egIncrement * n1;
   }
@@ -52,46 +52,98 @@ float update_eg(EG* eg, int n) {
 }
 void advanceStage(EG* eg) {
   switch (eg->stage) {
-    case inactive:
+    case inactive:  // cannot advance
       return;
-    case init:  // cannot advance
-      eg->stage++;
-      eg->nsamples_till_next_stage = timecent2sample(eg->delay);
+    case init:
       eg->egval = -960.0f;
-      eg->egIncrement = 0.0f;
-      break;
+      if (eg->delay > -11500) {
+        eg->stage++;
+        eg->nsteps = timecent2sample(eg->delay);
+        eg->egval = -960.0f;
+        eg->egIncrement = 0.0f;
+        break;
+      }
     case delay:
-      eg->stage++;
       eg->egval = -960.0f;
-      eg->nsamples_till_next_stage = timecent2sample(eg->attack);
-      eg->egIncrement = 960.0f / (float)eg->nsamples_till_next_stage;
-      break;
+      if (eg->attack > -11500) {
+        eg->stage++;
+        eg->egval = -960.0f;
+        eg->nsteps = timecent2sample(eg->attack);
+        eg->egIncrement = 960.0f / eg->nsteps;
 
+        break;
+      }
     case attack:
+      eg->egval = 0.0f;
+      if (eg->hold > -11500) {
+        eg->stage++;
+        eg->egval = 0.0f;
+        eg->nsteps = timecent2sample(eg->hold);
+        eg->egIncrement = 0.0f;
+        break;
+      }
+    case hold: /** TO DECAY */
       eg->stage++;
-      eg->nsamples_till_next_stage = timecent2sample(eg->hold);
-      eg->egIncrement = 0.0f;
-      break;
-    case hold:
-      // log(1) - log(sustain %)
-      eg->egIncrement = 1.0f / (float)timecent2sample(eg->decay);
-      eg->nsamples_till_next_stage = 1 / eg->egIncrement;
-      eg->stage++;
+      /*
+       * This is the time, in absolute timecents, for a 100% change in the
+  Volume Envelope value during decay phase. */
+      // velopcity required to travel full 960db
+      eg->egIncrement = -960.f / timecent2sample(eg->decay);
+
+      // but it's timeslice by sustain percentage?
+      eg->nsteps = eg->sustain / 1000.0f * timecent2sample(eg->decay);
+
+      /*For the Volume
+      Envelope, the decay phase linearly ramps toward the sustain level,
+      causing a constant dB change for each time unit. If the sustain level
+      were -100dB, the Volume Envelope Decay Time would be the time
+      spent in decay phase. A value of 0 indicates a 1-second decay time for
+      a zero-sustain level. A negative value indicates a time less than one
+      second; a positive value a time longer than one second. For example, a
+      decay time of 10 msec would be 1200log2(.01) = -7973.*/
       break;
     case decay:  // headsing to released;
+      // sustain pedal .. for not going to ignore..
       eg->stage++;
-      eg->egIncrement = -960.0f / (float)timecent2sample(eg->sustain);
-      eg->nsamples_till_next_stage = timecent2sample(eg->sustain);
       break;
+
+      // sustain = % decreased during decay
+
+      /*
+      37 sustainVolEnv This is the decrease in level, expressed in centibels,
+      to which the Volume Envelope value ramps during the decay phase. For the
+      Volume Envelope, the sustain level is best expressed in centibels of
+      attenuation from full scale. A value of 0 indicates the sustain level is
+      full level; this implies a zero duration of decay phase regardless of
+      decay time. A positive value indicates a decay to the corresponding
+      level. Values less than zero are to be interpreted as zero;
+      conventionally 1000 indicates full attenuation. For example, a sustain
+      level which corresponds to an absolute value 12dB below of peak would be
+      120.*/
+
     case sustain:
-      eg->egIncrement = 0.0f;
-      eg->nsamples_till_next_stage = timecent2sample(eg->release);
-      if (eg->hasReleased) {
-        eg->stage++;
-      }
+      eg->stage++;
+      int stepsFull = timecent2sample(eg->release); /*8 nsteps for full 960*/
+
+      eg->egIncrement = -960.f / timecent2sample(eg->release);
+      eg->nsteps = (-960 - eg->egval) / -960.0f * stepsFull;
+      break;
+
+      /*This is the time, in absolute timecents, for a 100% change in
+the Volume Envelope value during release phase. For the Volume Envelope,
+the release phase linearly ramps toward zero from the current level,
+causing a constant dB change for each time unit. If the current level were
+full scale, the Volume Envelope Release Time would be the time spent in
+release phase until 100dB attenuation were reached. A value of 0 indicates
+a 1-second decay time for a release from full level. SoundFont 2.01
+Technical Specification - Page 45 - 08/05/98 12:43 PM A negative value
+indicates a time less than one second; a positive value a time longer than
+one second. For example, a release time of 10 msec would be 1200log2(.01) =
+-7973. 39 keynumToVolEnvHold This is the degree, in timecents per K**/
     case release:
       eg->stage++;
-      eg->nsamples_till_next_stage = 0xffff;
+      eg->nsteps = 0;
+      eg->egval = -1000;
       break;
     case done:
       break;
@@ -130,12 +182,12 @@ void init_mod_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
 
 void _eg_set_stage(EG* e, int n) {
   e->stage = n - 1;
-  e->nsamples_till_next_stage = 0;
+  e->nsteps = 0;
   advanceStage(e);
 }
 void _eg_release(EG* e) {
   if (e->stage >= release || e->stage <= attack) return;
-  e->nsamples_till_next_stage = 0;
+  e->nsteps = 0;
   e->hasReleased = 1;
   e->stage = sustain;
 }
