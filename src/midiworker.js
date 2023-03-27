@@ -21,14 +21,32 @@ async function loadMidiURL(url) {
 }
 
 async function main() {
-  let scheduler, midinfo;
-  addEventListener("message", async function (e) {
-    const {
-      data: { cmd, url, amt },
-    } = e;
-    switch (cmd) {
-      case "load":
-        if (scheduler) {
+  let scheduler;
+  addEventListener(
+    "message",
+    async function ({ data: { cmd, url, amt, evtPipe } }) {
+      switch (cmd) {
+        case "load":
+          if (scheduler) {
+            scheduler.ctrls.pause();
+          }
+          const midiInfo = await loadMidiURL(url);
+          const { totalTicks, tracks, presets } = midiInfo;
+          if (!tracks) return;
+          // @ts-ignore
+          postMessage({ midifile: { totalTicks, presets, tracks } });
+
+          for (const track of scheduler.tracks) {
+            for (const event of track) {
+              if (event && event.t > 0) break;
+              if (!event.channel) postMessage(event);
+            }
+          }
+          break;
+        case "start":
+          scheduler.ctrls.run();
+          break;
+        case "pause":
           scheduler.ctrls.pause();
         }
          { presets, totalTicks, tracks } = (midiinfo = await loadMidiURL(

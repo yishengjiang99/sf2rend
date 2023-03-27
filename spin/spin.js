@@ -1,9 +1,9 @@
-import { requestDownload } from "../fetch-drop-ship/fetch-drop-ship.js";
+import { requestDownload } from "./fetch-drop-ship.js";
 let k;
 
 export class SpinNode extends AudioWorkletNode {
   static async init(ctx) {
-    await ctx.audioWorklet.addModule("./spin/spin-proc.js");
+    await ctx.audioWorklet.addModule("./spin/ssp-proc.js");
   }
   static alloc(ctx) {
     if (!k) k = new SpinNode(ctx);
@@ -15,6 +15,7 @@ export class SpinNode extends AudioWorkletNode {
       numberOfOutputs,
       outputChannelCount: new Array(16).fill(2),
     });
+    this.port.onmessageerror = (e) => alert("adfasfd", e.message); // e; // e.message;
   }
 
   keyOn(channel, zone, key, vel) {

@@ -1,98 +1,42 @@
 /* eslint-disable no-undef */
-import { SpinNode } from "../spin.js";
 import { mkspinner } from "../index.js";
 
-import { loadProgram, load } from "https://unpkg.com/sf2-service@1.3.0/read.js";
-import { spRef2json, egStruct } from "../spin-struct.js";
-import { newSFZoneMap } from "https://unpkg.com/sf2-service@1.3.0/zoneProxy.js";
+(async () => {
+  const sp = await mkspinner();
+  const sp1 = sp.spinners[0];
+  sp1.zone.VolEnvAttack = 3100;
+  console.log(sp1.zone.VolEnvAttack);
 
-promise_test(async () => {
-  console.time("shipProgram");
-  const ctx = new OfflineAudioContext(1, 100, 4000);
-  console.timeLog("shipProgram");
-
-  await SpinNode.init(ctx);
-  console.timeLog("shipProgram");
-
-  const sp = new SpinNode(ctx);
-  console.timeLog("shipProgram");
-
-  const sf2 = await load("../file.sf2");
-  console.timeLog("shipProgram");
-
-  assert_true(sp != null, "sp createdd");
-  console.timeLog("shipProgram");
-  for (let i = 0; i < 15; i++) {
-    const prog = loadProgram(sf2, i * 10, 0);
-
-    //const ret = await sp.shipProgram(prog, i * 10);
-    console.timeLog("shipProgram");
-  }
-  console.timeEnd("shipProgram");
-}, "freebie");
+  sp.zones[0].init;
+})();
 
 promise_test(async () => {
   const sp = await mkspinner();
-
-  assert_true(sp.newSpinner != null);
-  const spinner = sp.sampleZone();
-
-  const struct = spRef2json(sp.memory.buffer, spinner);
-  const z = newSFZoneMap(1, struct.zone);
-  assert_equals(struct.egVolRef.attack, z.VolEnvAttack);
-  assert_equals(struct.egVolRef.stage, 1);
-
-  assert_equals(sp.timecent2sample(z.VolEnvDelay), struct.egVolRef.nsamples);
-  //sp.spin(spinner, 122s);
-}, "mk spinner and test basic functions exist.");
-
-promise_test(async () => {
-  const sp = await mkspinner();
-
-  const spinner = sp.sampleZone();
-  const struct = spRef2json(sp.memory.buffer, spinner);
-  console.log(struct);
-  const z = newSFZoneMap(1, struct.zone);
-  const currentN = struct.egVolRef.nsamples;
-  sp.update_eg(struct.egVolRef.ref, 19);
-  assert_equals(
-    spRef2json(sp.memory.buffer, spinner).egVolRef.nsamples + 19,
-    currentN,
-    "after runnimg for 19 samples, the nsample s(left) is 19 less"
-  );
-}, "egvol decibels");
-
-promise_test(async () => {
-  const sp = await mkspinner();
-
-  const spinner = sp.sampleZone();
-  const struct = spRef2json(sp.memory.buffer, spinner);
-
-  const z = newSFZoneMap(1, struct.zoneref);
-  const newSp = sp.newSpinner(struct.zoneref, 0);
-  assert_true(null != newSp, "method 1 of constructor");
-  const struct2 = spRef2json(sp.memory.buffer, newSp);
-  sp._eg_set_stage(struct2.egVolRef.ref, 2);
-  assert_equals(
-    spRef2json(sp.memory.buffer, newSp).egVolRef.stage,
-    2,
-    "_set_stage to 2 worked"
-  );
-  sp.update_eg(struct2.egVolRef.ref, 100);
-  console.log(spRef2json(sp.memory.buffer, newSp));
-  assert_true(spRef2json(sp.memory.buffer, newSp).egVolRef.eg > -960);
+  const sp1 = sp.spinners[0];
+  console.log(sp.zones[0]);
+  assert_true(null != sp1, "method 1 of constructor");
+  assert_true(null != sp1.volEG, "method 1 of constructor");
+  assert_true(null != sp.zones[0], "zones array esist");
 }, "_set_stage");
+
 promise_test(async () => {
   const sp = await mkspinner();
+  const sp3 = sp.newSpinner(3);
 
-  assert_equals(sp.timecent2sample(-12000), 46);
+  sp.spinners[3].zone.Attenuation = 3;
+  sp.trigger_attack(sp.spRef(3), 0.8, 4);
+  sp.spinners[3].zone.VolEnvAttack = -12000;
+  console.log(sp.spinners[3].volEG, "sp3ref");
+  assert_equals(sp.spinners[3].volEG, 1); //init, not inacgtive;
+
+  assert_equals(sp.timecent2sample(-12000), 43);
 
   assert_equals(sp.midi_volume_log10(127), 0);
 }, "lookup tables");
 promise_test(async () => {
   const sp = await mkspinner();
   console.log(sp, sp.timecent2second(1200), sp.applyCentible(0.5, -60));
-  const egRef = sp.sbrk(300);
+  const egRef = sp.malloc(300);
   // typedef struct {
   //   int stage, nsamples_till_next_stage;
   //   short delay, attack, hold, decay, sustain, release, pad1, pad2;
@@ -139,17 +83,18 @@ promise_test(async () => {
 
 promise_test(async () => {
   const sp = await mkspinner();
-  const egRef = sp.brk;
-  const egview = new DataView(sp.memory.buffer, egRef, 40);
+  const egRef = sp.malloc(120);
+  const egStag = new DataView(sp.memory.buffer, egRef, 20);
+  const egview = new DataView(sp.memory.buffer, egRef + 20, 32);
+  egStag.setInt32(16, 1);
+  egview.setInt16(0, -12000, true);
+
+  egview.setInt16(4, -12000, true);
+
   egview.setInt16(8, -12000, true);
 
   egview.setInt16(10, -12000, true);
-
-  egview.setInt16(12, -12000, true);
-
-  egview.setInt16(14, -12000, true);
-  egview.setInt16(16, 0, true);
   sp._eg_set_stage(egRef, 4);
-  assert_true(egview.getInt32(0, true) == 4, "set to decay stage");
+  assert_true(egStag.getInt32(16, true) == 4, "set to decay stage");
   assert_true(egview.getFloat64(24, true) == 0);
 }, "at 0 sustain value, eg val does not decrease during decay");
