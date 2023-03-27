@@ -9,14 +9,11 @@ typedef enum { SP_AVAIL, sp_NOT_AVAIL } sp_availability;
 
 typedef struct {
   float *inputf, *outputf;
-  float fract;
-  uint32_t position, loopStart, loopEnd;
-  float stride, fpad1;
-  uint32_t leftSamp;
+  uint32_t position, loopStart, loopEnd, channelId, key, velocity;
+  float fract, stride;
   zone_t* zone;
   EG *voleg, *modeg;
   LFO *modlfo, *vibrlfo;
-  int channelId, key, velocity;
   sp_availability sp_avail;
 } spinner;
 
@@ -29,7 +26,7 @@ typedef struct {
   float mod2volume, mod2pitch, mod2filter;
 } LFOEffects;
 
-void set_zone(spinner* x, zone_t* z, unsigned int pcm_sampleRate);
+void set_spinner_zone(spinner* x, zone_t* z);
 spinner* newSpinner(int idx);
 void eg_release(spinner* x);
 void reset(spinner* x);

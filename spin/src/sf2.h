@@ -107,9 +107,10 @@ typedef struct {
       Reserved1;
   rangesType KeyRange, VelRange;
   unsigned short StartLoopAddrCoarseOfs;
-  short Keynum, Velocity, Attenuation, Reserved2, EndLoopAddrCoarseOfs,
-      CoarseTune, FineTune, SampleId, SampleModes, Reserved3, ScaleTune,
-      ExclusiveClass, OverrideRootKey, Dummy;
+  short Keynum, Velocity, Attenuation, Reserved2;
+  unsigned short EndLoopAddrCoarseOfs, CoarseTune;
+  short FineTune, SampleId, SampleModes, Reserved3, ScaleTune, ExclusiveClass,
+      OverrideRootKey, Dummy;
 } zone_t;
 
 zone_t *findByPid(int pid, int bkid);

@@ -7,6 +7,7 @@
 extern void debugFL(float fl);
 
 spinner sps[nchannels];
+unsigned int sp_byte_len() { return sizeof(spinner); }
 EG eg[nchannels * 2];
 LFO lfos[nchannels * 2];
 
@@ -17,12 +18,23 @@ float outputs[nchannels * RENDQ * 2];
 float silence[40];
 char spsIndx = 0;
 pcm_t pcms[2222];
-
+zone_t zones[4096];
+spinner* spRef(int idx) { return &sps[idx]; }
+pcm_t* pcmRef(int idx) { return &pcms[idx]; }
+zone_t* zoneRef(int idx) { return &zones[idx]; }
 spinner* get_available_spinner(int channelId) {
   spinner* sp;
   for (int i = 0; i < nchannels; i++) {
-    if (sps[i].sp_avail == SP_AVAIL) {
-      sp = &sps[i];
+    if (sps[i].voleg == 0) {
+      sp = newSpinner(i);
+      sp->channelId = channelId;
+      sp->voleg->stage = init;
+      return sp;
+    }
+    if (sps[i].voleg->stage == inactive || sps[i].voleg->stage == done) {
+      sp = sps + i;
+      sp->channelId = channelId;
+      return sp;
     }
   }
   return 0;
@@ -44,6 +56,8 @@ spinner* newSpinner(int idx) {
   x->voleg->stage = init;
   x->voleg->egIncrement = 0;
   x->channelId = idx;
+  x->voleg->stage = inactive;
+
   return x;
 }
 
@@ -54,7 +68,7 @@ void gm_reset() {
     midi_cc_vals[idx * nmidiChannels + TML_EXPRESSION_MSB] = 127;
   }
   for (int i = 0; i < nchannels; i++) {
-    newSpinner(i);
+    reset(&sps[i]);
   }
 }
 void eg_release(spinner* x) {
@@ -64,19 +78,15 @@ void eg_release(spinner* x) {
 void reset(spinner* x) {
   x->position = 0;
   x->fract = 0.0f;
+  x->inputf = silence;
   x->modlfo->phase = 0;
   x->vibrlfo->phase = 0;
-  x->voleg->stage = init;
+  x->voleg->stage = inactive;
 }
-
-void set_zone(spinner* x, zone_t* z, unsigned int pcmSampleRate) {}
 
 void set_midi_cc_val(int channel, int metric, int val) {
   midi_cc_vals[channel * 128 + metric] = (char)(val & 0x7f);
 }
-
-spinner* spRef(int idx) { return &sps[idx]; }
-pcm_t* pcmRef(int idx) { return &pcms[idx]; }
 
 LFOEffects lfo_effects(float lfoval, zone_t* z) {
   float mod2vol = (1 - lfoval) * z->ModLFO2Vol;
@@ -84,27 +94,33 @@ LFOEffects lfo_effects(float lfoval, zone_t* z) {
   float mod2fc = lfoval * z->ModEnv2FilterFc * 8.8f;
   return (LFOEffects){mod2vol, mod2pitch, mod2fc};
 }
-float trigger_attack(spinner* x, zone_t* z, float ratio, int velocity) {
+float trigger_attack(spinner* x, float ratio, int velocity) {
+  x->stride = ratio;
+  x->velocity = velocity & 0x7f;
+  zone_t* z = x->zone;
+  pcm_t* pcm = pcms + x->zone->SampleId;
+  x->position = z->StartAddrOfs + (z->StartAddrCoarseOfs << 15);
+  x->inputf = pcm->data;
+  x->position = 0;
+  x->fract = 0.0f;
+  x->voleg->stage = init;
+  init_mod_eg(x->modeg, z, pcm->sampleRate);
+  init_vol_eg(x->voleg, z, pcm->sampleRate);
+  x->modlfo->delay = timecent2sample(z->ModLFODelay);
+  x->vibrlfo->delay = timecent2sample(z->ModLFODelay);
+  set_frequency(x->modlfo, z->ModLFOFreq);
+  set_frequency(x->vibrlfo, z->VibLFOFreq);
+  return x->stride;
+};
+void set_spinner_zone(spinner* x, zone_t* z) {
   pcm_t* pcm = pcms + z->SampleId;
   x->position = z->StartAddrOfs + (z->StartAddrCoarseOfs << 15);
   x->loopStart =
       pcm->loopstart + z->StartLoopAddrOfs + (z->StartLoopAddrCoarseOfs << 15);
   x->loopEnd = pcm->loopend + z->EndAddrOfs + (z->EndLoopAddrCoarseOfs << 15);
   x->inputf = pcm->data;
-  x->position = 0;
-  x->fract = 0.0f;
-  x->stride = ratio;
-  x->velocity = velocity & 0x7f;
   x->zone = z;
-  init_mod_eg(x->modeg, z, pcm->sampleRate);
-
-  init_vol_eg(x->voleg, z, pcm->sampleRate);
-  x->modlfo->delay = timecent2sample(z->ModLFODelay);
-  x->vibrlfo->delay = timecent2sample(z->ModLFODelay);
-
-  set_frequency(x->modlfo, z->ModLFOFreq);
-  set_frequency(x->vibrlfo, z->VibLFOFreq);
-  return x->stride;
+  x->inputf = pcm->data;
 }
 
 float lerp(float f1, float f2, float frac) { return f1 + (f2 - f1) * frac; }

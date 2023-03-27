@@ -12,6 +12,8 @@
   }
 
 int main() {
+  // spinner* x = &sps[3];
+  printf("%p", sps[3].voleg);
   spinner* x = newSpinner(0);
   pcms->length = 126815;
   pcms->loopend = 63406;
@@ -35,15 +37,38 @@ int main() {
   z->SampleId = 0;
   z->SampleModes = 1;
   z->VolEnvRelease = 95;
+  newSpinner(0);
   printvoleg(x);
-  trigger_attack(x, z, 1.0, 123);
+  set_spinner_zone(x, z);
+  printvoleg(x);
+
+  trigger_attack(x, 88, 20);
+  printvoleg(x);
+
+  spinner* y = get_available_spinner(3);
+  printvoleg(x);
+
+  assert(y->channelId == 3);
+  assert(y != x);
+  set_spinner_zone(x, z);
+  printvoleg(x);
+
+  trigger_attack(x, 1.01, 123);
 
   printvoleg(x);
-
-  for (int i = 0; x->voleg->stage < 3; i++) {
+  spin(x, 128);
+  printvoleg(x);
+  spin(x, 128);
+  printvoleg(x);
+  spin(x, 128);
+  printvoleg(x);
+  return 1;
+  for (int i = 0; x->voleg->stage < 5; i++) {
     spin(x, 128);
     printvoleg(x);
+    break;
   }
+  return 1;
   eg_release(x);
   for (int i = 0; x->voleg->stage < done; i++) {
     spin(x, 128);

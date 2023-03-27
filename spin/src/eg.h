@@ -53,11 +53,12 @@ float update_eg(EG* eg, int n) {
 void advanceStage(EG* eg) {
   switch (eg->stage) {
     case inactive:  // cannot advance
+      eg->stage++;
       return;
     case init:
       eg->egval = -960.0f;
+      eg->stage++;
       if (eg->delay > -11500) {
-        eg->stage++;
         eg->nsteps = timecent2sample(eg->delay);
         eg->egval = -960.0f;
         eg->egIncrement = 0.0f;
@@ -65,18 +66,17 @@ void advanceStage(EG* eg) {
       }
     case delay:
       eg->egval = -960.0f;
+      eg->stage++;
       if (eg->attack > -11500) {
-        eg->stage++;
         eg->egval = -960.0f;
         eg->nsteps = timecent2sample(eg->attack);
         eg->egIncrement = 960.0f / eg->nsteps;
-
         break;
       }
     case attack:
       eg->egval = 0.0f;
+      eg->stage++;
       if (eg->hold > -11500) {
-        eg->stage++;
         eg->egval = 0.0f;
         eg->nsteps = timecent2sample(eg->hold);
         eg->egIncrement = 0.0f;
