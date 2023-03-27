@@ -1,49 +1,94 @@
-import { mkdiv, logdiv, mkdiv2 } from "../mkdiv/mkdiv.js";
-import { SpinNode } from "../spin/spin.js";
+import { mkdiv, logdiv, mkdiv2 } from "https://unpkg.com/mkdiv@3.1.2/mkdiv.js";
 import { mkui } from "./ui.js";
-import SF2Service from "../sf2-service/index.js";
-import { chart, mkcanvas, renderFrames } from "../chart/chart.js";
-import { fetchmidilist, fetchSF2List } from "./midilist.js";
+import SF2Service from "https://unpkg.com/sf2-service@1.3.6/index.js";
+import { fetchmidilist } from "./midilist.js";
 import { mkeventsPipe } from "./mkeventsPipe.js";
 import { createChannel } from "./createChannel.js";
-import { midi_ch_cmds } from "./midilist.js";
-async function main() {
-  let sf2, uiControllers;
+import { midi_ch_cmds, range } from "./constants.js";
+import { chart, mkcanvas } from "https://unpkg.com/mk-60fps@1.1.0/chart.js";
+const $ = (sel) => document.querySelector(sel);
 
-  const ctx = new AudioContext({ sampleRate: 48000 });
-  let midiworker = new Worker("src/midiworker.js", {
-    type: "module",
+const sf2select = $("#sf2select"),
+  timeslide = $("#timeSlider"),
+  playBtn = $("#play"),
+  pauseBtn = $("#stop"),
+  timeNow = $("#timeNow"),
+  tempo = $("#tempo"),
+  duration = $("#duration"),
+  msel = $("#msel"),
+  panel2 = document.querySelector("#col2"),
+  col4 = $("#col4"),
+  col5 = $("#col5"),
+  canvas1 = mkcanvas({ container: $("#col3") });
+
+const drumList = document.querySelector("#drums");
+const programList = document.querySelector("#programs");
+const { infoPanel, stdout, stderr } = logdiv();
+infoPanel.attachTo(document.querySelector("#stdout"));
+window.stdout = stdout;
+window.stderr = stdout;
+const getParams = new URLSearchParams(document.location.search);
+main(
+  getParams.get("sf2file") || "file.sf2",
+  getParams.get("midifile") || "song.mid"
+);
+
+const appState = {};
+globalThis.appState = new Proxy(appState, {
+  get(target, attr) {
+    return target[attr];
+  },
+  set(target, attr, value) {
+    target[attr] = value;
+    infoPanel.innerHTML = JSON.stringify(appState);
+    return true;
+  },
+});
+function updateAppState(newArr) {
+  try {
+    globalThis.appState = Object.assign({}, globalThis.appState, newArr);
+  } catch (e) {
+    console.error(e);
+    console.error(newArr);
+    console.error(e);
+  }
+}
+async function main(sf2file, midifile) {
+  let sf2,
+    uiControllers,
+    ctx = new AudioContext(),
+    midiworker = new Worker("src/midiworker.js", {
+      type: "module",
+    });
+  stdout("start");
+
+  updateAppState({
+    midifile,
+    sf2file,
+    audioState: ctx.state,
   });
-  const channels = [];
-  const $ = (sel) => document.querySelector(sel);
-  const sf2select = $("#sf2select"),
-    timeslide = $("#timeSlider"),
-    playBtn = $("#play"),
-    pauseBtn = $("#stop"),
-    timeNow = $("#timeNow"),
-    tempo = $("#tempo"),
-    duration = $("#duration"),
-    timeSig = $("#timeSig"),
-    msel = $("#msel");
-  let qnPerBeat = 4;
 
-  const cpanel = document.querySelector("#channelContainer");
-  const drumList = document.querySelector("#drums");
-  const programList = document.querySelector("#programs");
-  const logdivfn = logdiv();
-  logdivfn.infoPanel.attachTo(document.querySelector("#stdout"));
-  const stdout = logdivfn.stdout;
+  const channels = [];
 
   midiworker.addEventListener("message", async function (e) {
     if (e.data.midifile) {
-      const { totalTicks, tracks, presets } = e.data.midifile;
+      const { totalTicks, presets } = e.data.midifile;
+      spinner.port.postMessage({ cmd: "reset" });
+      const queues = [[], [], []];
+      const [l1, l2, l3] = queues;
+
       for (const preset of presets) {
         const { pid, channel } = preset;
         const bkid = channel == 9 ? 128 : 0;
-        channels[channel].setProgram(pid, bkid);
+        await channels[channel].setProgram(pid, bkid);
       }
       duration.innerHTML = totalTicks / 4;
       timeslide.setAttribute("max", totalTicks);
+      //load sf2 files in 3 batchesd
+      await Promise.all(l1);
+      await Promise.all(l2);
+      await Promise.all(l3);
+      playBtn.removeAttribute("disabled");
     } else if (e.data.channel) {
       eventPipe.postMessage(e.data.channel);
     } else if (e.data.qn) {
@@ -60,44 +105,46 @@ async function main() {
     } else if (e.data.t) {
       // timeslide.value = e.data.t;
     } else if (e.data.meta) {
-      onMidiMeta(stdout, e);
+      onMidiMeta(stderr, e);
     }
   });
 
   playBtn.onclick = () => midiworker.postMessage({ cmd: "start" });
-  pauseBtn.onclick = () => midiworker.postMessage({ cmd: "pause" });
+  pauseBtn.onclick = () =>
+    spinner.port.postMessage({ cmd: "panic" }) &&
+    midiworker.postMessage({ cmd: "pause" });
+
   midiworker.postMessage({ cmd: "inited" });
 
   const midiList = await fetchmidilist();
   const midiSelect = mkdiv2({
     tag: "select",
     style: "width:300px",
-    onchange: (e) =>
-      midiworker.postMessage({ cmd: "load", url: e.target.value }),
+    value: midifile,
+    onchange: (e) => {
+      midiworker.postMessage({ cmd: "load", url: e.target.value });
+      e.preventDefault();
+    },
     children: midiList.map((f) =>
       mkdiv("option", { value: f.get("Url") }, f.get("Name").substring(0, 80))
     ),
   });
   midiSelect.attachTo(msel);
 
-  const sf2List = await fetchSF2List();
-  sf2select.onchange = (e) => loadSF2File(e.target.value);
   for (const f of sf2List)
     sf2select.append(mkdiv("option", { value: f.url }, f.name));
-
+  sf2select.onchange = (e) => {
+    updateAppState({ sf2file: e.target.value });
+  };
+  const { mkpath } = await import("./path.js");
+  const spinner = await mkpath(ctx);
+  updateAppState({
+    spinnerLoaded: true,
+  });
   const eventPipe = mkeventsPipe();
-  uiControllers = mkui(cpanel, eventPipe);
-  await SpinNode.init(ctx);
-  const spinner = new SpinNode(ctx, 16);
-  const merger = new GainNode(ctx);
-  const masterMixer = new GainNode(ctx, { gain: 1.0 });
-  for (let i = 0; i < 16; i++) {
-    spinner.connect(merger, i, 0);
-  }
-  merger.connect(masterMixer).connect(ctx.destination);
-  for (let i = 0; i < 16; i++) {
+  uiControllers = mkui(eventPipe, $("#channelContainer"));
+  for (let i = 0; i < 16; i++)
     channels.push(createChannel(uiControllers[i], i, sf2, spinner));
-  }
 
   eventPipe.onmessage(function (data) {
     const [a, b, c] = data;
@@ -111,6 +158,8 @@ async function main() {
         stdout("midi set cc " + [ch, cmd, key, velocity].join("/"));
         break;
       case midi_ch_cmds.change_program: //change porg
+        stdout("midi change program " + [ch, cmd, key, velocity].join("/"));
+
         channels[ch].setProgram(key, ch == 9 ? 128 : 0);
         break;
       case midi_ch_cmds.note_off:
@@ -121,7 +170,8 @@ async function main() {
           channels[ch].keyOff(key, velocity);
         } else {
           stdout([ch, cmd, key, velocity].join("/"));
-          channels[ch].keyOn(key, velocity);
+          const zone = channels[ch].keyOn(key, velocity);
+          //requestAnimationFrame(() => renderZ(panel2, canvas1, zone));
         }
         break;
       default:
@@ -136,10 +186,11 @@ async function main() {
       eventPipe.postMessage(data);
     };
   });
-  ctx.onstatechange = () => stdout("ctx state " + ctx.state);
+
+  ctx.onstatechange = () => updateAppState({ audioStatus: ctx.state });
+
   window.addEventListener("click", () => ctx.resume(), { once: true });
-  await loadSF2File("test.sf2");
-  midiworker.postMessage({ cmd: "load", url: "../song.mid" });
+
   async function loadSF2File(sf2url) {
     sf2 = new SF2Service(sf2url);
     await sf2.load();
@@ -152,21 +203,28 @@ async function main() {
         mkdiv2({ tag: "option", value: n, children: n }).attachTo(drumList);
       }
     });
-    channels.forEach((c) => c.setSF2(sf2));
-    for (let i = 0; i <= 8; i++) {
-      await channels[i].setProgram(i, 0);
-    }
-    await channels[9].setProgram(0, 128);
+    channels.forEach((c, i) => {
+      c.setSF2(sf2);
+      c.setProgram(i, i == 9 ? 128 : 0);
+    });
     for (const [section, text] of sf2.meta) {
-      stdout(section + ": " + text);
+      stderr(section + ": " + text);
     }
   }
+
+  await loadSF2File(sf2file);
+  window.mkTracks($("main"), {
+    programNames: range(0, 12).map((i) => "ch " + i),
+    keyRange: range(46, 80),
+    eventPipe,
+  });
+  spinner.port.onmessage = ({ data }) => {
+    if (data.spState) col5.innerHTML = JSON.stringify(data.spState);
+    if (data.egStages) col4.innerHTML = Object.values(data.egStages).join(" ");
+  };
 }
-main();
-function db2gain(decibel_level) {
-  return Math.pow(10, decibel_level / 20);
-}
-function onMidiMeta(stdout, e) {
+
+function onMidiMeta(stderr, e) {
   const metalist = [
     "seq num",
     "text",
@@ -198,5 +256,50 @@ function onMidiMeta(stdout, e) {
         return parseInt(num).toString(16);
     }
   };
-  stdout(metaDisplay(e.data.meta) + ": " + e.data.payload);
+  stderr(metaDisplay(e.data.meta) + ": " + e.data.payload);
+}
+async function renderZ(container, canvas, zoneSelect) {
+  container.innerHTML = "";
+
+  if (zoneSelect) {
+    const zattrs = Object.entries(zoneSelect).filter(
+      ([attr, val], idx) => idx < 60
+    );
+
+    const pcm = await zoneSelect.shdr.data();
+    chart(canvas, pcm);
+
+    const zoneinfo = mkdiv("div", [
+      mkdiv("div", [
+        "smpl: ",
+        zoneSelect.shdr.SampleId,
+        " ",
+        zoneSelect.shdr.name,
+        "<br>nsample: ",
+        zoneSelect.shdr.nsamples,
+        "<br>srate: " + zoneSelect.shdr.originalPitch,
+        "<br>Range: ",
+        zoneSelect.shdr.range.join("-"),
+        "<br>",
+        "loop: ",
+        zoneSelect.shdr.loops.join("-"),
+        "<br>",
+
+        JSON.stringify(zoneSelect.KeyRange),
+        "<br>",
+        JSON.stringify(zoneSelect.VolRange),
+      ]),
+      ..."Sustain,Attenuation,VolEnv,Filter,LFO".split(",").map((keyword) =>
+        mkdiv(
+          "div",
+          { style: "padding:10px;color:gray;" },
+          zattrs
+            .filter(([k]) => k.includes(keyword))
+            .map(([k, v]) => k + ": " + v)
+            .join("<br>")
+        )
+      ),
+    ]);
+    zoneinfo.attachTo(container);
+  }
 }

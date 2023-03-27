@@ -8,3 +8,6 @@ cert.pem
 .gitignore
 bin/key.pem
 key.pem
+playbtn
+static
+sf2-service

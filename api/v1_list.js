@@ -1,1 +1,0 @@
-export const sf2list=["VintageDreamsWaves-v2.sf2","SoundBlasterOld.sf2","SalCSLight2.sf2","GeneralUserGS.sf2"]

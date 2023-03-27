@@ -3,25 +3,26 @@
 #include "LFO.h"
 #include "calc.h"
 #include "eg.h"
-#include "lpf.h"
-#include "saturate.c"
 #include "sf2.h"
+
+typedef enum { SP_AVAIL, sp_NOT_AVAIL } sp_availability;
+
 typedef struct {
   float *inputf, *outputf;
   float fract;
   uint32_t position, loopStart, loopEnd;
   float stride, fpad1;
-  lpf_t* lpf;
+  uint32_t leftSamp;
   zone_t* zone;
   EG *voleg, *modeg;
   LFO *modlfo, *vibrlfo;
   int channelId, key, velocity;
+  sp_availability sp_avail;
 } spinner;
 
 typedef struct {
   uint32_t loopstart, loopend, length, sampleRate, originalPitch;
   float* data;
-
 } pcm_t;
 
 typedef struct {
@@ -32,7 +33,8 @@ void set_zone(spinner* x, zone_t* z, unsigned int pcm_sampleRate);
 spinner* newSpinner(int idx);
 void eg_release(spinner* x);
 void reset(spinner* x);
-int spin(spinner* x, int n);
+int spin(spinner* x, int n);  
+float* spOutput(spinner*x);
 
 // borrowed from tml.h
 enum TMLController {

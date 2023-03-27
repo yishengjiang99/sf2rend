@@ -1,83 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Mocha</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <script src="testharness/testharness.js" crossorigin="anonymous"></script>
-  <script src="testharness/testharnessreport.js" crossorigin="anonymous"></script>
+	<style>
+		body {
+			background-color: black;
+			color: white;
+		}
+
+	</style>
+
 </head>
 <body>
-  <script type='module'>
-    import {loadProgram, load} from "./sf2-service/read.js";
-    import {fetchAndLoadPlaylist} from "./src/midilist.js";
-    import {mkeventsPipe, initAudio, main, queryDivs} from "./src/index.js";
-    import {indexdivs} from "./tests/htmldivs.fixture.js";
-    promise_test(async (t) => {
-      assert_true(true);
-      const u = await initAudio();
-    }, 'adfdas');
+	<script type="mode" src="./src/midiworker.js">
+		console.log(			run("song.mid");)
+</script>
 
-    // promise_test(async (t) => {
-    //   t.set_timeout(2)
-    //   document.body.innerHTML += `<div style='top:200vh;position:fixed;max-height:1px' id=test1>${indexdivs}</div>`;
-    //   const divs = queryDivs()
-    //   const p = mkeventsPipe();
-    //   assert_true(p.postMessage != null);
-
-    //   // await main(divs);
-    //   assert_true(true, 'got this far')
-
-    // }, 'load page')
-
-    // promise_test(async () => {
-    //   const div = await fetchAndLoadPlaylist();
-    //   assert_true(div.innerHTML.includes("song.mid"));
-    // })
-    // promise_test(async () => {
-    //   const sf2 = await load("file.sf2");
-    //   try {
-    //     const {shdrMap, zMap, preload, filterKV} = loadProgram(sf2, 0, 0); //.lo < z.KeyRange.hi));
-    //     assert_false(zMap.some(z => z.SampleId == -1), 'saome spids are -1');
-    //     console.log(zMap[0].KeyRange.lo);
-    //     assert_true(zMap.some(z => z.KeyRange.lo < z.KeyRange.hi));
-    //   } catch (e) {
-    //     console.trace(e)
-    //   }
-    // }, "loading program returns more than 0 zones");
-
-  </script>
-  <script type='moduale'>
-    import {loadProgram, load} from "./sf2-service/read.js";
-
-
-
-    promise_test(async () => {
-      const sf2 = await load("file.sf2");
-      const {shdrMap, zMap, preload, filterKV} = loadProgram(sf2, 0, 0);
-      await preload();
-      console.log(zMap);
-      assert_true(zMap[0].shdr.pcm instanceof Float32Array, "pcm data can be accessed synchronously after preload");
-    }, "preload pcm data");
-
-    promise_test(async () => {
-      const times = [];
-      const el = document.createElement('div');
-      document.body.append(el);
-      const sf2 = await load("file.sf2", {
-        onHeader(type, bid, str) {
-          el.append(new Text("program" + str))
-          times.push(performance.now());
-        }
-      });
-      assert_true(document.body.innerHTML.includes("program"));
-      el.remove();
-    }, "stream ui load as file is being parsed");
-  </script>
-  <script type='module_skip'>
-    import {test} from './tests/dropship.test.js';
-    test();
-  </script>
+	</script>
 </body>
 </html>

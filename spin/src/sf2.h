@@ -1,6 +1,5 @@
 #ifndef SF2_H
 #define SF2_H
-#include <stdint.h>
 typedef unsigned int uint32_t;
 typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
@@ -89,11 +88,11 @@ typedef struct {
 typedef struct {
   char name[20];
   uint32_t start, end, startloop, endloop, sampleRate;
-
   unsigned char originalPitch;
   signed char pitchCorrection;
   uint16_t wSampleLink, sampleType;
 } shdrcast;
+
 typedef struct {
   unsigned short StartAddrOfs, EndAddrOfs, StartLoopAddrOfs, EndLoopAddrOfs,
       StartAddrCoarseOfs;

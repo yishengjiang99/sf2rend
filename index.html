@@ -1,22 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MIDI Rendering with SoundFont2</title>
 
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MIDI Rendering with SoundFont2</title>
-    <link
-      href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
-      rel="stylesheet"
-      crossorigin />
-      <link rel="stylesheet" href="style.css">
-  </head>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css"
+    integrity="sha512-SzlrxWUlpfuzQ+pcUCosxcglQRNAq/DZjVsC0lE40xsADsfeQoEypE+enwcOiGjk/bSuGGKHEyjSoQ1zVisanQ=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="src/keyboard/keyboard.css">
+  <script type="text/babel" src="./src/keyboard/like.jsx">  </script>
+  <link rel="stylesheet" href="style.css">
 
-  <body class="">
-    <header style="max-width: 1550px; margin: 0 auto;">      
-      <h3>Performant WASM MIDI Playe</h3>
-      <div style="display:flex; column-gap:40px; justify-content: space-between;">      
+
+
+</head>
+
+<body>
+  <header style="max-width: 1550px; margin: 0 auto;">
+    <h3>Performant WASM MIDI Playe</h3>
+    <div style="display:flex; column-gap:40px; justify-content: space-between;">
       <div class="song-controls" style="display: grid; height: 50px; width:
         300px; grid-gap: 10px">
         <button id="rewind" class="rewind" style="grid-column: 1/2">
@@ -27,29 +34,41 @@
         </button>
         <button id="stop" class="pause-btn" style="grid-column: 3/3; ">
           <i class="fa fa-stop" aria-hidden="true"> </i>
-        </button>      
+        </button>
       </div>
       <div class="sliderr">
-        <span id="timeNow"></span>  Tempo: <span id="tempo"></span>
-
-        <span><input id="timeSlider" type="range" min="0" max="100"/></span>
+        <span id="timeNow"></span>
+        <span><input id="timeSlider" type="range" min="0" max="100" /></span>
         <span id="duration"></span>
       </div>
-      <div id="msel">     
-         <select id="sf2select"></select>         
-         <select id="midilist"></select>
-         <ul id="presetList"></ul>
-      </div></div>
-   </header>
-    <main class="main" style="display:grid; grid-template-columns: 1fr 1fr;">
-      <div class="">
-        <div id="channelContainer" style="height:60vh;overflow-y:scroll"></div>
+      <div id="msel">
+        <select id="sf2select"></select>
+        <select id="midilist"></select>
+        <ul id="presetList"></ul> Tempo: <span id="tempo"></span>
       </div>
-      <div id="stdout" class=""></div>
-    </main>
-    <datalist id="programs"></datalist>
-    <datalist id="drums"></datalist>
-    <script type="module" src="./src/index.js"></script>
-  </body>
+    </div>
+    <div id="col4"></div>
+  </header>
+  <main class="main">
+    <aside></aside>
+    <div>
+      <div id="channelContainer"></div>
+      <div id="col3"></div>
+    </div>
+    <div>
+      <div id="col2"></div>
+      <div id="col4"></div>
+      <div id="col5"></div>
+    </div>
+  </main>
+  <div id="stdout"></div>
+
+  <footer>
+  </footer>
+
+  <script type="module" src="./src/index.js"></script>
+  <datalist id="programs"></datalist>
+  <datalist id="drums"></datalist>
+</body>
 
 </html>
