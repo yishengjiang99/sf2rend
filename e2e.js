@@ -105,7 +105,10 @@ async function rendProgram() {
     mkdiv(
       "select",
       {
-        oninput: (e) => renderZ(program.zMap.filter((z) => e.target.value)[0]),
+        oninput: (e) => {
+          renderZ(program.zMap.filter((z) => z.ref == e.target.value)[0]);
+          window.location.hash = "#" + presetId + "|" + e.target.value;
+        },
       },
       kRangeList
     )

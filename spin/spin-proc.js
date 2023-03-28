@@ -1,8 +1,6 @@
 import saturate from "../saturation/index.js";
 import { wasmbin } from "./spin.wasm.js";
-function queueMicrotask(fn) {
-  new Promise((r) => r()).then(fn);
-}
+import { egStruct, spRef2json } from "./spin-structs.js";
 async function downloadData(stream, fl) {
   for (let v of fl) v = 0;
   const reader = stream.getReader();
@@ -100,9 +98,9 @@ class SpinProcessor extends AudioWorkletProcessor {
     if (data.stream && data.segments) {
       await this.loadsdta(data);
       this.port.postMessage({ zack: 2 });
-    } else if (data.zArr) {
+    } else if (data.zArr && data.presetId !== null) {
       for (const { arr, ref } of data.zArr) {
-        this.setZone(ref, arr); //.set
+        this.setZone(ref, arr, data.presetId); //.set
       }
       this.port.postMessage({ zack: 1 });
     } else if (data.cmd) {
@@ -119,6 +117,19 @@ class SpinProcessor extends AudioWorkletProcessor {
 
           break;
       }
+    } else if (data.query) {
+      const ref = this.inst.exports.spRef(parseInt(data.query));
+      const spinfo = spRef2json(this.memory.buffer, ref);
+      const egInfo = egStruct(
+        this.memory.buffer,
+        this.inst.exports.get_vol_eg(ref)
+      );
+      this.port.postMessage({
+        queryResponse: {
+          spinfo,
+          egInfo,
+        },
+      });
     } else {
       const [cmd, channel, ...args] = data;
       const [metric, value] = args;
@@ -135,9 +146,10 @@ class SpinProcessor extends AudioWorkletProcessor {
         case 1:
         case 0x0090:
           {
-            const [zoneRef, ratio, velocity] = args;
-            if (!this.presetRefs[zoneRef]) {
-              console.error("cannot find present zoneref", zoneRef)
+            const [ratio, velocity, [presetId, zoneRef]] = args;
+            const zonePtr = this.presetRefs[presetId]?.[zoneRef];
+            if (!zonePtr) {
+              console.error("cannot find present zoneref", presetId, zoneRef);
               return;
             }
             if (!this.spinners[channel]) {
@@ -145,10 +157,7 @@ class SpinProcessor extends AudioWorkletProcessor {
             }
             let ch = channel;
             this.inst.exports.reset(this.spinners[ch]);
-            this.inst.exports.set_spinner_zone(
-              this.spinners[ch],
-              this.presetRefs[zoneRef]
-            );
+            this.inst.exports.set_spinner_zone(this.spinners[ch], zonePtr);
             this.inst.exports.trigger_attack(
               this.spinners[ch],
               ratio,
@@ -161,12 +170,12 @@ class SpinProcessor extends AudioWorkletProcessor {
       }
     }
   }
-  setZone(ref, arr) {
+  setZone(ref, arr, presetId) {
     const ptr = this.malololc(120);
-    if (this.presetRefs[ref]) {
-      console.error(" ref ", ref, "occupied ");
+    if (!this.presetRefs[presetId]) {
+      this.presetRefs[presetId] = {};
     }
-    this.presetRefs[ref] = ptr;
+    this.presetRefs[presetId][ref] = ptr;
     new Int16Array(this.memory.buffer, ptr, 60).set(new Int16Array(arr, 0, 60));
   }
 
@@ -220,7 +229,29 @@ class SpinProcessor extends AudioWorkletProcessor {
         outputs[chid][1][j] += saturate(this.outputs[i][2 * j + 1]);
       }
     }
+    if (!this.lastReport || globalThis.currentTime - this.lastReport > 0.2) {
+      new Promise((r) => r()).then(() => {
+        this.lastReport = globalThis.currentTime;
+        const ref = this.inst.exports.spRef(0);
+        const spinfo = spRef2json(this.memory.buffer, ref);
+        const egInfo = egStruct(
+          this.memory.buffer,
+          this.inst.exports.get_vol_eg(ref)
+        );
+        this.port.postMessage({
+          queryResponse: {
+            now: now(),
+            spinfo,
+            egInfo,
+            egStags: this.eg_vol_stag,
+          },
+        });
+      });
+    }
     return true;
   }
 }
 registerProcessor("spin-proc", SpinProcessor);
+function now() {
+  return globalThis.currentTime;
+}

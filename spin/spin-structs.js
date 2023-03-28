@@ -1,5 +1,3 @@
-import { newSFZoneMap } from "./zoneProxy.js";
-
 /*
 typedef struct {
   float *inputf, *outputf;
@@ -15,36 +13,27 @@ export function spRef2json(heap, ref) {
   const [
     inputRef,
     outputRef,
-    position,
-    loopStart,
-    loopEnd,
     channelId,
     key,
     velocity,
+    position,
+    loopStart,
+    loopEnd,
   ] = new Uint32Array(heap, ref, 8); // 8*4
   const [fract, stride] = new Float32Array(heap, ref + 32, 3); // 8*3
 
-  const [zoneRef, volEGRef, modEGRef, modflo, vibrlfo] = new Uint32Array(
-    heap,
-    ref + 44,
-    5
-  );
-  if (!outputRef) throw "bad spinner no crit refs";
+  const [zoneRef, volEGRef, modEGRef, modflo, vibrlfo, pcmRef] =
+    new Uint32Array(heap, ref + 44, 6);
   return {
     fract,
     stride,
     inputRef,
     outputRef,
-    outputf: new Float32Array(heap, outputRef, 128 * 2),
     position,
     loopStart,
     loopEnd,
     zoneRef,
-    zone: zoneRef
-      ? newSFZoneMap(zoneRef, new Int16Array(heap, zoneRef, 60))
-      : null,
-    volEG: volEGRef ? egStruct(heap, volEGRef) : null,
-    modEG: modEGRef ? egStruct(heap, modEGRef) : null,
+    volEGRef,
     modflo,
     vibrlfo,
     channelId,
@@ -67,10 +56,10 @@ typedef struct {
 
 export function egStruct(heap, ref) {
   const [egval, egIncrement] = new Float32Array(heap, ref, 2);
-  const [hasRelease, stage, nsamples] = new Int32Array(heap, ref, 3);
+  const [hasRelease, stage, nsamples] = new Int32Array(heap, ref + 4, 3);
   const [delay, attack, hold, decay, sustain, release] = new Int16Array(
     heap,
-    ref + 8,
+    ref + 20,
     6
   );
   return {

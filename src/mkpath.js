@@ -66,6 +66,14 @@ export async function mkpath(ctx, additional_nodes = []) {
       },
     },
     spinner,
+    querySpState: async function (channelId) {
+      spinner.port.postMessage({ query: channelId });
+      return await new Promise((resolve, reject) => {
+        spinner.port.onmessage = ({ data }) => {
+          if (data.queryResponse) resolve(data.queryResponse);
+        };
+      });
+    },
     loadPreset: spinner.shipProgram,
     channelState,
     setNewZone: function (zone) {
@@ -92,7 +100,6 @@ export async function mkpath(ctx, additional_nodes = []) {
         const baseOctave = this.channelState[channel].octave || 48;
         const index = keys.indexOf(e.key) + baseOctave;
         if (index < 0) return;
-        eventpipe.postMessage([0x90 | channel, index, 120]);
         e.target.addEventListener(
           "keyup",
           () => {
@@ -100,6 +107,7 @@ export async function mkpath(ctx, additional_nodes = []) {
           },
           { once: true }
         );
+        eventpipe.postMessage([0x90 | channel, index, 120]);
       };
     },
   };

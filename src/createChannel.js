@@ -10,28 +10,32 @@ export function createChannel(uiController, channelId, sf2, spinner) {
       _sf2 = sf2;
     },
     async setProgram(pid, bid) {
+      this.presetId = pid | bid;
       program = _sf2.loadProgram(pid, bid);
+      uiController.hidden = false;
+
+      if (!program) {
+        alert(bid + " " + pid + " no found");
+        return;
+      }
       await spinner.shipProgram(program, pid | bid);
+      uiController.hidden = false;
       uiController.name = program.name;
-      uiController.presetId = pid;
+      uiController.presetId = this.presetId;
     },
     setCC({ key, vel }) {
       spinner.port.postMessage([0xb0, channelId, key, vel]);
       uiController.CC = { key, value: vel };
     },
     keyOn(key, vel) {
-      console.log("ch chan ", channelId);
       const zones = program.filterKV(key, vel);
-
-      key_on_map[key] = key_on_map[key] || [];
-
       zones.slice(0, 2).map((zone, i) => {
         spinner.port.postMessage([
           midi_ch_cmds.note_on,
           channelId * 2 + i,
-          zone.ref,
           zone.calcPitchRatio(key, spinner.context.sampleRate),
           vel,
+          [this.presetId, zone.ref],
         ]);
       });
 

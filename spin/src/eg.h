@@ -34,14 +34,14 @@ float update_eg(EG* eg, int n) {
   int n1 = n > eg->nsteps ? eg->nsteps : n;
   if (n < eg->nsteps) {
     eg->nsteps -= n1;
-    eg->egval += eg->egIncrement * n1;
+    eg->egval += eg->egIncrement * (float)n1;
   } else {
     eg->nsteps = 0;
-    eg->egval += eg->egIncrement * (n1 - eg->nsteps);
+    eg->egval += eg->egIncrement * (float)(n1 - eg->nsteps);
     n1 = n - n1;
     advanceStage(eg);
     eg->nsteps -= n1;
-    eg->egval += eg->egIncrement * n1;
+    eg->egval += eg->egIncrement * (float)n1;
   }
   return eg->egval;
 }
@@ -65,7 +65,7 @@ void advanceStage(EG* eg) {
       if (eg->attack > -11500) {
         eg->egval = -960.0f;
         eg->nsteps = timecent2sample(eg->attack);
-        eg->egIncrement = 960.0f / eg->nsteps;
+        eg->egIncrement = 960.0f / (float)eg->nsteps;
         break;
       }
     case attack:
@@ -79,10 +79,10 @@ void advanceStage(EG* eg) {
          * This is the time, in absolute timecents, for a 100% change in the
     Volume Envelope value during decay phase. */
         // velopcity required to travel full 960db
-        eg->egIncrement = -960.f / timecent2sample(eg->decay);
+        eg->egIncrement = -960.f / (float)timecent2sample(eg->decay);
 
         // but it's timeslice by sustain percentage?
-        eg->nsteps = eg->sustain / 1000.0f * timecent2sample(eg->decay);
+        eg->nsteps = eg->sustain / 1000.0f * (float)timecent2sample(eg->decay);
         break;
 
         /*For the Volume
@@ -115,6 +115,7 @@ void advanceStage(EG* eg) {
       // sustain = % decreased during decay
 
     case sustain:
+
       /*This is the time, in absolute timecents, for a 100% change in
 the Volume Envelope value during release phase. For the Volume Envelope,
 the release phase linearly ramps toward zero from the current level,
@@ -143,10 +144,6 @@ one second. For example, a release time of 10 msec would be 1200log2(.01) =
   }
 }
 
-void* gmemcpy(char* dest, const char* src, unsigned long n) {
-  for (int i = 0; i < n; i++) *(dest + i) = src[i];
-  return (void*)dest;
-}
 void scaleTc(EG* eg, unsigned int pcmSampleRate) {
   float scaleFactor = SAMPLE_RATE / (float)pcmSampleRate;
   eg->attack *= scaleFactor;
@@ -156,23 +153,20 @@ void scaleTc(EG* eg, unsigned int pcmSampleRate) {
   eg->hold *= scaleFactor;
 }
 void init_vol_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
-  char* sz = (char*)&z->VolEnvDelay;
-  gmemcpy((char*)&eg->delay, sz, 12);
-  scaleTc(eg, pcmSampleRate);
-  eg->stage = init;
-  eg->egIncrement = 0.0f;
-  eg->egval = -960.0f;
-  eg->hasReleased = 0;
-
-  if (eg->attack >= 0) eg->attack = 0;
+  eg->attack = z->VolEnvAttack;
+  eg->delay = z->VolEnvDelay;
+  eg->decay = z->VolEnvDecay;
+  eg->release = z->VolEnvRelease;
+  eg->hold = z->VolEnvHold;
+  eg->sustain = z->VolEnvSustain;
 }
 void init_mod_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
-  char* sz = (char*)&z->ModEnvDelay;
-  gmemcpy((char*)&eg->delay, sz, 12);
-  scaleTc(eg, pcmSampleRate);
-  eg->stage = init;
-  eg->egval = -960.0f;
-  eg->hasReleased = 0;
+  eg->attack = z->ModEnvAttack;
+  eg->delay = z->ModEnvDelay;
+  eg->decay = z->ModEnvDecay;
+  eg->release = z->ModEnvRelease;
+  eg->hold = z->ModEnvHold;
+  eg->sustain = z->ModEnvSustain;
 }
 
 void _eg_set_stage(EG* e, int n) {

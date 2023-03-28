@@ -227,7 +227,9 @@ int spin(spinner* x, int n) {
   update_eg(x->modeg, 64);
 
   _spinblock(x, 64, 64);
-  return x->voleg->egIncrement + .001;
+  return x->voleg->egval * 100;
 }
 
 unsigned int sp_byte_len() { return sizeof(spinner); }
+
+EG* get_vol_eg(spinner* x) { return x->voleg; }

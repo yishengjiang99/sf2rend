@@ -1,7 +1,7 @@
 .channelCard {
   margin: 30px;
   background-color: gainsboro;
-  color:black;
+  color: black;
 }
 .channelCard .active {
   background-color: aqua;
@@ -12,32 +12,29 @@ body {
   background-color: black;
   color: white;
 }
-
-@for $i from 1 through 20 {
-  .blue:nth-of-type(#{$i}) {
-    transform: translateY(-20px * $i);
-  }
+main {
+  display: grid;
+  grid-template-areas: 'channelP channelP''stdout info'
 }
-
-.note {
-  display: inline-block;
+#channelContainer{
+  grid-area: channelP;
 }
-
-.note {
-  margin-left: calc(var(--delay) * 1px);
-  transform: translateY(calc(var(--midi) * 1px));
+#stdout{
+  max-width: 50%;
+  grid-area: stdout;
 }
-
-.main {
-  display: flex;
-  flex-direction: row;
-  place-items: space-between;
-  margin: 0 auto;
-  padding: 20px;
-
-  place-self: center;
+#info {
+  grid-area: info;
 }
-#stdout {
-  width: 80em;
+aside {
+  position: fixed; 
+  top: 0; 
+  right: 0;
+  height: 100%; 
+  width: 300px; 
+  background: #2f2f2f; 
+  overflow-x: hidden; 
+  overflow-y: scroll; 
+  padding: 20px; 
+  -webkit-overflow-scrolling: touch; 
 }
-/

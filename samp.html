@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>MIDI Rendering with SoundFont2</title>
+	<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+	<input type="checkbox" id="drawer-toggle" name="drawer-toggle" />
+	<label for="drawer-toggle" id="drawer-toggle-label"></label>
+	<header>Header</header>
+	<nav id="drawer">
+	</nav>
+	<div id="page-content">
+		<main class="main">
+			<div id="channelContainer"></div>
+			<div id="stdout"></div>
+		</main>
+		<footer></footer>
+	</div>
+	<div style="display: none">
+		<div id="col3"></div>
+
+		<div id="col2"></div>
+		<div id="col4"></div>
+		<div id="col5"></div>
+	</div>
+	<script type="module" src="./src/index.js"></script>
+	<datalist id="programs"></datalist>
+	<datalist id="drums"></datalist>
+</body>
+</html>

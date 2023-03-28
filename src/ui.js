@@ -12,6 +12,78 @@ const rowheight = 40;
 const pixelPerSec = 12;
 let ControllerState;
 let activeChannel = 0;
+
+export function mkui(
+  eventPipe,
+  container,
+  { onTrackClick, onTrackDoubleClick }
+) {
+  const controllers = [];
+  let refcnt = 0;
+  let _activeChannel = 0;
+  const tb = mkdiv("div", {
+    border: 1,
+    style: `display:flex;flex-direction:row; grid-gap:20px;flex-wrap:wrap`,
+  });
+
+  for (let i = 0; i < 16; i++) {
+    const trackrow = new TrackUI(i, eventPipe.postMessage);
+    controllers.push(trackrow);
+    tb.append(trackrow.container);
+    trackrow.container.classList.add("channelCard");
+    trackrow.container.addEventListener(
+      "click",
+      (e) => {
+        _activeChannel = i;
+        e.target.parentElement
+          .querySelectorAll(".active")
+          .forEach((e) => e.classList.remove("active"));
+        trackrow.container.classList.add("active");
+      },
+      false
+    );
+    trackrow.container.addEventListener("dblclick", (e) => {
+      onTrackDoubleClick(i, e);
+    });
+  }
+  const mkKeyboard = mkdiv(
+    "div",
+    { class: "keyboards" },
+    range(48, 72).map((midi, i) =>
+      mkdiv(
+        "a",
+        {
+          midi,
+          onmousedown: (e) => {
+            refcnt++;
+            eventPipe.postMessage([0x90 | this.activeChannel, midi, 120]);
+            e.target.addEventListener(
+              "mouseup",
+              () =>
+                refcnt >= 0 &&
+                eventPipe.postMessage([0x80 | this.activeChannel, midi, 88]),
+              { once: true }
+            );
+          },
+        },
+        [i % 12 ? " " : mkdiv("br"), midi]
+      )
+    )
+  );
+  const keyboard = mkKeyboard;
+  const cpanel = mkdiv("div", [tb, keyboard]);
+
+  cpanel.attachTo(container);
+  return {
+    controllers,
+    get activeChannel() {
+      return _activeChannel;
+    },
+    set activeChannel(c) {
+      _activeChannel = c;
+    },
+  };
+}
 export class TrackUI {
   constructor(idx, cb) {
     this.idx = idx;
@@ -128,6 +200,9 @@ export class TrackUI {
     this._active = false;
     this._midi = null;
   }
+  set hidden(h) {
+    this.container.style.display = h ? "none" : "grid";
+  }
   set presetId(presetId) {}
   set name(id) {
     this.nameLabel.value = id;
@@ -192,75 +267,6 @@ export class TrackUI {
       .join(" ");
     this.polylines[0].setAttribute("points", points);
   }
-}
-
-export function mkui(eventPipe, container) {
-  const controllers = [];
-  let refcnt = 0;
-  let _activeChannel = 0;
-  const tb = mkdiv("div", {
-    border: 1,
-    style: `display:flex;flex-direction:row; grid-gap:20px;flex-wrap:wrap`,
-  });
-
-  for (let i = 0; i < 16; i++) {
-    const trackrow = new TrackUI(i, eventPipe.postMessage);
-    controllers.push(trackrow);
-    tb.append(trackrow.container);
-    trackrow.container.classList.add("channelCard");
-    trackrow.container.addEventListener(
-      "click",
-      (e) => {
-        _activeChannel = i;
-        e.target.parentElement
-          .querySelectorAll(".active")
-          .forEach((e) => e.classList.remove("active"));
-        trackrow.container.classList.add("active");
-      },
-      false
-    );
-  }
-  const mkKeyboard = mkdiv(
-    "div",
-    { class: "keyboards" },
-    range(48, 72).map((midi, i) =>
-      mkdiv(
-        "a",
-        {
-          midi,
-          onmousedown: (e) => {
-            refcnt++;
-            eventPipe.postMessage([0x90 | this.activeChannel, midi, 120]);
-            e.target.addEventListener(
-              "mouseup",
-              () =>
-                refcnt >= 0 &&
-                eventPipe.postMessage([0x80 | this.activeChannel, midi, 88]),
-              { once: true }
-            );
-          },
-        },
-        [i % 12 ? " " : mkdiv("br"), midi]
-      )
-    )
-  );
-  const keyboard = mkKeyboard;
-  const cpanel = mkdiv("div", [
-    mkdiv("fieldset", [mkdiv("legend", "trackrows")]),
-    tb,
-    keyboard,
-  ]);
-
-  cpanel.attachTo(container);
-  return {
-    controllers,
-    get activeChannel() {
-      return _activeChannel;
-    },
-    set activeChannel(c) {
-      _activeChannel = c;
-    },
-  };
 }
 
 const range = (x, y) =>
