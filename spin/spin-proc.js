@@ -214,21 +214,21 @@ class SpinProcessor extends AudioWorkletProcessor {
     return this.spinners[i];
   }
 
-  process(inputs, outputs, parameters) {
+  process(inputs, outputs) {
     for (let i = 0; i < 32; i++) {
       const chid = Math.floor(i / 2);
-      if (!this.spinners[i]) continue;
       if (!this.outputs[i]) continue;
-      for (let j = 0; j < 128 * 2; j++) {
-        this.outputs[i][j] = 0;
-      }
+      if (!this.spinners[i]) continue;
       this.eg_vol_stag[i] = this.inst.exports.spin(this.spinners[i], 128);
       if (this.eg_vol_stag[i] == 99) delete this.spinners[i];
       for (let j = 0; j < 128; j++) {
-        outputs[chid][0][j] += saturate(this.outputs[i][2 * j]);
-        outputs[chid][1][j] += saturate(this.outputs[i][2 * j + 1]);
+        outputs[chid][0][j] += saturate(this.outputs[i][2 * j] * 0.4);
+        outputs[chid][1][j] += saturate(this.outputs[i][2 * j + 1] * 0.5);
       }
     }
+    return true;
+  }
+  sendReport() {
     if (!this.lastReport || globalThis.currentTime - this.lastReport > 0.2) {
       new Promise((r) => r()).then(() => {
         this.lastReport = globalThis.currentTime;
@@ -248,7 +248,6 @@ class SpinProcessor extends AudioWorkletProcessor {
         });
       });
     }
-    return true;
   }
 }
 registerProcessor("spin-proc", SpinProcessor);

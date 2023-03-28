@@ -32,8 +32,11 @@ export default async function runMidiPlayer(
   );
   await loadPresetFn(presets);
   const worker = new Worker("../timer.js");
-  worker.postMessage({ msqn: tempos?.[0]?.tempo || 500000 });
-  worker.postMessage({ ppqn: division });
+  let msqn = tempos?.[0]?.tempo || 500000;
+  let ppqn = division;
+  console.log(ppqn);
+  stdout("msqn" + msqn + " ppqn" + ppqn);
+  worker.postMessage({ tm: { msqn, ppqn } });
 
   const soundtracks = tracks.map((track) =>
     track.filter((event) => event.t && event.channel)

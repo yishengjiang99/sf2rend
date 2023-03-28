@@ -153,12 +153,13 @@ void scaleTc(EG* eg, unsigned int pcmSampleRate) {
   eg->hold *= scaleFactor;
 }
 void init_vol_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
-  eg->attack = z->VolEnvAttack;
-  eg->delay = z->VolEnvDelay;
-  eg->decay = z->VolEnvDecay;
-  eg->release = z->VolEnvRelease;
-  eg->hold = z->VolEnvHold;
-  eg->sustain = z->VolEnvSustain;
+  float scaleFactor = SAMPLE_RATE / (float)pcmSampleRate;
+  eg->attack = z->VolEnvAttack * scaleFactor;
+  eg->delay = z->VolEnvDelay * scaleFactor;
+  eg->decay = z->VolEnvDecay * scaleFactor;
+  eg->release = z->VolEnvRelease * scaleFactor;
+  eg->hold = z->VolEnvHold * scaleFactor;
+  eg->sustain = z->VolEnvSustain * scaleFactor;
 }
 void init_mod_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
   eg->attack = z->ModEnvAttack;

@@ -57,10 +57,10 @@ spinner* newSpinner(int idx) {
   x->modlfo = &lfos[idx * 2];
   x->vibrlfo = &lfos[idx * 2 + 1];
   x->modeg->egval = -960.0f;
-  x->modeg->egIncrement = 0;
+  x->modeg->egIncrement = 0.0f;
   x->voleg->egval = -960.0f;
   x->voleg->stage = init;
-  x->voleg->egIncrement = 0;
+  x->voleg->egIncrement = 0.0f;
   x->channelId = idx;
   x->voleg->stage = inactive;
 

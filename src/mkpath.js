@@ -86,7 +86,9 @@ export async function mkpath(ctx, additional_nodes = []) {
       );
       return lpfs[channel];
     },
-
+    silenceAll() {
+      merger.gain.linearRampToValueAtTime(0, 0.05);
+    },
     mute(channel) {
       gainNodes[channel].linearRampToValueAtTime(0, 0.05);
     },

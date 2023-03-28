@@ -67,7 +67,7 @@ async function main(sf2file) {
       mkdiv("option", { value: f.get("Url") }, f.get("Name").substring(0, 80))
     ),
   });
-  midiSelect.attachTo(msel);
+  midiSelect.attachTo($("header"));
   midiSelect.addEventListener("input", (e) => onMidiSelect(e.target.value));
 
   sf2select.setAttribute("value", sf2file);
@@ -88,9 +88,9 @@ async function main(sf2file) {
   const eventPipe = mkeventsPipe();
   const ui = mkui(eventPipe, $("#channelContainer"), {
     onTrackDoubleClick: async (channelId, e) => {
-      // const sp1 = await apath.querySpState({ query: 2 * channelId });
-      // const sp2 = await apath.querySpState({ query: 2 * channelId + 1 });
-      // stderr(JSON.stringify(sp1, null, 1));
+      const sp1 = await apath.querySpState({ query: 2 * channelId });
+      const sp2 = await apath.querySpState({ query: 2 * channelId + 1 });
+      globalThis.stderr(JSON.stringify(sp1, null, 1));
     },
   });
   uiControllers = ui.controllers;
