@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MIDI Rendering with SoundFont2</title>
+  <link rel="stylesheet" href="style.css">
+
+
+
+</head>
+
+<body>
+  <header style="max-width: 1550px; margin: 0 auto;">
+    <h3>Performant WASM MIDI Player</h3>
+    <div style="display:flex; column-gap:40px; justify-content: space-between;">
+      <div class="song-controls" style="display: grid; height: 50px; width:
+        300px; grid-gap: 10px">
+
+      </div>
+      <div class="sliderr">
+        <span id="timeNow"></span>
+        <span><input id="timeSlider" type="range" min="0" max="100" /></span>
+        <span id="duration"></span>
+      </div>
+      <div id="msel">
+        <select id="sf2select"></select>
+        <select id="midilist"></select>
+        <ul id="presetList"></ul>
+      </div>
+    </div>
+    <div id="col4"></div>
+  </header>
+  <aside></aside>
+  <main class="main">
+    <div>
+      <div id="channelContainer"></div>
+      <div id="stdout"></div>
+    </div>
+  </main>
+
+  <footer>
+  </footer>
+  <div style="display:none">
+    <div id="col3"></div>
+
+    <div id="col2"></div>
+    <div id="col4"></div>
+    <div id="col5"></div>
+  </div>
+  <script type="module" src="./src/index.js"></script>
+  <datalist id="programs"></datalist>
+  <datalist id="drums"></datalist>
+</body>
+
+</html>

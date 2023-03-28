@@ -1,10 +1,11 @@
 import { mkdiv, logdiv, mkdiv2 } from "https://unpkg.com/mkdiv@3.1.2/mkdiv.js";
 import { mkui } from "./ui.js";
 import SF2Service from "https://unpkg.com/sf2-service@1.3.6/index.js";
-import { fetchmidilist } from "./midilist.js";
+import { fetchmidilist, fetchSF2List } from "./midilist.js";
 import { mkeventsPipe } from "./mkeventsPipe.js";
 import { createChannel } from "./createChannel.js";
 import { midi_ch_cmds, range } from "./constants.js";
+import runMidiPlayer from "./runmidi.js";
 import { chart, mkcanvas } from "https://unpkg.com/mk-60fps@1.1.0/chart.js";
 const $ = (sel) => document.querySelector(sel);
 
@@ -53,7 +54,7 @@ function updateAppState(newArr) {
     console.error(e);
   }
 }
-async function main(sf2file, midifile) {
+async function main(sf2file) {
   let sf2,
     uiControllers,
     ctx = new AudioContext(),
@@ -62,27 +63,15 @@ async function main(sf2file, midifile) {
     });
   stdout("start");
 
-  updateAppState({
-    midifile,
-    sf2file,
-    audioState: ctx.state,
-  });
-
   const channels = [];
 
-  playBtn.onclick = () => midiworker.postMessage({ cmd: "start" });
-  pauseBtn.onclick = () =>
-    spinner.port.postMessage({ cmd: "panic" }) &&
-    midiworker.postMessage({ cmd: "pause" });
   midiworker.postMessage({ cmd: "inited" });
 
   const midiList = await fetchmidilist();
   const midiSelect = mkdiv2({
     tag: "select",
     style: "width:300px",
-    value: midifile,
-    onchange: (e) => {
-      midiworker.postMessage({ cmd: "load", url: e.target.value });
+    oninput: (e) => {
       e.preventDefault();
     },
     children: midiList.map((f) =>
@@ -90,13 +79,21 @@ async function main(sf2file, midifile) {
     ),
   });
   midiSelect.attachTo(msel);
+  midiSelect.addEventListener("input", (e) => {
+    runMidiPlayer(
+      e.target.value,
+      eventPipe,
+      document.querySelector(".song-controls")
+    );
+  });
 
   for (const f of await fetchSF2List())
     sf2select.append(mkdiv("option", { value: f.url }, f.name));
   sf2select.onchange = (e) => {
     updateAppState({ sf2file: e.target.value });
+    loadSF2File(e.target.value);
   };
-  const { mkpath } = await import("./path.js");
+  const { mkpath } = await import("./mkpath.js");
   const { spinner } = await mkpath(ctx);
   updateAppState({
     spinnerLoaded: true,
@@ -145,11 +142,7 @@ async function main(sf2file, midifile) {
   }
 
   await loadSF2File(sf2file);
-  window.mkTracks($("main"), {
-    programNames: range(0, 12).map((i) => "ch " + i),
-    keyRange: range(46, 80),
-    eventPipe,
-  });
+
   spinner.port.onmessage = ({ data }) => {
     if (data.spState) col5.innerHTML = JSON.stringify(data.spState);
     if (data.egStages) col4.innerHTML = Object.values(data.egStages).join(" ");
@@ -175,12 +168,16 @@ function eventsHandler(channels) {
         break;
       case midi_ch_cmds.note_off:
         channels[ch].keyOff(key, velocity);
+        stdout([cmd, ch, key, velocity, "off"].join("|"));
+
         break;
       case midi_ch_cmds.note_on:
         if (velocity == 0) {
+          stdout([cmd.toString(), ch, key, velocity, "off"].join("/"));
+
           channels[ch].keyOff(key, velocity);
         } else {
-          stdout([ch, cmd, key, velocity].join("/"));
+          stdout([cmd, ch, key, velocity].join("/"));
           const zone = channels[ch].keyOn(key, velocity);
           //requestAnimationFrame(() => renderZ(panel2, canvas1, zone));
         }
@@ -196,7 +193,7 @@ function midiMessageHandler(spinner, channels, eventPipe, uiControllers) {
   return async function (e) {
     if (e.data.midifile) {
       const { totalTicks, presets } = e.data.midifile;
-      spinner.port.postMessage({ cmd: "reset" });
+
       const queues = [[], [], []];
       const [l1, l2, l3] = queues;
 
@@ -266,49 +263,4 @@ function onMidiMeta(stderr, e) {
     }
   };
   stderr(metaDisplay(e.data.meta) + ": " + e.data.payload);
-}
-async function renderZ(container, canvas, zoneSelect) {
-  container.innerHTML = "";
-
-  if (zoneSelect) {
-    const zattrs = Object.entries(zoneSelect).filter(
-      ([attr, val], idx) => idx < 60
-    );
-
-    const pcm = await zoneSelect.shdr.data();
-    chart(canvas, pcm);
-
-    const zoneinfo = mkdiv("div", [
-      mkdiv("div", [
-        "smpl: ",
-        zoneSelect.shdr.SampleId,
-        " ",
-        zoneSelect.shdr.name,
-        "<br>nsample: ",
-        zoneSelect.shdr.nsamples,
-        "<br>srate: " + zoneSelect.shdr.originalPitch,
-        "<br>Range: ",
-        zoneSelect.shdr.range.join("-"),
-        "<br>",
-        "loop: ",
-        zoneSelect.shdr.loops.join("-"),
-        "<br>",
-
-        JSON.stringify(zoneSelect.KeyRange),
-        "<br>",
-        JSON.stringify(zoneSelect.VolRange),
-      ]),
-      ..."Sustain,Attenuation,VolEnv,Filter,LFO".split(",").map((keyword) =>
-        mkdiv(
-          "div",
-          { style: "padding:10px;color:gray;" },
-          zattrs
-            .filter(([k]) => k.includes(keyword))
-            .map(([k, v]) => k + ": " + v)
-            .join("<br>")
-        )
-      ),
-    ]);
-    zoneinfo.attachTo(container);
-  }
 }

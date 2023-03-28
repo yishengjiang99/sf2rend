@@ -14,3 +14,4 @@ sf2-service
 spin/*wasm
 **/*ll
 **/*o
+spin/test.html

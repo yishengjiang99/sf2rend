@@ -3,17 +3,282 @@
 <head>
 	<meta charset="UTF-8" />
 	<title>Add React in One Minute</title>
-	<link href="https://cdnjs.cloudflare.com/ajax/libs/heapbox/0.9.4/themes/dark/css/dark.min.css" rel="stylesheet"
-		crossorigin />
+
+	<style>
+		body {
+			margin: 0;
+			padding: 0;
+			background-color: black;
+			color: white;
+		}
+
+		@for $i from 1 through 20 {
+			.blue:nth-of-type(#{$i}) {
+				transform: translateY(-20px * $i);
+			}
+		}
+
+		.note {
+			display: inline-block;
+		}
+
+		.note {
+			margin-left: calc(var(--delay) * 1px);
+			transform: translateY(calc(var(--midi)*1px));
+		}
+
+		.noteoff {
+			display: inline-block;
+			width: calc(var(--delay) * 1px);
+			background-color: red;
+
+			transform: translateY(calc(var(--midi)*5px));
+		}
+
+		.blue {
+			height: 20px;
+			width: 20px;
+			background-color: blue;
+			transform: translateY(calc(var(--timer-bar) * 1px));
+		}
+
+	</style>
 </head>
 <body>
 
 	<!-- We will put our React component inside this div. -->
 	<div id="root"></div>
+	<div style="display:flex;flex-direction:column">
+		<div class="blue"></div>
+		<div class="blue"></div>
+		<div class="blue"></div>
+		<div class="blue"></div>
+		<div class="blue"></div>
+		<div class="blue"></div>
+		<div class="blue"></div>
+	</div>
 
 	<!-- Load React. -->
 	<!-- Note: when deploying, replace "development.js" with "production.min.js". -->
+	<script type="module">import {midi_ch_cmds} from "./src/midilist.js";
+		import {readMidi} from "https://unpkg.com/midiread";
+		import Sf2Service from "https://unpkg.com/sf2-service"; import {mkdiv} from "https://unpkg.com/mkdiv";
 
+		const {change_program, continuous_change, keyaftertouch} = midi_ch_cmds;
+		const default_cc = {
+			7: 100,
+			10: 120,
+			11: 60,
+		};
+		async function main(url) {
+			let f1samp;
+			const bar = document.querySelector(".blue");
+			const sf2 = new Sf2Service("./FluidR3_GM.sf2");
+			const sf2Loaded = sf2.load();
+			const {presets, tracks, division, tempos, meta} = await readMidi(
+				new Uint8Array(await (await fetch(url)).arrayBuffer())
+			);
+			const worker = new Worker(`timer.js?mspqn=${tempos[0].tempo}&ppqn=${division}`)
+
+
+			document.body.innerHTML += JSON.stringify(tempos) + JSON.stringify(division) + JSON.stringify(meta)
+			tracks.forEach(track => {
+				const div = document.createElement('div');
+				let c = 0;
+				for (let i = 0;i < track.length & c < 5000;i++) {
+					const e = track[i];
+					if (e.cmd == '9' || e.cmd == '8') {
+						const cc = e.cmd !== '8' && e.channel[2] ? "note" : "noteoff";
+						const pmk = mkdiv('label', {class: cc}, "|");
+						pmk.style.setProperty("--midi", e.channel[1]);
+						pmk.style.setProperty("--delay", e.delay);
+						div.append(pmk);
+
+						c += e.delay;
+					}
+				}
+				document.body.append(div)
+			});
+
+			let msQn = tempos && tempos.length ? tempos[0].tempo : 500000;
+			let interval = msQn / 1000 / division;
+			await sf2Loaded;
+			const programsLoaded = Promise.all(
+				presets.map(async (preset) => {
+					const bkid = preset.channel == 9;
+					const pid = preset.pid;
+					const channelId = preset.channel;
+					const program = sf2.loadProgram(pid, bkid);
+					await program.preload();
+					const sampleSet = new Set(program.zMap.map((z) => z.SampleId));
+					const audioBufferMap = new Map();
+					for (const id of Array.from(sampleSet)) {
+						const sHead = program.shdrMap[id];
+						const ab = new AudioBuffer({
+							duration: sHead.nSamples / sHead.sampleRate,
+							numberOfChannels: 1,
+							sampleRate: sHead.sampleRate,
+							length: sHead.nsamples,
+						});
+						ab.getChannelData(0).set(sHead.pcm);
+						audioBufferMap.set(id, ab);
+						if (f1samp == null) f1samp = ab;
+					}
+					return {
+						channelId,
+						vlist: [],
+						midi_cc: default_cc,
+						setCC: function (cc, val) {
+							this.midi_cc[cc] = val;
+						},
+						playVoice: function (ctx, key, vel, dest, lookAhead) {
+							const zones = program.filterKV(key, vel);
+
+							zones.map((z) => {
+								const abs = new AudioBufferSourceNode(ctx, {
+									buffer: audioBufferMap.get(z.SampleId),
+									loopStart: z.shdr.loops[0],
+									channels: 2,
+									loopEnd: z.shdr.loops[1],
+									playbackRate: z.calcPitchRatio(key, ctx.sampleRate),
+								});
+
+								this.volEnv = [
+									z.VolEnvDelay,
+									z.VolEnvAttack,
+									z.VolEnvHold,
+									z.VolEnvDecay,
+									z.VolEnvRelease,
+								].map((t) => (t < -11000 ? 0 : Math.pow(2, t / 1200)));
+								const gain = new GainNode(ctx, {gain: 0});
+								abs.connect(gain);
+								let c = gain;
+								if (z.FilterFc < 13500) {
+									//8.176f * pow2(x / 1200.0);
+									c = new BiquadFilterNode(ctx, {
+										frequency: Math.pow(2, z.FilterFc / 1200) * 8.176,
+										Q: Math.pow(10, z.FilterQ / 1000),
+										type: "lowpass",
+									});
+								}
+								const krateGaiin =
+									(960 - z.Attenuation) / 960 - (vel * vel) / 128 / 128;
+								if (this.volEnv[0] > 0) {
+									let tc = c;
+									c = new DelayNode(ctx, {delay: this.volEnv[0]});
+									tc.connect(c);
+								}
+								if (this.volEnv[1] > 0) {
+									gain.gain.linearRampToValueAtTime(krateGaiin, this.volEnv[1]);
+								} else {
+									gain.gain.setValueAtTime(krateGaiin, this.volEnv[2]);
+								}
+								if (z.VolEnvSustain < 1000) {
+									gain.gain.setTargetAtTime(
+										0.01,
+										this.volEnv[1] + this.volEnv[2],
+										z.VolEnvDecay
+									);
+								}
+
+								c.connect(dest);
+								abs.start(ctx.currentTime);
+								abs.stop(ctx.currentTime + 3);
+								this.vlist.push([key, gain]);
+							});
+						},
+						releaseVoice: function (key) {
+							for (const [vk, gain] of this.vlist) {
+								if (vk == key) {
+									gain.gain.cancelScheduledValues(0);
+
+									gain.gain.linearRampToValueAtTime(0.0, this.volEnv[4]);
+								}
+							}
+						},
+					};
+				})
+			);
+			const players = (await programsLoaded).reduce(
+				(channels, p) => ({
+					...channels,
+					[p.channelId]: p,
+				}),
+				Array(16).fill(0)
+			);
+			const btn = document.createElement("button");
+			const btn1 = document.createElement("button");
+			const root = document.querySelector("#root");
+			btn.innerText = "start";
+			btn1.innerText = "stop";
+			root.append(btn);
+			root.append(btn1);
+
+			await new Promise((r) => btn.addEventListener("click", r));
+			btn.disabled = true;
+			const ctx = new AudioContext();
+
+			btn1.onclick = () => worker.postMessage({stop: 1});
+			const soundtracks = tracks.map((track) =>
+				track.filter((event) => event.t && event.channel)
+			);
+
+			function onEvent({channel, t}, sysTick) {
+				const [a, b, c] = channel;
+				const cmd = a & 0xf0;
+				let ch = a & 0x0f;
+				const key = b & 0x7f;
+				const vel = c & 0x7f;
+
+				switch (cmd) {
+					case continuous_change:
+						console.log("CCCC", ch, key, vel);
+						break;
+					case change_program:
+						console.log(ch, ch, key, vel);
+						break;
+					case keyaftertouch:
+						break;
+					case 0x90:
+						if (!players[ch]) {
+							break;
+						}
+						if (vel === 0) {
+							players[ch].releaseVoice(key, vel);
+						} else {
+							players[ch].playVoice(ctx, key, vel, ctx.destination, 0);
+						}
+						break;
+					case 0x80:
+						players[ch].releaseVoice(key, vel);
+						break;
+					default:
+						break;
+				}
+			}
+			worker.onmessage = (e) => {
+				const sysTick = e.data;
+
+				for (let i = 0;i < soundtracks.length;i++) {
+					const track = soundtracks[i];
+					while (track.length && track[0].t <= sysTick) {
+						const e = track.shift();
+						onEvent(e, sysTick);
+					}
+				}
+
+				if (e.data % 1000 < 1) console.log(e.data);
+
+				bar.style.setProperty("--timer-bar", (ctx.currentTime << 21) >> 16);
+			};
+			worker.postMessage({interval});
+			worker.postMessage({start: 1});
+		}
+
+		main(
+			"https://grep32bit.blob.core.windows.net/midi/Blink_182_-_All_The_Small_Things_.mid"
+		);
+	</script>
 
 
 </body>

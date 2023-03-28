@@ -11,7 +11,7 @@ import { midi_ch_cmds, midi_effects as effects } from "./constants.js";
 const rowheight = 40;
 const pixelPerSec = 12;
 let ControllerState;
-
+let activeChannel = 0;
 export class TrackUI {
   constructor(idx, cb) {
     this.idx = idx;
@@ -29,15 +29,16 @@ export class TrackUI {
         e.target.blur();
       },
     });
+    this.led = mkdiv("input", { type: "checkbox" });
 
     const container = mkdiv(
-      "div",
+      "span",
       {
-        style: "display:grid; grid-template-columns:1fr 1fr;",
+        style: "display:grid; grid-template-columns:1fr 1fr",
         class: "instrPanels",
       },
       [
-        mkdiv("input", { type: "checkbox" }),
+        this.led,
         this.nameLabel,
         mkdiv("label", { for: "mkey" }, "key"),
         mkdiv("meter", {
@@ -121,25 +122,16 @@ export class TrackUI {
     const [keyLabel, velLabel, ...ccLabels] =
       container.querySelectorAll("label");
     this.ccLabels = ccLabels;
-    this.led = container.querySelector("input[type=checkbox]");
+
     this.polylines = Array.from(container.querySelectorAll("polyline"));
     this.container = container;
     this._active = false;
     this._midi = null;
   }
-  set presetId(presetId) {
-    ControllerState = {
-      ...ControllerState,
-      channels: {
-        ...ControllerState.channels,
-        [this.idx]: presetId,
-      },
-    };
-  }
+  set presetId(presetId) {}
   set name(id) {
     this.nameLabel.value = id;
   }
-  8;
   get name() {
     return this.nameLabel.value;
   }
@@ -208,17 +200,17 @@ export function mkui(eventPipe, container) {
     activeChannel = 0;
   const tb = mkdiv("div", {
     border: 1,
-    style: `height:500px;overflow-y:scroll`,
+    style: `display:flex;flex-direction:row; grid-gap:20px;flex-wrap:wrap`,
   });
 
   for (let i = 0; i < 16; i++) {
     const trackrow = new TrackUI(i, eventPipe.postMessage);
     controllers.push(trackrow);
     tb.append(trackrow.container);
-    trackrow.container.onclick = (e) => {
-      e.target.style.background_color = "pink";
-      ControllerState.activeChannelUserInput = i;
-    };
+    trackrow.container.classList.add("channelCard");
+    trackrow.container.addEventListener("click", (e) => {
+      activeChannel = i;
+    });
   }
   const mkKeyboard = mkdiv(
     "div",
@@ -245,33 +237,11 @@ export function mkui(eventPipe, container) {
     )
   );
   const keyboard = mkKeyboard;
-  const zoneCardContainer = mkdiv("div");
-  ControllerState = new Proxy(
-    {
-      channels: {},
-      activeChannelUserInput: 1,
-      activeZoneDebug: 1,
-    },
-    {
-      async set(obj, prop, value) {
-        console.log(prop, value);
-
-        switch (prop) {
-          case "channels":
-            console.log(prop, value);
-            break;
-          case "activeChannelUserInput":
-            break;
-        }
-      },
-    }
-  );
-  const cpanel = mkdiv2({
-    tag: "div",
-    border: 1,
-    style: `height:500px;8display:grid;grid-area:a a a, b c c`,
-    children: [tb, keyboard, mkdiv()],
-  });
+  const cpanel = mkdiv("div", [
+    mkdiv("fieldset", [mkdiv("legend", "trackrows")]),
+    tb,
+    keyboard,
+  ]);
 
   cpanel.attachTo(container);
   return controllers;

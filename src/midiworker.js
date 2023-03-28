@@ -77,12 +77,10 @@ async function main() {
         break;
       case "ff":
         break;
-    }
-  });
-}
+      })}
 
-export function scheduleMidiPlayer(midiInfo, cb) {
-  const { tempos, tracks, division, presets, ntracks } = readMidi(midiInfo);
+export async function scheduleMidiPlayer(midiInfo, cb) {
+  const { tempos, tracks, division, presets, ntracks } = await readMidi(midiInfo);
 
   const tp_qn = division; // ticks per quarter node,
   let msqn = tempos?.[0]?.tempo || 500000; // ms per qn;

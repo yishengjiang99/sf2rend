@@ -22,9 +22,10 @@ export function createChannel(uiController, channelId, sf2, spinner) {
     keyOn(key, vel) {
       console.log("ch chan ", channelId);
       const zones = program.filterKV(key, vel);
+
+      key_on_map[key] = key_on_map[key] || [];
+
       zones.slice(0, 2).map((zone, i) => {
-        console.log("zone", i);
-        key_on_map[key] = channelId * 2 + i;
         spinner.port.postMessage([
           midi_ch_cmds.note_on,
           channelId * 2 + i,
@@ -57,17 +58,12 @@ export function createChannel(uiController, channelId, sf2, spinner) {
         uiController.active = true;
         uiController.velocity = vel;
         uiController.midi = key;
-        //  uiController.zone = zones[0];
       });
       return zones[0];
     },
     keyOff(key, vel) {
-      if (!key_on_map[key]) return;
-      while (key_on_map[key].length) {
-        spinner.keyOff(key_on_map[key].shift(), key, vel);
-      }
-      //      spinner.keyOff(channelId * 2 + 1, key, vel);
-
+      spinner.keyOff(channelId * 2 + 1, key, vel);
+      spinner.keyOff(channelId * 2, key, vel);
       requestAnimationFrame(() => (uiController.active = false));
     },
   };

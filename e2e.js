@@ -99,19 +99,17 @@ async function rendProgram() {
       }</option>`
   );
   const articleHeader = mkdiv(
-      "div",
-      { class: "note-header" },
+    "div",
+    { class: "note-header" },
 
-      mkdiv(
-        "select",
-        {
-          oninput: (e) =>
-            renderZ(program.zMap.filter((z) => e.target.value)[0]),
-        },
-        kRangeList
-      )
-    ),
-  ]);
+    mkdiv(
+      "select",
+      {
+        oninput: (e) => renderZ(program.zMap.filter((z) => e.target.value)[0]),
+      },
+      kRangeList
+    )
+  );
   articleMain = mkdiv("div", { class: "note-preview" }, [
     mkdiv(
       "div",

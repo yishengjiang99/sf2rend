@@ -1,0 +1,14 @@
+{
+  "files.associations": {
+    "*.js": "javascriptreact",
+    "stdlib.h": "c",
+    "__node_handle": "c",
+    "array": "c",
+    "vector": "c",
+    "test_utils.h": "c",
+    "sstream": "c",
+    "assert.h": "c",
+    "stdio.h": "c",
+    "spin.h": "c"
+  }
+}

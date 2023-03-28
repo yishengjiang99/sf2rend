@@ -1,13 +1,13 @@
 
 #include "spin.h"
 
+#include "stbl.c"
 #define RENDQ 128
 #define nchannels 64
 #define nmidiChannels 16
 extern void debugFL(float fl);
 
 spinner sps[nchannels];
-unsigned int sp_byte_len() { return sizeof(spinner); }
 EG eg[nchannels * 2];
 LFO lfos[nchannels * 2];
 
@@ -15,16 +15,24 @@ char midi_cc_vals[nmidiChannels * 128];
 char pitch_bend_msb[nmidiChannels * 128];
 
 float outputs[nchannels * RENDQ * 2];
-float silence[40];
+float silence[440];
+
 char spsIndx = 0;
 pcm_t pcms[2222];
 zone_t zones[4096];
+zone_t df[1];
+pcm_t defP[4];
+float squared[1024];
+float sine[1024];
 spinner* spRef(int idx) { return &sps[idx]; }
 pcm_t* pcmRef(int idx) { return &pcms[idx]; }
 zone_t* zoneRef(int idx) { return &zones[idx]; }
+
 spinner* get_available_spinner(int channelId) {
   spinner* sp;
   for (int i = 0; i < nchannels; i++) {
+    sp = newSpinner(i);
+
     if (sps[i].voleg == 0) {
       sp = newSpinner(i);
       sp->channelId = channelId;
@@ -44,10 +52,7 @@ spinner* newSpinner(int idx) {
   spinner* x = &sps[idx];
   x->outputf = &outputs[idx * RENDQ * 2];
   x->inputf = silence;
-  x->loopEnd = 36;
-  x->loopStart = 4;
   x->fract = 0.0f;
-  x->position = 0;
   x->voleg = &eg[idx * 2];
   x->modeg = &eg[idx * 2 + 1];
   x->modlfo = &lfos[idx * 2];
@@ -60,16 +65,15 @@ spinner* newSpinner(int idx) {
 
   return x;
 }
-
 void gm_reset() {
   for (int idx = 0; idx < 128; idx++) {
     midi_cc_vals[idx * nmidiChannels + TML_VOLUME_MSB] = 100;
     midi_cc_vals[idx * nmidiChannels + TML_PAN_MSB] = 64;
     midi_cc_vals[idx * nmidiChannels + TML_EXPRESSION_MSB] = 127;
   }
-  for (int i = 0; i < nchannels; i++) {
-    reset(&sps[i]);
-  }
+  defP[0] = (pcm_t){0, 1024, 1024, SAMPLE_RATE, 60, stbl};
+
+  defP[1] = (pcm_t){0, 1024, 1024, SAMPLE_RATE, 60, stbl};
 }
 void eg_release(spinner* x) {
   _eg_release(x->voleg);
@@ -77,11 +81,8 @@ void eg_release(spinner* x) {
 }
 void reset(spinner* x) {
   x->position = 0;
+  x->stride = .0f;
   x->fract = 0.0f;
-  x->inputf = silence;
-  x->modlfo->phase = 0;
-  x->vibrlfo->phase = 0;
-  x->voleg->stage = inactive;
 }
 
 void set_midi_cc_val(int channel, int metric, int val) {
@@ -94,33 +95,41 @@ LFOEffects lfo_effects(float lfoval, zone_t* z) {
   float mod2fc = lfoval * z->ModEnv2FilterFc * 8.8f;
   return (LFOEffects){mod2vol, mod2pitch, mod2fc};
 }
+
 float trigger_attack(spinner* x, float ratio, int velocity) {
   x->stride = ratio;
   x->velocity = velocity & 0x7f;
-  zone_t* z = x->zone;
-  pcm_t* pcm = pcms + x->zone->SampleId;
-  x->position = z->StartAddrOfs + (z->StartAddrCoarseOfs << 15);
-  x->inputf = pcm->data;
   x->position = 0;
   x->fract = 0.0f;
   x->voleg->stage = init;
-  init_mod_eg(x->modeg, z, pcm->sampleRate);
-  init_vol_eg(x->voleg, z, pcm->sampleRate);
-  x->modlfo->delay = timecent2sample(z->ModLFODelay);
-  x->vibrlfo->delay = timecent2sample(z->ModLFODelay);
-  set_frequency(x->modlfo, z->ModLFOFreq);
-  set_frequency(x->vibrlfo, z->VibLFOFreq);
+  init_mod_eg(x->modeg, x->zone, x->pcm->sampleRate);
+  init_vol_eg(x->voleg, x->zone, x->pcm->sampleRate);
+
+  x->modlfo->delay = timecent2sample(x->zone->ModLFODelay);
+  x->vibrlfo->delay = timecent2sample(x->zone->ModLFODelay);
+  set_frequency(x->modlfo, x->zone->ModLFOFreq);
+  set_frequency(x->vibrlfo, x->zone->VibLFOFreq);
   return x->stride;
 };
+void set_spinner_input(spinner* x, pcm_t* pcm) {
+  x->loopStart = pcm->loopstart;
+  x->loopEnd = pcm->loopend;
+  x->inputf = pcm->data;
+  x->pcm = pcm;
+}
 void set_spinner_zone(spinner* x, zone_t* z) {
-  pcm_t* pcm = pcms + z->SampleId;
+  pcm_t* pcm;
+  if (z->SampleModes >= 1024) {
+    pcm = defP + z->SampleId;
+    z->SampleModes = z->SampleModes - 1024;
+  } else {
+    pcm = pcms + z->SampleId;
+  }
+  set_spinner_input(x, pcm);
   x->position = z->StartAddrOfs + (z->StartAddrCoarseOfs << 15);
-  x->loopStart =
-      pcm->loopstart + z->StartLoopAddrOfs + (z->StartLoopAddrCoarseOfs << 15);
-  x->loopEnd = pcm->loopend + z->EndAddrOfs + (z->EndLoopAddrCoarseOfs << 15);
-  x->inputf = pcm->data;
+  x->loopStart += z->StartLoopAddrOfs + (z->StartLoopAddrCoarseOfs << 15);
+  x->loopEnd += z->EndAddrOfs + (z->EndLoopAddrCoarseOfs << 15);
   x->zone = z;
-  x->inputf = pcm->data;
 }
 
 float lerp(float f1, float f2, float frac) { return f1 + (f2 - f1) * frac; }
@@ -144,7 +153,7 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   unsigned int position = x->position;
   float fract = x->fract;
   unsigned int nsamples = pcms[x->zone->SampleId].length;
-  unsigned int looplen = x->loopEnd - x->loopStart + 1;
+  unsigned int looplen = x->loopEnd - x->loopStart - 1;
   double modEG = p10over200[(short)(clamp(x->modeg->egval, -960, 0) + 960)];
 
   if (x->zone->SampleModes == 0 && x->voleg->stage < release) {
@@ -156,6 +165,7 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   }
   float stride = x->zone->SampleModes > 0 ? x->stride : 1.0f;
   int ch = (int)(x->channelId / 2);
+
   stride = stride *
            (12.0f + (float)(modEG * x->zone->ModEnv2Pitch / 100.0f) +
             (float)(modlfoEffect.mod2pitch / 100.0f) +
@@ -175,15 +185,14 @@ void _spinblock(spinner* x, int n, int blockOffset) {
       fract -= 1.0f;
     }
 
-    if (position >= x->loopEnd && x->zone->SampleModes > 0) position -= looplen;
+    if (position >= x->loopEnd + 1 && x->zone->SampleModes > 0)
+      position -= (looplen - 1.0f);
+
     if (position >= nsamples - 1) {
-      x->outputf[i * 2 + blockOffset * 2] = 0.0f;
-      x->outputf[i * 2 + blockOffset * 2 + 1] = 0.0f;
-      x->voleg->stage = done;
+      position = x->loopStart;
     }
 
     float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
-    // outputf = process_input(x->lpf, outputf);
     x->outputf[i * 2 + blockOffset * 2] =
         applyCentible(outputf, (short)(db + kRateCB + panLeft));
     x->outputf[i * 2 + blockOffset * 2 + 1] =
@@ -201,6 +210,7 @@ int spin(spinner* x, int n) {
   update_eg(x->modeg, 64);
 
   _spinblock(x, 64, 0);
+
   update_eg(x->voleg, 64);
 
   update_eg(x->modeg, 64);
@@ -208,3 +218,5 @@ int spin(spinner* x, int n) {
   _spinblock(x, 64, 64);
   return x->voleg->egIncrement + .001;
 }
+
+unsigned int sp_byte_len() { return sizeof(spinner); }

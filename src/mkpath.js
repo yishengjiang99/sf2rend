@@ -1,14 +1,12 @@
 import { SpinNode } from "../spin/spin.js";
 import { LowPassFilterNode } from "../lpf/lpf.js";
-import { mkcanvas } from "../chart/chart.js";
-import { timeseries } from "./timeseries.js";
 import { midi_ch_cmds } from "./constants.js";
 import calcPitchRatio from "./calcPitchRatio.js";
 import FFTNode from "../fft-64bit/fft-node.js";
 export async function mkpath(ctx, additional_nodes = []) {
-  await SpinNode.init(ctx);
-  await FFTNode.init(ctx);
-  await LowPassFilterNode.init(ctx);
+  await SpinNode.init(ctx).catch(console.trace);
+  await FFTNode.init(ctx).catch(console.trace);
+  await LowPassFilterNode.init(ctx).catch(console.trace);
   const spinner = new SpinNode(ctx, 16);
   const merger = new GainNode(ctx);
   const gainNodes = Array(16).fill(new GainNode(ctx, { gain: 1 }));
@@ -50,8 +48,14 @@ export async function mkpath(ctx, additional_nodes = []) {
   for (let i = 0; i < 16; i++) {
     spinner.connect(lpfs[i], i, 0).connect(gainNodes[i]).connect(merger);
   }
-  merger.connect(fft).connect(ctx.destination);
+  merger.connect(ctx.destination);
+
   const msg_cmd = (cmd, args) => spinner.port.postMessage({ ...args, cmd });
+  spinner.port.onmessage = ({ data: { dv, ch } }) => {
+    if (dv && ch) {
+      console.log(dv, ch);
+    }
+  };
   return {
     analysis: {
       get waveForm() {

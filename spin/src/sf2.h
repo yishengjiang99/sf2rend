@@ -1,3 +1,4 @@
+#define tuh 1
 #ifndef SF2_H
 #define SF2_H
 typedef unsigned int uint32_t;

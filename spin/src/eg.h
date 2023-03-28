@@ -31,7 +31,6 @@ float update_eg(EG* eg, int n);
  *
  */
 float update_eg(EG* eg, int n) {
-  if (eg->stage == done) return 0.0f;  // should not occur
   if (eg->egval < -1360.0f) {
     eg->stage = done;
     return eg->egval;
@@ -105,7 +104,6 @@ void advanceStage(EG* eg) {
     case decay:  // headsing to released;
       // sustain pedal .. for not going to ignore..
       eg->stage++;
-      break;
 
       // sustain = % decreased during decay
 
@@ -125,8 +123,8 @@ void advanceStage(EG* eg) {
       eg->stage++;
       int stepsFull = timecent2sample(eg->release); /*8 nsteps for full 960*/
 
-      eg->egIncrement = -960.f / timecent2sample(eg->release);
-      eg->nsteps = (-960 - eg->egval) / -960.0f * stepsFull;
+      eg->egIncrement = -960.f / stepsFull;
+      eg->nsteps = stepsFull / 4;
       break;
 
       /*This is the time, in absolute timecents, for a 100% change in
@@ -142,8 +140,8 @@ one second. For example, a release time of 10 msec would be 1200log2(.01) =
 -7973. 39 keynumToVolEnvHold This is the degree, in timecents per K**/
     case release:
       eg->stage++;
-      eg->nsteps = 0;
-      eg->egval = -1000;
+      eg->egval = -100.0f;
+      eg->egIncrement = -20.f;
       break;
     case done:
       break;
@@ -166,18 +164,20 @@ void init_vol_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
   char* sz = (char*)&z->VolEnvDelay;
   gmemcpy((char*)&eg->delay, sz, 12);
   scaleTc(eg, pcmSampleRate);
-
   eg->stage = init;
+  eg->egIncrement = 0.0f;
+  eg->egval = -960.0f;
+  eg->hasReleased = 0;
+
   if (eg->attack >= 0) eg->attack = 0;
-  advanceStage(eg);
 }
 void init_mod_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
   char* sz = (char*)&z->ModEnvDelay;
   gmemcpy((char*)&eg->delay, sz, 12);
   scaleTc(eg, pcmSampleRate);
   eg->stage = init;
+  eg->egval = -960.0f;
   eg->hasReleased = 0;
-  advanceStage(eg);
 }
 
 void _eg_set_stage(EG* e, int n) {
@@ -186,7 +186,6 @@ void _eg_set_stage(EG* e, int n) {
   advanceStage(e);
 }
 void _eg_release(EG* e) {
-  if (e->stage >= release || e->stage <= attack) return;
   e->nsteps = 0;
   e->hasReleased = 1;
   e->stage = sustain;

@@ -39,7 +39,7 @@ int main() {
   };
 
   printvoleg(x);
-  trigger_attack(x, z, 1.0, 123);
+  trigger_attack(x, z, 1.0, w);
 
   printvoleg(x);
 
