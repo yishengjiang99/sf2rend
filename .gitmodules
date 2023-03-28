@@ -1,0 +1,8 @@
+[submodule "fft-64bit"]
+	url = https://github.com/yishengjiang99/fft-64bit/
+[submodule "mkdiv"]
+	url = https://github.com/yishengjiang99/mkdiv/
+[submodule "sf2-service"]
+	url = https://github.com/yishengjiang99/sf2-service/
+[submodule "midiread"]
+	url = https://github.com/yishengjiang99/midiread/
