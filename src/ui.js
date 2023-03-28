@@ -196,8 +196,8 @@ export class TrackUI {
 
 export function mkui(eventPipe, container) {
   const controllers = [];
-  let refcnt = 0,
-    activeChannel = 0;
+  let refcnt = 0;
+  let _activeChannel = 0;
   const tb = mkdiv("div", {
     border: 1,
     style: `display:flex;flex-direction:row; grid-gap:20px;flex-wrap:wrap`,
@@ -208,9 +208,17 @@ export function mkui(eventPipe, container) {
     controllers.push(trackrow);
     tb.append(trackrow.container);
     trackrow.container.classList.add("channelCard");
-    trackrow.container.addEventListener("click", (e) => {
-      activeChannel = i;
-    });
+    trackrow.container.addEventListener(
+      "click",
+      (e) => {
+        _activeChannel = i;
+        e.target.parentElement
+          .querySelectorAll(".active")
+          .forEach((e) => e.classList.remove("active"));
+        trackrow.container.classList.add("active");
+      },
+      false
+    );
   }
   const mkKeyboard = mkdiv(
     "div",
@@ -222,12 +230,12 @@ export function mkui(eventPipe, container) {
           midi,
           onmousedown: (e) => {
             refcnt++;
-            eventPipe.postMessage([0x90 | activeChannel, midi, 120]);
+            eventPipe.postMessage([0x90 | this.activeChannel, midi, 120]);
             e.target.addEventListener(
               "mouseup",
               () =>
                 refcnt >= 0 &&
-                eventPipe.postMessage([0x80 | activeChannel, midi, 88]),
+                eventPipe.postMessage([0x80 | this.activeChannel, midi, 88]),
               { once: true }
             );
           },
@@ -244,7 +252,15 @@ export function mkui(eventPipe, container) {
   ]);
 
   cpanel.attachTo(container);
-  return controllers;
+  return {
+    controllers,
+    get activeChannel() {
+      return _activeChannel;
+    },
+    set activeChannel(c) {
+      _activeChannel = c;
+    },
+  };
 }
 
 const range = (x, y) =>

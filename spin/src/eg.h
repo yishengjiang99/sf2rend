@@ -31,22 +31,18 @@ float update_eg(EG* eg, int n);
  *
  */
 float update_eg(EG* eg, int n) {
-  if (eg->egval < -1360.0f) {
-    eg->stage = done;
-    return eg->egval;
-  }
   int n1 = n > eg->nsteps ? eg->nsteps : n;
-  if (eg->nsteps != 0xffff) {
+  if (n < eg->nsteps) {
     eg->nsteps -= n1;
-
+    eg->egval += eg->egIncrement * n1;
+  } else {
+    eg->nsteps = 0;
+    eg->egval += eg->egIncrement * (n1 - eg->nsteps);
+    n1 = n - n1;
+    advanceStage(eg);
+    eg->nsteps -= n1;
     eg->egval += eg->egIncrement * n1;
   }
-
-  if (n1 == n) return eg->egval;
-
-  int leftover = n - n1 - 1;
-  advanceStage(eg);
-  if (leftover > 0) return update_eg(eg, leftover);
   return eg->egval;
 }
 void advanceStage(EG* eg) {
@@ -74,38 +70,31 @@ void advanceStage(EG* eg) {
       }
     case attack:
       eg->egval = 0.0f;
-      eg->stage++;
-      if (eg->hold > -11500) {
-        eg->egval = 0.0f;
-        eg->nsteps = timecent2sample(eg->hold);
-        eg->egIncrement = 0.0f;
-        break;
-      }
-    case hold: /** TO DECAY */
-      eg->stage++;
-      /*
-       * This is the time, in absolute timecents, for a 100% change in the
-  Volume Envelope value during decay phase. */
-      // velopcity required to travel full 960db
-      eg->egIncrement = -960.f / timecent2sample(eg->decay);
-
-      // but it's timeslice by sustain percentage?
-      eg->nsteps = eg->sustain / 1000.0f * timecent2sample(eg->decay);
-
-      /*For the Volume
-      Envelope, the decay phase linearly ramps toward the sustain level,
-      causing a constant dB change for each time unit. If the sustain level
-      were -100dB, the Volume Envelope Decay Time would be the time
-      spent in decay phase. A value of 0 indicates a 1-second decay time for
-      a zero-sustain level. A negative value indicates a time less than one
-      second; a positive value a time longer than one second. For example, a
-      decay time of 10 msec would be 1200log2(.01) = -7973.*/
+      eg->nsteps = timecent2sample(eg->hold);
+      eg->egIncrement = 0.0f;
       break;
-    case decay:  // headsing to released;
-      // sustain pedal .. for not going to ignore..
-      eg->stage++;
+    case hold: /** TO DECAY */
+        eg->stage = decay;
+        /*
+         * This is the time, in absolute timecents, for a 100% change in the
+    Volume Envelope value during decay phase. */
+        // velopcity required to travel full 960db
+        eg->egIncrement = -960.f / timecent2sample(eg->decay);
 
-      // sustain = % decreased during decay
+        // but it's timeslice by sustain percentage?
+        eg->nsteps = eg->sustain / 1000.0f * timecent2sample(eg->decay);
+        break;
+
+        /*For the Volume
+        Envelope, the decay phase linearly ramps toward the sustain level,
+        causing a constant dB change for each time unit. If the sustain level
+        were -100dB, the Volume Envelope Decay Time would be the time
+        spent in decay phase. A value of 0 indicates a 1-second decay time for
+        a zero-sustain level. A negative value indicates a time less than one
+        second; a positive value a time longer than one second. For example, a
+        decay time of 10 msec would be 1200log2(.01) = -7973.*/
+        break;
+    case decay:  // headsing to released;
 
       /*
       37 sustainVolEnv This is the decrease in level, expressed in centibels,
@@ -118,15 +107,14 @@ void advanceStage(EG* eg) {
       conventionally 1000 indicates full attenuation. For example, a sustain
       level which corresponds to an absolute value 12dB below of peak would be
       120.*/
-
-    case sustain:
-      eg->stage++;
-      int stepsFull = timecent2sample(eg->release); /*8 nsteps for full 960*/
-
-      eg->egIncrement = -960.f / stepsFull;
-      eg->nsteps = stepsFull / 4;
+      eg->stage = sustain;
+      eg->egIncrement = 0.0f;
+      eg->nsteps = 48000;
       break;
 
+      // sustain = % decreased during decay
+
+    case sustain:
       /*This is the time, in absolute timecents, for a 100% change in
 the Volume Envelope value during release phase. For the Volume Envelope,
 the release phase linearly ramps toward zero from the current level,
@@ -138,10 +126,17 @@ Technical Specification - Page 45 - 08/05/98 12:43 PM A negative value
 indicates a time less than one second; a positive value a time longer than
 one second. For example, a release time of 10 msec would be 1200log2(.01) =
 -7973. 39 keynumToVolEnvHold This is the degree, in timecents per K**/
+      eg->stage = release;
+      float stepsFull =
+          (float)timecent2sample(eg->release); /*8 nsteps for full 960*/
+
+      eg->egIncrement = -960.f / stepsFull;
+      eg->nsteps = (int)((960.f + eg->egval) / 960.f * stepsFull);
+      break;
     case release:
       eg->stage++;
-      eg->egval = -100.0f;
       eg->egIncrement = -20.f;
+      eg->stage = done;
       break;
     case done:
       break;

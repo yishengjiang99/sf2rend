@@ -1,0 +1,1 @@
+export const sf2list=["static/FluidR3_GM.sf2","static/test.sf2","static/VintageDreamsWaves-v2.sf2","static/TimGM6mb_but_fixed__piano_.sf2","static/SoundBlasterOld.sf2","static/LesPaul.sf2","static/SalCSLight2.sf2","static/GeneralUserGS.sf2","static/gs.sf2","static/file.sf2"]

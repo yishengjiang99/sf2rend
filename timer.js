@@ -4,15 +4,23 @@ let timesig = 4;
 let msqn = 50000;
 
 let interval = msqn / ppqn / timesig;
+const intervals = {
+  ppqn: 24,
+  timesig: 4,
+  msqn: 500000,
+};
 
 let timer = null,
   ticks = 0;
 let startTime,
   lastTick = 0;
 onmessage = ({ data }) => {
-  const { msqn, stop, start, reset, load } = data;
+  const { tm, stop, start, reset, load } = data;
 
-  // if (msqn) interval = msqn / 1000 / ppqn;
+  if (tm) {
+    ppqn = tm.ppqn;
+    msqn = tm.msqn;
+  }
   if (start) {
     clearTimeout(timer);
     startTime = performance.now();

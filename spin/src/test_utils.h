@@ -9,7 +9,11 @@
            x->voleg->egIncrement, x->voleg->egval, x->voleg->nsteps, \
            x->voleg->stage, x->position);                            \
   }
-
+#define printeg(voleg)                                                     \
+  {                                                                        \
+    printf("=>i%s %f, egval:%f\t nsteps: %d\t %d\n", "str",                \
+           voleg->egIncrement, voleg->egval, voleg->nsteps, voleg->stage); \
+  }
 #define print_sp(x)                                                          \
   {                                                                          \
     printf("\nfract: %f stride:%f, posotion %d  %pp\n", x->fract, x->stride, \

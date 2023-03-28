@@ -1,11 +1,9 @@
 .channelCard {
   margin: 30px;
   background-color: gainsboro;
+  color:black;
 }
-.channelCard:hover {
-  background-color: antiquewhite;
-}
-.channelCard:active {
+.channelCard .active {
   background-color: aqua;
 }
 body {

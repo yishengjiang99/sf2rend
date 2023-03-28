@@ -1,12 +1,13 @@
 import { mkdiv, logdiv, mkdiv2 } from "https://unpkg.com/mkdiv@3.1.2/mkdiv.js";
 import { mkui } from "./ui.js";
-import SF2Service from "https://unpkg.com/sf2-service@1.3.6/index.js";
+import SF2Service from "../sf2-service/index.js";
 import { fetchmidilist, fetchSF2List } from "./midilist.js";
 import { mkeventsPipe } from "./mkeventsPipe.js";
 import { createChannel } from "./createChannel.js";
-import { midi_ch_cmds, range } from "./constants.js";
+import { midi_ch_cmds } from "./constants.js";
 import runMidiPlayer from "./runmidi.js";
 import { chart, mkcanvas } from "https://unpkg.com/mk-60fps@1.1.0/chart.js";
+import { sf2list } from "../sflist.js";
 const $ = (sel) => document.querySelector(sel);
 
 const sf2select = $("#sf2select"),
@@ -29,10 +30,7 @@ infoPanel.attachTo(document.querySelector("#stdout"));
 window.stdout = stdout;
 window.stderr = stdout;
 const getParams = new URLSearchParams(document.location.search);
-main(
-  getParams.get("sf2file") || "file.sf2",
-  getParams.get("midifile") || "song.mid"
-);
+main(sf2list[Math.floor(Math.random() * sf2list.length)]);
 
 const appState = {};
 globalThis.appState = new Proxy(appState, {
@@ -79,30 +77,31 @@ async function main(sf2file) {
     ),
   });
   midiSelect.attachTo(msel);
-  midiSelect.addEventListener("input", (e) => {
-    runMidiPlayer(
-      e.target.value,
-      eventPipe,
-      document.querySelector(".song-controls")
-    );
-  });
+  midiSelect.addEventListener("input", (e) => onMidiSelect(e.target.value));
 
-  for (const f of await fetchSF2List())
-    sf2select.append(mkdiv("option", { value: f.url }, f.name));
+  sf2select.setAttribute("value", sf2file);
+  for (const f of sf2list)
+    sf2select.append(mkdiv("option", { selected: f == sf2file, value: f }, f));
+
   sf2select.onchange = (e) => {
     updateAppState({ sf2file: e.target.value });
     loadSF2File(e.target.value);
   };
   const { mkpath } = await import("./mkpath.js");
-  const { spinner } = await mkpath(ctx);
+  const apath = await mkpath(ctx);
+  const spinner = apath.spinner;
   updateAppState({
     spinnerLoaded: true,
   });
 
   const eventPipe = mkeventsPipe();
-  uiControllers = mkui(eventPipe, $("#channelContainer"));
-  for (let i = 0; i < 16; i++)
+  const ui = mkui(eventPipe, $("#channelContainer"));
+  uiControllers = ui.controllers;
+  for (let i = 0; i < 16; i++) {
     channels.push(createChannel(uiControllers[i], i, sf2, spinner));
+  }
+
+  //link pipes
   midiworker.addEventListener(
     "message",
     midiMessageHandler(spinner, channels, eventPipe, uiControllers)
@@ -120,6 +119,11 @@ async function main(sf2file) {
 
   window.addEventListener("click", () => ctx.resume(), { once: true });
 
+  spinner.port.onmessage = ({ data }) => {
+    if (data.spState) col5.innerHTML = JSON.stringify(data.spState);
+    if (data.egStages) col4.innerHTML = Object.values(data.egStages).join(" ");
+  };
+  apath.bindKeyboard(() => ui.activeChannel, eventPipe);
   async function loadSF2File(sf2url) {
     sf2 = new SF2Service(sf2url);
     await sf2.load();
@@ -140,13 +144,28 @@ async function main(sf2file) {
       stderr(section + ": " + text);
     }
   }
-
+  function onMidiSelect(url) {
+    const callback = async function (presets) {
+      for (const preset of presets) {
+        const { pid, channel } = preset;
+        const bkid = channel == 9 ? 128 : 0;
+        await channels[channel].setProgram(pid, bkid);
+      }
+    };
+    runMidiPlayer(
+      url,
+      eventPipe,
+      document.querySelector(".song-controls"),
+      async function (presets) {
+        for (const preset of presets) {
+          const { pid, channel } = preset;
+          const bkid = channel == 9 ? 128 : 0;
+          await channels[channel].setProgram(pid, bkid);
+        }
+      }
+    );
+  }
   await loadSF2File(sf2file);
-
-  spinner.port.onmessage = ({ data }) => {
-    if (data.spState) col5.innerHTML = JSON.stringify(data.spState);
-    if (data.egStages) col4.innerHTML = Object.values(data.egStages).join(" ");
-  };
 }
 
 function eventsHandler(channels) {

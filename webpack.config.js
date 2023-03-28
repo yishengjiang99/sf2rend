@@ -1,14 +1,15 @@
 const Fs = require("fs");
 Fs.writeFileSync(
-  "./api/v1_list.js",
+  "sflist.js",
   `export const sf2list=${JSON.stringify(
     require("child_process")
-      .execSync("ls -rS static")
+      .execSync("ls -rS static/*sf2")
       .toString()
       .trim()
       .split("\n")
   )}`
 );
+
 const path = require("path");
 
 module.exports = {

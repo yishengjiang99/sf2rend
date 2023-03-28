@@ -83,14 +83,16 @@ export function readMidi(buffer) {
           track: track.length,
           ...nextEvent,
         });
+        const evtObj = { offset: reader.offset, t, delay, ...nextEvent };
+        track.push(evtObj);
       } else if (nextEvent.channel && nextEvent.channel[0] >> 4 == 0x0c) {
         presets.push({
           t,
           channel: nextEvent.channel[0] & 0x0f,
           pid: nextEvent.channel[1] & 0x7f,
         });
-        // const evtObj = { offset: reader.offset, t, delay, ...nextEvent };
-        // track.push(evtObj);
+        const evtObj = { offset: reader.offset, t, delay, ...nextEvent };
+        track.push(evtObj);
       } else {
         const evtObj = { offset: reader.offset, t, delay, ...nextEvent };
         track.push(evtObj);

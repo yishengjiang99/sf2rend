@@ -4,25 +4,19 @@
 
 #include "spin.c"
 #include "stbl.c"
+#include "test_utils.h"
 short zero_att_hold[60] = {
     0,      0,   0,    0,     0,      0,      0,      0,      10216,  0,
     0,      0,   0,    0,     2501,   0,      0,      0,      2060,   0,
     0,      0,   -536, 0,     -1133,  -12000, -12000, -12000, -12000, 0,
-    -12000, 0,   0,    1480,  -12000, -12000, 3216,   470,    -8784,  0,
+    -12000, 0,   0,    1480,  -12000, -12000, 3216,   470,    -2222,  0,
     0,      291, 0,    14080, 15360,  0,      -1,     -1,     -7740,  0,
-    0,      -12, 0,    176,   1,      0,      100,    0,      68,     0};
-
-#define printvoleg(x)                                                \
-  {                                                                  \
-    printf("=>increment %f, egval:%f\t nsteps: %d\t stag: %d %d\n",  \
-           x->voleg->egIncrement, x->voleg->egval, x->voleg->nsteps, \
-           x->voleg->stage, x->position);                            \
-  }
+    0,      -12, 0,    176,   1024,   0,      100,    0,      68,     0};
 
 zone_t* z = (zone_t*)zero_att_hold;
 
 int main() {
-  reset(0);
+  gm_reset();
   spinner* x = newSpinner(0);
   pcms->length = 220;
   pcms->loopend = 4620;
@@ -31,25 +25,39 @@ int main() {
   float data[46200];
   pcms->originalPitch = 600;
   pcms->data = data;
-  printvoleg(x);
 
+  printvoleg(x);
+  z->SampleModes = 1025;
+  z->SampleId = 0;
+  set_spinner_zone(x, z);
+  print_sp(x);
+
+  trigger_attack(x, .3, 122);
+  print_sp(x);
   for (int i = 0; i < 4600; i++) {
     printvoleg(x);
     pcms->data[i] = (float)stbl[i % 1024];
   };
 
   printvoleg(x);
-  trigger_attack(x, z, 1.0, w);
-
-  printvoleg(x);
 
   for (int i = 0; x->voleg->stage < 2; i++) {
+    printf("%d step ", i);
+    printvoleg(x);
+
+    spin(x, 128);
+  }
+
+  for (int i = 0; x->voleg->stage < sustain; i++) {
+    spin(x, 128);
+
     printvoleg(x);
   }
-  printf("a");
-  for (int i = 0; x->voleg->nsteps > 0 && x->voleg->stage < done; i++) {
+  printf("releasing");
+  spin(x, 128);
+  eg_release(x);
+  for (int i = 0; x->voleg->stage < done; i++) {
     spin(x, 128);
-    if (x->voleg->stage < init) break;
     printvoleg(x);
   }
   return 1;

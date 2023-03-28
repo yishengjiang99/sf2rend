@@ -34,7 +34,6 @@ spinner* get_available_spinner(int channelId) {
     sp = newSpinner(i);
 
     if (sps[i].voleg == 0) {
-      sp = newSpinner(i);
       sp->channelId = channelId;
       sp->voleg->stage = init;
       return sp;
@@ -57,6 +56,8 @@ spinner* newSpinner(int idx) {
   x->modeg = &eg[idx * 2 + 1];
   x->modlfo = &lfos[idx * 2];
   x->vibrlfo = &lfos[idx * 2 + 1];
+  x->modeg->egval = -960.0f;
+  x->modeg->egIncrement = 0;
   x->voleg->egval = -960.0f;
   x->voleg->stage = init;
   x->voleg->egIncrement = 0;
@@ -75,7 +76,7 @@ void gm_reset() {
 
   defP[1] = (pcm_t){0, 1024, 1024, SAMPLE_RATE, 60, stbl};
 }
-void eg_release(spinner* x) {
+void trigger_release(spinner* x) {
   _eg_release(x->voleg);
   _eg_release(x->modeg);
 }
@@ -83,6 +84,12 @@ void reset(spinner* x) {
   x->position = 0;
   x->stride = .0f;
   x->fract = 0.0f;
+  x->modeg->stage = init;
+  x->modeg->egval = -960.0f;
+  x->modeg->egIncrement = 0;
+  x->voleg->egval = -960.0f;
+  x->voleg->stage = init;
+  x->voleg->egIncrement = 0;
 }
 
 void set_midi_cc_val(int channel, int metric, int val) {
@@ -165,7 +172,6 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   }
   float stride = x->zone->SampleModes > 0 ? x->stride : 1.0f;
   int ch = (int)(x->channelId / 2);
-
   stride = stride *
            (12.0f + (float)(modEG * x->zone->ModEnv2Pitch / 100.0f) +
             (float)(modlfoEffect.mod2pitch / 100.0f) +
@@ -205,6 +211,11 @@ void _spinblock(spinner* x, int n, int blockOffset) {
 }
 
 int spin(spinner* x, int n) {
+  if (x->voleg->stage == done) return 0;
+  if (x->voleg->egval < -980.0f) {
+    x->voleg->stage = done;
+    return 0;
+  }
   update_eg(x->voleg, 64);
 
   update_eg(x->modeg, 64);

@@ -46,7 +46,7 @@ export async function mkpath(ctx, additional_nodes = []) {
       )
   );
   for (let i = 0; i < 16; i++) {
-    spinner.connect(lpfs[i], i, 0).connect(gainNodes[i]).connect(merger);
+    spinner.connect(gainNodes[i], i, 0).connect(merger);
   }
   merger.connect(ctx.destination);
 
@@ -85,52 +85,21 @@ export async function mkpath(ctx, additional_nodes = []) {
     async startAudio() {
       if (ctx.state !== "running") await ctx.resume();
     },
-    /* forwards and enhances midi messages */
-    ooMIDIChannelMessage: function ({ data }) {
-      const [a, b, c] = data;
-      const cmd = a & 0xf0;
-      const ch = a & 0x0f;
-      const key = b & 0x7f;
-      const velocity = c & 0x7f;
-      const zone = this.channelState[ch].zoneObj;
-      switch (cmd) {
-        case midi_ch_cmds.note_on:
-          if (zone) {
-            const pitchRatio = calcPitchRatio(key, ctx.sampleRate, zone);
-            spinner.port.postMessage([
-              0x9000,
-              ch,
-              pitchRatio,
-              velocity,
-              zone.ref,
-            ]);
-            queueMicrotask(() => (this.channelState[ch][key] = "on"));
-          }
-          break;
-
-        default:
-          break;
-      }
-    },
-    bindKeyboard: function (channel) {
-      this.channelState[channel].active = "keyboard";
-      if (!this.channelState[channel].zoneObj) {
-        return false;
-      }
+    bindKeyboard: function (get_active_channel_fn, eventpipe) {
       const keys = ["a", "w", "s", "e", "d", "f", "t", "g", "y", "h", "u", "j"];
       window.onkeydown = (e) => {
-        const index = keys.indexOf(e.key);
+        const channel = get_active_channel_fn();
         const baseOctave = this.channelState[channel].octave || 48;
+        const index = keys.indexOf(e.key) + baseOctave;
         if (index < 0) return;
-        this.ooMIDIChannelMessage({
-          data: [midi_ch_cmds.note_on | channel, index + baseOctave, 100],
-        });
-      };
-      window.onkeyup = (e) => {
-        const baseOctave = this.channelState[channel].octave || 48;
-        const index = keys.indexOf(e.target.index + baseOctave);
-        if (index < 0) return;
-        this.spinner.keyOff(channel, index + baseOctave, 100);
+        eventpipe.postMessage([0x90 | channel, index, 120]);
+        e.target.addEventListener(
+          "keyup",
+          () => {
+            eventpipe.postMessage([0x80 | channel, index, 111]);
+          },
+          { once: true }
+        );
       };
     },
   };
