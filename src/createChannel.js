@@ -62,6 +62,9 @@ export function createChannel(uiController, channelId, sf2, spinner) {
         uiController.active = true;
         uiController.velocity = vel;
         uiController.midi = key;
+        // uiController.env1 = zones[0].arr
+        //   .slice(34, 39)
+        //   .map((d) => Math.pow(2, d / 1200));
       });
       return zones[0];
     },

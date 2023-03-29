@@ -29,7 +29,6 @@ typedef struct {
 
 void set_spinner_zone(spinner* x, zone_t* z);
 spinner* newSpinner(int idx);
-void eg_release(spinner* x);
 void reset(spinner* x);
 int spin(spinner* x, int n);
 float* spOutput(spinner* x);

@@ -1,7 +1,6 @@
 
 #include "spin.h"
 
-#include "stbl.c"
 #define RENDQ 128
 #define nchannels 64
 #define nmidiChannels 16
@@ -28,25 +27,14 @@ spinner* spRef(int idx) { return &sps[idx]; }
 pcm_t* pcmRef(int idx) { return &pcms[idx]; }
 zone_t* zoneRef(int idx) { return &zones[idx]; }
 
-spinner* get_available_spinner(int channelId) {
-  spinner* sp;
-  for (int i = 0; i < nchannels; i++) {
-    sp = newSpinner(i);
-
-    if (sps[i].voleg == 0) {
-      sp->channelId = channelId;
-      sp->voleg->stage = init;
-      return sp;
-    }
-    if (sps[i].voleg->stage == inactive || sps[i].voleg->stage == done) {
-      sp = sps + i;
-      sp->channelId = channelId;
-      return sp;
-    }
+void sp_reflect(float* paper) {
+  for (int j = 0, i = 0; i < 32; i++) {
+    paper[j++] = (sps + i)->position;
+    paper[j++] = (sps + i)->voleg->stage;
+    paper[j++] = (sps + i)->voleg->egval;
+    paper[j++] = (sps + i)->voleg->nsteps;
   }
-  return 0;
 }
-
 spinner* newSpinner(int idx) {
   spinner* x = &sps[idx];
   x->outputf = &outputs[idx * RENDQ * 2];
@@ -72,11 +60,10 @@ void gm_reset() {
     midi_cc_vals[idx * nmidiChannels + TML_PAN_MSB] = 64;
     midi_cc_vals[idx * nmidiChannels + TML_EXPRESSION_MSB] = 127;
   }
-  defP[0] = (pcm_t){0, 1024, 1024, SAMPLE_RATE, 60, stbl};
-
-  defP[1] = (pcm_t){0, 1024, 1024, SAMPLE_RATE, 60, stbl};
+  for (int i = 0; i < nchannels; i++) reset(&sps[i]);
 }
-void trigger_release(spinner* x) {
+void trigger_release(int channel_id) {
+  spinner* x = spRef(channel_id);
   _eg_release(x->voleg);
   _eg_release(x->modeg);
 }
@@ -84,12 +71,14 @@ void reset(spinner* x) {
   x->position = 0;
   x->stride = .0f;
   x->fract = 0.0f;
-  x->modeg->stage = init;
+  x->modeg->stage = inactive;
   x->modeg->egval = -960.0f;
   x->modeg->egIncrement = 0;
   x->voleg->egval = -960.0f;
-  x->voleg->stage = init;
+  x->voleg->stage = inactive;
   x->voleg->egIncrement = 0;
+  x->voleg->hasReleased = 0;
+  x->modeg->hasReleased = 0;
 }
 
 void set_midi_cc_val(int channel, int metric, int val) {
@@ -133,7 +122,7 @@ void set_spinner_zone(spinner* x, zone_t* z) {
     pcm = pcms + z->SampleId;
   }
   set_spinner_input(x, pcm);
-  x->position = z->StartAddrOfs + (z->StartAddrCoarseOfs << 15);
+  x->position = 0;  // z->StartAddrOfs + (z->StartAddrCoarseOfs << 15);
   x->loopStart += z->StartLoopAddrOfs + (z->StartLoopAddrCoarseOfs << 15);
   x->loopEnd += z->EndAddrOfs + (z->EndLoopAddrCoarseOfs << 15);
   x->zone = z;
@@ -160,10 +149,10 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   unsigned int position = x->position;
   float fract = x->fract;
   unsigned int nsamples = pcms[x->zone->SampleId].length;
-  unsigned int looplen = x->loopEnd - x->loopStart - 1;
+  unsigned int looplen = x->loopEnd - x->loopStart;
   double modEG = p10over200[(short)(clamp(x->modeg->egval, -960, 0) + 960)];
 
-  if (x->zone->SampleModes == 0 && x->voleg->stage < release) {
+  if (x->zone->SampleModes == 0 && x->voleg->stage > release) {
     db = 0.0f;
     dbInc = 0.0f;
   } else {
@@ -192,17 +181,17 @@ void _spinblock(spinner* x, int n, int blockOffset) {
     }
 
     if (position >= x->loopEnd + 1 && x->zone->SampleModes > 0)
-      position -= (looplen - 1.0f);
-
-    if (position >= nsamples - 1) {
-      position = x->loopStart;
-    }
+      position -= looplen;
 
     float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
+
+    if (position >= nsamples - 1) {
+      outputf = 0.0f;
+    }
     x->outputf[i * 2 + blockOffset * 2] =
-        applyCentible(outputf, (short)(db + kRateCB + panLeft));
+        applyCentible(outputf, (short)(db + kRateCB));
     x->outputf[i * 2 + blockOffset * 2 + 1] =
-        applyCentible(outputf, (short)(db + kRateCB + panRight));
+        applyCentible(outputf, (short)(db + kRateCB));
     db += dbInc;
   }
   x->position = position;
@@ -211,11 +200,12 @@ void _spinblock(spinner* x, int n, int blockOffset) {
 }
 
 int spin(spinner* x, int n) {
-  if (x->voleg->stage == done) return 0;
-  if (x->voleg->egval < -980.0f) {
-    x->voleg->stage = done;
+  if (x->voleg->stage == done) {
+    for (int i = 0; i < 256; i++)
+      x->outputf[2 * x->channelId * 128 * RENDQ + i] = .0f;
     return 0;
   }
+
   update_eg(x->voleg, 64);
 
   update_eg(x->modeg, 64);

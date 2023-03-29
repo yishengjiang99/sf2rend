@@ -1,36 +1,7 @@
 import saturate from "../saturation/index.js";
 import { wasmbin } from "./spin.wasm.js";
 import { egStruct, spRef2json } from "./spin-structs.js";
-async function downloadData(stream, fl) {
-  for (let v of fl) v = 0;
-  const reader = stream.getReader();
-  let writeOffset = 0;
-  let leftover;
-  const decode = function (s1, s2) {
-    const int = s1 + (s2 << 8);
-    return int > 0x8000 ? -(0x10000 - int) / 0x8000 : int / 0x7fff;
-  };
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) {
-      await stream.closed;
-      break;
-    }
-    if (!value) continue;
-    let readIndex = 0;
 
-    if (leftover != null) {
-      fl[writeOffset++] = decode(leftover, value[readIndex++]);
-      leftover = null;
-    }
-    const n = ~~value.length;
-    while (readIndex < n - 2) {
-      fl[writeOffset++] = decode(value[readIndex++], value[readIndex++]);
-    }
-    if (readIndex < value.length - 1) leftover = value[value.length - 1];
-    console.assert(readIndex + 1 == value.length || leftover != null);
-  }
-}
 class SpinProcessor extends AudioWorkletProcessor {
   constructor(options) {
     super(options);
@@ -55,6 +26,8 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.spState = new Array(32);
     this.port.postMessage({ init: 1 });
     this.eg_vol_stag = new Array(32).fill(0);
+    this.sp_reflect_arr = this.malololc(32 * 4 * 4);
+    this.debug = true;
   }
   sdtaRef(sampleId) {
     return new Uint32Array(
@@ -105,8 +78,15 @@ class SpinProcessor extends AudioWorkletProcessor {
       this.port.postMessage({ zack: 1 });
     } else if (data.cmd) {
       switch (data.cmd) {
+        case "debug":
+          this.debug = true;
+          break;
         case "reset":
           this.brk = this.inst.exports.__heap_base;
+          break;
+        case "gm_reset":
+          this.inst.exports.gm_reset();
+          break;
         //fallthrough
         case "panic":
           this.inst.exports.silence_all();
@@ -152,7 +132,7 @@ class SpinProcessor extends AudioWorkletProcessor {
               console.error("cannot find present zoneref", presetId, zoneRef);
               return;
             }
-            if (!this.spinners[channel]) {
+            if (this.spinners[channel] == null) {
               this.instantiate(channel);
             }
             let ch = channel;
@@ -215,18 +195,39 @@ class SpinProcessor extends AudioWorkletProcessor {
   }
 
   process(inputs, outputs) {
+    let has_sound = false;
     for (let i = 0; i < 32; i++) {
       const chid = Math.floor(i / 2);
       if (!this.outputs[i]) continue;
       if (!this.spinners[i]) continue;
-      this.eg_vol_stag[i] = this.inst.exports.spin(this.spinners[i], 128);
-      if (this.eg_vol_stag[i] == 99) delete this.spinners[i];
+      const shouldRend = this.inst.exports.spin(this.spinners[i], 128);
+      if (!shouldRend) {
+        delete this.spinners[i];
+        continue;
+      }
       for (let j = 0; j < 128; j++) {
-        outputs[chid][0][j] += saturate(this.outputs[i][2 * j] * 0.4);
+        outputs[chid][0][j] += saturate(this.outputs[i][2 * j] * 0.5);
         outputs[chid][1][j] += saturate(this.outputs[i][2 * j + 1] * 0.5);
+        has_sound = has_sound || outputs[chid][0][j] != 0;
       }
     }
+    this.sp_reflect_snd();
     return true;
+  }
+  sp_reflect_snd() {
+    if (!this.lastReport || globalThis.currentTime - this.lastReport > 0.016) {
+      this.lastReport = globalThis.currentTime;
+      new Promise((r) => r()).then(() => {
+        this.inst.exports.sp_reflect(this.sp_reflect_arr);
+        const sharedData = new Float32Array(32 * 4);
+        sharedData.set(
+          new Float32Array(this.memory.buffer, this.sp_reflect_arr, 32 * 4)
+        );
+        this.port.postMessage({
+          sp_reflect: sharedData,
+        });
+      });
+    }
   }
   sendReport() {
     if (!this.lastReport || globalThis.currentTime - this.lastReport > 0.2) {
@@ -253,4 +254,34 @@ class SpinProcessor extends AudioWorkletProcessor {
 registerProcessor("spin-proc", SpinProcessor);
 function now() {
   return globalThis.currentTime;
+}
+async function downloadData(stream, fl) {
+  const reader = stream.getReader();
+  let writeOffset = 0;
+  let leftover;
+  const decode = function (s1, s2) {
+    const int = s1 + (s2 << 8);
+    return int > 0x8000 ? -(0x10000 - int) / 0x8000 : int / 0x7fff;
+  };
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      await stream.closed;
+      break;
+    }
+    if (!value) continue;
+    let readIndex = 0;
+
+    if (leftover != null) {
+      fl[writeOffset++] = decode(leftover, value[readIndex++]);
+      leftover = null;
+    }
+    const n = ~~value.length;
+    while (readIndex < n - 2) {
+      fl[writeOffset++] = decode(value[readIndex++], value[readIndex++]);
+    }
+    if (readIndex < value.length - 1) leftover = value[value.length - 1];
+    console.assert(readIndex + 1 == value.length || leftover != null);
+  }
 }

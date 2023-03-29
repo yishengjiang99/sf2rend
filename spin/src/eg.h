@@ -31,6 +31,9 @@ float update_eg(EG* eg, int n);
  *
  */
 float update_eg(EG* eg, int n) {
+  if (eg->nsteps < 0) {
+    return 0;
+  }
   int n1 = n > eg->nsteps ? eg->nsteps : n;
   if (n < eg->nsteps) {
     eg->nsteps -= n1;
@@ -46,29 +49,31 @@ float update_eg(EG* eg, int n) {
   return eg->egval;
 }
 void advanceStage(EG* eg) {
+  // if (eg->hasReleased > 0 && eg->stage < release) {
+  //   goto EG_RELEASE;
+  // }
   switch (eg->stage) {
     case inactive:  // cannot advance
-      eg->stage++;
       return;
     case init:
       eg->egval = -960.0f;
       eg->stage++;
-      if (eg->delay > -11500) {
-        eg->nsteps = timecent2sample(eg->delay);
-        eg->egval = -960.0f;
-        eg->egIncrement = 0.0f;
-        break;
-      }
+      eg->nsteps = timecent2sample(eg->delay);
+      eg->egval = -960.0f;
+      eg->egIncrement = 0.0f;
+      break;
     case delay:
       eg->egval = -960.0f;
       eg->stage++;
+      eg->nsteps = timecent2sample(eg->attack);
+
       if (eg->attack > -11500) {
         eg->egval = -960.0f;
-        eg->nsteps = timecent2sample(eg->attack);
         eg->egIncrement = 960.0f / (float)eg->nsteps;
         break;
       }
     case attack:
+      eg->stage++;
       eg->egval = 0.0f;
       eg->nsteps = timecent2sample(eg->hold);
       eg->egIncrement = 0.0f;
@@ -79,21 +84,13 @@ void advanceStage(EG* eg) {
          * This is the time, in absolute timecents, for a 100% change in the
     Volume Envelope value during decay phase. */
         // velopcity required to travel full 960db
-        eg->egIncrement = -960.f / (float)timecent2sample(eg->decay);
+        eg->nsteps = timecent2sample(eg->decay);
+        eg->egIncrement = -960.f / eg->nsteps;
 
         // but it's timeslice by sustain percentage?
-        eg->nsteps = eg->sustain / 1000.0f * (float)timecent2sample(eg->decay);
+        eg->nsteps = timecent2sample(eg->decay);
         break;
 
-        /*For the Volume
-        Envelope, the decay phase linearly ramps toward the sustain level,
-        causing a constant dB change for each time unit. If the sustain level
-        were -100dB, the Volume Envelope Decay Time would be the time
-        spent in decay phase. A value of 0 indicates a 1-second decay time for
-        a zero-sustain level. A negative value indicates a time less than one
-        second; a positive value a time longer than one second. For example, a
-        decay time of 10 msec would be 1200log2(.01) = -7973.*/
-        break;
     case decay:  // headsing to released;
 
       /*
@@ -115,7 +112,7 @@ void advanceStage(EG* eg) {
       // sustain = % decreased during decay
 
     case sustain:
-
+    EG_RELEASE:
       /*This is the time, in absolute timecents, for a 100% change in
 the Volume Envelope value during release phase. For the Volume Envelope,
 the release phase linearly ramps toward zero from the current level,
@@ -131,12 +128,11 @@ one second. For example, a release time of 10 msec would be 1200log2(.01) =
       float stepsFull =
           (float)timecent2sample(eg->release); /*8 nsteps for full 960*/
 
-      eg->egIncrement = -960.f / stepsFull;
-      eg->nsteps = (int)((960.f + eg->egval) / 960.f * stepsFull);
+      eg->egIncrement = (-960.0f - eg->egval) / stepsFull;
+      eg->nsteps = (int)stepsFull;
       break;
     case release:
-      eg->stage++;
-      eg->egIncrement = -20.f;
+
       eg->stage = done;
       break;
     case done:
@@ -160,6 +156,8 @@ void init_vol_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
   eg->release = z->VolEnvRelease * scaleFactor;
   eg->hold = z->VolEnvHold * scaleFactor;
   eg->sustain = z->VolEnvSustain * scaleFactor;
+  eg->stage = init;
+  eg->nsteps = 0;
 }
 void init_mod_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
   eg->attack = z->ModEnvAttack;
@@ -179,5 +177,6 @@ void _eg_release(EG* e) {
   e->nsteps = 0;
   e->hasReleased = 1;
   e->stage = sustain;
+  advanceStage(e);
 }
 #endif

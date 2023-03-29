@@ -8,17 +8,30 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <input type="checkbox" id="drawer-toggle" name="drawer-toggle" />
+  <label for="drawer-toggle" id="drawer-toggle-label"></label>
   <header>
-    Header
-    <select id="sf2select"></select>
+    <h2>Rendering MIDI with WebAssembly (performantly)</h2>
+
   </header>
-  <main class="main">
-    <div id="channelContainer"></div>
-    <pre id="info"></pre>
-    </main>
-  <footer></footer>
-  <script type="module" src="./src/index.js"></script>
-  <datalist id="programs"></datalist>
-  <datalist id="drums"></datalist>
+
+  <nav id="drawer">
+    <ul>
+      <li><a href="#debug">toggle debug</a></li>
+    </ul>
+  </nav>
+  <div id="page-content">
+    <select id="sf2select"></select>
+    <nav id="ctrls"></nav>
+    <nav id="navhead"></nav>
+      <main class="main">
+        <div id="channelContainer"></div>
+        <pre id="info"></pre>
+      </main>
+      <footer></footer>
+      <script type="module" src="./src/index.js"></script>
+      <datalist id="programs"></datalist>
+      <datalist id="drums"></datalist>
+    </div>
 </body>
 </html>

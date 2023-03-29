@@ -6,17 +6,10 @@ import { mkeventsPipe } from "./mkeventsPipe.js";
 import { createChannel } from "./createChannel.js";
 import { midi_ch_cmds } from "./constants.js";
 import runMidiPlayer from "./runmidi.js";
-import { chart, mkcanvas } from "https://unpkg.com/mk-60fps@1.1.0/chart.js";
 import { sf2list } from "../sflist.js";
 const $ = (sel) => document.querySelector(sel);
 
 const sf2select = $("#sf2select"),
-  timeslide = $("#timeSlider"),
-  playBtn = $("#play"),
-  timeNow = $("#timeNow"),
-  tempo = $("#tempo"),
-  duration = $("#duration"),
-  msel = $("#msel"),
   col4 = $("#col4"),
   col5 = $("#col5");
 
@@ -26,7 +19,7 @@ const { infoPanel, stdout } = logdiv();
 infoPanel.attachTo(document.querySelector("main"));
 window.stdout = stdout;
 window.stderr = (str) => (document.querySelector("#info").innerHTML = str);
-main(sf2list[Math.floor(Math.random() * sf2list.length)]);
+main("static/GeneralUserGS.sf2");
 
 const appState = {};
 globalThis.appState = new Proxy(appState, {
@@ -120,6 +113,9 @@ async function main(sf2file) {
     if (data.egStages) col4.innerHTML = Object.values(data.egStages).join(" ");
     if (data.queryResponse)
       window.stderr(JSON.stringify(data.queryResponse, null, 1));
+    if (data.sp_reflect) {
+      window.stderr(Object.values(data.sp_reflect).join("\n"));
+    }
   };
   apath.bindKeyboard(() => ui.activeChannel, eventPipe);
   async function loadSF2File(sf2url) {
@@ -136,7 +132,7 @@ async function main(sf2file) {
     });
     channels.forEach((c, i) => {
       c.setSF2(sf2);
-      c.setProgram(i, i == 9 ? 128 : 0);
+      c.setProgram(i << 3, i == 9 ? 128 : 0);
     });
     for (const [section, text] of sf2.meta) {
       stdout(section + ": " + text);
@@ -156,6 +152,17 @@ async function main(sf2file) {
       }
     );
   }
+  window.addEventListener("onhashchange", () => {
+    const hasht = document.location.hash.substring(1).split("|");
+    switch (hasht[0]) {
+      case "debug":
+        spinner.port.postMessage({ cmd: "debug" });
+        break;
+      default:
+        break;
+    }
+  });
+  apath.ctrl_bar(document.getElementById("ctrls"));
   await loadSF2File(sf2file);
 }
 

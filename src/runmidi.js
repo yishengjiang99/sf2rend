@@ -31,11 +31,10 @@ export default async function runMidiPlayer(
     new Uint8Array(await (await fetch(url)).arrayBuffer())
   );
   await loadPresetFn(presets);
-  const worker = new Worker("../timer.js");
+  const worker = new Worker("./src/timer.js");
   let msqn = tempos?.[0]?.tempo || 500000;
   let ppqn = division;
-  console.log(ppqn);
-  stdout("msqn" + msqn + " ppqn" + ppqn);
+  // stdout("msqn" + msqn + " ppqn" + ppqn);
   worker.postMessage({ tm: { msqn, ppqn } });
 
   const soundtracks = tracks.map((track) =>
@@ -49,7 +48,8 @@ export default async function runMidiPlayer(
       const track = soundtracks[i];
       while (track.length && track[0].t <= sysTick) {
         const e = track.shift();
-        eventpipe.postMessage(e.channel);
+        if (e.meta) console.log(e.meta);
+        else eventpipe.postMessage(e.channel);
       }
     }
   };

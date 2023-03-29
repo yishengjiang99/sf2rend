@@ -30,7 +30,7 @@ double attack_db_inc(short attackRate) {
 float applyCentible(float signal, short centdb) {
   if (centdb > 0) return signal;
   if (centdb <= -1240) return 0.0f;
-  return (float)signal * p10over200[centdb + 1440];
+  return (float)signal * p10over200[centdb + 960];
 }
 
 float hermite4(float frac_offset, float xm1, float x0, float x1, float x2) {

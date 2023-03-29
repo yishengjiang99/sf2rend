@@ -36,7 +36,7 @@ int main() {
   z->VolEnvSustain = 1000;
   z->SampleId = 0;
   z->SampleModes = 1;
-  z->VolEnvRelease = 95;
+  z->VolEnvRelease = -3333;
   newSpinner(0);
   printvoleg(x);
   set_spinner_zone(x, z);
@@ -45,7 +45,7 @@ int main() {
   trigger_attack(x, 88, 20);
   printvoleg(x);
 
-  spinner* y = get_available_spinner(3);
+  spinner* y = newSpinner(3);
   printvoleg(x);
 
   assert(y->channelId == 3);
@@ -62,15 +62,15 @@ int main() {
   printvoleg(x);
   spin(x, 128);
   printvoleg(x);
-  return 1;
   for (int i = 0; x->voleg->stage < 5; i++) {
     spin(x, 128);
     printvoleg(x);
     break;
   }
-  return 1;
-  eg_release(x);
+  trigger_release(x);
   for (int i = 0; x->voleg->stage < done; i++) {
+    printvoleg(x);
+
     spin(x, 128);
     if (x->voleg->stage < init) break;
     printvoleg(x);

@@ -32,7 +32,7 @@ export function mkui(
     tb.append(trackrow.container);
     trackrow.container.classList.add("channelCard");
     trackrow.container.addEventListener(
-      "click",
+      "mouseenter",
       (e) => {
         _activeChannel = i;
         e.target.parentElement
@@ -70,8 +70,7 @@ export function mkui(
       )
     )
   );
-  const keyboard = mkKeyboard;
-  const cpanel = mkdiv("div", [tb, keyboard]);
+  const cpanel = mkdiv("div", [tb, mkKeyboard]);
 
   cpanel.attachTo(container);
   return {
@@ -180,6 +179,7 @@ export class TrackUI {
             mksvg("polyline", {
               fill: "red",
               stroke: "black",
+              points: [],
             }),
           ]
         ),
@@ -218,7 +218,6 @@ export class TrackUI {
     return this._midi;
   }
   set CC({ key, value }) {
-    console.log(value, key);
     switch (key) {
       case effects.volumecoarse:
         this.sliders[0].value = value;
@@ -255,7 +254,7 @@ export class TrackUI {
       this.led.removeAttribute("checked");
     }
   }
-  set env1({ phases: [a, d, s, r], peak }) {
+  set env1([a, h, d, s, r]) {
     const points = [
       [0, 0],
       [a, 1],

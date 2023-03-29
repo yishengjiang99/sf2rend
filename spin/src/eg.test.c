@@ -55,11 +55,17 @@ int main() {
   }
   printf("releasing");
   spin(x, 128);
-  eg_release(x);
+  trigger_release(x);
   for (int i = 0; x->voleg->stage < done; i++) {
     spin(x, 128);
     printvoleg(x);
   }
+  spin(x, 128);
+  printvoleg(x);
+  spin(x, 128);
+  printvoleg(x);
+  spin(x, 128);
+  printvoleg(x);
   return 1;
   return 0;
 }

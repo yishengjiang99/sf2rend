@@ -73,12 +73,12 @@
 		async function main(url) {
 			let f1samp;
 			const bar = document.querySelector(".blue");
-			const sf2 = new Sf2Service("./FluidR3_GM.sf2");
+			const sf2 = new Sf2Service("./static/FluidR3_GM.sf2");
 			const sf2Loaded = sf2.load();
 			const {presets, tracks, division, tempos, meta} = await readMidi(
 				new Uint8Array(await (await fetch(url)).arrayBuffer())
 			);
-			const worker = new Worker(`timer.js?mspqn=${tempos[0].tempo}&ppqn=${division}`)
+			const worker = new Worker(`./src/timer.js?mspqn=${tempos[0].tempo}&ppqn=${division}`)
 
 
 			document.body.innerHTML += JSON.stringify(tempos) + JSON.stringify(division) + JSON.stringify(meta)
