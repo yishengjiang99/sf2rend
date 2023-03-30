@@ -102,6 +102,7 @@ export class TrackUI {
     });
     this.led = mkdiv("input", { type: "checkbox" });
 
+    const newLocal = "amp-indicate";
     const container = mkdiv(
       "span",
       {
@@ -159,7 +160,7 @@ export class TrackUI {
           oninput: (e) => cb([0xb0 | idx, 11, e.target.value]),
         }),
 
-        mkdiv("label", { for: "other" }, "other"),
+        mkdiv("label", { for: "othbalaner" }, "other"),
         mkdiv("input", {
           min: 0,
           id: "other",
@@ -167,8 +168,15 @@ export class TrackUI {
           step: 1,
           value: 127,
           type: "range",
-          oninput: (e) => cb([0xb0 | idx, 11, e.target.value]),
+          oninput: (e) => cb([0xb0 | idx, 8, e.target.value]),
         }),
+        mkdiv(
+          "span",
+          {
+            class: newLocal,
+          },
+          ""
+        ),
         mksvg(
           "svg",
           {
@@ -179,7 +187,6 @@ export class TrackUI {
             mksvg("polyline", {
               fill: "red",
               stroke: "black",
-              points: [],
             }),
           ]
         ),
@@ -223,7 +230,7 @@ export class TrackUI {
         this.sliders[0].value = value;
         this.ccLabels[0].innerHTML = "volume" + value;
         break;
-      case effects.pancoars:
+      case effects.pancoarse:
         this.sliders[1].value = value;
         this.ccLabels[1].innerHTML = "pan" + value;
         break;
@@ -231,7 +238,7 @@ export class TrackUI {
         this.sliders[2].value = value;
         this.ccLabels[2].innerHTML = "exp" + value;
         break;
-      default:
+      case effects.pitchbendcoarse:
         this.sliders[3].value = "midi " + key;
         this.ccLabels[3].innerHTML = "value" + value;
         break;
@@ -260,8 +267,7 @@ export class TrackUI {
       [a, 1],
       [a + d, s / 100],
       [a + d + r, 0],
-    ];
-    points
+    ]
       .map(([x, y]) => [x * pixelPerSec, (1 - y) * 0.8 * rowheight].join(","))
       .join(" ");
     this.polylines[0].setAttribute("points", points);

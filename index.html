@@ -7,7 +7,7 @@
   <title>MIDI Rendering with SoundFont2</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
+<body class="sans-serif">
   <input type="checkbox" id="drawer-toggle" name="drawer-toggle" />
   <label for="drawer-toggle" id="drawer-toggle-label"></label>
   <header>
@@ -21,12 +21,16 @@
     </ul>
   </nav>
   <div id="page-content">
-    <select id="sf2select"></select>
-    <nav id="ctrls"></nav>
-    <nav id="navhead"></nav>
+    <nav id="navhead">
+      <span id="ctrls"></span>
+      <select class='antd-select' id="sf2select"></select>
+      <span id="midiPlayer"></span>
+    
+    </nav>
       <main class="main">
         <div id="channelContainer"></div>
-        <pre id="info"></pre>
+      <div id="stdout"></div>
+      <pre id="info"></pre>
       </main>
       <footer></footer>
       <script type="module" src="./src/index.js"></script>

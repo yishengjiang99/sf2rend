@@ -1,14 +1,26 @@
 .channelCard {
   margin: 30px;
   background-color: gainsboro;
-  color: black;
+  position:relative;
 }
 .channelCard:hover {
   background-color: aqua;
 }
+.amp-indicate {
+  height: 20px;
+
+  bottom:0;
+  position: absolute;
+  background-color: blue;
+  width: calc(var(--db)* 200px);
+}
 body {
   margin: 0;
   padding: 0;
+
+}
+.sans-serif {
+  font-family: -apple-system,BlinkMacSystemFont,avenir next,avenir,helvetica neue,helvetica,ubuntu,roboto,noto,segoe ui,arial,sans-serif;
 }
 main {
   display: grid;

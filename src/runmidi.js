@@ -54,6 +54,7 @@ export default async function runMidiPlayer(
     }
   };
   const cmds = "start,stop,reset".split(",");
+  container.innerHTML = "";
   mkdiv(
     "toolbar",
     cmds.map((cmd) =>
@@ -65,5 +66,5 @@ export default async function runMidiPlayer(
         cmd
       )
     )
-  ).attachTo(document.querySelector("header"));
+  ).attachTo(container);
 }

@@ -1,9 +1,9 @@
 import { midi_ch_cmds } from "./constants.js";
 
-export function createChannel(uiController, channelId, sf2, spinner) {
+export function createChannel(uiController, channelId, sf2, apath) {
   let _sf2 = sf2;
   let program;
-  const key_on_map = [];
+  const spinner = apath.spinner;
 
   return {
     setSF2(sf2) {
@@ -37,34 +37,13 @@ export function createChannel(uiController, channelId, sf2, spinner) {
           vel,
           [this.presetId, zone.ref],
         ]);
+        apath.lowPassFilter(channelId * 2 + 1, zone.FilterFc);
       });
-
-      // zones[0].shdr.data().then((pcm) => {
-      //   const abc = new AudioBufferSourceNode(spinner.context, {
-      //     buffer: spinner.context.createBuffer(1, pcm.length, 48000),
-      //     playbackRate: zones[0].calcPitchRatio(
-      //       key,
-      //       spinner.context.sampleRate
-      //     ),
-      //     loop: true,
-      //     gain: 1,
-      //   });
-      //   abc.connect(spinner.context.destination);
-      //   abc.start(0);
-      //   abc.stop(3);
-      // });
-      // zones.slice(2, 2).map((zone, i) => {
-      //   spinner.keyOn(channelId * 2 + 2 + i, zone, key, vel);
-      // });
-
       if (!zones[0]) return;
       requestAnimationFrame(() => {
         uiController.active = true;
         uiController.velocity = vel;
         uiController.midi = key;
-        // uiController.env1 = zones[0].arr
-        //   .slice(34, 39)
-        //   .map((d) => Math.pow(2, d / 1200));
       });
       return zones[0];
     },

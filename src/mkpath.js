@@ -11,7 +11,7 @@ export async function mkpath(ctx, additional_nodes = []) {
   const spinner = new SpinNode(ctx, 16);
   const merger = new GainNode(ctx);
   const gainNodes = Array(16).fill(new GainNode(ctx, { gain: 0.3 }));
-  const lpfs = Array(16).fill(new LowPassFilterNode(ctx));
+  const lpfs = Array(32).fill(new LowPassFilterNode(ctx));
   const channelIds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
   const fft = new FFTNode(ctx);
 
@@ -81,10 +81,9 @@ export async function mkpath(ctx, additional_nodes = []) {
       return msg_cmd("newZone", { zone });
     },
     lowPassFilter: function (channel, initialFrequency) {
-      lpfs[channel].FilterFC.linearRampToValueAtTime(
-        initialFrequency,
-        ctx.currentTime
-      );
+      lpfs[channel].parameters
+        .get("FilterFC")
+        .linearRampToValueAtTime(initialFrequency, ctx.currentTime);
       return lpfs[channel];
     },
     silenceAll() {

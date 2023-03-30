@@ -15,11 +15,13 @@ const sf2select = $("#sf2select"),
 
 const drumList = document.querySelector("#drums");
 const programList = document.querySelector("#programs");
+const navhead = document.querySelector("#navhead");
+
 const { infoPanel, stdout } = logdiv();
-infoPanel.attachTo(document.querySelector("main"));
+infoPanel.attachTo(document.querySelector("#drawer"));
 window.stdout = stdout;
 window.stderr = (str) => (document.querySelector("#info").innerHTML = str);
-main("static/GeneralUserGS.sf2");
+main("static/VintageDreamsWaves-v2.sf2");
 
 const appState = {};
 globalThis.appState = new Proxy(appState, {
@@ -60,15 +62,13 @@ async function main(sf2file) {
       mkdiv("option", { value: f.get("Url") }, f.get("Name").substring(0, 80))
     ),
   });
-  midiSelect.attachTo($("header"));
+  midiSelect.attachTo(navhead);
   midiSelect.addEventListener("input", (e) => onMidiSelect(e.target.value));
 
-  sf2select.setAttribute("value", sf2file);
-  for (const f of sf2list)
-    sf2select.append(mkdiv("option", { selected: f == sf2file, value: f }, f));
+  for (const f of sf2list) sf2select.append(mkdiv("option", { value: f }, f));
+  sf2select.value = sf2file;
 
   sf2select.onchange = (e) => {
-    updateAppState({ sf2file: e.target.value });
     loadSF2File(e.target.value);
   };
   const { mkpath } = await import("./mkpath.js");
@@ -82,7 +82,6 @@ async function main(sf2file) {
   const ui = mkui(eventPipe, $("#channelContainer"), {
     onTrackDoubleClick: async (channelId, e) => {
       const sp1 = await apath.querySpState({ query: 2 * channelId });
-      const sp2 = await apath.querySpState({ query: 2 * channelId + 1 });
       globalThis.stderr(JSON.stringify(sp1, null, 1));
     },
   });
@@ -90,30 +89,74 @@ async function main(sf2file) {
   for (let i = 0; i < 16; i++) {
     uiControllers[i].hidden = true;
 
-    channels.push(createChannel(uiControllers[i], i, sf2, spinner));
+    channels.push(createChannel(uiControllers[i], i, sf2, apath));
   }
 
   //link pipes
 
   eventPipe.onmessage(eventsHandler(channels));
-  const midiAccess = await navigator.requestMIDIAccess();
-  const midiInputs = Array.from(midiAccess.inputs.values());
-  midiInputs.forEach((input) => {
-    input.onmidimessage = ({ data }) => {
-      eventPipe.postMessage(data);
-    };
-  });
-
+  initNavigatorMidiAccess();
+  async function initNavigatorMidiAccess() {
+    let midiAccess = false; // await navigator.requestMIDIAccess();
+    if (!midiAccess) {
+      // eslint-disable-next-line no-unused-vars
+      midiAccess = await new Promise((resolve, reject) => {
+        mkdiv(
+          "button",
+          {
+            onclick: async (e) => {
+              e.target.parentElement.removeChild(e.target);
+              resolve(await navigator.requestMIDIAccess());
+            },
+          },
+          "link midi"
+        ).attachTo(navhead);
+      });
+    }
+    if (midiAccess) {
+      mkdiv(
+        "select",
+        {
+          oninput: (e) => {
+            Array.from(midiAccess.inputs.values()).find(
+              (i) => i.name === e.target.value
+            ).onmidimessage = ({ data }) => eventPipe.postMessage(data);
+          },
+        },
+        [
+          mkdiv("option", { value: null }, "select input"),
+          ...Array.from(midiAccess.inputs.values()).map((input) =>
+            mkdiv(
+              "option",
+              {
+                value: input.name,
+                text: input.name,
+              },
+              input.name
+            )
+          ),
+        ]
+      ).attachTo(navhead);
+    }
+  }
   ctx.onstatechange = () => updateAppState({ audioStatus: ctx.state });
 
   window.addEventListener("click", () => ctx.resume(), { once: true });
 
+  const ampIndictators = document.querySelectorAll(".amp-indicate");
   spinner.port.onmessage = ({ data }) => {
     if (data.spState) col5.innerHTML = JSON.stringify(data.spState);
     if (data.egStages) col4.innerHTML = Object.values(data.egStages).join(" ");
     if (data.queryResponse)
       window.stderr(JSON.stringify(data.queryResponse, null, 1));
     if (data.sp_reflect) {
+      for (let i = 0; i < 16; i++) {
+        ampIndictators[i].style.setProperty(
+          "--db",
+          (data.sp_reflect[2 * i * 4] + 960) / 960
+        );
+      }
+
       window.stderr(Object.values(data.sp_reflect).join("\n"));
     }
   };
@@ -139,29 +182,14 @@ async function main(sf2file) {
     }
   }
   function onMidiSelect(url) {
-    runMidiPlayer(
-      url,
-      eventPipe,
-      document.querySelector(".song-controls"),
-      async function (presets) {
-        for (const preset of presets) {
-          const { pid, channel } = preset;
-          const bkid = channel == 9 ? 128 : 0;
-          await channels[channel].setProgram(pid, bkid);
-        }
+    runMidiPlayer(url, eventPipe, $("#midiPlayer"), async function (presets) {
+      for (const preset of presets) {
+        const { pid, channel } = preset;
+        const bkid = channel == 9 ? 128 : 0;
+        await channels[channel].setProgram(pid, bkid);
       }
-    );
+    });
   }
-  window.addEventListener("onhashchange", () => {
-    const hasht = document.location.hash.substring(1).split("|");
-    switch (hasht[0]) {
-      case "debug":
-        spinner.port.postMessage({ cmd: "debug" });
-        break;
-      default:
-        break;
-    }
-  });
   apath.ctrl_bar(document.getElementById("ctrls"));
   await loadSF2File(sf2file);
 }

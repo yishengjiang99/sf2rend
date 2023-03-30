@@ -215,19 +215,16 @@ class SpinProcessor extends AudioWorkletProcessor {
     return true;
   }
   sp_reflect_snd() {
-    if (!this.lastReport || globalThis.currentTime - this.lastReport > 0.016) {
-      this.lastReport = globalThis.currentTime;
-      new Promise((r) => r()).then(() => {
-        this.inst.exports.sp_reflect(this.sp_reflect_arr);
-        const sharedData = new Float32Array(32 * 4);
-        sharedData.set(
-          new Float32Array(this.memory.buffer, this.sp_reflect_arr, 32 * 4)
-        );
-        this.port.postMessage({
-          sp_reflect: sharedData,
-        });
+    new Promise((r) => r()).then(() => {
+      this.inst.exports.sp_reflect(this.sp_reflect_arr);
+      const sharedData = new Float32Array(32 * 4);
+      sharedData.set(
+        new Float32Array(this.memory.buffer, this.sp_reflect_arr, 32 * 4)
+      );
+      this.port.postMessage({
+        sp_reflect: sharedData,
       });
-    }
+    });
   }
   sendReport() {
     if (!this.lastReport || globalThis.currentTime - this.lastReport > 0.2) {
