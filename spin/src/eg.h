@@ -66,12 +66,8 @@ void advanceStage(EG* eg) {
       eg->egval = -960.0f;
       eg->stage++;
       eg->nsteps = timecent2sample(eg->attack);
-
-      if (eg->attack > -11500) {
-        eg->egval = -960.0f;
-        eg->egIncrement = 960.0f / (float)eg->nsteps;
-        break;
-      }
+      eg->egIncrement = 960.0f / (float)eg->nsteps;
+      break;
     case attack:
       eg->stage++;
       eg->egval = 0.0f;
@@ -128,8 +124,8 @@ one second. For example, a release time of 10 msec would be 1200log2(.01) =
       float stepsFull =
           (float)timecent2sample(eg->release); /*8 nsteps for full 960*/
 
-      eg->egIncrement = (-960.0f - eg->egval) / stepsFull;
-      eg->nsteps = (int)stepsFull;
+      eg->egIncrement = -960.0f / stepsFull;
+      eg->nsteps = eg->egval / eg->egIncrement;
       break;
     case release:
 

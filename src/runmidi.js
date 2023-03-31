@@ -5,18 +5,13 @@ import { mkdiv } from "../mkdiv/mkdiv.js";
 
 function mkcalback(channeals) {
   const channels = [];
-  const ff = async function (presets) {
-    for (const preset of presets) {
-      const { pid, channel } = preset;
-      const bkid = channel == 9 ? 128 : 0;
-      await channels[channel].setProgram(pid, bkid);
-    }
-  };
   (async function (presets) {
     for (const preset of presets) {
       const { pid, channel } = preset;
       const bkid = channel == 9 ? 128 : 0;
-      await channels[channel].setProgram(pid, bkid);
+      const _pid = bkid == 128 ? 0 : pid;
+      console.log(_pid, bkid);
+      await channels[channel].setProgram(_pid, bkid);
     }
   }.apply([channels]));
 }

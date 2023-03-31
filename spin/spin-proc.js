@@ -206,12 +206,12 @@ class SpinProcessor extends AudioWorkletProcessor {
         continue;
       }
       for (let j = 0; j < 128; j++) {
-        outputs[chid][0][j] += saturate(this.outputs[i][2 * j] * 0.5);
-        outputs[chid][1][j] += saturate(this.outputs[i][2 * j + 1] * 0.5);
+        outputs[chid][0][j] += this.outputs[i][2 * j] * 0.2;
+        outputs[chid][1][j] += this.outputs[i][2 * j + 1] * 0.2;
         has_sound = has_sound || outputs[chid][0][j] != 0;
       }
     }
-    this.sp_reflect_snd();
+    //  this.sp_reflect_snd();
     return true;
   }
   sp_reflect_snd() {
