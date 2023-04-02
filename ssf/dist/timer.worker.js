@@ -1,1 +1,0 @@
-(()=>{var e,t=5e5/48/1e3,o=null,a=0,s=0;function r(){postMessage(a),a++;var e=performance.now;o=setTimeout(r,t-(e-s-t))}onmessage=function(n){var m=n.data,u=m.msqn,c=m.stop,i=m.start,l=m.reset;u&&(t=u/1e3/48),i?(clearTimeout(o),e=performance.now(),s=e,o=setTimeout(r,t)):c?clearTimeout(o):l&&(clearTimeout(o),postMessage(a),a=0)}})();
