@@ -1,0 +1,12 @@
+{
+  "name": "sp2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "spin-node.js",
+  "scripts": {
+    "build": "make"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
