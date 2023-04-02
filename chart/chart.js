@@ -1,10 +1,14 @@
 import { mkdiv } from "https://unpkg.com/mkdiv";
 
-export function chart(canvasCtx, dataArray) {
+export function chart(canvasCtx, dataArray, { annotate } = {}) {
   resetCanvas(canvasCtx);
   const slider = canvasCtx.canvas.parentElement.querySelector(
     "input[type='range']"
   );
+  let aStart, aEnd;
+  if (annotate) {
+    [aStart, aEnd] = annotate;
+  }
   slider.oninput = (e) => chart(canvasCtx, dataArray);
   const [_width, _height] = get_w_h(canvasCtx);
   let max = 0,
@@ -22,7 +26,16 @@ export function chart(canvasCtx, dataArray) {
   const zoomY = slider.value;
   for (let i = 1; i < dataArray.length; i++) {
     x += iWIDTH;
+
     canvasCtx.lineTo(x, _height / 2 - zoomY * dataArray[i]);
+    if (aStart && aStart == i) {
+      canvasCtx.stroke();
+      canvasCtx.lineTo(x, _height / 2 - zoomY * dataArray[i]);
+      canvasCtx.strokeStyle = "red";
+    }
+    if (aEnd && aEnd == i) {
+      canvasCtx.stroke();
+    }
   }
   canvasCtx.stroke();
   canvasCtx.font = "1em Arial";

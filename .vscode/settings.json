@@ -12,7 +12,15 @@
     "spin.h": "c",
     "calc.h": "c",
     "math.h": "c",
-    "sf2.h": "c"
+    "sf2.h": "c",
+    "eg2.h": "c",
+    "spin2.h": "c",
+    "lfo.h": "c",
+    "eg.h": "c",
+    "strings.h": "c",
+    "sp_queue.h": "c",
+    "spin_queue.h": "c",
+    "string.h": "c"
   },
   "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools"
 }

@@ -200,14 +200,13 @@ class SpinProcessor extends AudioWorkletProcessor {
       const chid = Math.floor(i / 2);
       if (!this.outputs[i]) continue;
       if (!this.spinners[i]) continue;
-      const shouldRend = this.inst.exports.spin(this.spinners[i], 128);
-      if (!shouldRend) {
-        delete this.spinners[i];
-        continue;
+      for (let j = 0; j < 128 * 2; j++) {
+        this.outputs[i][j] = 0;
       }
+      this.inst.exports.spin(this.spinners[i], 128);
       for (let j = 0; j < 128; j++) {
-        outputs[chid][0][j] += this.outputs[i][2 * j] * 0.2;
-        outputs[chid][1][j] += this.outputs[i][2 * j + 1] * 0.2;
+        outputs[chid][0][j] += this.outputs[i][2 * j];
+        outputs[chid][1][j] += this.outputs[i][2 * j + 1];
         has_sound = has_sound || outputs[chid][0][j] != 0;
       }
     }

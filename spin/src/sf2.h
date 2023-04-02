@@ -3,8 +3,6 @@
 typedef unsigned int uint32_t;
 typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
-typedef int int32_t;
-typedef short int16_t;
 
 typedef struct {
   uint8_t lo, hi;
@@ -94,22 +92,19 @@ typedef struct {
 } shdrcast;
 
 typedef struct {
-  unsigned short StartAddrOfs, EndAddrOfs, StartLoopAddrOfs, EndLoopAddrOfs,
-      StartAddrCoarseOfs;
-  short ModLFO2Pitch, VibLFO2Pitch, ModEnv2Pitch, FilterFc, FilterQ,
-      ModLFO2FilterFc, ModEnv2FilterFc, EndAddrCoarseOfs, ModLFO2Vol, Unused1,
-      ChorusSend, ReverbSend, Pan, Unused2, Unused3, Unused4, ModLFODelay,
-      ModLFOFreq, VibLFODelay, VibLFOFreq, ModEnvDelay, ModEnvAttack,
-      ModEnvHold, ModEnvDecay, ModEnvSustain, ModEnvRelease, Key2ModEnvHold,
-      Key2ModEnvDecay, VolEnvDelay, VolEnvAttack, VolEnvHold, VolEnvDecay,
-      VolEnvSustain, VolEnvRelease, Key2VolEnvHold, Key2VolEnvDecay, Instrument,
-      Reserved1;
+  short StartAddrOfs, EndAddrOfs, StartLoopAddrOfs, EndLoopAddrOfs,
+      StartAddrCoarseOfs, ModLFO2Pitch, VibLFO2Pitch, ModEnv2Pitch, FilterFc,
+      FilterQ, ModLFO2FilterFc, ModEnv2FilterFc, EndAddrCoarseOfs, ModLFO2Vol,
+      Unused1, ChorusSend, ReverbSend, Pan, Unused2, Unused3, Unused4,
+      ModLFODelay, ModLFOFreq, VibLFODelay, VibLFOFreq, ModEnvDelay,
+      ModEnvAttack, ModEnvHold, ModEnvDecay, ModEnvSustain, ModEnvRelease,
+      Key2ModEnvHold, Key2ModEnvDecay, VolEnvDelay, VolEnvAttack, VolEnvHold,
+      VolEnvDecay, VolEnvSustain, VolEnvRelease, Key2VolEnvHold,
+      Key2VolEnvDecay, Instrument, Reserved1;
   rangesType KeyRange, VelRange;
-  unsigned short StartLoopAddrCoarseOfs;
-  short Keynum, Velocity, Attenuation, Reserved2;
-  unsigned short EndLoopAddrCoarseOfs, CoarseTune;
-  short FineTune, SampleId, SampleModes, Reserved3, ScaleTune, ExclusiveClass,
-      OverrideRootKey, Dummy;
+  short StartLoopAddrCoarseOfs, Keynum, Velocity, Attenuation, Reserved2,
+      EndLoopAddrCoarseOfs, CoarseTune, FineTune, SampleId, SampleModes,
+      Reserved3, ScaleTune, ExclusiveClass, OverrideRootKey, Dummy;
 } zone_t;
 
 zone_t *findByPid(int pid, int bkid);

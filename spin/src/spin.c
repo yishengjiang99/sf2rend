@@ -188,10 +188,8 @@ void _spinblock(spinner* x, int n, int blockOffset) {
     if (position >= nsamples - 1) {
       outputf = 0.0f;
     }
-    x->outputf[i * 2 + blockOffset * 2] =
-        applyCentible(outputf, (short)(db + kRateCB));
-    x->outputf[i * 2 + blockOffset * 2 + 1] =
-        applyCentible(outputf, (short)(db + kRateCB));
+    x->outputf[i * 2 + blockOffset * 2] = applyCentible(outputf, db);
+    x->outputf[i * 2 + blockOffset * 2 + 1] = applyCentible(outputf, db);
     db += dbInc;
   }
   x->position = position;

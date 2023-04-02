@@ -1,10 +1,8 @@
-import { SpinNode } from "../spin/spin.js";
+import { SpinNode } from "../sp2/spin-node.js";
 import { LowPassFilterNode } from "../lpf/lpf.js";
-import { midi_ch_cmds } from "./constants.js";
-import calcPitchRatio from "./calcPitchRatio.js";
 import FFTNode from "../fft-64bit/fft-node.js";
 import { mkdiv } from "../mkdiv/mkdiv.js";
-export async function mkpath(ctx, additional_nodes = []) {
+export async function mkpath(ctx) {
   await SpinNode.init(ctx).catch(console.trace);
   await FFTNode.init(ctx).catch(console.trace);
   await LowPassFilterNode.init(ctx).catch(console.trace);
@@ -15,37 +13,6 @@ export async function mkpath(ctx, additional_nodes = []) {
   const channelIds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
   const fft = new FFTNode(ctx);
 
-  const channelState = channelIds.map(
-    (index) =>
-      new Proxy(
-        {
-          id: index,
-          keys: [
-            "zoneObj",
-            "input",
-            "midi",
-            "velocity",
-            "program",
-            "active",
-            "decibel",
-          ],
-          values: new Array(99),
-        },
-        {
-          get(target, p) {
-            return target.values[target.keys.indexOf(p)];
-          },
-          set(target, attr, value) {
-            const index = target.keys.indexOf(attr);
-            if (index > -1) {
-              target.values[index] = value;
-              return true;
-            }
-            return false;
-          },
-        }
-      )
-  );
   for (let i = 0; i < 16; i++) {
     spinner.connect(lpfs[i], i, 0).connect(gainNodes[i]).connect(merger);
   }
@@ -76,7 +43,6 @@ export async function mkpath(ctx, additional_nodes = []) {
       });
     },
     loadPreset: spinner.shipProgram,
-    channelState,
     setNewZone: function (zone) {
       return msg_cmd("newZone", { zone });
     },
@@ -111,7 +77,7 @@ export async function mkpath(ctx, additional_nodes = []) {
       window.onkeydown = (e) => {
         if (e.repeat) return;
         const channel = get_active_channel_fn();
-        const baseOctave = this.channelState[channel].octave || 48;
+        const baseOctave = 48;
         const index = keys.indexOf(e.key);
 
         if (index < 0) return;
