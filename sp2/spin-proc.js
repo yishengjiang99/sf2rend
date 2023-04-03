@@ -52,7 +52,6 @@ class SpinProcessor extends AudioWorkletProcessor {
           });
         }
       } else {
-        console.log(data);
         const [cmd, channel, ...args] = data;
         switch (cmd) {
           case 0xb0:
@@ -85,7 +84,6 @@ class SpinProcessor extends AudioWorkletProcessor {
                 zonePtr
               );
               this.spinners[channel].set(key, spref);
-
               this.port.postMessage({
                 zack: 1,
                 ref: zoneRef,
@@ -93,7 +91,6 @@ class SpinProcessor extends AudioWorkletProcessor {
                 channel,
                 key,
               });
-              console.log(channel, this.spinners[channel], key);
             }
             break;
           default:

@@ -24,7 +24,7 @@ window.stdout = stdout;
 window.stderr = (str) => (document.querySelector("#info").innerHTML = str);
 mkdiv(
   "button",
-  { onclick: () => main("static/VintageDreamsWaves-v2.sf2") },
+  { onclick: () => main("./sf2-service/file.sf2") },
   "start"
 ).attachTo(document.querySelector("main"));
 
@@ -207,8 +207,7 @@ async function main(sf2file) {
     });
   }
   apath.ctrl_bar(document.getElementById("ctrls"));
-  await loadSF2File(sf2file);
-
+  await loadSF2File("sf2-service/file.sf2");
   const cv = mkcanvas({ container: $("footer") });
   function draw() {
     chart(cv, apath.analysis.frequencyBins);
