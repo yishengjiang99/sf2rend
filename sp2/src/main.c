@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "assert.h"
+float saturate(float x) { return x; }
 #include "spin2.c"
 float sine_tb[1028];
 float square_tb[1028];
@@ -23,44 +24,40 @@ int main() {
 int test_sp_release() {
   setup();
 
-  trigger_attack(0, 60, 122, z);
-  trigger_attack(0, 62, 122, z);
-  trigger_attack(0, 63, 122, z);
-  spinner* y = find_sp(0, 62);
-  assert(y != NULL);
-  sp_run_all();
-  spinner* x = trigger_release(0, 60, 122);
+  spinner* sp1 = trigger_attack(0, 60, 122, z);
+  spinner* sp2 = trigger_attack(0, 62, 122, z);
+  spinner* sp3 = trigger_attack(0, 63, 122, z);
+  assert(sp1 != NULL);
+  spinner* x = trigger_release(sp1, 122);
   assert(x != NULL);
   assert(x->voleg.section == RELEASE);
   while (x->voleg.section < DONE) {
-    sp_run_all();
+    sp_run(x);
   }
-  remove_queue();
-
-  assert(queue_count() == 2);
-
-  y = find_sp(0, 63);
-  assert(y != NULL);
-  spinner* y1 = trigger_release(0, 63, 122);
-  spinner* y2 = trigger_release(0, 62, 122);
-  while (y2->voleg.section < DONE || y1->voleg.section < DONE) {
-    sp_run_all();
-  }
-  assert(queue_count() == 0);
-
   return 0;
 }
 int test_sp_run() {
-  sp_queue = NULL;
-  test_trigger_attack();
-  sp_run_all();
-  spinner* x = sp_queue->sp;
-  assert(x != NULL);
-  assert(x->outputf[40] > 0.0f);
+  setup();
+  z->OverrideRootKey = 60;
+  z->CoarseTune = 0;
+  z->FineTune = 0;
+  pcms[z->SampleId].sampleRate = SAMPLE_RATE;
+  spinner* x = trigger_attack(0, 60, 122, z);
+  assert(x->stride == 1.0f);
+  z->OverrideRootKey = -1;
+  (&pcms[z->SampleId])->originalPitch = 48;
+  x = trigger_attack(0, 60, 122, z);
+  printf("\nstr %f", x->stride);
+  assert(x->stride == 2.0f);
 
-  x = sp_queue->next->sp;
+  sp_run(x);
+  sp_run(x);
+
   assert(x != NULL);
-  assert(x->outputf[40] > 0.0f);
+  for (int i = 0; i < 128 * 2; i++) printf("\no %f", x->outputf[i]);
+  assert(x->outputf[40] != 0.0f);
+
+  assert(x != NULL);
   return 0;
 }
 
@@ -71,14 +68,11 @@ int test_trigger_attack() {
   assert(*x->inputf == sine_tb[0]);
   assert(*(x->inputf + 1) == sine_tb[1]);
   assert(x->voleg.sections[ATTACK].nsteps == cent2nstep(-5000));
-  assert(sp_queue->sp == x);
   spinner* y = trigger_attack(0, 62, 122, z);
   spinner* zz = trigger_attack(0, 64, 122, z);
-  assert(sp_queue->next->sp == y);
   return 0;
 }
 void setup() {
-  queue_reset();
   for (int i = 0; i < 1028; i++) {
     sine_tb[i] = sinf(2 * M_PI * i * 440 / 1024);
     square_tb[i] = i > 2 + 1028 / 2 ? 1 : -1;
@@ -86,13 +80,13 @@ void setup() {
   pcm = new_pcm(0, sine_tb);
   pcm->loopstart = 2;
   pcm->loopend = 1026;
-  pcm->sampleRate = 32000;
+  pcm->sampleRate = SAMPLE_RATE;
   pcm->originalPitch = 60;
   pcm->data = sine_tb;
   pcm2 = new_pcm(1, sine_tb);
   pcm2->loopstart = 2;
   pcm2->loopend = 1026;
-  pcm2->sampleRate = 32000;
+  pcm2->sampleRate = SAMPLE_RATE;
   pcm2->originalPitch = 60;
   pcm2->data = square_tb;
 
@@ -112,14 +106,21 @@ void setup() {
 int test_eg() {
   EG egs[1];
   eg_reset(egs);
-  eg_init(egs, (EG_PARAMS){-12000, -12000, -12000, -2222, 1000, 0});
+  eg_init(egs, (EG_PARAMS){-12000, -12000, -12000, 2400, 700, 0});
   eg_setup(egs);
-
-  while (egs->section < DONE) {
-    if (egs->step % 128 == 0) eg_setup(egs);
-    if (!egs->is_released && egs->step >= 2000) eg_release(egs);
+  EG* g = egs;
+  sdata section = g->sections[g->section];
+  printf(
+      "\nsection %u, steps %u, section steps: %u, [%f-%f] egval %f inc%f "
+      "coeficient %f "
+      "%f",
+      g->section, g->step, section.nsteps, section.min, section.max, g->egval,
+      section.increment, section.coefficient,
+      pow(10, (g->egval - MAX_EG) / 200));
+  while (egs->section < SUSTAIN) {
+    eg_setup(egs);
     eg_run(egs);
   }
-
+  return 1;
   return 0;
 }

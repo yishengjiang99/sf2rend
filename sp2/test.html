@@ -9,32 +9,8 @@
 </head>
 <body>
   <div id="mocha"></div>
-  <script type="module">
-    import {SpinNode} from './spin-node.js';
-    import SF2Service from 'https://unpkg.com/sf2-service@1.4.0/index.js';
-    const sf2url = "https://raw.githubusercontent.com/FluidSynth/fluidsynth/master/sf2/VintageDreamsWaves-v2.sf2";
-    promise_test(async () => {
-      const ctx = new OfflineAudioContext(2, 48000, 48000);
-      await SpinNode.init(ctx);
-      const node = new SpinNode(ctx);
-      assert_equals(node.context, ctx);
-      const sf2s = new SF2Service(sf2url);
-      await sf2s.load();
-      const p = sf2s.loadProgram(0, 0);
-      console.log(p)
-      await node.shipProgram(p, p.pid | p.bkid);
-      assert_equals(p.bkid, 0);
-      const zone = p.filterKV(60, 55)[0]
-      node.port.postMessage([0x90, 0, 60, 55, [p.pid | p.bkid, zone.ref]])
-      await new Promise(r => node.port.onmessage = ({data: {zack}}) => {
-        if (zack) {
-          r();
-        }
-      });
-      node.connect(ctx.destination);
-      ctx.startRendering().then((ab) => console.log(ab.getChannelData(0).filter(v => v != 0)));
-      assert_equals(node.context, ctx);
-    }, "freebie")
+  <script type="module" src="./testjs.js">
+
   </script>
 </body>
 </html>

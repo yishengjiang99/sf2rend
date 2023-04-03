@@ -3,18 +3,24 @@ import { midi_ch_cmds } from "./constants.js";
 import { readMidi } from "./midiread.js";
 import { mkdiv } from "../mkdiv/mkdiv.js";
 
-function mkcalback(channeals) {
-  const channels = [];
-  (async function (presets) {
-    for (const preset of presets) {
-      const { pid, channel } = preset;
-      const bkid = channel == 9 ? 128 : 0;
-      const _pid = bkid == 128 ? 0 : pid;
-      console.log(_pid, bkid);
-      await channels[channel].setProgram(_pid, bkid);
-    }
-  }.apply([channels]));
-}
+// function mkcalback(channeals) {
+//   const channels = [];
+//   (async function (presets) {
+//     for (const preset of presets) {
+//       console.log(preset);
+
+//       const { pid, channel } = preset;
+//       if(channel==9){
+//         break;
+//         debugger;
+//       }
+//       const bkid = channel == 9 ? 128 : 0;
+//       const _pid = bkid == 128 ? 0 : pid;
+//       console.log(_pid, bkid);
+//       await channels[channel].setProgram(_pid, bkid);
+//     }
+//   }.apply([channels]));
+// }
 
 export default async function runMidiPlayer(
   url,
@@ -35,6 +41,14 @@ export default async function runMidiPlayer(
   const soundtracks = tracks.map((track) =>
     track.filter((event) => event.t && event.channel)
   );
+  // console.log(presets);
+  // tracks.map((track) =>
+  //   track
+  //     .filter((event) => event.t == 0 && event.channel)
+  //     .forEach((e) => {
+  //       eventpipe.postMessage(e.channel);
+  //     })
+  // );
 
   worker.onmessage = ({ data }) => {
     const sysTick = data;

@@ -1,7 +1,6 @@
 #define saturation .8f
 
-float saturate(float x) {
-  float a = saturation;
+float saturate(float a, float x) {
   if (x < a)
     return x;
   else if (x > 1.0f)

@@ -59,6 +59,7 @@ void eg_setup(EG* g) {
     g->section++;
     section = g->sections[g->section];
   }
+  g->egval = clamp(g->egval, section.min, section.max);
 }
 float eg_run(EG* g) {
   sdata section = g->sections[g->section];
@@ -69,13 +70,6 @@ float eg_run(EG* g) {
   g->egval += section.increment;
   g->egval += g->egval * section.coefficient;
   g->egval = clamp(g->egval, section.min, section.max);
-#ifdef DEBUG
-  printf(
-      "\nsection %u, steps %u, section steps: %u,egval %f inc%f coeficient %f "
-      "%f",
-      g->section, g->step, section.nsteps, g->egval, section.increment,
-      section.coefficient, pow(10, (g->egval - MAX_EG) / 200));
-#endif
   return g->egval;
 }
 void eg_init(EG* g, EG_PARAMS params) {
@@ -85,10 +79,10 @@ void eg_init(EG* g, EG_PARAMS params) {
   uint32_t delay_steps = params.delay > -12000 ? cent2nstep(params.delay) : 0;
   uint32_t hold_steps = cent2nstep(params.hold);
   uint32_t release_steps = cent2nstep(params.release);
-  float sustainPercent = 1 - (params.sustain / 1000.0f);
-  float sustainLevel = MAX_EG * sustainPercent;
-  uint32_t decay_steps = cent2nstep(params.decay) * sustainPercent;
-  float decayIncre = (sustainLevel - MAX_EG) / decay_steps;
+  float sustainPercent = params.sustain / 1000.0f;
+  float sustainLevel = MAX_EG - MAX_EG * sustainPercent;
+  uint32_t decay_steps = cent2nstep(params.decay) * (1 - sustainPercent);
+  float decayIncre = (sustainLevel - MAX_EG) / (float)decay_steps;
   int max_steps = 0;
 
   g->sections[INIT] = (sdata){

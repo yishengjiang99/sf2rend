@@ -29,11 +29,11 @@ export function createChannel(uiController, channelId, sf2, apath) {
     },
     keyOn(key, vel) {
       const zones = program.filterKV(key, vel);
-      zones.slice(0, 2).map((zone, i) => {
+      zones.slice(0, 1).map((zone, i) => {
         spinner.port.postMessage([
           midi_ch_cmds.note_on,
-          channelId * 2 + i,
-          zone.calcPitchRatio(key, spinner.context.sampleRate),
+          channelId,
+          key,
           vel,
           [this.presetId, zone.ref],
         ]);
@@ -48,8 +48,7 @@ export function createChannel(uiController, channelId, sf2, apath) {
       return zones[0];
     },
     keyOff(key, vel) {
-      spinner.keyOff(channelId * 2 + 1, key, vel);
-      spinner.keyOff(channelId * 2, key, vel);
+      spinner.port.postMessage([midi_ch_cmds.note_off, channelId, key, vel]);
       requestAnimationFrame(() => (uiController.active = false));
     },
   };

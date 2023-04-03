@@ -7,4 +7,4 @@ saturate.wasm.js: saturate.wasm
 	cat saturate.wasm|npx encode-wasm-uint8 > saturate.wasm.js
 
 clean:
-	rm -f saturate.wasm
+	rm -f saturate.wasm*

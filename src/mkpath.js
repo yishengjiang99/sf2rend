@@ -14,7 +14,7 @@ export async function mkpath(ctx) {
   const fft = new FFTNode(ctx);
 
   for (let i = 0; i < 16; i++) {
-    spinner.connect(lpfs[i], i, 0).connect(gainNodes[i]).connect(merger);
+    spinner.connect(gainNodes[i], i, 0).connect(merger);
   }
   merger.connect(ctx.destination);
 
@@ -27,10 +27,10 @@ export async function mkpath(ctx) {
   return {
     analysis: {
       get waveForm() {
-        return fft.getWaveForm();
+        return fft.waveForm;
       },
       get frequencyBins() {
-        return fft.getFloatFrequencyData();
+        return fft.FrequencyBins;
       },
     },
     spinner,

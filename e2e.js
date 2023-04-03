@@ -2,7 +2,7 @@ import { mkcanvas, chart } from "./chart/chart.js";
 import { mkdiv } from "./mkdiv/mkdiv.js";
 import { mkpath } from "./src/mkpath.js";
 import SF2Service from "./sf2-service/index.js";
-import { newSFZone } from "./sf2-service/zoneProxy.js";
+import { newSFZone, newSFZoneMap } from "./sf2-service/zoneProxy.js";
 import { playZone } from "./playProgram.js";
 const sf2url = "file.sf2";
 
@@ -95,11 +95,12 @@ async function rendProgram() {
   const zoneRef = hashId[1];
 
   program = sf2file.loadProgram(pid, bid);
-  if (!zone)
+  if (!zone) {
     zone = zoneRef
       ? program.zMap.find((z) => z.ref == zoneRef)
-      : program.filterKV(55, 98)[0];
-
+      : program.filterKV(60, 98)[0];
+  }
+  console.log("adsf", program, zone);
   const zoneSelect = mkdiv(
     "select",
     {
@@ -121,7 +122,6 @@ async function rendProgram() {
   zoneSelect.value = zoneRef;
 
   rightTop.replaceChildren(zoneSelect);
-
   if (!spinner) {
     await startSpinner();
   }
@@ -145,7 +145,7 @@ async function renderZ(zoneSelect) {
       {
         onclick: (e) => rendSample(zoneSelect, zoneSelect.KeyRange.lo),
       },
-      "play"
+      zoneSelect.KeyRange.lo
     ),
     mkdiv(
       "button",
@@ -168,6 +168,8 @@ async function renderZ(zoneSelect) {
       },
       "play"
     ),
+    "pitch r",
+    zoneSelect.calcPitchRatio(zoneSelect.KeyRange.hi, ctx.sampleRate),
     renderSampleView(zoneSelect),
     ..."Attenuation,Addr,VolEnv,Filter,LFO"
       .split(",")
@@ -186,7 +188,7 @@ function renderSampleView(zoneSelect) {
     zoneSelect.shdr.nsamples,
     "<br>srate: " + zoneSelect.shdr.originalPitch,
     "<br>Range: ",
-    JSON.stringify(zoneSelect.shdr),
+    JSON.stringify(zoneSelect.shdr.range),
     "loop: ",
     zoneSelect.shdr.loops.join("-"),
     "<br>",
@@ -232,6 +234,10 @@ function renderArticle(keyword, zone) {
               e.target.value;
             zoneObj[k] = e.target.value;
             if (canvas) drawEV(zoneObj, canvas);
+            spinner.port.postMessage({
+              update: [program.pid | program.bkid, zoneObj.ref],
+              arr: zoneObj.arr,
+            });
           },
         }),
       ])
@@ -256,8 +262,10 @@ async function startSpinner() {
     if (data.currentFrame) {
       volMeters.innerHTML = data.currentFrame;
     }
-    if (data.ack) {
-      console.log(data.ack);
+    if (data.zack == "update") {
+      console.log(newSFZoneMap(1111, data.arr));
+    } else {
+      // console.log(data);
     }
   };
   return audioPath;

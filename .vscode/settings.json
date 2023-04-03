@@ -20,7 +20,8 @@
     "strings.h": "c",
     "sp_queue.h": "c",
     "spin_queue.h": "c",
-    "string.h": "c"
+    "string.h": "c",
+    "midicc.h": "c"
   },
   "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools"
 }

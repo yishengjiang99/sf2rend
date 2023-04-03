@@ -94,23 +94,19 @@ export async function renderFrames(
   function onclick({ x, target }) {
     offset += (x < target.clientWidth / 2 ? -1 : 1) * samplesPerFrame;
     chart(canvsCtx, arr.slice(offset, offset + samplesPerFrame));
-    const existingSlider = canvsCtx.canvas?.parentElement?.querySelector(
-      "input[type='range']"
-    );
-    const slider =
-      existingSlider ||
-      mkdiv("input", {
-        type: "range",
-        min: -10,
-        max: 100,
-        value: 100,
-        step: 0,
-        oninput: (e) => {
-          const { max, value } = e.target;
-          offset = (arr.length * parseInt(value)) / parseInt(max);
-          chart(canvsCtx, arr.slice(offset, offset + samplesPerFrame));
-        },
-      }).attachTo(canvsCtx.canvas.parentElement);
+
+    mkdiv("input", {
+      type: "range",
+      min: -10,
+      max: 100,
+      value: 100,
+      step: 0,
+      oninput: (e) => {
+        const { max, value } = e.target;
+        offset = (arr.length * parseInt(value)) / parseInt(max);
+        chart(canvsCtx, arr.slice(offset, offset + samplesPerFrame));
+      },
+    }).attachTo(canvsCtx.canvas.parentElement);
   }
   canvsCtx.canvas.addEventListener("click", onclick);
   canvsCtx.canvas.addEventListener("dblclick", function (e) {

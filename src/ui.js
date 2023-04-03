@@ -56,12 +56,12 @@ export function mkui(
           midi,
           onmousedown: (e) => {
             refcnt++;
-            eventPipe.postMessage([0x90 | this.activeChannel, midi, 120]);
+            eventPipe.postMessage([0x90 | _activeChannel, midi, 120]);
             e.target.addEventListener(
               "mouseup",
               () =>
                 refcnt >= 0 &&
-                eventPipe.postMessage([0x80 | this.activeChannel, midi, 88]),
+                eventPipe.postMessage([0x80 | _activeChannel, midi, 88]),
               { once: true }
             );
           },

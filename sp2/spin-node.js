@@ -1,12 +1,17 @@
 export class SpinNode extends AudioWorkletNode {
   static async init(ctx) {
-    await ctx.audioWorklet.addModule("sp2/spin-proc.js");
+    console.log(document.location);
+    try {
+      await ctx.audioWorklet.addModule("spin-proc.js");
+    } catch (e) {
+      await ctx.audioWorklet.addModule("sp2/spin-proc.js");
+    }
   }
-  constructor(ctx, numberOfOutputs = 1) {
+  constructor(ctx) {
     super(ctx, "spin-proc2", {
       numberOfInputs: 0,
-      numberOfOutputs,
-      outputChannelCount: new Array(numberOfOutputs).fill(2),
+      numberOfOutputs: 16,
+      outputChannelCount: new Array(16).fill(2),
     });
   }
   async loadSample(url, shdr) {

@@ -7,7 +7,7 @@ typedef unsigned char uint8_t;
 typedef unsigned int DWORD;
 typedef unsigned char BYTE;
 typedef unsigned short uint16_t;
-#define NULL 0
+
 #define RENDQ 128
 #define nchannels 64
 #define nmidiChannels 16
@@ -16,15 +16,6 @@ typedef struct {
   uint32_t loopstart, loopend, length, sampleRate, originalPitch;
   float *data;
 } pcm_t;
-
-typedef struct _sp {
-  float *outputf, *inputf;
-  pcm_t *pcm;
-  unsigned int position;
-  float fract, stride;
-  EG voleg, modeg;
-  int channel, key, vel, pad1, pad2;
-} spinner;
 
 typedef struct {
   uint8_t lo, hi;
@@ -42,9 +33,21 @@ typedef struct {
       Key2VolEnvDecay, Instrument, Reserved1;
   rangesType KeyRange, VelRange;
   short StartLoopAddrCoarseOfs, Keynum, Velocity, Attenuation, Reserved2,
-      EndLoopAddrCoarseOfs, CoarseTune, FineTune, SampleId, SampleModes,
-      Reserved3, ScaleTune, ExclusiveClass, OverrideRootKey, Dummy;
+      EndLoopAddrCoarseOfs, CoarseTune, FineTune;
+  unsigned short SampleId, SampleModes, Reserved3;
+  short ScaleTune, ExclusiveClass, OverrideRootKey, Dummy;
 } zone_t;
+
+typedef struct _sp {
+  uint32_t channel, key, vel, pad1, pad2;
+  float fract, stride;
+
+  float *outputf, *inputf;
+  pcm_t *pcm;
+  unsigned int position;
+  EG voleg, modeg;
+  zone_t *zone;
+} spinner;
 
 #define defattrs                                                               \
   {                                                                            \
