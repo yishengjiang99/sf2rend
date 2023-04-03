@@ -29,22 +29,28 @@ export function createChannel(uiController, channelId, sf2, apath) {
     },
     keyOn(key, vel) {
       const zones = program.filterKV(key, vel);
-      zones.slice(0, 1).map((zone, i) => {
+      apath
+        .subscribeNextMsg((data) => data.zack && data.arr)
+        .then(({ arr, ref }) => {
+          uiController.active = true;
+          uiController.velocity = vel;
+          uiController.midi = key;
+          uiController.presetId = this.presetId;
+          uiController.zone = { arr, ref };
+        });
+      zones.slice(0, 2).map((zone, i) => {
         spinner.port.postMessage([
           midi_ch_cmds.note_on,
           channelId,
           key,
           vel,
           [this.presetId, zone.ref],
+          zone.calcPitchRatio(key, spinner.context.sampleRate),
         ]);
         apath.lowPassFilter(channelId * 2 + 1, zone.FilterFc);
       });
       if (!zones[0]) return;
-      requestAnimationFrame(() => {
-        uiController.active = true;
-        uiController.velocity = vel;
-        uiController.midi = key;
-      });
+
       return zones[0];
     },
     keyOff(key, vel) {

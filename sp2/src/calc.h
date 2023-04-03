@@ -30,7 +30,7 @@ double attack_db_inc(short attackRate) {
 float applyCentible(float signal, short centdb) {
   if (centdb > 0) return signal;
   if (centdb <= -1240) return 0.0f;
-  return (float)signal * p10over200[centdb + 960];
+  return signal * p10over200[centdb + 960];
 }
 
 static inline short sf2midiPan(short sf2pan) {

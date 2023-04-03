@@ -6,7 +6,6 @@
 #include <string.h>
 
 #include "calc.h"
-#include "midicc.h"
 
 extern float saturate(float input);
 float hermite4(float frac_offset, float xm1, float x0, float x1, float x2);
@@ -31,25 +30,14 @@ eg_section_t sp_run(spinner *x) {
   float *outL = &outputs[x->channel * 2 * RENDQ];
   float *outR = &outputs[x->channel * 2 * RENDQ + RENDQ];
   float db, modVol;
-  float attenuate = 0.0f;
-  char midiVol = midi_cc_vals[x->channel * 128 + volumecoarse];
-  char midiExpress = midi_cc_vals[x->channel * 128 + expressioncoarse];
-  char midiPan = midi_cc_vals[x->channel * 128 + pancoarse];
-  attenuate -= x->zone->Attenuation / 4.0f;
-  attenuate -= midi_volume_log10((int)x->vel) / 4.0f;
-  attenuate -= midi_volume_log10(midiVol) / 4.0f;
-  if (x->voleg.section < DECAY)
-    attenuate -= midi_volume_log10(midiExpress) / 4.0f;
-  float attLeft = panleftLUT[midiPan] / 2;
-  float attRight = panrightLUT[midiPan] / 2;
-
   uint32_t nsamples = x->pcm->length;
-  float f;
+  float f = 0.0f;
   eg_setup(&(x->voleg));
   eg_setup(&(x->modeg));
   for (int i = 0; i < RENDQ; i++) {
     db = eg_run(&(x->voleg));
-    attenuate += (x->voleg.egval - MAX_EG) / 4.0f;
+    modVol = eg_run(&(x->modeg));
+    fract += stride;
     while (fract >= 1.0f) {
       position++;
       fract -= 1.0f;
@@ -62,10 +50,9 @@ eg_section_t sp_run(spinner *x) {
     } else {
       f = lerp(x->inputf[position], x->inputf[position + 1], fract);
     }
-    float ffL = applyCentible(f, db - MAX_EG);
-    float ffR = applyCentible(f, attenuate + attRight);
-    outL[i] = saturate(outL[i] + f);
-    outR[i] = f;
+    float ffmono = applyCentible(f, (short)(db - MAX_EG));
+    outL[i] = saturate(outL[i] + ffmono);
+    outR[i] = saturate(outL[i] + ffmono);
   }
   x->fract = fract;
   x->position = position;
@@ -130,11 +117,4 @@ float hermite4(float frac_offset, float xm1, float x0, float x1, float x2) {
   const float b_neg = w + a;
 
   return ((((a * frac_offset) - b_neg) * frac_offset + c) * frac_offset + x0);
-}
-void gm_reset() {
-  for (int idx = 0; idx < 128; idx++) {
-    midi_cc_vals[idx * nmidiChannels + volumecoarse] = 100;
-    midi_cc_vals[idx * nmidiChannels + pancoarse] = 64;
-    midi_cc_vals[idx * nmidiChannels + expressioncoarse] = 127;
-  }
 }

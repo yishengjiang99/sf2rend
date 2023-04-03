@@ -2,21 +2,20 @@ import { downloadData } from "./downloadData.js";
 import { wasmbin } from "./spin2.wasm.js";
 import saturation from "../saturation/index.js";
 const EG_DONE = 7;
-const saturate = (input) => saturation(0.9, input);
+
 class SpinProcessor extends AudioWorkletProcessor {
   constructor(options) {
     super(options);
     const module = new WebAssembly.Module(wasmbin);
     this.instance = new WebAssembly.Instance(module, {
       env: {
-        saturate,
+        saturate: (input) => saturation(0.9, input),
       },
     });
     this.sampleIdRefs = [];
     this.memory = this.instance.exports.memory;
     this.presetRefs = [];
     this.spinners = new Array(16).fill(new Map());
-
     this.outputfs = (ch) => {
       return [
         new Float32Array(
@@ -31,7 +30,6 @@ class SpinProcessor extends AudioWorkletProcessor {
         ),
       ];
     };
-    this.instance.exports.gm_reset();
     this.port.onmessage = async ({ data }) => {
       if (data.stream && data.segments) {
         await this.loadsdta(data);
@@ -49,15 +47,15 @@ class SpinProcessor extends AudioWorkletProcessor {
           atr.set(new Int16Array(data.arr, 0, 60));
           this.port.postMessage({
             zack: "update",
+            ref: zref,
             arr: new Int16Array(this.memory.buffer, zonePtr, 60),
           });
         }
       } else {
+        console.log(data);
         const [cmd, channel, ...args] = data;
-        const [metric, value] = args;
         switch (cmd) {
           case 0xb0:
-            this.instance.exports.set_midi_cc_val(channel, metric, value);
             break;
           case 0x80: {
             const [key, velocity] = args;
@@ -74,7 +72,7 @@ class SpinProcessor extends AudioWorkletProcessor {
           }
           case 0x90:
             {
-              const [key, velocity, [presetId, zoneRef]] = args;
+              const [key, velocity, [presetId, zoneRef], ratio] = args;
               const zonePtr = this.presetRefs[presetId]?.[zoneRef];
               if (null == zonePtr) {
                 console.error("cannot find present zoneref", presetId, zoneRef);
@@ -87,7 +85,15 @@ class SpinProcessor extends AudioWorkletProcessor {
                 zonePtr
               );
               this.spinners[channel].set(key, spref);
-              this.port.postMessage({ zack: 1 });
+
+              this.port.postMessage({
+                zack: 1,
+                ref: zoneRef,
+                arr: new Int16Array(this.memory.buffer, zonePtr, 60),
+                channel,
+                key,
+              });
+              console.log(channel, this.spinners[channel], key);
             }
             break;
           default:
@@ -146,11 +152,6 @@ class SpinProcessor extends AudioWorkletProcessor {
       output[0].set(outputff[0]);
       output[1].set(outputff[1]);
     });
-    const l = outputs[1][0].reduce((s, v) => s + v, 0.0);
-    const r = outputs[1][1].reduce((s, v) => s + v, 0.0);
-    if (l || r) {
-      console.log(l, r);
-    }
 
     return true;
   }

@@ -89,6 +89,13 @@ async function main(sf2file) {
       const sp1 = await apath.querySpState({ query: 2 * channelId });
       globalThis.stderr(JSON.stringify(sp1, null, 1));
     },
+    onEditZone: (editData) => {
+      spinner.port.postMessage(editData);
+      return apath.subscribeNextMsg((data) => {
+        console.log(data);
+        return data.zack == "update" && data.ref == editData.update[1];
+      });
+    },
   });
   uiControllers = ui.controllers;
   for (let i = 0; i < 16; i++) {

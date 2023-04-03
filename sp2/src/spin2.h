@@ -39,8 +39,9 @@ typedef struct {
 } zone_t;
 
 typedef struct _sp {
+  float stride, fract;
+
   uint32_t channel, key, vel, pad1, pad2;
-  float fract, stride;
 
   float *outputf, *inputf;
   pcm_t *pcm;

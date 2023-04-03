@@ -34,6 +34,14 @@ export async function mkpath(ctx) {
       },
     },
     spinner,
+    subscribeNextMsg: async function (precateFn) {
+      return await new Promise((resolve, reject) => {
+        setTimeout(reject, 2000);
+        spinner.port.onmessage = ({ data }) => {
+          if (precateFn(data)) resolve(data);
+        };
+      });
+    },
     querySpState: async function (channelId) {
       spinner.port.postMessage({ query: channelId });
       return await new Promise((resolve, reject) => {
@@ -76,6 +84,7 @@ export async function mkpath(ctx) {
       const keys = ["a", "w", "s", "e", "d", "f", "t", "g", "y", "h", "u", "j"];
       window.onkeydown = (e) => {
         if (e.repeat) return;
+        if (e.isEditing) return;
         const channel = get_active_channel_fn();
         const baseOctave = 48;
         const index = keys.indexOf(e.key);
