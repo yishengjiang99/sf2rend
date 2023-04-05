@@ -49,7 +49,7 @@ export async function mkpath(ctx, additional_nodes = []) {
   for (let i = 0; i < 16; i++) {
     spinner.connect(lpfs[i], i, 0).connect(gainNodes[i]).connect(merger);
   }
-  merger.connect(ctx.destination);
+  merger.connect(fft).connect(ctx.destination);
 
   const msg_cmd = (cmd, args) => spinner.port.postMessage({ ...args, cmd });
   spinner.port.onmessage = ({ data: { dv, ch } }) => {
@@ -105,6 +105,14 @@ export async function mkpath(ctx, additional_nodes = []) {
             cmd
           ).attachTo(container)
         );
+    },
+    subscribeNextMsg: async function (precateFn) {
+      return await new Promise((resolve, reject) => {
+        setTimeout(reject, 2000);
+        spinner.port.onmessage = ({ data }) => {
+          if (precateFn(data)) resolve(data);
+        };
+      });
     },
     bindKeyboard: function (get_active_channel_fn, eventpipe) {
       const keys = ["a", "w", "s", "e", "d", "f", "t", "g", "y", "h", "u", "j"];

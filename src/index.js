@@ -7,6 +7,7 @@ import { createChannel } from "./createChannel.js";
 import { midi_ch_cmds } from "./constants.js";
 import runMidiPlayer from "./runmidi.js";
 import { sf2list } from "../sflist.js";
+import { mkcanvas, chart } from "https://unpkg.com/mk-60fps";
 const $ = (sel) => document.querySelector(sel);
 
 const sf2select = $("#sf2select"),
@@ -21,7 +22,11 @@ const { infoPanel, stdout } = logdiv();
 infoPanel.attachTo(document.querySelector("#drawer"));
 window.stdout = stdout;
 window.stderr = (str) => (document.querySelector("#info").innerHTML = str);
-main("static/VintageDreamsWaves-v2.sf2");
+mkdiv(
+  "button",
+  { onclick: () => main("./sf2-service/file.sf2") },
+  "start"
+).attachTo(document.querySelector("main"));
 
 const appState = {};
 globalThis.appState = new Proxy(appState, {
@@ -83,6 +88,13 @@ async function main(sf2file) {
     onTrackDoubleClick: async (channelId, e) => {
       const sp1 = await apath.querySpState({ query: 2 * channelId });
       globalThis.stderr(JSON.stringify(sp1, null, 1));
+    },
+    onEditZone: (editData) => {
+      spinner.port.postMessage(editData);
+      return apath.subscribeNextMsg((data) => {
+        console.log(data);
+        return data.zack == "update" && data.ref == editData.update[1];
+      });
     },
   });
   uiControllers = ui.controllers;
@@ -175,7 +187,11 @@ async function main(sf2file) {
     });
     channels.forEach((c, i) => {
       c.setSF2(sf2);
-      c.setProgram(i << 3, i == 9 ? 128 : 0);
+      if (i != 9) {
+        c.setProgram(i << 3, 0);
+      } else {
+        c.setProgram(0, 128);
+      }
     });
     for (const [section, text] of sf2.meta) {
       stdout(section + ": " + text);
@@ -185,13 +201,19 @@ async function main(sf2file) {
     runMidiPlayer(url, eventPipe, $("#midiPlayer"), async function (presets) {
       for (const preset of presets) {
         const { pid, channel } = preset;
-        const bkid = channel == 9 ? 128 : 0;
+        const bkid = channel == 10 ? 128 : 0;
         await channels[channel].setProgram(pid, bkid);
       }
     });
   }
   apath.ctrl_bar(document.getElementById("ctrls"));
-  await loadSF2File(sf2file);
+  await loadSF2File("sf2-service/file.sf2");
+  const cv = mkcanvas({ container: $("footer") });
+  function draw() {
+    chart(cv, apath.analysis.frequencyBins);
+    requestAnimationFrame(draw);
+  }
+  draw();
 }
 
 function eventsHandler(channels) {
