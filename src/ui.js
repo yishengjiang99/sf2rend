@@ -37,17 +37,17 @@ export function mkui(
         },
       });
       this.led = mkdiv("input", { type: "checkbox" });
-      this.zoneEdit = mkdiv("details", { class: "zone" }, [
-        mkdiv("summary", "edit"),
-        mkdiv(
-          "div",
-          {
-            class: "editTable",
-            style: "display:inline-block; height:300px;overflow-y:scroll",
-          },
-          "tbpl"
-        ),
-      ]);
+      this.zoneEdit = mkdiv("div", {
+        style: "background-color:black;color:white",
+      });
+      this.zoneEdit.innerHTML = `          
+      <label for="modal-control"><a>EDIT SOUNDFONT</a></label>
+
+      <input type="checkbox" id="modal-control" class="modal">
+      <div>
+      <label for="modal-control" class="modal-close" >Close Modal</label>
+      <p class='editTable'></p>
+      </div>`;
 
       const newLocal = "amp-indicate";
       const meterDiv = mkdiv(
@@ -107,16 +107,34 @@ export function mkui(
             oninput: (e) => cb([0xb0 | idx, 11, e.target.value]),
           }),
 
-          mkdiv("label", { for: "othbalaner" }, "other"),
+          mkdiv("label", {for: "filterFC"}, "filterFC"),
           mkdiv("input", {
-            min: 0,
-            id: "other",
-            max: 127,
-            step: 1,
-            value: 127,
+            min: 1000,
+            id: "filterFC",
+            max: 13700,
+            step: 10,
+            value: 13700,
             type: "range",
-            oninput: (e) => cb([0xb0 | idx, 8, e.target.value]),
+            "data-path_cmd": "lpf",
+            "data-p1": idx,
           }),
+          mkdiv("div", [
+            mkdiv("input", {
+              type: "checkbox",
+              id: "mute",
+              "data-path_cmd": "mute",
+              "data-p1": idx,
+            }),
+            mkdiv("label", {for: "mute"}, "mute"),
+          ]),
+          mkdiv("div", [
+            mkdiv(
+              "input",
+              {type: "checkbox", "data-path_cmd": "solo", "data-p1": idx},
+              "solo"
+            ),
+            mkdiv("label", {for: "solo"}, "solo"),
+          ]),
           mkdiv(
             "span",
             {
@@ -176,10 +194,10 @@ export function mkui(
           this.sliders[2].value = value;
           this.ccLabels[2].innerHTML = "exp" + value;
           break;
-        case effects.pitchbendcoarse:
-          this.sliders[3].value = "midi " + key;
-          this.ccLabels[3].innerHTML = "value" + value;
-          break;
+        // case effects.pitchbendcoarse:
+        //   this.sliders[3].value = "midi " + key;
+        //   this.ccLabels[3].innerHTML = "value" + value;
+        //   break;
       }
     }
     set velocity(v) {
@@ -201,11 +219,11 @@ export function mkui(
     }
     set zone({ arr, ref }) {
       const zmap = newSFZoneMap(ref, new Uint16Array(arr));
-      console.log(zmap);
       this._zone = {
         arr,
         ref,
       };
+      this.zoneEdit.style.display = "grid";
       this.zoneEdit.querySelector(".editTable").replaceChildren(
         mkdiv(
           "form",

@@ -19,14 +19,20 @@ const programList = document.querySelector("#programs");
 const navhead = document.querySelector("#navhead");
 
 const { infoPanel, stdout } = logdiv();
-infoPanel.attachTo(document.querySelector("#drawer"));
+infoPanel.attachTo(document.querySelector("#info"));
 window.stdout = stdout;
-window.stderr = (str) => (document.querySelector("#info").innerHTML = str);
-mkdiv(
-  "button",
-  { onclick: () => main("./sf2-service/file.sf2") },
-  "start"
-).attachTo(document.querySelector("main"));
+window.stderr = (str) => (document.querySelector("footer").innerHTML = str);
+// mkdiv(
+//   "button",
+//   {
+//     onclick: (e) => {
+//       main("./sf2-service/file.sf2");
+//       e.target.style.display = "none";
+//     },
+//   },
+//   "start"
+// ).attachTo(document.querySelector("main"));
+main("./sf2-service/file.sf2");
 
 const appState = {};
 globalThis.appState = new Proxy(appState, {
@@ -49,9 +55,7 @@ function updateAppState(newArr) {
   }
 }
 async function main(sf2file) {
-  let sf2,
-    uiControllers,
-    ctx = new AudioContext();
+  let sf2, uiControllers, ctx;
   stdout("start");
 
   const channels = [];
@@ -63,25 +67,27 @@ async function main(sf2file) {
     oninput: (e) => {
       e.preventDefault();
     },
-    children: midiList.map((f) =>
-      mkdiv("option", { value: f.get("Url") }, f.get("Name").substring(0, 80))
-    ),
+    children: [
+      mkdiv("option", { name: "select midi", value: null }, "select midi file"),
+      ...midiList.map((f) =>
+        mkdiv("option", { value: f.get("Url") }, f.get("Name").substring(0, 80))
+      ),
+    ],
   });
-  midiSelect.attachTo(navhead);
+  midiSelect.attachTo($("footer"));
   midiSelect.addEventListener("input", (e) => onMidiSelect(e.target.value));
 
   for (const f of sf2list) sf2select.append(mkdiv("option", { value: f }, f));
-  sf2select.value = sf2file;
 
   sf2select.onchange = (e) => {
     loadSF2File(e.target.value);
   };
   const { mkpath } = await import("./mkpath.js");
+
+  ctx = new AudioContext();
   const apath = await mkpath(ctx);
   const spinner = apath.spinner;
-  updateAppState({
-    spinnerLoaded: true,
-  });
+  sf2select.value = sf2file;
 
   const eventPipe = mkeventsPipe();
   const ui = mkui(eventPipe, $("#channelContainer"), {
@@ -153,7 +159,11 @@ async function main(sf2file) {
   }
   ctx.onstatechange = () => updateAppState({ audioStatus: ctx.state });
 
-  window.addEventListener("click", () => ctx.resume(), { once: true });
+  window.addEventListener(
+    "click",
+    async () => ctx.state !== "running" && (await ctx.resume()),
+    { once: true }
+  );
 
   const ampIndictators = document.querySelectorAll(".amp-indicate");
   spinner.port.onmessage = ({ data }) => {
@@ -207,10 +217,14 @@ async function main(sf2file) {
     });
   }
   apath.ctrl_bar(document.getElementById("ctrls"));
+  apath.bindToolbar();
   await loadSF2File("sf2-service/file.sf2");
-  const cv = mkcanvas({ container: $("footer") });
+  const cv = mkcanvas({ container: $("#stdout") });
+  const wvform = mkcanvas({ container: $("#stdout") });
+
   function draw() {
     chart(cv, apath.analysis.frequencyBins);
+    chart(wvform, apath.analysis.waveForm);
     requestAnimationFrame(draw);
   }
   draw();

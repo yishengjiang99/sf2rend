@@ -97,7 +97,20 @@ class SpinProcessor extends AudioWorkletProcessor {
 
           break;
       }
-    } else if (data.query) {
+    }  else if (data.update) {
+      const [presetId, zref] = data.update;
+      const zonePtr = this.presetRefs[presetId]?.[zref];
+      if (zonePtr == null) console.error(presetId, zref, "not found");
+      else {
+        const atr = new Int16Array(this.memory.buffer, zonePtr, 60);
+        atr.set(new Int16Array(data.arr, 0, 60));
+        this.port.postMessage({
+          zack: "update",
+          ref: zref,
+          arr: new Int16Array(this.memory.buffer, zonePtr, 60),
+        });
+      }
+    }else if (data.query) {
       const ref = this.inst.exports.spRef(parseInt(data.query));
       const spinfo = spRef2json(this.memory.buffer, ref);
       const egInfo = egStruct(

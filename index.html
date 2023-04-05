@@ -6,36 +6,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MIDI Rendering with SoundFont2</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="minidark.css" />
+
 </head>
-<body class="sans-serif">
-  <input type="checkbox" id="drawer-toggle" name="drawer-toggle" />
-  <label for="drawer-toggle" id="drawer-toggle-label"></label>
-  <header>
-    <h2>Rendering MIDI with WebAssembly (performantly)</h2>
-
-  </header>
-
-  <nav id="drawer">
-    <ul>
-      <li><a href="#debug">toggle debug</a></li>
-    </ul>
-  </nav>
-  <div id="page-content">
-    <nav id="navhead">
+<body class="sans-serif" style="padding: 0 30px">
+  <header class="sticky" style="display:flex; justify-content:space-between">
+    <span>
+      Rendering MIDI with WebAssembly (performantly) </span>
+    <span id="navhead">
       <span id="ctrls"></span>
       <select class='antd-select' id="sf2select"></select>
-      <span id="midiPlayer"></span>
-    
-    </nav>
-      <main class="main">
-        <div id="channelContainer"></div>
+    </span>
+    </header>
+    <main class="main">
+      <div id="channelContainer"></div>
       <div id="stdout"></div>
-      <pre id="info"></pre>
-      </main>
-      <footer></footer>
-      <script type="module" src="./src/index.js"></script>
-      <datalist id="programs"></datalist>
-      <datalist id="drums"></datalist>
+  <div id="info"></div>
+  </main>
+  <footer>
+    <div id="midi-player" class="button-group">
+      <button data-cmd="stop">stop</button>
+      <button data-cmd="start" disabled=true class="primary">
+        start<span class="icon-play"></span>
+      </button>
+      <button data-path_cmd="gm-reset" data-cmd="reset">reset</button>
     </div>
+  
+  </footer>
+  <datalist id="programs"></datalist>
+  <datalist id="drums"></datalist>
+  <script type="module" src="./src/index.js"></script>
 </body>
 </html>

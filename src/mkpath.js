@@ -10,7 +10,7 @@ export async function mkpath(ctx, additional_nodes = []) {
   await LowPassFilterNode.init(ctx).catch(console.trace);
   const spinner = new SpinNode(ctx, 16);
   const merger = new GainNode(ctx);
-  const gainNodes = Array(16).fill(new GainNode(ctx, { gain: 0.3 }));
+  const gainNodes = Array(16).fill(new GainNode(ctx, { gain: 1 }));
   const lpfs = Array(32).fill(new LowPassFilterNode(ctx));
   const channelIds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
   const fft = new FFTNode(ctx);
@@ -47,7 +47,7 @@ export async function mkpath(ctx, additional_nodes = []) {
       )
   );
   for (let i = 0; i < 16; i++) {
-    spinner.connect(lpfs[i], i, 0).connect(gainNodes[i]).connect(merger);
+    spinner.connect(lpfs[i], i).connect(gainNodes[i]).connect(merger);
   }
   merger.connect(fft).connect(ctx.destination);
 
@@ -89,8 +89,9 @@ export async function mkpath(ctx, additional_nodes = []) {
     silenceAll() {
       merger.gain.linearRampToValueAtTime(0, 0.05);
     },
-    mute(channel) {
-      gainNodes[channel].linearRampToValueAtTime(0, 0.05);
+    mute(channel, bool) {
+      this.startAudio();
+      gainNodes[channel].gain.linearRampToValueAtTime(bool ? 0 : 1, 0.045);
     },
     async startAudio() {
       if (ctx.state !== "running") await ctx.resume();
@@ -113,6 +114,36 @@ export async function mkpath(ctx, additional_nodes = []) {
           if (precateFn(data)) resolve(data);
         };
       });
+    },
+    bindToolbar: function () {
+      document
+        .querySelectorAll("input[type=checkbox], input[type=range]")
+        .forEach((b) => {
+          if (b.dataset.path_cmd) {
+            let cmd = b.dataset.path_cmd;
+            let p1 = parseInt(b.dataset.p1 || "0");
+            b.addEventListener("click", (e) => {
+              const value = b.type == "checkbox" ? b.checked : b.value;
+
+              switch (cmd) {
+                case "solo":
+                  channelIds.forEach((id) => id != p1 && this.mute(id, value));
+                  break;
+                case "mute":
+                  this.mute(p1, value);
+                  break;
+                case "lpf":
+                  this.lowPassFilter(p1, value);
+                  break;
+                default:
+                  spinner.port.postMessage({
+                    cmd: b.dataset.path_cmd,
+                  });
+                  break;
+              }
+            });
+          }
+        });
     },
     bindKeyboard: function (get_active_channel_fn, eventpipe) {
       const keys = ["a", "w", "s", "e", "d", "f", "t", "g", "y", "h", "u", "j"];

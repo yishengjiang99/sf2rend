@@ -23,8 +23,11 @@ static float pow2(float x) { return exp1(x) / exp1(2); };
 // Math.pow(2.0, cents / 1200.0)
 
 static float ct2hz(float x) { return 8.176f * pow2(x / 1200.0); }
+static float get_omega(float fc, int sr) {
+  return ct2hz(fc) / (float)fc * M_PI * 2;
+}
 lpf_t *newLpf(int idx, float cutoff_freq, int sample_rate) {
-  lastCentFC = cutoff_freq;
+  lastCentFC = ct2hz(cutoff_freq);
   lpf_t *l = &filters[idx & 0xff];
   l->m1 = 0;
   l->X = exp1(-2.0f * M_PI * (float)cutoff_freq / sample_rate);

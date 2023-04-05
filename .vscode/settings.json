@@ -12,7 +12,8 @@
     "spin.h": "c",
     "calc.h": "c",
     "math.h": "c",
-    "sf2.h": "c"
+    "sf2.h": "c",
+    "biquad.h": "c"
   },
   "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools"
 }

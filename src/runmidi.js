@@ -48,18 +48,10 @@ export default async function runMidiPlayer(
       }
     }
   };
-  const cmds = "start,stop,reset".split(",");
-  container.innerHTML = "";
-  mkdiv(
-    "toolbar",
-    cmds.map((cmd) =>
-      mkdiv(
-        "button",
-        {
-          onclick: () => worker.postMessage({ [cmd]: 1 }),
-        },
-        cmd
-      )
-    )
-  ).attachTo(container);
+  document.querySelectorAll("#midi-player > button").forEach((b) => {
+    b.addEventListener("click", (e) =>
+      worker.postMessage({ [e.target.dataset.cmd]: 1 })
+    );
+    b.disabled = false;
+  });
 }

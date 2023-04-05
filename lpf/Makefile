@@ -3,4 +3,5 @@ build:
   	--target=wasm32 \
   	-nostdlib \
   	-Wl,--no-entry \
-  	-Wl,--export-all lpf.c -o - |npx encode-wasm-uint8 > lpf.wasm.js
+		-Wl,--allow-undefined \
+  	-Wl,--export-all biquad.c -o - |npx encode-wasm-uint8 > lpf.wasm.js
