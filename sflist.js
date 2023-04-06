@@ -1,1 +1,1 @@
-export const sf2list=["static/VintageDreamsWaves-v2.sf2","static/SoundBlasterOld.sf2","static/SalCSLight2.sf2","static/GeneralUserGS.sf2","static/FluidR3_GM.sf2"]
+export const sf2list=["static/VintageDreamsWaves-v2.sf2","static/SoundBlasterOld.sf2","static/Carnival_Games_DS.sf2","static/Acoustic_Guitar_GM.sf2","static/GeneralUserGS.sf2","static/Tubular_Carillon.sf2"]

@@ -1,13 +1,13 @@
 import { mkdiv, logdiv, mkdiv2 } from "../mkdiv/mkdiv.js";
 import { mkui } from "./ui.js";
 import SF2Service from "../sf2-service/index.js";
-import { fetchmidilist } from "./midilist.js";
+import { fetchmidilist, fetchSF2List } from "./midilist.js";
 import { mkeventsPipe } from "./mkeventsPipe.js";
 import { createChannel } from "./createChannel.js";
 import { midi_ch_cmds } from "./constants.js";
 import runMidiPlayer from "./runmidi.js";
 import { sf2list } from "../sflist.js";
-import { mkcanvas, chart } from "https://unpkg.com/mk-60fps";
+import { mkcanvas, chart } from "../chart/chart.js";
 const $ = (sel) => document.querySelector(sel);
 
 const sf2select = $("#sf2select"),
@@ -76,8 +76,17 @@ async function main(sf2file) {
   });
   midiSelect.attachTo($("footer"));
   midiSelect.addEventListener("input", (e) => onMidiSelect(e.target.value));
-
+  sf2select.style.display = "none";
+  const sf2remotelist = await fetchSF2List().then((list) => {
+    return list.map((f) =>
+      mkdiv("option", { value: f.url }, f.name.substring(0, 80))
+    );
+  });
+  sf2select.placeholder = "adfas";
+  sf2select.append(new Option("select soundfont file"));
   for (const f of sf2list) sf2select.append(mkdiv("option", { value: f }, f));
+  Array.from(sf2remotelist).forEach((div) => sf2select.append(div));
+  console.log(sf2remotelist);
 
   sf2select.onchange = (e) => {
     loadSF2File(e.target.value);
@@ -87,8 +96,7 @@ async function main(sf2file) {
   ctx = new AudioContext();
   const apath = await mkpath(ctx);
   const spinner = apath.spinner;
-  sf2select.value = sf2file;
-
+  sf2select.style.display = "inline-block";
   const eventPipe = mkeventsPipe();
   const ui = mkui(eventPipe, $("#channelContainer"), {
     onTrackDoubleClick: async (channelId, e) => {
@@ -110,7 +118,7 @@ async function main(sf2file) {
     channels.push(createChannel(uiControllers[i], i, sf2, apath));
   }
 
-  //link pipes
+  //link pipesf
 
   eventPipe.onmessage(eventsHandler(channels));
   initNavigatorMidiAccess();
@@ -190,9 +198,13 @@ async function main(sf2file) {
     drumList.innerHTML = "";
     sf2.programNames.forEach((n, presetIdx) => {
       if (presetIdx < 128) {
-        mkdiv2({ tag: "option", value: n, children: n }).attachTo(programList);
+        mkdiv2({ tag: "option", presetIdx, value: n, children: n }).attachTo(
+          programList
+        );
       } else {
-        mkdiv2({ tag: "option", value: n, children: n }).attachTo(drumList);
+        mkdiv2({ tag: "option", value: n, presetIdx, children: n }).attachTo(
+          drumList
+        );
       }
     });
     channels.forEach((c, i) => {
@@ -219,8 +231,8 @@ async function main(sf2file) {
   apath.ctrl_bar(document.getElementById("ctrls"));
   apath.bindToolbar();
   await loadSF2File("sf2-service/file.sf2");
-  const cv = mkcanvas({ container: $("#stdout") });
-  const wvform = mkcanvas({ container: $("#stdout") });
+  const cv = mkcanvas({ title: "FFT", container: $("#stdout") });
+  const wvform = mkcanvas({ container: $("#stdout"), title: "iFFT" });
 
   function draw() {
     chart(cv, apath.analysis.frequencyBins);

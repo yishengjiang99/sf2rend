@@ -19,6 +19,7 @@ export function createChannel(uiController, channelId, sf2, apath) {
         return;
       }
       await spinner.shipProgram(program, pid | bid);
+      console.log(uiController.name);
       uiController.hidden = false;
       uiController.name = program.name;
       uiController.presetId = this.presetId;
@@ -37,7 +38,9 @@ export function createChannel(uiController, channelId, sf2, apath) {
           vel,
           [this.presetId, zone.ref],
         ]);
-        apath.lowPassFilter(channelId * 2 + 1, zone.FilterFc);
+        if (zone.FilterFc < 13500)
+          apath.lowPassFilter(channelId * 2 + 1, zone.FilterFc);
+        console.log("lpf set, ", zone.FilterFc);
       });
       if (!zones[0]) return;
       requestAnimationFrame(() => {
@@ -45,6 +48,7 @@ export function createChannel(uiController, channelId, sf2, apath) {
         uiController.velocity = vel;
         uiController.midi = key;
         uiController.zone = zones[0];
+        uiController.filterFc = zones[0].FilterFc;
       });
       return zones[0];
     },

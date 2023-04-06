@@ -1,44 +1,70 @@
-/* eslint-disable no-unused-vars */
-let ppqn = 120;
-let timesig = 4; //ratio of 4/4 etc
-let msqn = 315789; // msqn315789 ppqn120
-// msqn, ppq msqn, ppq
+const channel = new BroadcastChannel("timer")
+let tmParams = {
+  ppqn: 120, timesig: 4, msqn: 315789,
+  get waittime() {
+    const {msqn, timesig} = this;
+    return msqn / 1000 / timesig;
+  },
+  get ticksElapsed() {
+    return tmParams.ppqn / tmParams.timesig;
+  }
+}
 
-let waittime = msqn / 1000 / timesig;
+
 // const intervalMillisecond = microsecondPerQuarterNote / 1000 / timeSignature;
 let timer = null,
   ticks = 0;
 let startTime,
   lastTick = 0;
-onmessage = ({ data }) => {
-  const { tm, stop, start, reset, load } = data;
-
-  if (tm) {
-    ppqn = tm.ppqn;
-    msqn = tm.msqn;
-    waittime = msqn / 1000 / timesig;
+channel.onmessage = ({data: {cmd, tick, tm}}) => {
+  console.log(cmd);
+  switch (cmd) {
+    case "start":
+      startTime = performance.now();
+      ticks = 0;
+    //fallthru;
+    case "record":
+    case "resume":
+      clearTimeout(timer);
+      lastTick = performance.now();
+      timer = setTimeout(ontick, tmParams.waittime);
+      break;
+    case "reset":
+      clearInterval(timer);
+      ticks = 0; channel.postMessage(ticks);
+      break;
+    case "stop":
+    case "pause":
+      clearInterval(timer);
+      break;
+    case "fwd":
+      ticks += tmParams.ppqn * 32;
+      channel.postMessage(ticks);
+      break;
+    case "rwd":
+      ticks -= tmParams.ppqn * 32;
+      channel.postMessage(ticks);
+      break;
+    case "setTick":
+      ticks = tick;
+      break;
   }
-  if (start) {
-    clearTimeout(timer);
-    startTime = performance.now();
-    lastTick = startTime;
-
-    timer = setTimeout(ontick, waittime);
-  } else if (stop) {
-    clearTimeout(timer);
-  } else if (reset) {
-    clearTimeout(timer);
-    postMessage(ticks);
-    ticks = 0;
+  if (tm) {
+    tmParams = {...tmParams, ...tm};
+  }
+  if (tick) {
+    ticks = tick;
   }
 };
 
 function ontick() {
   postMessage(ticks);
-  ticks += ppqn / timesig;
+  channel.postMessage(ticks);
+  ticks += tmParams.ticksElapsed;
   let now = performance.now;
   lastTick = now;
-  const drift = waittime - (now - lastTick);
+  const wt = tmParams.waittime;
+  const drift = (now - lastTick) - wt;
 
-  timer = setTimeout(ontick, waittime);
+  timer = setTimeout(ontick, wt - drift);
 }

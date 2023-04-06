@@ -3,6 +3,9 @@ import { midi_ch_cmds } from "./constants.js";
 import { readMidi } from "./midiread.js";
 import { mkdiv } from "../mkdiv/mkdiv.js";
 
+import * as sequenceApp from "../sequence/build/asset-manifest.json";
+console.log(sequenceApp);
+// window.SequencerApp("footer", "timer");
 function mkcalback(channeals) {
   const channels = [];
   (async function (presets) {

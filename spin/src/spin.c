@@ -189,9 +189,9 @@ void _spinblock(spinner* x, int n, int blockOffset) {
       outputf = 0.0f;
     }
     x->outputf[i * 2 + blockOffset * 2] =
-        applyCentible(outputf, (short)(db + kRateCB));
+        applyCentible(outputf, (short)(db + kRateCB + panLeft));
     x->outputf[i * 2 + blockOffset * 2 + 1] =
-        applyCentible(outputf, (short)(db + kRateCB));
+        applyCentible(outputf, (short)(db + kRateCB + panRight));
     db += dbInc;
   }
   x->position = position;

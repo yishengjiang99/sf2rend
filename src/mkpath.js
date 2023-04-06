@@ -1,10 +1,8 @@
 import { SpinNode } from "../spin/spin.js";
-import { LowPassFilterNode } from "../lpf/lpf.js";
-import { midi_ch_cmds } from "./constants.js";
-import calcPitchRatio from "./calcPitchRatio.js";
+import {LowPassFilterNode} from "../lpf/lpf.js";
 import FFTNode from "../fft-64bit/fft-node.js";
 import { mkdiv } from "../mkdiv/mkdiv.js";
-export async function mkpath(ctx, additional_nodes = []) {
+export async function mkpath(ctx) {
   await SpinNode.init(ctx).catch(console.trace);
   await FFTNode.init(ctx).catch(console.trace);
   await LowPassFilterNode.init(ctx).catch(console.trace);
@@ -60,7 +58,7 @@ export async function mkpath(ctx, additional_nodes = []) {
   return {
     analysis: {
       get waveForm() {
-        return fft.getWaveForm();
+        return fft.getWaveForm().slice(0, 128);
       },
       get frequencyBins() {
         return fft.getFloatFrequencyData();
@@ -70,6 +68,7 @@ export async function mkpath(ctx, additional_nodes = []) {
     querySpState: async function (channelId) {
       spinner.port.postMessage({ query: channelId });
       return await new Promise((resolve, reject) => {
+        setTimeout(reject, 1000);
         spinner.port.onmessage = ({ data }) => {
           if (data.queryResponse) resolve(data.queryResponse);
         };
@@ -122,7 +121,7 @@ export async function mkpath(ctx, additional_nodes = []) {
           if (b.dataset.path_cmd) {
             let cmd = b.dataset.path_cmd;
             let p1 = parseInt(b.dataset.p1 || "0");
-            b.addEventListener("click", (e) => {
+            b.addEventListener("click", () => {
               const value = b.type == "checkbox" ? b.checked : b.value;
 
               switch (cmd) {

@@ -38,7 +38,7 @@ export function mkui(
       });
       this.led = mkdiv("input", { type: "checkbox" });
       this.zoneEdit = mkdiv("div", {
-        style: "background-color:black;color:white",
+        style: "background-color:black;color:white;display:none;",
       });
       this.zoneEdit.innerHTML = `          
       <label for="modal-control"><a>EDIT SOUNDFONT</a></label>
@@ -110,7 +110,7 @@ export function mkui(
           mkdiv("label", {for: "filterFC"}, "filterFC"),
           mkdiv("input", {
             min: 1000,
-            id: "filterFC",
+            name: "filterFC",
             max: 13700,
             step: 10,
             value: 13700,
@@ -240,8 +240,8 @@ export function mkui(
               });
             },
           },
-          mkdiv("table", { border: 1 }, [
-            mkdiv("tr", [
+          mkdiv("table", [
+            mkdiv("tr", {class: "sticky"}, [
               mkdiv("th", [
                 mkdiv("input", {
                   role: "button",
@@ -284,6 +284,9 @@ export function mkui(
         .map(([x, y]) => [x * pixelPerSec, (1 - y) * 0.8 * rowheight].join(","))
         .join(" ");
       this.polylines[0].setAttribute("points", points);
+    }
+    set filterFC(val) {
+      this.sliders.find(s => s.name == 'filterFC').value = val;
     }
   }
   const controllers = [];
