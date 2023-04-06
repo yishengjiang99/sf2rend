@@ -48,12 +48,14 @@ class LowPassFilterProc extends AudioWorkletProcessor {
       outputs[1].set(inputs[1]);
       return true;
     }
-
-    for (let i = 0; i < 2; i++) {
-      for (let j = 0; j < 128; j++) {
-        outputs[i][j] = this.processSample(inputs[i][j], this.lpf);
-      }
+    const inputChan = Math.min(inputs.length, outputs.length) - 1;
+    for (let j = 0;j < 128;j++) {
+      outputs[0][j] = this.processSample(inputs[0][j], this.lpf);
     }
+    for (let j = 0;j < 128;j++) {
+      outputs[1][j] = this.processSample(inputs[inputChan][j], this.lpf);
+    }
+
     return true;
   }
 }

@@ -1,28 +1,31 @@
 /* eslint-disable no-undef */
-import { LowPassFilterNode } from "./lpf.js";
+import {LowPassFilterNode} from "./lpf.js";
+import {mkcanvas, chart} from "https://unpkg.com/mk-60fps@1.1.0/chart.js"
 async function m() {
-  const ctx = new OfflineAudioContext(1, 4800, 48000);
+  const ctx = new OfflineAudioContext(2, 4800, 48000);
   await LowPassFilterNode.init(ctx);
   const lp = new LowPassFilterNode(ctx);
-  const op = new OscillatorNode(ctx, {
+  const [op1, op2] = [new OscillatorNode(ctx, {
     frequency: 440,
     gain: 1,
-    type: "sawtooth",
-  });
-  op.connect(lp).connect(ctx.destination);
+    type: "sine",
+  }), new OscillatorNode(ctx, {
+    frequency: 880,
+    gain: 1,
+    type: "sine",
+  })];
+  const g = new GainNode(ctx);
+  op1.connect(g);
+  op2.connect(g)
+  g.connect(lp).connect(ctx.destination);
+  const freqToCent = freq => Math.log(freq / 8.175) / Math.LN2 * 1200
   const fq = lp.parameters.get("FilterFC");
-  fq.setValueAtTime(1000, 0);
-  fq.linearRampToValueAtTime(200, 0.5);
-  fq.cancelAndHoldAtTime(0.3);
-  op.start();
-  op.stop(0.21);
-  // const spl = new ChannelSplitterNode(ctx, { numberOfOutputs: 2 });
-  // op.connect(spl).connect(ctx.destination, 1);
-  // spl.connect(lp, 0, 0).connect(ctx.destination, 0);
-  op.connect(lp).connect(ctx.destination);
-  ctx
-    .startRendering()
-    .then((ob) => console.log(ob.getChannelData(0).filter((v) => v)));
+  fq.setValueAtTime(freqToCent(800), 0);
+  fq.linearRampToValueAtTime(freqToCent(22), .1);
+  op1.start();
+  op2.start();
+  const ob = await ctx.startRendering();
+  chart(mkcanvas(), ob.getChannelData(1))
 }
 m();
 // struct tsf_voice_lowpass { double QInv, a0, a1, b1, b2, z1, z2; TSF_BOOL active; };

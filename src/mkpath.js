@@ -149,6 +149,7 @@ export async function mkpath(ctx, additional_nodes = []) {
       const keys = ["a", "w", "s", "e", "d", "f", "t", "g", "y", "h", "u", "j"];
       window.onkeydown = (e) => {
         if (e.repeat) return;
+        if (e.isComposing) return;
         const channel = get_active_channel_fn();
         const baseOctave = this.channelState[channel].octave || 48;
         const index = keys.indexOf(e.key);

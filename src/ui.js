@@ -38,14 +38,13 @@ export function mkui(
       });
       this.led = mkdiv("input", { type: "checkbox" });
       this.zoneEdit = mkdiv("div", {
-        style: "background-color:black;color:white",
+        style: "background-color:black;color:white;display:none",
       });
       this.zoneEdit.innerHTML = `          
-      <label for="modal-control"><a>EDIT SOUNDFONT</a></label>
-
-      <input type="checkbox" id="modal-control" class="modal">
+      <label for="modal-control${idx}"><a>zedit</a></label>
+      <input type="checkbox" id="modal-control${idx}" class="modal">
       <div>
-      <label for="modal-control" class="modal-close" >Close Modal</label>
+      <label for="modal-control${idx}" class="modal-close" >Close Modal</label>
       <p class='editTable'></p>
       </div>`;
 
@@ -217,7 +216,8 @@ export function mkui(
         this.led.removeAttribute("checked");
       }
     }
-    set zone({ arr, ref }) {
+    set zone(z) {
+      const {arr, ref} = z;
       const zmap = newSFZoneMap(ref, new Uint16Array(arr));
       this._zone = {
         arr,
@@ -230,26 +230,31 @@ export function mkui(
           {
             onsubmit: (e) => {
               e.preventDefault();
+              const atts = new Int16Array(
+                Array.from(new FormData(e.target).values())
+              );
+              z.arr.set(atts);
               onEditZone({
-                arr: new Int16Array(
-                  Array.from(new FormData(e.target).values())
-                ),
+                arr: atts,
                 update: [this._pid, ref],
+
               }).then((confirmation1) => {
                 console.log(confirmation1);
               });
             },
           },
           mkdiv("table", { border: 1 }, [
-            mkdiv("tr", [
-              mkdiv("th", [
-                mkdiv("input", {
-                  role: "button",
-                  value: "save",
-                  type: "submit",
-                }),
+            mkdiv("thead", [
+              mkdiv("tr", {class: "sticky"}, [
+                mkdiv("th", [
+                  mkdiv("input", {
+                    role: "button",
+                    value: "save",
+                    type: "submit",
+                  }),
+                ]),
+                mkdiv("th", {}, [ref]),
               ]),
-              mkdiv("th", {}, [ref]),
             ]),
             ...Array.from(this._zone.arr).map((attr, index) =>
               mkdiv("tr", [

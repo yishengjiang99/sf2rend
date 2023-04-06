@@ -6,19 +6,29 @@
 #define nmidiChannels 16
 extern void debugFL(float fl);
 
+// ghetto malloc all variables
 spinner sps[nchannels];
+// envelope generators
 EG eg[nchannels * 2];
+// LFOS
 LFO lfos[nchannels * 2];
-
+// midi ccs
 char midi_cc_vals[nmidiChannels * 128];
-char pitch_bend_msb[nmidiChannels * 128];
 
 float outputs[nchannels * RENDQ * 2];
+float mod_eg_output[nchannels * RENDQ];
+float LFO_1_Outputs[nchannels * RENDQ];
+float LFO_2_Outputs[nchannels * RENDQ];
+
+float* get_mod_eg(int channel) { return &mod_eg_output[channel * RENDQ]; }
+float* get_LFO_1(int channel) { return &LFO_1_Outputs[channel * RENDQ]; }
+float* get_LFO_2(int channel) { return &LFO_2_Outputs[channel * RENDQ]; }
+
 float silence[440];
 
 char spsIndx = 0;
 pcm_t pcms[2222];
-zone_t zones[4096];
+zone_t zones[40960];
 zone_t df[1];
 pcm_t defP[4];
 float squared[1024];
@@ -85,13 +95,6 @@ void set_midi_cc_val(int channel, int metric, int val) {
   midi_cc_vals[channel * 128 + metric] = (char)(val & 0x7f);
 }
 
-LFOEffects lfo_effects(float lfoval, zone_t* z) {
-  float mod2vol = (1 - lfoval) * z->ModLFO2Vol;
-  float mod2pitch = lfoval * z->ModEnv2Pitch;
-  float mod2fc = lfoval * z->ModEnv2FilterFc * 8.8f;
-  return (LFOEffects){mod2vol, mod2pitch, mod2fc};
-}
-
 float trigger_attack(spinner* x, float ratio, int velocity) {
   x->stride = ratio;
   x->velocity = velocity & 0x7f;
@@ -142,10 +145,14 @@ float kRateAttenuate(spinner* x, int ch) {
 }
 void _spinblock(spinner* x, int n, int blockOffset) {
   double db, dbInc;
-  float modlfoval = roll(x->modlfo, 64);
-  float vibrLfoVal = roll(x->vibrlfo, 64);
-  LFOEffects modlfoEffect = lfo_effects(modlfoval, x->zone);
-  LFOEffects vibrLFOEffects = lfo_effects(vibrLfoVal, x->zone);
+  int ch = (int)(x->channelId / 2);
+  float* modEgOut = get_mod_eg(ch);
+  float* lfo1Out = &LFO_1_Outputs[ch * RENDQ + blockOffset];
+  float* lfo2Out = &LFO_2_Outputs[ch * RENDQ + blockOffset];
+
+  LFO_roll_out(x->modlfo, 64, lfo1Out);
+  LFO_roll_out(x->vibrlfo, 64, lfo2Out);
+
   unsigned int position = x->position;
   float fract = x->fract;
   unsigned int nsamples = pcms[x->zone->SampleId].length;
@@ -160,12 +167,6 @@ void _spinblock(spinner* x, int n, int blockOffset) {
     dbInc = x->voleg->egIncrement;
   }
   float stride = x->zone->SampleModes > 0 ? x->stride : 1.0f;
-  int ch = (int)(x->channelId / 2);
-  stride = stride *
-           (12.0f + (float)(modEG * x->zone->ModEnv2Pitch / 100.0f) +
-            (float)(modlfoEffect.mod2pitch / 100.0f) +
-            (float)(vibrLFOEffects.mod2pitch / 100.0f)) /
-           12.0f;
 
   float kRateCB = kRateAttenuate(x, ch);
 
@@ -173,6 +174,8 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   double panRight = panrightLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]] / 2;
 
   for (int i = 0; i < n; i++) {
+    stride *= timecent2second(lfo1Out[i] * x->zone->ModLFO2Pitch);
+    stride *= timecent2second(lfo2Out[i] * x->zone->VibLFO2Pitch);
     fract = fract + stride;
 
     while (fract >= 1.0f) {
@@ -196,7 +199,6 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   }
   x->position = position;
   x->fract = fract;
-  x->stride = stride;
 }
 
 int spin(spinner* x, int n) {

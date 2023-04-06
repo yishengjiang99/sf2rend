@@ -37,7 +37,9 @@ export function createChannel(uiController, channelId, sf2, apath) {
           vel,
           [this.presetId, zone.ref],
         ]);
-        apath.lowPassFilter(channelId * 2 + 1, zone.FilterFc);
+        if (zone.FilterFC < 13500) {
+          apath.lowPassFilter(channelId * 2 + 1, zone.FilterFc);
+        }
       });
       if (!zones[0]) return;
       requestAnimationFrame(() => {
