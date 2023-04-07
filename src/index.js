@@ -74,7 +74,7 @@ async function main(sf2file) {
       ),
     ],
   });
-  midiSelect.attachTo($("footer"));
+  midiSelect.attachTo($("main"));
   midiSelect.addEventListener("input", (e) => onMidiSelect(e.target.value));
 
   for (const f of sf2list) sf2select.append(mkdiv("option", { value: f }, f));
@@ -208,13 +208,15 @@ async function main(sf2file) {
     }
   }
   function onMidiSelect(url) {
-    runMidiPlayer(url, eventPipe, $("#midiPlayer"), async function (presets) {
-      for (const preset of presets) {
-        const { pid, channel } = preset;
-        const bkid = channel == 10 ? 128 : 0;
-        await channels[channel].setProgram(pid, bkid);
-      }
-    });
+    window.runSequence({url, eventPipe, rootElement: $("#sequenceroot")});
+
+    // runMidiPlayer(url, eventPipe, $("#midiPlayer"), async function (presets) {
+    //   for (const preset of presets) {
+    //     const { pid, channel } = preset;
+    //     const bkid = channel == 10 ? 128 : 0;
+    //     await channels[channel].setProgram(pid, bkid);
+    //   }
+    // });
   }
   apath.ctrl_bar(document.getElementById("ctrls"));
   apath.bindToolbar();

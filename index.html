@@ -7,7 +7,8 @@
   <title>MIDI Rendering with SoundFont2</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="minidark.css" />
-
+  <script defer="defer" src="/sequence/static/js/main.16ef9a01.js"></script>
+  <link href="/sequence/static/css/main.678284af.css" rel="stylesheet">
 </head>
 <body class="sans-serif" style="padding: 0 30px">
   <header class="sticky" style="display:flex; justify-content:space-between">
@@ -21,16 +22,11 @@
     <main class="main">
       <div id="channelContainer"></div>
       <div id="stdout"></div>
-  <div id="info"></div>
+      <div id="info"></div>
+<div id="sequenceroot"></div>
   </main>
   <footer>
-    <div id="midi-player" class="button-group">
-      <button data-cmd="stop">stop</button>
-      <button data-cmd="start" disabled=true class="primary">
-        start<span class="icon-play"></span>
-      </button>
-      <button data-path_cmd="gm-reset" data-cmd="reset">reset</button>
-    </div>
+
   
   </footer>
   <datalist id="programs"></datalist>

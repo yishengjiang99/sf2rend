@@ -219,7 +219,9 @@ class SpinProcessor extends AudioWorkletProcessor {
         continue;
       }
       for (let j = 0; j < 128; j++) {
-        outputs[chid][0][j] += this.outputs[i][2 * j]
+
+
+        outputs[chid][0][j] += this.outputs[i][2 * j];
         outputs[chid][1][j] += this.outputs[i][2 * j + 1];
         has_sound = has_sound || outputs[chid][0][j] != 0;
       }

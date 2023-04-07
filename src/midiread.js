@@ -1,6 +1,6 @@
 export function readMidi(buffer) {
   const reader = bufferReader2(buffer);
-  const { fgetc, btoa, read24, readString, read32, readVarLength, read16 } =
+  const {fgetc, btoa, read24, readString, read32, readVarLength, read16} =
     reader;
   const chunkType = [btoa(), btoa(), btoa(), btoa()].join("");
   const headerLength = read32();
@@ -11,7 +11,7 @@ export function readMidi(buffer) {
   const limit = buffer.byteLength;
   let lasttype;
   function readNextEvent() {
-    const { fgetc, read24, readString, read32, readVarLength, read16 } = reader;
+    const {fgetc, read24, readString, read32, readVarLength, read16} = reader;
     let type = fgetc();
     if (type == null) return [];
     if ((type & 0xf0) == 0xf0) {
@@ -21,20 +21,26 @@ export function readMidi(buffer) {
           const len = readVarLength();
           switch (meta) {
             case 0x21:
-              return { port: fgetc() };
+              return {port: fgetc()};
             case 0x51:
-              return { tempo: read24() };
+              return {tempo: read24()};
+            case 0x58:                         //0xFF 0x58 0x04 [
+              // 0x04 0x02 0x18 0x08
+              const [numerator, denomP2, ticksPerBeat, eigthNotePerBeat] = [fgetc(), fgetc(), fgetc(), fgetc()];
+              const denum = Math.pow(2, denomP2);
+              const relative_ts = numerator / denum * 4;
+              return {relative_ts, numerator, denum, ticksPerBeat, eigthNotePerBeat};
             case 0x59:
-              return { meta, payload: [fgetc(), fgetc()] };
+              return {meta, payload: [fgetc(), fgetc()]};
             default:
-              return { meta, payload: readString(len), len };
+              return {meta, payload: readString(len), len};
           }
         }
         case 0xf0:
         case 0xf7:
-          return { sysex: readString(readVarLength()) };
+          return {sysex: readString(readVarLength())};
         default:
-          return { type, system: readString(readVarLength()) };
+          return {type, system: readString(readVarLength())};
       }
     } else {
       let param;
@@ -64,8 +70,9 @@ export function readMidi(buffer) {
   }
   const presets = [];
   const tempos = [];
+  let time_base;
   while (reader.offset < limit) {
-    fgetc(), fgetc(), fgetc(), fgetc();
+    console.log(fgetc(), fgetc(), fgetc(), fgetc());
     let t = 0;
     const mhrkLength = read32();
     const endofTrack = reader.offset + mhrkLength;
@@ -76,6 +83,10 @@ export function readMidi(buffer) {
       if (!nextEvent) break;
       if (nextEvent.eot) break;
       t += delay;
+      if (nextEvent.relative_ts) {
+        time_base = nextEvent;
+        track.push({offset: reader.offset, t, delay, ...nextEvent});
+      }
       if (nextEvent.tempo) {
         tempos.push({
           t,
@@ -83,7 +94,7 @@ export function readMidi(buffer) {
           track: track.length,
           ...nextEvent,
         });
-        const evtObj = { offset: reader.offset, t, delay, ...nextEvent };
+        const evtObj = {offset: reader.offset, t, delay, ...nextEvent};
         track.push(evtObj);
       } else if (nextEvent.channel && nextEvent.channel[0] >> 4 == 0x0c) {
         presets.push({
@@ -91,17 +102,17 @@ export function readMidi(buffer) {
           channel: nextEvent.channel[0] & 0x0f,
           pid: nextEvent.channel[1] & 0x7f,
         });
-        const evtObj = { offset: reader.offset, t, delay, ...nextEvent };
+        const evtObj = {offset: reader.offset, t, delay, ...nextEvent};
         track.push(evtObj);
       } else {
-        const evtObj = { offset: reader.offset, t, delay, ...nextEvent };
+        const evtObj = {offset: reader.offset, t, delay, ...nextEvent};
         track.push(evtObj);
       }
     }
     if (track.length) tracks.push(track);
     reader.offset = endofTrack;
   }
-  return { division, tracks, ntracks, presets, tempos };
+  return {division, tracks, ntracks, presets, tempos, time_base};
 }
 function bufferReader2(bytes) {
   let _offset = 0;
@@ -124,8 +135,8 @@ function bufferReader2(bytes) {
     const code = fgetc();
     return code >= 32 && code <= 122
       ? ` !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[~]^_@abcdefghijklmnopqrstuvwxyz`.split(
-          ""
-        )[code - 32]
+        ""
+      )[code - 32]
       : code;
   }
   const readString = (n) => {

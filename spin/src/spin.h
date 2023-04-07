@@ -18,7 +18,7 @@ typedef struct {
 typedef struct {
   float *inputf, *outputf;
   uint32_t channelId, key, velocity;
-  uint32_t position, loopStart, loopEnd;
+  uint32_t position, loopStart, loopEnd, sampleLength;
   float fract, stride;
   zone_t* zone;
   EG *voleg, *modeg;

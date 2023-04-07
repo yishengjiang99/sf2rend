@@ -148,12 +148,80 @@ async function renderZ(zoneSelect) {
   zoneObj = newSFZone(zoneSelect);
   const pcm = await zoneSelect.shdr.data();
   chart(canvas, pcm);
+  const kwds = "Attenuation,VolEnv,Filter,LFO"
+    .split(",");
+  kwds.map(keyword => Object.entries(zone).filter(([k]) => k.includes(keyword))).map(section => {
+    return mk
+  })
 
   const zoneinfo = mkdiv("div", [
     renderSampleView(zoneSelect),
     ..."Attenuation,VolEnv,Filter,LFO"
       .split(",")
-      .map((keyword) => renderArticle(keyword, zoneSelect)),
+      .map((keyword) => Object.entries(zone).filter(([k]) => k.includes(keyword)))
+
+  const attrVals = mkdiv(
+        "ul",
+        zattrs.map(([k, v]) =>
+          mkdiv("li", [
+            mkdiv("label", [k, ":"]),
+            mkdiv("code", [v]),
+            mkdiv("input", {
+              type: "range",
+              ...min_max_vals(k),
+              value: v,
+              oninput: (e) => {
+                e.target.parentElement.querySelector("code").textContent =
+                  e.target.value;
+                zoneObj[k] = e.target.value;
+                if (canvas) drawEV(zoneObj, canvas);
+              },
+            }),
+          ])
+        )
+      ); const zattrs = Object.entries(zone).filter(([k]) => k.includes(keyword));
+
+  const attrVals = mkdiv(
+    "ul",
+    zattrs.map(([k, v]) =>
+      mkdiv("li", [
+        mkdiv("label", [k, ":"]),
+        mkdiv("code", [v]),
+        mkdiv("input", {
+          type: "range",
+          ...min_max_vals(k),
+          value: v,
+          oninput: (e) => {
+            e.target.parentElement.querySelector("code").textContent =
+              e.target.value;
+            zoneObj[k] = e.target.value;
+            if (canvas) drawEV(zoneObj, canvas);
+          },
+        }),
+      ])
+    )
+  ); const zattrs = Object.entries(zone).filter(([k]) => k.includes(keyword));
+
+  const attrVals = mkdiv(
+    "ul",
+    zattrs.map(([k, v]) =>
+      mkdiv("li", [
+        mkdiv("label", [k, ":"]),
+        mkdiv("code", [v]),
+        mkdiv("input", {
+          type: "range",
+          ...min_max_vals(k),
+          value: v,
+          oninput: (e) => {
+            e.target.parentElement.querySelector("code").textContent =
+              e.target.value;
+            zoneObj[k] = e.target.value;
+            if (canvas) drawEV(zoneObj, canvas);
+          },
+        }),
+      ])
+    )
+  );),
   ]);
 
   articleMain.replaceChildren(zoneinfo);

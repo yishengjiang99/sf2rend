@@ -10,7 +10,7 @@ export async function mkpath(ctx, additional_nodes = []) {
   await LowPassFilterNode.init(ctx).catch(console.trace);
   const spinner = new SpinNode(ctx, 16);
   const merger = new GainNode(ctx);
-  const gainNodes = Array(16).fill(new GainNode(ctx, { gain: 1 }));
+  const gainNodes = Array(16).fill(new GainNode(ctx, {gain: .4}));
   const lpfs = Array(32).fill(new LowPassFilterNode(ctx));
   const channelIds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
   const fft = new FFTNode(ctx);

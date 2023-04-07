@@ -5,6 +5,7 @@
 #define nchannels 64
 #define nmidiChannels 16
 extern void debugFL(float fl);
+float eps = .00001;
 
 // ghetto malloc all variables
 spinner sps[nchannels];
@@ -28,7 +29,7 @@ float silence[440];
 
 char spsIndx = 0;
 pcm_t pcms[2222];
-zone_t zones[40960];
+zone_t zones[2222];
 zone_t df[1];
 pcm_t defP[4];
 float squared[1024];
@@ -114,7 +115,9 @@ void set_spinner_input(spinner* x, pcm_t* pcm) {
   x->loopStart = pcm->loopstart;
   x->loopEnd = pcm->loopend;
   x->inputf = pcm->data;
+  x->sampleLength = pcm->length;
   x->pcm = pcm;
+  x->position = 0;
 }
 void set_spinner_zone(spinner* x, zone_t* z) {
   pcm_t* pcm;
@@ -125,9 +128,11 @@ void set_spinner_zone(spinner* x, zone_t* z) {
     pcm = pcms + z->SampleId;
   }
   set_spinner_input(x, pcm);
-  x->position = 0;  // z->StartAddrOfs + (z->StartAddrCoarseOfs << 15);
+  x->position += z->StartAddrOfs + (z->StartAddrCoarseOfs << 15);
   x->loopStart += z->StartLoopAddrOfs + (z->StartLoopAddrCoarseOfs << 15);
-  x->loopEnd += z->EndAddrOfs + (z->EndLoopAddrCoarseOfs << 15);
+  x->loopEnd -= z->EndLoopAddrOfs - (z->EndLoopAddrCoarseOfs << 15);
+  x->sampleLength -= z->EndAddrOfs - (z->EndAddrCoarseOfs << 15);
+
   x->zone = z;
 }
 
@@ -155,7 +160,7 @@ void _spinblock(spinner* x, int n, int blockOffset) {
 
   unsigned int position = x->position;
   float fract = x->fract;
-  unsigned int nsamples = pcms[x->zone->SampleId].length;
+  unsigned int nsamples = x->sampleLength;
   unsigned int looplen = x->loopEnd - x->loopStart;
   double modEG = p10over200[(short)(clamp(x->modeg->egval, -960, 0) + 960)];
 
@@ -174,8 +179,8 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   double panRight = panrightLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]] / 2;
 
   for (int i = 0; i < n; i++) {
-    stride *= timecent2second(lfo1Out[i] * x->zone->ModLFO2Pitch);
-    stride *= timecent2second(lfo2Out[i] * x->zone->VibLFO2Pitch);
+    stride *= timecent2second(lfo1Out[i] * x->zone->ModLFO2Pitch / 12);
+    stride *= timecent2second(lfo2Out[i] * x->zone->VibLFO2Pitch / 12);
     fract = fract + stride;
 
     while (fract >= 1.0f) {
@@ -204,6 +209,7 @@ void _spinblock(spinner* x, int n, int blockOffset) {
 int spin(spinner* x, int n) {
   if (x->voleg->stage == done) {
     for (int i = 0; i < 256; i++)
+
       x->outputf[2 * x->channelId * 128 * RENDQ + i] = .0f;
     return 0;
   }

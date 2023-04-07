@@ -13,7 +13,7 @@ export class SpinNode extends AudioWorkletNode {
     super(ctx, "spin-proc", {
       numberOfInputs: 0,
       numberOfOutputs: 16,
-      outputChannelCount: new Array(16).fill(4),
+      outputChannelCount: new Array(16).fill(2),
     });
     this.port.onmessageerror = (e) => alert("adfasfd", e.message); // e; // e.message;
   }
