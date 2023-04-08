@@ -9,11 +9,7 @@ th {
 
   position:relative;
 }
-.channelCard:hover {
-  background-color:gray;
-  color:black;
-  
-}
+
 .amp-indicate {
   height: 20px;
 
@@ -31,20 +27,7 @@ body {
   font-family: -apple-system,BlinkMacSystemFont,avenir next,avenir,helvetica neue,helvetica,ubuntu,roboto,noto,segoe ui,arial,sans-serif;
 }
 main {
-  display: grid;
-  grid-template-areas: 'channelP info''channelP stdout';
   padding:20px;
-}
-#channelContainer{
-  grid-area: channelP;
-  max-height: 80vh;
-  overflow-y: scroll;
-}
-#stdout{
-  grid-area: stdout;
-}
-#info {
-  grid-area: info;
 }
 
 
@@ -64,61 +47,4 @@ main {
   } 
   
   /* Makes sure that everything is 100% height */ 
-  
-  html,body { 
-  height: 100%; 
-  overflow: hidden;   background: rgba(255,255,255,.0); 
-
-  } 
-  
-  /* gets the actual input out of the way; 
-  we're going to style the label instead */ 
-  
-  #drawer-toggle { 
-  position: absolute; 
-  opacity: 0; 
-  }
-  
-  #drawer-toggle-label { 
-  -webkit-touch-callout: none; 
-  -webkit-user-select: none; 
-  -khtml-user-select: none; 
-  -moz-user-select: none; 
-  -ms-user-select: none; 
-  user-select: none; 
-  left: 0px; 
-  height:50px; 
-  width: 50px; 
-  display: block; 
-  position: fixed; 
-  background: rgba(255,255,255,.0); 
-  z-index: 1; 
-  } 
-  
-  /* adds our "hamburger" menu icon */ 
-  
-  #drawer-toggle-label:before { 
-  content: ''; 
-  display: block; 
-  position: absolute; 
-  height: 2px; 
-  width: 24px; 
-  background: #8d8d8d; 
-  left: 13px; 
-  top: 18px; 
-  box-shadow: 0 6px 0 #8d8d8d, 0 12px 0 #8d8d8d; 
-  } 
-  
-  header { 
-  width: 100%; 
-  position: fixed; 
-  left: 0px; 
-  padding: 10px 10px 10px 50px; 
-  font-size: 30px; 
-  line-height: 30px; 
-  z-index: 0; 
-  margin:20px;
-  }
-  
-  /* drawer menu pane - note the 0px width */ 
   

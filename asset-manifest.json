@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/sf2rend/static/css/main.acf31509.css",
+    "main.js": "/sf2rend/static/js/main.f2298462.js",
+    "static/js/846.1352e261.chunk.js": "/sf2rend/static/js/846.1352e261.chunk.js",
+    "index.html": "/sf2rend/index.html",
+    "main.acf31509.css.map": "/sf2rend/static/css/main.acf31509.css.map",
+    "main.f2298462.js.map": "/sf2rend/static/js/main.f2298462.js.map",
+    "846.1352e261.chunk.js.map": "/sf2rend/static/js/846.1352e261.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.acf31509.css",
+    "static/js/main.f2298462.js"
+  ]
+}

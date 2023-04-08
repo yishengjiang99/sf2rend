@@ -177,10 +177,16 @@ void _spinblock(spinner* x, int n, int blockOffset) {
 
   double panLeft = panleftLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]] / 2;
   double panRight = panrightLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]] / 2;
-
+  short lfo1_pitch = x->zone->ModLFO2Pitch < -12000
+                         ? 0
+                         : timecent2second(x->zone->ModLFO2Pitch);
+  short lfo2_pitch = x->zone->VibLFO2Pitch < -12000
+                         ? 0
+                         : timecent2second(x->zone->VibLFO2Pitch);
   for (int i = 0; i < n; i++) {
-    stride *= timecent2second(lfo1Out[i] * x->zone->ModLFO2Pitch / 12);
-    stride *= timecent2second(lfo2Out[i] * x->zone->VibLFO2Pitch / 12);
+    stride = stride *
+             (12.0f + lfo1Out[i] * lfo1_pitch + lfo2Out[i] * lfo2_pitch) /
+             12.0f;
     fract = fract + stride;
 
     while (fract >= 1.0f) {
@@ -194,7 +200,7 @@ void _spinblock(spinner* x, int n, int blockOffset) {
     float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
 
     if (position >= nsamples - 1) {
-      outputf = 0.0f;
+      position = 0;
     }
     x->outputf[i * 2 + blockOffset * 2] =
         applyCentible(outputf, (short)(db + kRateCB));

@@ -5,21 +5,22 @@ export function chart(canvasCtx, dataArray) {
   const slider = canvasCtx.canvas.parentElement.querySelector(
     "input[type='range']"
   );
-  slider.oninput = (e) => chart(canvasCtx, dataArray);
+  if (slider) slider.oninput = (e) => chart(canvasCtx, dataArray);
   const [_width, _height] = get_w_h(canvasCtx);
   let max = 0,
     min = 0,
     x = 0;
   let iWIDTH = _width / dataArray.length; //strokeText(`r m s : ${sum / bufferLength}`, 10, 20, 100)
   for (let i = 1; i < dataArray.length; i++) {
-    max = dataArray[i] > max ? dataArray[i] : max;
+    max = dataArray[i] > max ? dataArray[i] : max; 
+    min = dataArray[i] < min ? dataArray[i] : min;
   }
   canvasCtx.beginPath();
 
   canvasCtx.lineWidth = 1;
   canvasCtx.strokeStyle = "white";
   canvasCtx.moveTo(0, _height / 2);
-  const zoomY = slider.value;
+  const zoomY = 10;
   for (let i = 1; i < dataArray.length; i++) {
     x += iWIDTH;
     canvasCtx.lineTo(x, _height / 2 - zoomY * dataArray[i]);
@@ -30,10 +31,10 @@ export function chart(canvasCtx, dataArray) {
 export function mkcanvas(params = {}) {
   const { width, height, container, title } = Object.assign(
     {
-      container: document.body,
       title: "",
       width: 480,
       height: 320,
+      container: document.body
     },
     params
   );
@@ -58,7 +59,7 @@ export function mkcanvas(params = {}) {
     ]),
     canvas,
   ]);
-  container.append(wrap);
+  if (container !== false) container.append(wrap);
   canvas.ondblclick = () => resetCanvas(canvasCtx);
   return canvasCtx;
 }
@@ -97,7 +98,8 @@ export async function renderFrames(
           offset = (arr.length * parseInt(value)) / parseInt(max);
           chart(canvsCtx, arr.slice(offset, offset + samplesPerFrame));
         },
-      }).attachTo(canvsCtx.canvas.parentElement);
+      });
+    slider.attachTo(canvsCtx.canvas.parentElement);
   }
   canvsCtx.canvas.addEventListener("click", onclick);
   canvsCtx.canvas.addEventListener("dblclick", function (e) {
@@ -110,10 +112,10 @@ function get_w_h(canvasCtx) {
   return [
     canvasCtx.canvas.getAttribute("width")
       ? parseInt(canvasCtx.canvas.getAttribute("width"))
-      : WIDTH,
+      : 500,
     canvasCtx.canvas.getAttribute("height")
       ? parseInt(canvasCtx.canvas.getAttribute("height"))
-      : HEIGHT,
+      : 1200,
   ];
 }
 export function resetCanvas(c) {

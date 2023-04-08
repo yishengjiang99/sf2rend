@@ -1,39 +1,38 @@
-import { mkdiv, logdiv, mkdiv2 } from "../mkdiv/mkdiv.js";
+import {mkdiv, mkdiv2} from "../mkdiv/mkdiv.js";
 import { mkui } from "./ui.js";
 import SF2Service from "../sf2-service/index.js";
 import { fetchmidilist } from "./midilist.js";
 import { mkeventsPipe } from "./mkeventsPipe.js";
 import { createChannel } from "./createChannel.js";
-import { midi_ch_cmds } from "./constants.js";
-import runMidiPlayer from "./runmidi.js";
+import {midi_ch_cmds} from "./constants.js";
 import { sf2list } from "../sflist.js";
-import { mkcanvas, chart } from "https://unpkg.com/mk-60fps";
+import {readMidi} from './midiread.js'
+import {mkcanvas, chart} from "../chart/chart.js";
+import {logdiv, mkcollapse} from "./logdiv.js";
 const $ = (sel) => document.querySelector(sel);
 
 const sf2select = $("#sf2select"),
   col4 = $("#col4"),
   col5 = $("#col5");
 
+// fetch("../sequence.build/asset-manifest.json").then(res => res.json()).then(json => {
+//   json.entrypoints.forEach(link => importScripts(link))
+// })
 const drumList = document.querySelector("#drums");
 const programList = document.querySelector("#programs");
-const navhead = document.querySelector("#navhead");
+const navhead = document.querySelector("header");
+const analyze = document.querySelector("#analyze");
+const maindiv = document.querySelector("main");
 
-const { infoPanel, stdout } = logdiv();
-infoPanel.attachTo(document.querySelector("#info"));
+const stdoutdiv = document.querySelector("#stdout");
+
+
+const {stdout, infoPanel} = logdiv();
+
+mkcollapse({title: "Log Info", defaultOpen: true}, infoPanel).attachTo(stdoutdiv);
 window.stdout = stdout;
 window.stderr = (str) => (document.querySelector("footer").innerHTML = str);
-// mkdiv(
-//   "button",
-//   {
-//     onclick: (e) => {
-//       main("./sf2-service/file.sf2");
-//       e.target.style.display = "none";
-//     },
-//   },
-//   "start"
-// ).attachTo(document.querySelector("main"));
-main("./sf2-service/file.sf2");
-
+main("./file.sf2");
 const appState = {};
 globalThis.appState = new Proxy(appState, {
   get(target, attr) {
@@ -74,7 +73,7 @@ async function main(sf2file) {
       ),
     ],
   });
-  midiSelect.attachTo($("main"));
+  midiSelect.attachTo($("#midilist"));
   midiSelect.addEventListener("input", (e) => onMidiSelect(e.target.value));
 
   for (const f of sf2list) sf2select.append(mkdiv("option", { value: f }, f));
@@ -115,7 +114,7 @@ async function main(sf2file) {
   eventPipe.onmessage(eventsHandler(channels));
   initNavigatorMidiAccess();
   async function initNavigatorMidiAccess() {
-    let midiAccess = false; // await navigator.requestMIDIAccess();
+    let midiAccess = await navigator.requestMIDIAccess();
     if (!midiAccess) {
       // eslint-disable-next-line no-unused-vars
       midiAccess = await new Promise((resolve, reject) => {
@@ -155,6 +154,7 @@ async function main(sf2file) {
           ),
         ]
       ).attachTo(navhead);
+      Array.from(midiAccess.inputs.values())[0].onmidimessage = ({data}) => eventPipe.postMessage(data);
     }
   }
   ctx.onstatechange = () => updateAppState({ audioStatus: ctx.state });
@@ -207,29 +207,41 @@ async function main(sf2file) {
       stdout(section + ": " + text);
     }
   }
-  function onMidiSelect(url) {
-    window.runSequence({url, eventPipe, rootElement: $("#sequenceroot")});
+  async function onMidiSelect(url) {
+    const midiInfo = readMidi(
+      new Uint8Array(await (await fetch(url)).arrayBuffer())
+    );
+    await Promise.all(midiInfo.presets.map(preset => {
+      const {pid, channel} = preset;
+      const bkid = channel == 10 ? 128 : 0;
+      return channels[channel].setProgram(pid, bkid);
+    }));
 
-    // runMidiPlayer(url, eventPipe, $("#midiPlayer"), async function (presets) {
-    //   for (const preset of presets) {
-    //     const { pid, channel } = preset;
-    //     const bkid = channel == 10 ? 128 : 0;
-    //     await channels[channel].setProgram(pid, bkid);
-    //   }
-    // });
+    window.runSequence({
+      midiInfo, eventPipe,
+      rootElement: $("#sequenceroot")
+    });
+ //   document.querySelector("#channelContainer").style.background = "none"
   }
+
   apath.ctrl_bar(document.getElementById("ctrls"));
   apath.bindToolbar();
-  await loadSF2File("sf2-service/file.sf2");
-  const cv = mkcanvas({ container: $("#stdout") });
-  const wvform = mkcanvas({ container: $("#stdout") });
 
+
+  const [cv1, cv2] = [mkdiv("canvas"), mkdiv('canvas')];
+
+  mkcollapse({title: "fft"}, cv1).attachTo(analyze);
+  mkcollapse({title: "ifft"}, cv2).attachTo(analyze);
+
+
+  loadSF2File("static/GeneralUserGS.sf2")
   function draw() {
-    chart(cv, apath.analysis.frequencyBins);
-    chart(wvform, apath.analysis.waveForm);
+    chart(cv1.getContext("2d"), apath.analysis.frequencyBins);
+    chart(cv2.getContext("2d"), apath.analysis.waveForm);
     requestAnimationFrame(draw);
   }
-  draw();
+  //  draw();
+  maindiv.classList.remove("hidden")
 }
 
 function eventsHandler(channels) {
@@ -264,6 +276,9 @@ function eventsHandler(channels) {
           const zone = channels[ch].keyOn(key, velocity);
           //requestAnimationFrame(() => renderZ(panel2, canvas1, zone));
         }
+        break;
+      case midi_ch_cmds.pitchbend:
+        stdout("PITCH BEND " + [ch, cmd.toString(16), b, c].join("/"));
         break;
       default:
         stdout("midi cmd: " + [ch, cmd, b, c].join("/"));
