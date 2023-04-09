@@ -62,8 +62,7 @@ class SpinProcessor extends AudioWorkletProcessor {
   setup_wasm() {
     this.memory = new WebAssembly.Memory({
       maximum: 1024 * 4,
-      initial: 1024 * 4,
-      shared: 1 
+      initial: 1024 * 4
     });
     let lastfl;
     const imports = {
@@ -224,12 +223,12 @@ class SpinProcessor extends AudioWorkletProcessor {
       if (!this.spinners[i]) continue;
       const shouldRend = this.inst.exports.spin(this.spinners[i], 128);
       if (!shouldRend) {
-       // delete this.spinners[i];
-        //return true;
+        delete this.spinners[i];
+        return true;
       }
       for (let j = 0;j < 128;j++) {
-        outputs[chid][0][j] += this.outputs[i][voices_per_channel * j];
-        outputs[chid][1][j] += this.outputs[i][voices_per_channel * j + 1];
+        outputs[chid][0][j] = this.outputs[i][voices_per_channel * j];
+        outputs[chid][1][j] = this.outputs[i][voices_per_channel * j + 1];
         // outputs[side_out][0][j] = this.LFO_1_Outputs[chid * 128];
         // outputs[side_out][1][j] = this.mod_eg_val[chid * 128];
         has_sound = has_sound || outputs[chid][0][j] != 0;
