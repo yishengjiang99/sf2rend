@@ -161,7 +161,7 @@ export function mkui(
       function rzone() {}
     }
     set hidden(h) {
-      this.container.style.display = h ? "none" : "grid";
+      // this.container.style.display = h ? "none" : "grid";
     }
     set presetId(presetId) {
       this._pid = presetId;

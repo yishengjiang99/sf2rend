@@ -43,6 +43,12 @@ void init_m_fals(FILE* fd) {
     fprintf(fd, "%f,", log10(sin(M_PI / 2.0 * (i - 1) / 126.0f)) * 200.0f);
   }
   fprintf(fd, "0}; \n");
+
+  fprintf(fd, "double panrightLUT[128]={-960.0,\n");
+  for (float i = 2; i < 127; i++) {
+    fprintf(fd, "%f,", log10(sin(M_PI / 2.0 * (i - 1) / 126.0f)) * 200.0f);
+  }
+  fprintf(fd, "0}; \n");
 }
 
 int main() {

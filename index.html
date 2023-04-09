@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="minidark.css" />
     <link rel="stylesheet" href="src/collapsible.css" />
+    <script src="dist/sequence.js"></script>
     <style>
       body {
         margin: 0;
@@ -36,33 +37,27 @@
       /*# sourceMappingURL=main.css.map*/
     </style>
     <!-- <script defer="defer" src="sequence/build/static/js/bundle.js"></script> -->
-    <link rel="stylesheet" href="src/collapsible.css" />
   </head>
   <body class="sans-serif" style="padding: 0 30px">
     <header class="sticky" style="display: flex; justify-content: space-between">
       <span> Rendering MIDI with Javascript/WebAssembly </span>
       <div id="midilist"></div>
-      <div id="midi-player" class="button-group">
-        <button data-cmd="stop">stop</button>
-        <button data-cmd="start" disabled=true class="primary">
-          start<span class="icon-play"></span>
-        </button>
-        <button data-path_cmd="gm-reset" data-cmd="reset">reset</button>
-      </div>
-      <select class="antd-select" id="sf2select">
+      <select id="sf2select">
         <option>Select SF2 File</option>
       </select>
       <span id="ctrls"> </span>
       </header>
-      <main class="hidden main container">
-        <div class="row">
-          <div class="col-md-6">
-            <div id="sequenceroot"></div>
+<main class="main container">
+  <div class="row">
+  <div class="col-md-3">
+    <div id="sequenceroot"></div>
+
             <div id="channelContainer"></div>
           </div>
           <div class="col-md-6">
-            <div id="stdout"></div>
             <div id="analyze"></div>
+            <div id="stdout"></div>
+
           </div>
         </div>
       </main>

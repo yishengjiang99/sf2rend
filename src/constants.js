@@ -75,3 +75,6 @@ export const midi_effects = {
   registeredparametercoarse: 100,
   registeredparameterfine: 101,
 };
+
+
+export const nvpc = 4;

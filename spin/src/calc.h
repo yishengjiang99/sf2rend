@@ -7,6 +7,7 @@
 #ifndef SAMPLE_RATE
 #define SAMPLE_RATE 44100.0f
 #endif
+#define SAMPLE_RATE_LOG2 15.428491035332245f
 #define SAMPLE_BLOCK 128
 #define BLOCKS_PER_SECOND SAMPLE_RATE / SAMPLE_BLOCK
 
@@ -15,7 +16,7 @@ const double ln2 = 0.693147180559945;
 
 float calcp2over200(float tc) {
   float m = 1.0f;
-  while (tc > 1200.f) {
+  while (tc >= 1200.f) {
     tc -= 1200;
     m *= 2;
   }

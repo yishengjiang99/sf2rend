@@ -34,6 +34,7 @@ zone_t df[1];
 pcm_t defP[4];
 float squared[1024];
 float sine[1024];
+float calc_pitch_diff_log(zone_t* z, pcm_t* pcm, int key);
 spinner* spRef(int idx) { return &sps[idx]; }
 pcm_t* pcmRef(int idx) { return &pcms[idx]; }
 zone_t* zoneRef(int idx) { return &zones[idx]; }
@@ -96,15 +97,17 @@ void set_midi_cc_val(int channel, int metric, int val) {
   midi_cc_vals[channel * 128 + metric] = (char)(val & 0x7f);
 }
 
-float trigger_attack(spinner* x, int ratio, int velocity) {
-  x->stride = ratio;
+float trigger_attack(spinner* x, int key, int velocity) {
   x->velocity = velocity;
   x->position = 0;
   x->fract = 0.0f;
   x->voleg->stage = init;
+  x->key = (int)key;
   init_mod_eg(x->modeg, x->zone, x->pcm->sampleRate);
   init_vol_eg(x->voleg, x->zone, x->pcm->sampleRate);
-
+  // advanceStage(x->voleg);
+  x->pitch_dff_log = calc_pitch_diff_log(x->zone, x->pcm, key);
+  x->stride = calcp2over200(x->pitch_dff_log);
   x->modlfo->delay = timecent2sample(x->zone->ModLFODelay);
   x->vibrlfo->delay = timecent2sample(x->zone->ModLFODelay);
   set_frequency(x->modlfo, x->zone->ModLFOFreq);
@@ -123,7 +126,8 @@ void set_spinner_input(spinner* x, pcm_t* pcm) {
 float calc_pitch_diff_log(zone_t* z, pcm_t* pcm, int key) {
   short rt = z->OverrideRootKey > -1 ? z->OverrideRootKey : pcm->originalPitch;
   float smpl_rate = rt * 100.0f + z->CoarseTune * 100.0f + (float)z->FineTune;
-  float diff = (key * 100 - smpl_rate) / 1200 + pcm->sampleRate - SAMPLE_RATE;
+  float diff = key * 100.0f - smpl_rate + .0001f;
+  // diff += ((pcm->sampleRate - SAMPLE_RATE) / 4096.f * 100.f);
   return diff;
 }
 void set_spinner_zone(spinner* x, zone_t* z) {
@@ -135,9 +139,14 @@ void set_spinner_zone(spinner* x, zone_t* z) {
     pcm = pcms + z->SampleId;
   }
   set_spinner_input(x, pcm);
-  x->position += z->StartAddrOfs + (z->StartAddrCoarseOfs << 15);
-  x->loopStart += z->StartLoopAddrOfs + (z->StartLoopAddrCoarseOfs << 15);
-  x->loopEnd -= z->EndLoopAddrOfs - (z->EndLoopAddrCoarseOfs << 15);
+  x->zone = z;
+
+  x->position += (unsigned short)z->StartAddrOfs +
+                 (unsigned short)(z->StartAddrCoarseOfs << 15);
+  x->loopStart += (unsigned short)z->StartLoopAddrOfs +
+                  (unsigned short)(z->StartLoopAddrCoarseOfs << 15);
+  x->loopEnd -= (unsigned short)z->EndLoopAddrOfs -
+                (unsigned short)(z->EndLoopAddrCoarseOfs << 15);
   x->sampleLength -= z->EndAddrOfs - (z->EndAddrCoarseOfs << 15);
 }
 
@@ -147,6 +156,9 @@ float lerp(float f1, float f2, float frac) { return f1 + (f2 - f1) * frac; }
 
 void _spinblock(spinner* x, int n, int blockOffset) {
   double db, dbInc;
+  float stride = 1.0f;
+  float pdiff = x->pitch_dff_log;
+
   int ch = (int)(x->channelId / 2);
   float* modEgOut = &mod_eg_output[ch * RENDQ + blockOffset];
   float* lfo1Out = &LFO_1_Outputs[ch * RENDQ + blockOffset];
@@ -168,7 +180,7 @@ void _spinblock(spinner* x, int n, int blockOffset) {
     db = x->voleg->egval;
     dbInc = x->voleg->egIncrement;
   }
-  float stride = x->zone->SampleModes > 0 ? x->stride : 1.0f;
+  int should_skip_blocks = x->zone->SampleModes > 0 ? 1 : 0;
 
   float kRateCB = 0.0f;
   kRateCB -= (float)x->zone->Attenuation;
@@ -177,42 +189,37 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   kRateCB += midi_volume_log10(x->velocity);
 
   double panLeft = panleftLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]] / 2;
-  panLeft -= panrightLUT[sf2midiPan(x->zone->Pan)];
+  // panLeft += panleftLUT[sf2midiPan(x->zone->Pan)] / 2;
 
   double panRight = panrightLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]] / 2;
-  panRight += panrightLUT[sf2midiPan(x->zone->Pan)] / 2;
+  // panRight += panrightLUT[sf2midiPan(x->zone->Pan)] / 2;
 
   short lfo1_pitch = effect_floor(x->zone->ModLFO2Pitch);
   short lfo2_pitch = effect_floor(x->zone->VibLFO2Pitch);
   short modeg_pitch = effect_floor(x->zone->ModEnv2Pitch);
   short modeg_fc = effect_floor(x->zone->ModEnv2FilterFc);
   short modeg_vol = effect_floor(x->zone->ModEnv2Pitch);
-
+  int isLooping = x->zone->SampleModes > 0;
   for (int i = 0; i < n; i++) {
-    stride = stride *
-             (12.0f + lfo1Out[i] * lfo1_pitch + lfo2Out[i] * lfo2_pitch) /
-             12.0f;
     fract = fract + stride;
-
     while (fract >= 1.0f) {
       position++;
       fract -= 1.0f;
     }
-
-    if (position >= x->loopEnd + 1 && x->zone->SampleModes > 0)
-      position -= looplen;
+    stride = calcp2over200(pdiff);
+    if (position >= x->loopEnd + 1 && isLooping > 0) position -= looplen;
 
     float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
 
-    if (position >= nsamples - 1) {
+    if (position >= nsamples) {
       position = 0;
       outputf = 0.0;
       x->voleg->stage = done;
     }
     x->outputf[i * 2 + blockOffset * 2] =
-        applyCentible(outputf, (short)(db + kRateCB + panLeft));
+        applyCentible(outputf, (short)(db + kRateCB / 2 + panLeft / 2));
     x->outputf[i * 2 + blockOffset * 2 + 1] =
-        applyCentible(outputf, (short)(db + kRateCB + panRight));
+        applyCentible(outputf, (short)(db + kRateCB / 2 + panRight / 2));
     db += dbInc;
   }
   x->position = position;
