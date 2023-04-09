@@ -33,8 +33,7 @@ export function createChannel(uiController, channelId, sf2, apath) {
         spinner.port.postMessage([
           midi_ch_cmds.note_on,
           channelId * 2 + i,
-          zone.calcPitchRatio(key, spinner.context.sampleRate),
-          vel,
+          key, vel,
           [this.presetId, zone.ref],
         ]);
         if (zone.FilterFC < 13500) {
