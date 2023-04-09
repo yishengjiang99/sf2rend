@@ -32,7 +32,7 @@ export function createChannel(uiController, channelId, sf2, apath) {
     keyOn(key, vel) {
       kd_map[key] = [];
       const zones = program.filterKV(key, vel);
-      zones.slice(0, 2).map((zone, i) => {
+      zones.slice(0, 1).map((zone, i) => {
         spinner.port.postMessage([
           midi_ch_cmds.note_on,
           channelId * 2 + i,
@@ -55,7 +55,6 @@ export function createChannel(uiController, channelId, sf2, apath) {
     keyOff(key, vel) {
       window.stdout("koff " + channelId * 2);
       spinner.keyOff(channelId * 2, key, vel);
-      spinner.keyOff(channelId * 2 + 1, key, vel); window.stdout("koff " + channelId * 2 + 1);
 
       requestAnimationFrame(() => (uiController.active = false));
     },

@@ -5,6 +5,12 @@
 #include "eg.h"
 #include "sf2.h"
 
+#define RENDQ 128
+#define nchannels 64
+#define nmidiChannels 16
+extern void debugFL(float fl);
+float eps = .00001;
+
 typedef struct {
   uint32_t loopstart, loopend, length, sampleRate, originalPitch;
   float* data;

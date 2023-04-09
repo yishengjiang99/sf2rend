@@ -57,7 +57,7 @@ typedef struct {
 
 export function egStruct(heap, ref) {
   const [egval, egIncrement] = new Float32Array(heap, ref, 2);
-  const [hasRelease, stage, nsteps] = new Int32Array(heap, ref + 4, 3);
+  const [hasRelease, stage, nsteps] = new Int32Array(heap, ref + 8, 3);
   const [delay, attack, hold, decay, sustain, release] = new Int16Array(
     heap,
     ref + 20,

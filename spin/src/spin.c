@@ -1,12 +1,6 @@
 
 #include "spin.h"
 
-#define RENDQ 128
-#define nchannels 64
-#define nmidiChannels 16
-extern void debugFL(float fl);
-float eps = .00001;
-
 // ghetto malloc all variables
 spinner sps[nchannels];
 // envelope generators
@@ -106,9 +100,9 @@ float trigger_attack(spinner* x, int key, int velocity) {
   x->key = (int)key;
   init_mod_eg(x->modeg, x->zone, x->pcm->sampleRate);
   init_vol_eg(x->voleg, x->zone, x->pcm->sampleRate);
-  advanceStage(x->voleg);
   x->pitch_dff_log = calc_pitch_diff_log(x->zone, x->pcm, key);
   x->stride = calcp2over200(x->pitch_dff_log);
+  advanceStage(x->voleg);
   x->modlfo->delay = timecent2sample(x->zone->ModLFODelay);
   x->vibrlfo->delay = timecent2sample(x->zone->ModLFODelay);
   set_frequency(x->modlfo, x->zone->ModLFOFreq);
@@ -128,7 +122,7 @@ float calc_pitch_diff_log(zone_t* z, pcm_t* pcm, int key) {
   short rt = z->OverrideRootKey > -1 ? z->OverrideRootKey : pcm->originalPitch;
   float smpl_rate = rt * 100.0f + z->CoarseTune * 100.0f + (float)z->FineTune;
   float diff = key * 100.0f - smpl_rate + .0001f;
-  // diff += ((pcm->sampleRate - SAMPLE_RATE) / 4096.f * 100.f);
+  diff += ((pcm->sampleRate - SAMPLE_RATE) / 4096.f * 100.f);
   return diff;
 }
 void set_spinner_zone(spinner* x, zone_t* z) {
@@ -224,9 +218,9 @@ void _spinblock(spinner* x, int n, int blockOffset) {
       x->voleg->stage = done;
     }
     x->outputf[i * 2 + blockOffset * 2] =
-        applyCentible(outputf, (short)(db + kRateCB / 2 + panLeft / 2));
+        applyCentible(outputf, (short)(db / 10 + kRateCB / 2 + panLeft / 2));
     x->outputf[i * 2 + blockOffset * 2 + 1] =
-        applyCentible(outputf, (short)(db + kRateCB / 2 + panRight / 2));
+        applyCentible(outputf, (short)(db / 10 + kRateCB / 2 + panRight / 2));
     db += dbInc;
   }
   x->position = position;
@@ -242,7 +236,7 @@ int spin(spinner* x, int n) {
   if (x->voleg->stage == done) {
     return 0;
   }
-  return x->voleg->egval * 100;
+  return 1;
 }
 
 unsigned int sp_byte_len() { return sizeof(spinner); }

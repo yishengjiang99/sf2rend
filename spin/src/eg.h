@@ -39,29 +39,21 @@ void eg_roll(EG* eg, int n, float* output) {
  *
  */
 float update_eg(EG* eg, int n) {
-  if (eg->nsteps < 0) {
-    return 0;
+  while (n--) {
+    eg->egval += eg->egIncrement;
+    eg->nsteps--;
   }
-  int n1 = n > eg->nsteps ? eg->nsteps : n;
-  if (n < eg->nsteps) {
-    eg->nsteps -= n1;
-    eg->egval += eg->egIncrement * (float)n1;
-  } else {
-    eg->nsteps = 0;
-    eg->egval += eg->egIncrement * (float)(n1 - eg->nsteps);
-    n1 = n - n1;
-    advanceStage(eg);
-    eg->nsteps -= n1;
-    eg->egval += eg->egIncrement * (float)n1;
-  }
+  if (eg->nsteps <= 7) advanceStage(eg);
   return eg->egval;
 }
+
 void advanceStage(EG* eg) {
   // if (eg->hasReleased > 0 && eg->stage < release) {
   //   goto EG_RELEASE;
   // }
   switch (eg->stage) {
     case inactive:  // cannot advance
+      eg->stage++;
       return;
     case init:
       eg->stage = delay;
@@ -174,11 +166,6 @@ void init_mod_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
   eg->sustain = z->ModEnvSustain;
 }
 
-void _eg_set_stage(EG* e, int n) {
-  e->stage = n - 1;
-  e->nsteps = 0;
-  advanceStage(e);
-}
 void _eg_release(EG* e) {
   e->nsteps = 0;
   e->hasReleased = 1;

@@ -160,9 +160,8 @@ class SpinProcessor extends AudioWorkletProcessor {
               console.error("cannot find present zoneref", presetId, zoneRef);
               return;
             }
-            if (this.spinners[channel] == null) {
-              this.instantiate(channel);
-            }
+            this.instantiate(channel);
+
             let ch = channel;
             this.inst.exports.reset(this.spinners[ch]);
             this.inst.exports.set_spinner_zone(this.spinners[ch], zonePtr);
@@ -244,7 +243,7 @@ class SpinProcessor extends AudioWorkletProcessor {
       if (!this.spinners[i]) continue;
       const shouldRend = this.inst.exports.spin(this.spinners[i], 128);
       if (!shouldRend) {
-       // delete this.spinners[i];
+        delete this.spinners[i];
         return true;
       }
       for (let j = 0;j < 128;j++) {
