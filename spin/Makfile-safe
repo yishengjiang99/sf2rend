@@ -10,7 +10,7 @@ build/spin.o: build/spin.ll
 	llc -march=wasm32 -filetype=obj build/spin.ll -o build/spin.o
 
 spin.wasm: build/spin.o
-	wasm-ld --features=atomics,mutable-global --shared-memory	--no-check-features --max-memory=1073741824 --allow-undefined --import-memory --no-entry --export-all -o spin.wasm build/spin.o
+	wasm-ld --features=atomics,mutable-global --no-check-features --allow-undefined --import-memory --no-entry --export-all -o spin.wasm build/spin.o
 
 spin.wasm.js: spin.wasm
 	cat spin.wasm | npx encode-wasm-uint8 > spin.wasm.js

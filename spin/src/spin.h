@@ -19,12 +19,13 @@ typedef struct {
   float *inputf, *outputf;
   uint32_t channelId, key, velocity;
   uint32_t position, loopStart, loopEnd;
-  float fract, stride;
+  float fract, stride, calc_pitch_diff_log;
   zone_t* zone;
   EG *voleg, *modeg;
   LFO *modlfo, *vibrlfo;
   pcm_t* pcm;
   sp_availability sp_avail;
+  uint32_t sampleLength;
 } spinner;
 
 void set_spinner_zone(spinner* x, zone_t* z);

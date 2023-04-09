@@ -1,6 +1,4 @@
-import { requestDownload } from "./fetch-drop-ship.js";
 let k;
-
 export class SpinNode extends AudioWorkletNode {
   static async init(ctx) {
     await ctx.audioWorklet.addModule("spin/spin-proc.js");
@@ -13,14 +11,14 @@ export class SpinNode extends AudioWorkletNode {
     super(ctx, "spin-proc", {
       numberOfInputs: 0,
       numberOfOutputs: 16,
-      outputChannelCount: new Array(16).fill(4),
+      outputChannelCount: new Array(16).fill(2),
     });
     this.port.onmessageerror = (e) => alert("adfasfd", e.message); // e; // e.message;
   }
 
   keyOn(channel, zone, key, vel) {
     this.port.postMessage([
-      0x0090,
+      0x90,
       channel,
       zone.ref,
       zone.calcPitchRatio(key, this.context.sampleRate),
@@ -32,7 +30,7 @@ export class SpinNode extends AudioWorkletNode {
   }
 
   async shipProgram(sf2program, presetId) {
-    await requestDownload(sf2program, this.port);
+    await sf2program.fetch_drop_ship_to(this.port);
     await this.postZoneAttributes(sf2program, presetId);
   }
   async postZoneAttributes(sf2program, presetId) {

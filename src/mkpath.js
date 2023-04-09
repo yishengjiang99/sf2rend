@@ -1,16 +1,14 @@
 import { SpinNode } from "../spin/spin.js";
 import { LowPassFilterNode } from "../lpf/lpf.js";
-import { midi_ch_cmds } from "./constants.js";
-import calcPitchRatio from "./calcPitchRatio.js";
+import {midi_ch_cmds, midi_effects} from "./constants.js";
 import FFTNode from "../fft-64bit/fft-node.js";
 import { mkdiv } from "../mkdiv/mkdiv.js";
-export async function mkpath(ctx, additional_nodes = []) {
+export async function mkpath(ctx, eventPipe) {
   await SpinNode.init(ctx).catch(console.trace);
   await FFTNode.init(ctx).catch(console.trace);
   await LowPassFilterNode.init(ctx).catch(console.trace);
   const spinner = new SpinNode(ctx, 16);
   const merger = new GainNode(ctx);
-  const gainNodes = Array(16).fill(new GainNode(ctx, { gain: 1 }));
   const lpfs = Array(32).fill(new LowPassFilterNode(ctx));
   const channelIds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
   const fft = new FFTNode(ctx);
@@ -47,7 +45,7 @@ export async function mkpath(ctx, additional_nodes = []) {
       )
   );
   for (let i = 0; i < 16; i++) {
-    spinner.connect(lpfs[i], i).connect(gainNodes[i]).connect(merger);
+    spinner.connect(lpfs[i], i).connect(merger);
   }
   merger.connect(fft).connect(ctx.destination);
 
@@ -70,6 +68,7 @@ export async function mkpath(ctx, additional_nodes = []) {
     querySpState: async function (channelId) {
       spinner.port.postMessage({ query: channelId });
       return await new Promise((resolve, reject) => {
+        setTimeout(reject, 100);
         spinner.port.onmessage = ({ data }) => {
           if (data.queryResponse) resolve(data.queryResponse);
         };
@@ -89,9 +88,16 @@ export async function mkpath(ctx, additional_nodes = []) {
     silenceAll() {
       merger.gain.linearRampToValueAtTime(0, 0.05);
     },
-    mute(channel, bool) {
+    ghettoRampMidiCCToValueAtTime(ch, cc, val, time) {
+
+    },
+    async mute(channel, bool) {
       this.startAudio();
-      gainNodes[channel].gain.linearRampToValueAtTime(bool ? 0 : 1, 0.045);
+      const ramp = bool ? [60, 44, 3] : [33, 55, 80];
+      while (ramp.length) {
+        eventPipe.postMessage([midi_ch_cmds.continuous_change | channel, 7, ramp.shift()]);
+        await new Promise(r => setTimeout(r, 5));
+      }
     },
     async startAudio() {
       if (ctx.state !== "running") await ctx.resume();
@@ -128,6 +134,9 @@ export async function mkpath(ctx, additional_nodes = []) {
               switch (cmd) {
                 case "solo":
                   channelIds.forEach((id) => id != p1 && this.mute(id, value));
+                  eventPipe.postMessage([midi_ch_cmds.continuous_change | p1, midi_effects.volumecoarse, 50]);
+                  setTimeout(() => eventPipe.postMessage([midi_ch_cmds.continuous_change | p1, midi_effects.volumecoarse, 99]), 10);
+                  setTimeout(() => eventPipe.postMessage([midi_ch_cmds.continuous_change | p1, midi_effects.volumecoarse, 126]), 15);
                   break;
                 case "mute":
                   this.mute(p1, value);

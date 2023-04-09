@@ -1,8 +1,20 @@
 import saturate from "../saturation/index.js";
 import { wasmbin } from "./spin.wasm.js";
 import { egStruct, spRef2json } from "./spin-structs.js";
-
+const nchannels = 16;
+const voices_per_channel = 2;
 class SpinProcessor extends AudioWorkletProcessor {
+  static get parameterDescriptors() {
+    return [
+      {
+        name: "centDb",
+        defaultValue: -2,
+        minValue: -1440,
+        maxValue: 0,
+        automationRate: "a-rate",
+      },
+    ];
+  }
   constructor(options) {
     super(options);
     this.setup_wasm();
@@ -21,7 +33,17 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.outputfff = new Float32Array(
       this.memory.buffer,
       this.inst.exports.outputs.value,
-      128 * 32
+      128 * nchannels * voices_per_channel
+    );
+    this.mod_eg_val = new Float32Array(
+      this.memory.buffer,
+      this.inst.exports.mod_eg_output.value,
+      128 * nchannels
+    );
+    this.LFO_1_Outputs = new Float32Array(
+      this.memory.buffer,
+      this.inst.exports.LFO_1_Outputs.value,
+      128 * nchannels
     );
     this.spState = new Array(32);
     this.port.postMessage({ init: 1 });
@@ -41,6 +63,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.memory = new WebAssembly.Memory({
       maximum: 1024 * 4,
       initial: 1024 * 4,
+      shared: 1 
     });
     let lastfl;
     const imports = {
@@ -188,41 +211,30 @@ class SpinProcessor extends AudioWorkletProcessor {
   instantiate(i) {
     this.spinners[i] = this.inst.exports.newSpinner(i);
     const spIO = new Uint32Array(this.memory.buffer, this.spinners[i], 3);
-    this.spState[i] = new Uint32Array(
-      this.memory.buffer,
-      this.spinners[i] + 12,
-      4
-    );
     this.spinners[i];
-    // this.dv[i] = new DataView(
-    //   this.memory.buffer,
-    //   this.spinners[i],
-    //   this.inst.exports.sp_byte_len
-    // );
-    //console.log(this.dv[i]);
-
-    //queueMicrotask(() => this.port.postMessage({ sp: i, dv: this.dv[i] }));
-
     this.outputs[i] = new Float32Array(this.memory.buffer, spIO[1], 128 * 2);
     return this.spinners[i];
   }
 
   process(inputs, outputs) {
     let has_sound = false;
-    for (let i = 0; i < 32; i++) {
-      const chid = Math.floor(i / 2);
+    for (let i = 0;i < 16 * voices_per_channel;i++) {
+      const chid = Math.floor(i / voices_per_channel);
       if (!this.outputs[i]) continue;
       if (!this.spinners[i]) continue;
       const shouldRend = this.inst.exports.spin(this.spinners[i], 128);
       if (!shouldRend) {
-        delete this.spinners[i];
-        continue;
+       // delete this.spinners[i];
+        //return true;
       }
-      for (let j = 0; j < 128; j++) {
-        outputs[chid][0][j] += this.outputs[i][2 * j]
-        outputs[chid][1][j] += this.outputs[i][2 * j + 1];
+      for (let j = 0;j < 128;j++) {
+        outputs[chid][0][j] += this.outputs[i][voices_per_channel * j];
+        outputs[chid][1][j] += this.outputs[i][voices_per_channel * j + 1];
+        // outputs[side_out][0][j] = this.LFO_1_Outputs[chid * 128];
+        // outputs[side_out][1][j] = this.mod_eg_val[chid * 128];
         has_sound = has_sound || outputs[chid][0][j] != 0;
       }
+
     }
     //  this.sp_reflect_snd();
     return true;

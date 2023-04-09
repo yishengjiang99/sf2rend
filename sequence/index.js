@@ -1,38 +1,30 @@
-import {mkdiv, mkdiv2} from "../mkdiv/mkdiv.js";
-import { mkui } from "./ui.js";
+import {mkdiv, logdiv, mkdiv2} from "../mkdiv/mkdiv.js";
+import {mkui} from "./ui.js";
 import SF2Service from "../sf2-service/index.js";
-import { fetchmidilist } from "./midilist.js";
-import { mkeventsPipe } from "./mkeventsPipe.js";
-import { createChannel } from "./createChannel.js";
+import {fetchmidilist} from "./midilist.js";
+import {mkeventsPipe} from "./mkeventsPipe.js";
+import {createChannel} from "./createChannel.js";
 import {midi_ch_cmds} from "./constants.js";
-import { sf2list } from "../sflist.js";
-import {readMidi} from './midiread.js'
-import {mkcanvas, chart} from "../chart/chart.js";
-import {logdiv, mkcollapse} from "./logdiv.js";
+import runMidiPlayer from "./runmidi.js";
+import {sf2list} from "../sflist.js";
+import {mkcanvas, chart} from "https://unpkg.com/mk-60fps";
 const $ = (sel) => document.querySelector(sel);
 
 const sf2select = $("#sf2select"),
   col4 = $("#col4"),
   col5 = $("#col5");
 
-// fetch("../sequence.build/asset-manifest.json").then(res => res.json()).then(json => {
-//   json.entrypoints.forEach(link => importScripts(link))
-// })
 const drumList = document.querySelector("#drums");
 const programList = document.querySelector("#programs");
-const navhead = document.querySelector("header");
-const analyze = document.querySelector("#analyze");
-const maindiv = document.querySelector("main");
+const navhead = document.querySelector("#navhead");
 
-const stdoutdiv = document.querySelector("#stdout");
-
-
-const {stdout, infoPanel} = logdiv();
-
-mkcollapse({title: "Log Info", defaultOpen: true}, infoPanel).attachTo(stdoutdiv);
+const {infoPanel, stdout} = logdiv();
+infoPanel.attachTo(document.querySelector("#info"));
 window.stdout = stdout;
 window.stderr = (str) => (document.querySelector("footer").innerHTML = str);
-main("./file.sf2");
+
+main("./sf2-service/file.sf2");
+
 const appState = {};
 globalThis.appState = new Proxy(appState, {
   get(target, attr) {
@@ -67,32 +59,31 @@ async function main(sf2file) {
       e.preventDefault();
     },
     children: [
-      mkdiv("option", { name: "select midi", value: null }, "select midi file"),
+      mkdiv("option", {name: "select midi", value: null}, "select midi file"),
       ...midiList.map((f) =>
-        mkdiv("option", { value: f.get("Url") }, f.get("Name").substring(0, 80))
+        mkdiv("option", {value: f.get("Url")}, f.get("Name").substring(0, 80))
       ),
     ],
   });
-  midiSelect.attachTo($("#midilist"));
+  midiSelect.attachTo($("main"));
   midiSelect.addEventListener("input", (e) => onMidiSelect(e.target.value));
 
-  for (const f of sf2list) sf2select.append(mkdiv("option", { value: f }, f));
+  for (const f of sf2list) sf2select.append(mkdiv("option", {value: f}, f));
 
   sf2select.onchange = (e) => {
     loadSF2File(e.target.value);
   };
-  const { mkpath } = await import("./mkpath.js");
+  const {mkpath} = await import("./mkpath.js");
 
   ctx = new AudioContext();
-
-
-  const eventPipe = mkeventsPipe();
-  const apath = await mkpath(ctx, eventPipe);
+  const apath = await mkpath(ctx);
   const spinner = apath.spinner;
   sf2select.value = sf2file;
+
+  const eventPipe = mkeventsPipe();
   const ui = mkui(eventPipe, $("#channelContainer"), {
     onTrackDoubleClick: async (channelId, e) => {
-      const sp1 = await apath.querySpState({ query: 2 * channelId });
+      const sp1 = await apath.querySpState({query: 2 * channelId});
       globalThis.stderr(JSON.stringify(sp1, null, 1));
     },
     onEditZone: (editData) => {
@@ -104,7 +95,7 @@ async function main(sf2file) {
     },
   });
   uiControllers = ui.controllers;
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0;i < 16;i++) {
     uiControllers[i].hidden = true;
 
     channels.push(createChannel(uiControllers[i], i, sf2, apath));
@@ -115,7 +106,7 @@ async function main(sf2file) {
   eventPipe.onmessage(eventsHandler(channels));
   initNavigatorMidiAccess();
   async function initNavigatorMidiAccess() {
-    let midiAccess = await navigator.requestMIDIAccess();
+    let midiAccess = false; // await navigator.requestMIDIAccess();
     if (!midiAccess) {
       // eslint-disable-next-line no-unused-vars
       midiAccess = await new Promise((resolve, reject) => {
@@ -138,11 +129,11 @@ async function main(sf2file) {
           oninput: (e) => {
             Array.from(midiAccess.inputs.values()).find(
               (i) => i.name === e.target.value
-            ).onmidimessage = ({ data }) => eventPipe.postMessage(data);
+            ).onmidimessage = ({data}) => eventPipe.postMessage(data);
           },
         },
         [
-          mkdiv("option", { value: null }, "select input"),
+          mkdiv("option", {value: null}, "select input"),
           ...Array.from(midiAccess.inputs.values()).map((input) =>
             mkdiv(
               "option",
@@ -155,25 +146,24 @@ async function main(sf2file) {
           ),
         ]
       ).attachTo(navhead);
-      Array.from(midiAccess.inputs.values())[0].onmidimessage = ({data}) => eventPipe.postMessage(data);
     }
   }
-  ctx.onstatechange = () => updateAppState({ audioStatus: ctx.state });
+  ctx.onstatechange = () => updateAppState({audioStatus: ctx.state});
 
   window.addEventListener(
     "click",
     async () => ctx.state !== "running" && (await ctx.resume()),
-    { once: true }
+    {once: true}
   );
 
   const ampIndictators = document.querySelectorAll(".amp-indicate");
-  spinner.port.onmessage = ({ data }) => {
+  spinner.port.onmessage = ({data}) => {
     if (data.spState) col5.innerHTML = JSON.stringify(data.spState);
     if (data.egStages) col4.innerHTML = Object.values(data.egStages).join(" ");
     if (data.queryResponse)
       window.stderr(JSON.stringify(data.queryResponse, null, 1));
     if (data.sp_reflect) {
-      for (let i = 0; i < 16; i++) {
+      for (let i = 0;i < 16;i++) {
         ampIndictators[i].style.setProperty(
           "--db",
           (data.sp_reflect[2 * i * 4] + 960) / 960
@@ -191,9 +181,9 @@ async function main(sf2file) {
     drumList.innerHTML = "";
     sf2.programNames.forEach((n, presetIdx) => {
       if (presetIdx < 128) {
-        mkdiv2({ tag: "option", value: n, children: n }).attachTo(programList);
+        mkdiv2({tag: "option", value: n, children: n}).attachTo(programList);
       } else {
-        mkdiv2({ tag: "option", value: n, children: n }).attachTo(drumList);
+        mkdiv2({tag: "option", value: n, children: n}).attachTo(drumList);
       }
     });
     channels.forEach((c, i) => {
@@ -217,59 +207,24 @@ async function main(sf2file) {
       const bkid = channel == 10 ? 128 : 0;
       return channels[channel].setProgram(pid, bkid);
     }));
-
-    const worker = new Worker("./src/timer.js");
-    let msqn = midiInfo.tempos?.[0]?.tempo || 500000;
-    let ppqn = midiInfo.division;
-
-    worker.postMessage({tm: {msqn, ppqn}});
-
-    const soundtracks = midiInfo.tracks.map((track) =>
-      track.filter((event) => event.t && event.channel)
-    );
-
-    worker.onmessage = ({data}) => {
-      const sysTick = data;
-
-      for (let i = 0;i < soundtracks.length;i++) {
-        const track = soundtracks[i];
-        while (track.length && track[0].t <= sysTick) {
-          const e = track.shift();
-          if (e.meta) onMidiMeta(stdout, e.meta);
-          else eventPipe.postMessage(e.channel);
-        }
-      }
-    };
-    document.querySelectorAll("#midi-player > button").forEach((b) => {
-      b.addEventListener("click", (e) =>
-        worker.postMessage({[e.target.dataset.cmd]: 1})
-      );
-      b.disabled = false;
-    });
     window.runSequence({
-      midiInfo, eventPipe,
+      midiInfo, eventPipe
       rootElement: $("#sequenceroot")
     });
- //   document.querySelector("#channelContainer").style.background = "none"
- //   document.querySelector("#channelContainer").style.background = "none"
   }
 
   apath.ctrl_bar(document.getElementById("ctrls"));
   apath.bindToolbar();
-  const ffholder = mkdiv("div"), iffholder = mkdiv("div");
-  const [cv1, cv2] = [mkcanvas({container: ffholder}), mkcanvas({container: ffholder})];
-
-  mkcollapse({title: "fft", defaultOpen: true}, ffholder).attachTo(analyze);
-
-  loadSF2File("static/GeneralUserGS.sf2")
+  await loadSF2File("sf2-service/file.sf2");
+  const cv = mkcanvas({container: $("#stdout")});
+  const wvform = mkcanvas({container: $("#stdout")});
 
   function draw() {
-    chart(cv1, apath.analysis.frequencyBins);
-    chart(cv2, apath.analysis.waveForm);
+    chart(cv, apath.analysis.frequencyBins);
+    chart(wvform, apath.analysis.waveForm);
     requestAnimationFrame(draw);
   }
   draw();
-  maindiv.classList.remove("hidden")
 }
 
 function eventsHandler(channels) {
@@ -281,7 +236,7 @@ function eventsHandler(channels) {
     const velocity = c & 0x7f;
     switch (cmd) {
       case midi_ch_cmds.continuous_change: // set CC
-        channels[ch].setCC({ key, vel: velocity });
+        channels[ch].setCC({key, vel: velocity});
         stdout("midi set cc " + [ch, cmd, key, velocity].join("/"));
         break;
       case midi_ch_cmds.change_program: //change porg
@@ -304,9 +259,6 @@ function eventsHandler(channels) {
           const zone = channels[ch].keyOn(key, velocity);
           //requestAnimationFrame(() => renderZ(panel2, canvas1, zone));
         }
-        break;
-      case midi_ch_cmds.pitchbend:
-        stdout("PITCH BEND " + [ch, cmd.toString(16), b, c].join("/"));
         break;
       default:
         stdout("midi cmd: " + [ch, cmd, b, c].join("/"));

@@ -5,7 +5,7 @@ import {
   mkdiv2,
   wrapDiv,
   mksvg,
-} from "https://unpkg.com/mkdiv@3.1.2/mkdiv.js";
+} from "../mkdiv/mkdiv.js";
 import { midi_ch_cmds, range, midi_effects as effects } from "./constants.js";
 import { attributeKeys, defZone, newSFZoneMap } from "../spin/zoneProxy.js";
 

@@ -24,6 +24,14 @@ typedef struct {
 void advanceStage(EG* eg);
 float update_eg(EG* eg, int n);
 
+void eg_roll(EG* eg, int n, float* output) {
+  while (n--) {
+    eg->egval += eg->egIncrement;
+    eg->nsteps--;
+    *output++ = eg->egval;
+  }
+  if (eg->nsteps < 0) advanceStage(eg);
+}
 /**
  * advances envelope generator by n steps..
  * shift to next stage and advance the remaining n steps
@@ -58,14 +66,14 @@ void advanceStage(EG* eg) {
     case init:
       eg->egval = -960.0f;
       eg->stage++;
-      eg->nsteps = timecent2sample(eg->delay);
+      eg->nsteps = eg->delay <= -12000 ? 0 : timecent2sample(eg->delay);
       eg->egval = -960.0f;
       eg->egIncrement = 0.0f;
       break;
     case delay:
       eg->egval = -960.0f;
       eg->stage++;
-      eg->nsteps = timecent2sample(eg->attack);
+      eg->nsteps = eg->attack <= -12000 ? 0 : timecent2sample(eg->attack);
       eg->egIncrement = 960.0f / (float)eg->nsteps;
       break;
     case attack:
@@ -128,7 +136,6 @@ one second. For example, a release time of 10 msec would be 1200log2(.01) =
       eg->nsteps = eg->egval / eg->egIncrement;
       break;
     case release:
-
       eg->stage = done;
       break;
     case done:
@@ -151,7 +158,7 @@ void init_vol_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
   eg->decay = z->VolEnvDecay * scaleFactor;
   eg->release = z->VolEnvRelease * scaleFactor;
   eg->hold = z->VolEnvHold * scaleFactor;
-  eg->sustain = z->VolEnvSustain * scaleFactor;
+  // eg->sustain = z->VolEnvSustain * scaleFactor;
   eg->stage = init;
   eg->nsteps = 0;
 }
