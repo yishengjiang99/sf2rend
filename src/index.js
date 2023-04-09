@@ -8,16 +8,13 @@ import {midi_ch_cmds} from "./constants.js";
 import { sf2list } from "../sflist.js";
 import {readMidi} from './midiread.js'
 import {mkcanvas, chart} from "../chart/chart.js";
+import * as sequence from "../dist/sequence.js"
 import {logdiv, mkcollapse} from "./logdiv.js";
 const $ = (sel) => document.querySelector(sel);
-
 const sf2select = $("#sf2select"),
   col4 = $("#col4"),
   col5 = $("#col5");
 
-// fetch("../sequence.build/asset-manifest.json").then(res => res.json()).then(json => {
-//   json.entrypoints.forEach(link => importScripts(link))
-// })
 const drumList = document.querySelector("#drums");
 const programList = document.querySelector("#programs");
 const navhead = document.querySelector("header");
@@ -31,8 +28,8 @@ const {stdout, infoPanel} = logdiv();
 
 mkcollapse({title: "Log Info", defaultOpen: true}, infoPanel).attachTo(stdoutdiv);
 window.stdout = stdout;
-window.stderr = (str) => (document.querySelector("footer").innerHTML = str);
-main("./file.sf2");
+window.stderr = stdout;// (str) => (document.querySelector("footer").innerHTML = str);
+main();
 const appState = {};
 globalThis.appState = new Proxy(appState, {
   get(target, attr) {
@@ -104,9 +101,7 @@ async function main(sf2file) {
     },
   });
   uiControllers = ui.controllers;
-  for (let i = 0; i < 16; i++) {
-    uiControllers[i].hidden = true;
-
+  for (let i = 0;i < 16;i++) {
     channels.push(createChannel(uiControllers[i], i, sf2, apath));
   }
 
@@ -186,6 +181,7 @@ async function main(sf2file) {
   apath.bindKeyboard(() => ui.activeChannel, eventPipe);
   async function loadSF2File(sf2url) {
     sf2 = new SF2Service(sf2url);
+    sf2select.value = sf2url;
     await sf2.load();
     programList.innerHTML = "";
     drumList.innerHTML = "";
@@ -217,6 +213,9 @@ async function main(sf2file) {
       const bkid = channel == 10 ? 128 : 0;
       return channels[channel].setProgram(pid, bkid);
     }));
+    const rootElement = $("#sequenceroot");
+    runSequence({midiInfo, rootElement, eventPipe});
+    /*
 
     const worker = new Worker("./src/timer.js");
     let msqn = midiInfo.tempos?.[0]?.tempo || 500000;
@@ -250,18 +249,21 @@ async function main(sf2file) {
       midiInfo, eventPipe,
       rootElement: $("#sequenceroot")
     });
- //   document.querySelector("#channelContainer").style.background = "none"
- //   document.querySelector("#channelContainer").style.background = "none"
+    document.querySelector("#channelContainer").style.background = "none"
+ document.querySelector("#channelContainer").style.background = "none"
+ */
+    document.querySelector("#channelContainer").style.background = "none"
+
   }
 
   apath.ctrl_bar(document.getElementById("ctrls"));
   apath.bindToolbar();
-  const ffholder = mkdiv("div"), iffholder = mkdiv("div");
+  const ffholder = mkdiv("div");
   const [cv1, cv2] = [mkcanvas({container: ffholder}), mkcanvas({container: ffholder})];
 
   mkcollapse({title: "fft", defaultOpen: true}, ffholder).attachTo(analyze);
 
-  loadSF2File("static/GeneralUserGS.sf2")
+  loadSF2File("static/FluidR3_GM.sf2")
 
   function draw() {
     chart(cv1, apath.analysis.frequencyBins);

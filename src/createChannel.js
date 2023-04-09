@@ -1,10 +1,10 @@
-import { midi_ch_cmds } from "./constants.js";
+import {midi_ch_cmds, nvpc} from "./constants.js";
 
 export function createChannel(uiController, channelId, sf2, apath) {
   let _sf2 = sf2;
   let program;
   const spinner = apath.spinner;
-
+  const kd_map = Array(nvpc).fill(0);
   return {
     setSF2(sf2) {
       _sf2 = sf2;
@@ -16,6 +16,8 @@ export function createChannel(uiController, channelId, sf2, apath) {
 
       if (!program) {
         alert(bid + " " + pid + " no found");
+        uiController.hidden = true;
+
         return;
       }
       await spinner.shipProgram(program, pid | bid);
@@ -28,13 +30,13 @@ export function createChannel(uiController, channelId, sf2, apath) {
       uiController.CC = { key, value: vel };
     },
     keyOn(key, vel) {
+      kd_map[key] = [];
       const zones = program.filterKV(key, vel);
       zones.slice(0, 2).map((zone, i) => {
         spinner.port.postMessage([
           midi_ch_cmds.note_on,
           channelId * 2 + i,
-          zone.calcPitchRatio(key, spinner.context.sampleRate),
-          vel,
+          key, vel,
           [this.presetId, zone.ref],
         ]);
         if (zone.FilterFC < 13500) {
@@ -51,8 +53,10 @@ export function createChannel(uiController, channelId, sf2, apath) {
       return zones[0];
     },
     keyOff(key, vel) {
-      spinner.keyOff(channelId * 2 + 1, key, vel);
+      window.stdout("koff " + channelId * 2);
       spinner.keyOff(channelId * 2, key, vel);
+      spinner.keyOff(channelId * 2 + 1, key, vel); window.stdout("koff " + channelId * 2 + 1);
+
       requestAnimationFrame(() => (uiController.active = false));
     },
   };

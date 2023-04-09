@@ -30,7 +30,7 @@ void eg_roll(EG* eg, int n, float* output) {
     eg->nsteps--;
     *output++ = eg->egval;
   }
-  if (eg->nsteps < 0) advanceStage(eg);
+  if (eg->nsteps <= 7) advanceStage(eg);
 }
 /**
  * advances envelope generator by n steps..
@@ -64,20 +64,23 @@ void advanceStage(EG* eg) {
     case inactive:  // cannot advance
       return;
     case init:
-      eg->egval = -960.0f;
-      eg->stage++;
-      eg->nsteps = eg->delay <= -12000 ? 0 : timecent2sample(eg->delay);
-      eg->egval = -960.0f;
-      eg->egIncrement = 0.0f;
-      break;
+      eg->stage = delay;
+      if (eg->delay > -12000) {
+        eg->egval = -960.0f;
+        eg->nsteps = timecent2sample(eg->delay);
+        eg->egIncrement = 0.0f;
+        break;
+      }
     case delay:
-      eg->egval = -960.0f;
-      eg->stage++;
-      eg->nsteps = eg->attack <= -12000 ? 0 : timecent2sample(eg->attack);
-      eg->egIncrement = 960.0f / (float)eg->nsteps;
-      break;
+      eg->stage = attack;
+      if (eg->attack > -12000) {
+        eg->egval = -960.0f;
+        eg->nsteps = timecent2sample(eg->attack);
+        eg->egIncrement = 960.0f / (float)eg->nsteps;
+        break;
+      }
     case attack:
-      eg->stage++;
+      eg->stage = hold;
       eg->egval = 0.0f;
       eg->nsteps = timecent2sample(eg->hold);
       eg->egIncrement = 0.0f;

@@ -5,8 +5,6 @@
 #include "eg.h"
 #include "sf2.h"
 
-typedef enum { SP_AVAIL, sp_NOT_AVAIL } sp_availability;
-
 typedef struct {
   uint32_t loopstart, loopend, length, sampleRate, originalPitch;
   float* data;
@@ -19,12 +17,11 @@ typedef struct {
   float *inputf, *outputf;
   uint32_t channelId, key, velocity;
   uint32_t position, loopStart, loopEnd;
-  float fract, stride, calc_pitch_diff_log;
+  float fract, stride, pitch_dff_log;
   zone_t* zone;
   EG *voleg, *modeg;
   LFO *modlfo, *vibrlfo;
   pcm_t* pcm;
-  sp_availability sp_avail;
   uint32_t sampleLength;
 } spinner;
 
