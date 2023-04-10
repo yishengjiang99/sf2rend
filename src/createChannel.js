@@ -41,10 +41,8 @@ export function createChannel(uiController, channelId, sf2, apath) {
           channelId * 2 + ct_cnt,
           key, vel,
           [this.presetId, zone.ref],
-        ])
-
+        ]);
         ct_cnt++;
-
         if (zone.FilterFC < 13500) {
           apath.lowPassFilter(channelId * 2 + 1, zone.FilterFc);
         }
@@ -62,7 +60,7 @@ export function createChannel(uiController, channelId, sf2, apath) {
     keyOff(key, vel) {
       if (!kd_map[key]) return;
       while (kd_map[key].length) {
-        spinner.keyOff(kd_map[key].shift(), key, vel);
+        spinner.port.postMessage([kd_map[key].shift(), key, vel]);
         ct_cnt--;
       }
       requestAnimationFrame(() => (uiController.active = false));

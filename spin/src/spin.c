@@ -1,5 +1,9 @@
 
 #include "spin.h"
+extern void lpf_initialize(int ch, short fc, float Q);
+extern void lpf_fade_to(int ch, short target, int nstep);
+extern void lpf_set_fc(int ch, short fc);
+extern void lpf_process(int ch, float* arr, int n);
 
 // ghetto malloc all variables
 spinner sps[nchannels];
@@ -86,6 +90,7 @@ void reset(spinner* x) {
   x->voleg->egIncrement = 0;
   x->voleg->hasReleased = 0;
   x->modeg->hasReleased = 0;
+  x->active_dynamics_flag = 0;
 }
 
 void set_midi_cc_val(int channel, int metric, int val) {
@@ -136,6 +141,8 @@ void set_spinner_zone(spinner* x, zone_t* z) {
   set_spinner_input(x, pcm);
   x->zone = z;
 
+  lpf_initialize(x->channelId, z->FilterFc, z->FilterQ);
+
   x->position += (unsigned short)z->StartAddrOfs +
                  (unsigned short)(z->StartAddrCoarseOfs << 15);
   x->loopStart += (unsigned short)z->StartLoopAddrOfs +
@@ -155,6 +162,9 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   float pdiff = x->pitch_dff_log;
 
   int ch = x->channelId;
+  int m_ch = (int)(x->channelId / 2);
+  float* output_L = &x->outputf[blockOffset];
+  float* output_R = &x->outputf[RENDQ + blockOffset];
   float* volEgOut = &vol_eg_output[ch * RENDQ + blockOffset];
   float* modEgOut = &mod_eg_output[ch * RENDQ + blockOffset];
   float* lfo1Out = &LFO_1_Outputs[ch * RENDQ + blockOffset];
@@ -163,7 +173,6 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   eg_roll(x->voleg, n, volEgOut);
   LFO_roll_out(x->modlfo, 64, lfo1Out);
   LFO_roll_out(x->vibrlfo, 64, lfo2Out);
-  int m_ch = (int)(x->channelId / 2);
 
   unsigned int position = x->position;
   float fract = x->fract;
@@ -186,17 +195,24 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   kRateCB += midi_volume_log10(midi_cc_vals[ch * 128 + TML_EXPRESSION_MSB]);
   kRateCB += midi_volume_log10(x->velocity);
 
-  double panLeft = panleftLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]] / 2;
-  // panLeft += panleftLUT[sf2midiPan(x->zone->Pan)] / 2;
+  double panLeft = panleftLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]];
 
-  double panRight = panrightLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]] / 2;
-  // panRight += panrightLUT[sf2midiPan(x->zone->Pan)] / 2;
+  double panRight = panrightLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]];
 
   short lfo1_pitch = effect_floor(x->zone->ModLFO2Pitch);
   short lfo2_pitch = effect_floor(x->zone->VibLFO2Pitch);
   short modeg_pitch = effect_floor(x->zone->ModEnv2Pitch);
   short modeg_fc = effect_floor(x->zone->ModEnv2FilterFc);
   short modeg_vol = effect_floor(x->zone->ModEnv2Pitch);
+
+  short starting_fc = modEgOut[0] * modeg_fc / -960.f;
+  if (starting_fc < SAMPLE_RATE) {
+    x->active_dynamics_flag |= filter_active;
+    lpf_set_fc(ch, starting_fc);
+  }
+  if (modEgOut[0] != modEgOut[n]) {
+    lpf_fade_to(ch, modEgOut[n] * modeg_fc + x->zone->FilterFc, n);
+  }
   int isLooping = x->zone->SampleModes > 0;
   for (int i = 0; i < n; i++) {
     db = vol_eg_output[i];
@@ -217,14 +233,16 @@ void _spinblock(spinner* x, int n, int blockOffset) {
       outputf = 0.0;
       x->voleg->stage = done;
     }
-    x->outputf[i * 2 + blockOffset * 2] =
-        applyCentible(outputf, (short)(db / 10 + kRateCB + panLeft));
-    x->outputf[i * 2 + blockOffset * 2 + 1] =
-        applyCentible(outputf, (short)(db / 10 + kRateCB + panRight));
+    output_L[i] = applyCentible(outputf, (short)(db / 2 + kRateCB + panLeft));
+    output_R[i] = applyCentible(outputf, (short)(db / 2 + kRateCB + panRight));
   }
   x->position = position;
   x->fract = fract;
   x->stride = stride;
+  if (x->active_dynamics_flag & filter_active) {
+    lpf_process(ch, output_L, n);
+    lpf_process(ch, output_R, n);
+  }
 }
 
 int spin(spinner* x, int n) {

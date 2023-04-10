@@ -28,7 +28,7 @@ export const cmd2stateChange = {
 	fwd: FWD,
 };
 export let baseOctave = 42;
-export const nbars = 1500;
+export const nbars = 12;
 
 export const marginTop = 10;
 // const pageNotes = [[]];

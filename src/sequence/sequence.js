@@ -3,7 +3,7 @@ import {
 	useRef, useImperativeHandle,
 	forwardRef
 } from "react";
-import React from 'react';
+import React from 'react'
 
 
 export const Sequence = forwardRef((props, ref) => {
@@ -13,7 +13,7 @@ export const Sequence = forwardRef((props, ref) => {
 	const semiHeight = height / nsemi;
 	useEffect(() => {
 		if (!canvasRef.current) {
-			throw new Error("adsfasd")
+			throw new Error("adsfasd");
 		}
 		const semiHeight = height / nsemi;
 		const ctx = canvasRef.current.getContext("2d");

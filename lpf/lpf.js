@@ -6,9 +6,9 @@ export class LowPassFilterNode extends AudioWorkletNode {
   static async init(ctx) {
     try {
       await ctx.audioWorklet
-        .addModule("lpf-proc.js")
+        .addModule("lpf-proc.js");
     } catch (e) {
-      await ctx.audioWorklet.addModule('lpf/lpf-proc.js')
+      await ctx.audioWorklet.addModule('lpf/lpf-proc.js');
 
     }
   }

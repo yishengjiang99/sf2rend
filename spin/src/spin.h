@@ -19,11 +19,19 @@ typedef struct {
 typedef struct {
   float mod2volume, mod2pitch, mod2filter;
 } LFOEffects;
+
+enum {
+  filter_active = 0x01,
+  filter_shift_active = 0x11,
+  pitch_shift_active = 0x02,
+  sustain_active = 0x04,
+};
 typedef struct {
   float *inputf, *outputf;
   uint32_t channelId, key, velocity;
   uint32_t position, loopStart, loopEnd;
   float fract, stride, pitch_dff_log;
+  uint32_t active_dynamics_flag;
   zone_t* zone;
   EG *voleg, *modeg;
   LFO *modlfo, *vibrlfo;

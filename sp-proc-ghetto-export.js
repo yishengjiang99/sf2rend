@@ -1,11 +1,16 @@
 //@prettier-ignore
   //@ts-ignore
   export const spmodule=URL.createObjectURL(new Blob(
-  ["import saturate from "../saturation/index.js";
-import {wasmbin} from "./spin.wasm.js";
+  ["import {wasmbin} from "./spin.wasm.js";
+
 import {egStruct, spRef2json} from "./spin-structs.js";
+import {mk_lpf_fade} from "./mk_lpf_fade.js";
 const nchannels = 16;
 const voices_per_channel = 2;
+export const lerp_lookup = new Float32Array(128);
+for (let i = 0;i < 128;i++) {
+  lerp_lookup[i] = i / 128.0;
+}
 class SpinProcessor extends AudioWorkletProcessor {
   static get parameterDescriptors() {
     return [
@@ -20,6 +25,10 @@ class SpinProcessor extends AudioWorkletProcessor {
   }
   constructor(options) {
     super(options);
+
+    const lpfMod = options.processorOptions.lpfmod;
+    this.mk_lpf_biquad = () => mk_lpf_fade(lpfMod);
+    this.lpfs = [];
     this.setup_wasm();
     this.inst.exports.gm_reset();
     this.sampleIdRefs = [];
@@ -75,6 +84,16 @@ class SpinProcessor extends AudioWorkletProcessor {
           lastfl = fl;
         }
       },
+      lpf_initialize: (ch, fc, q) => this.lpfs[ch].initialize(fc, q),
+      lpf_fade_to: (ch, target, nsteps) => this.lpfs[ch].fade_to(target, nsteps),
+      lpf_set_fc: (ch, fc) => this.lpfs[ch].set_fc(fc),
+      lpf_process: (ch, fptr, n, left) => {
+        this.lpfs[ch].process(new Float32Array(
+          this.memory.buffer,
+          fptr,
+          n
+        ), left);
+      }
     };
     this.inst = new WebAssembly.Instance(new WebAssembly.Module(wasmbin), {
       env: imports,
@@ -86,6 +105,7 @@ class SpinProcessor extends AudioWorkletProcessor {
       if (this.brk > this.memory.buffer.byteLength) throw "no mem";
       return ret;
     };
+    // this.heap = this.memory.buffer.slice()
   }
 
   ch_occupied(ch) {
@@ -224,8 +244,8 @@ class SpinProcessor extends AudioWorkletProcessor {
   instantiate(i) {
     this.spinners[i] = this.inst.exports.newSpinner(i);
     const spIO = new Uint32Array(this.memory.buffer, this.spinners[i], 3);
-
     this.outputs[i] = new Float32Array(this.memory.buffer, spIO[1], 128 * 2);
+    if (!this.lpfs[i]) this.lpfs[i] = this.mk_lpf_biquad();
     return this.spinners[i];
   }
 
@@ -247,9 +267,11 @@ class SpinProcessor extends AudioWorkletProcessor {
       if (!this.outputs[i]) continue;
       if (!this.spinners[i]) continue;
       const goAgain = this.inst.exports.spin(this.spinners[i]);
+
       for (let j = 0;j < 128;j++) {
-        left[j] += this.outputs[i][2 * j] / loudnorm;
-        right[j] += this.outputs[i][2 * j + 1] / loudnorm;
+
+        left[j] += this.outputs[i][j] / loudnorm;
+        right[j] += this.outputs[i][128 + j] / loudnorm;
       }
       if (!goAgain) {
         delete this.spinners[i];
@@ -286,7 +308,7 @@ class SpinProcessor extends AudioWorkletProcessor {
           queryResponse: {
             now: now(),
             spinfo,
-            // egInfo,
+            egInfo,
             egStags: this.eg_vol_stag,
           },
         });

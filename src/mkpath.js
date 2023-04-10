@@ -11,17 +11,16 @@ export async function mkpath(ctx, eventPipe) {
   await FFTNode.init(ctx).catch(console.trace);
   await LowPassFilterNode.init(ctx).catch(console.trace);
   const spinner = new SpinNode(ctx);
-  const mix = new GainNode(ctx);
   const lpfs = Array(32).fill(new LowPassFilterNode(ctx));
   const channelIds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
   const fft = new FFTNode(ctx);
   const whitenoise = anti_denom_dither(ctx);
   whitenoise.start();
-  const clipdetect = createAudioMeter(ctx)
+  const clipdetect = createAudioMeter(ctx);
 
   whitenoise.connect(spinner).connect(ctx.destination, 0);
   spinner.connect(fft, 1).connect(ctx.destination);
-  //spinner.connect(clipdetect, 2);
+  spinner.connect(clipdetect, 2);
 
   const channelState = [];
 
@@ -33,10 +32,10 @@ export async function mkpath(ctx, eventPipe) {
   };
   return {
     detectClips(canvas) {
-      // const timer = drawLoops(canvas, clipdetect);
+      const timer = drawLoops(canvas, clipdetect);
       return function cleanup() {
         cancelAnimationFrame(timer);
-      }
+      };
     },
     analysis: {
       get waveForm() {
@@ -68,7 +67,7 @@ export async function mkpath(ctx, eventPipe) {
       return lpfs[channel];
     },
     silenceAll() {
-      merger.gain.linearRampToValueAtTime(0, 0.05);
+      spinner.port.postMessage({cmd: "reset_gm"});
     },
     ghettoRampMidiCCToValueAtTime(ch, cc, val, time) {
 

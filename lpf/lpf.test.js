@@ -16,7 +16,7 @@ async function m() {
   })];
   const g = new GainNode(ctx);
   op1.connect(g);
-  op2.connect(g)
+  op2.connect(g);
   g.connect(lp).connect(ctx.destination);
   const freqToCent = freq => Math.log(freq / 8.175) / Math.LN2 * 1200
   const fq = lp.parameters.get("FilterFC");

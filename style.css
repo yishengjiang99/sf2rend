@@ -3,9 +3,8 @@ th {
 }
 .fixed-top-right{
   position:fixed;
-  top:0;
+  top:50px;
   right:0;
-  z-index:-100;
 }
 .channelCard {
   position:relative;

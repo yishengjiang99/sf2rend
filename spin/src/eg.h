@@ -30,6 +30,7 @@ void eg_roll(EG* eg, int n, float* output) {
     eg->nsteps--;
     *output++ = eg->egval;
   }
+  if (eg->egval > 0.f) eg->egval = 0.0f;
   if (eg->nsteps <= 7) advanceStage(eg);
 }
 /**

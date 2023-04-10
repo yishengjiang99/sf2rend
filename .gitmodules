@@ -10,3 +10,6 @@
 [submodule "midiread"]
 	url = https://github.com/yishengjiang99/midiread/
 	path = midiread
+[submodule "volume-meter"]
+	path = volume-meter
+	url = https://github.com/yishengjiang99/volume-meter
