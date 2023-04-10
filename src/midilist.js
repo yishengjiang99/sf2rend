@@ -16,7 +16,6 @@ var xml_attr = [
   "ContentEncoding",
   "ContentLanguage",
 ];
-const cdnroot = `https://grep32bit.blob.core.windows.net/midi/`;
 
 export function fetchmidilist(
   url = "https://grep32bit.blob.core.windows.net/midi?resttype=container&comp=list"

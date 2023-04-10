@@ -20,22 +20,23 @@ export function spRef2json(heap, ref) {
     loopStart,
     loopEnd,
   ] = new Uint32Array(heap, ref, 8); // 8*4
-  const [fract, stride] = new Float32Array(heap, ref + 32, 3); // 8*3
+  const [fract, stride, pdiff] = new Float32Array(heap, ref + 32, 3); // 8*3
 
   const [zoneRef, volEGRef, modEGRef, modflo, vibrlfo, pcmRef] =
     new Uint32Array(heap, ref + 44, 6);
   return {
     fract,
-    stride,
-    inputRef,
-    outputRef,
+    stride, 
+    pdiff,
+    // inputRef,
+    // outputRef,
     position,
     loopStart,
     loopEnd,
     zoneRef,
-    volEGRef,
-    modflo,
-    vibrlfo,
+    // volEGRef,
+    // modflo,
+    // vibrlfo,
     channelId,
     key,
     velocity,
@@ -56,7 +57,7 @@ typedef struct {
 
 export function egStruct(heap, ref) {
   const [egval, egIncrement] = new Float32Array(heap, ref, 2);
-  const [hasRelease, stage, nsamples] = new Int32Array(heap, ref + 4, 3);
+  const [hasRelease, stage, nsteps] = new Int32Array(heap, ref + 8, 3);
   const [delay, attack, hold, decay, sustain, release] = new Int16Array(
     heap,
     ref + 20,
@@ -68,12 +69,12 @@ export function egStruct(heap, ref) {
     egIncrement,
     hasRelease,
     stage,
-    nsamples,
-    delay,
-    attack,
-    hold,
-    decay,
-    sustain,
-    release,
+    nsteps,
+    adsr: [delay,
+      attack,
+      hold,
+      decay,
+      sustain,
+      release].join(",")
   };
 }

@@ -3,19 +3,6 @@ import { midi_ch_cmds } from "./constants.js";
 import { readMidi } from "./midiread.js";
 import { mkdiv } from "../mkdiv/mkdiv.js";
 
-function mkcalback(channeals) {
-  const channels = [];
-  (async function (presets) {
-    for (const preset of presets) {
-      const { pid, channel } = preset;
-      const bkid = channel == 9 ? 128 : 0;
-      const _pid = bkid == 128 ? 0 : pid;
-      console.log(_pid, bkid);
-      await channels[channel].setProgram(_pid, bkid);
-    }
-  }.apply([channels]));
-}
-
 export default async function runMidiPlayer(
   url,
   eventpipe,
@@ -29,7 +16,7 @@ export default async function runMidiPlayer(
   const worker = new Worker("./src/timer.js");
   let msqn = tempos?.[0]?.tempo || 500000;
   let ppqn = division;
-  // stdout("msqn" + msqn + " ppqn" + ppqn);
+
   worker.postMessage({ tm: { msqn, ppqn } });
 
   const soundtracks = tracks.map((track) =>

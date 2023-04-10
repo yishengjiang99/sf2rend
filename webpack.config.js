@@ -1,4 +1,11 @@
 const Fs = require("fs");
+const procfile = Fs.readFileSync("spin/spin-proc.js").toString("utf-8");
+Fs.writeFileSync("sp-proc-ghetto-export.js",
+  `//@prettier-ignore
+  //@ts-ignore
+  export const spmodule=URL.createObjectURL(new Blob(
+  ["${procfile}"],{type: 'text/javascript'}
+  ));`);
 Fs.writeFileSync(
   "sflist.js",
   `export const sf2list=${JSON.stringify(
@@ -13,14 +20,32 @@ Fs.writeFileSync(
 const path = require("path");
 
 module.exports = {
-  mode: "development",
+  mode: "production",
   entry: {
-    index: "./src/index.js",
-    midiworker: "./src/midiworker.js",
+    sequence: "./src/sequence/index.js",
+    timer: "./src/sequence/timer.js",
+  },
+  module: {
+    rules: [
+      {
+        test: /\.?js$/,
+        exclude: /node_modules/,
+        use: {
+          loader: "babel-loader",
+          options: {
+            presets: ["@babel/preset-env", "@babel/preset-react"],
+          },
+        },
+      },
+      {
+        test: /\.css$/i,
+        use: ["style-loader", "css-loader"],
+      },
+    ],
   },
   devtool: "inline-source-map",
   devServer: {
-    static: "./dist",
+    static: "."
   },
   output: {
     filename: "[name].js",

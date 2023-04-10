@@ -1,39 +1,35 @@
-import { mkdiv, logdiv, mkdiv2 } from "../mkdiv/mkdiv.js";
+import {mkdiv, mkdiv2} from "../mkdiv/mkdiv.js";
 import { mkui } from "./ui.js";
 import SF2Service from "../sf2-service/index.js";
 import { fetchmidilist } from "./midilist.js";
 import { mkeventsPipe } from "./mkeventsPipe.js";
 import { createChannel } from "./createChannel.js";
-import { midi_ch_cmds } from "./constants.js";
-import runMidiPlayer from "./runmidi.js";
+import {midi_ch_cmds} from "./constants.js";
 import { sf2list } from "../sflist.js";
-import { mkcanvas, chart } from "https://unpkg.com/mk-60fps";
+import {readMidi} from './midiread.js'
+import {mkcanvas, chart} from "../chart/chart.js";
+import * as sequence from "../dist/sequence.js"
+import {logdiv, mkcollapse} from "./logdiv.js";
 const $ = (sel) => document.querySelector(sel);
-
 const sf2select = $("#sf2select"),
   col4 = $("#col4"),
   col5 = $("#col5");
 
 const drumList = document.querySelector("#drums");
 const programList = document.querySelector("#programs");
-const navhead = document.querySelector("#navhead");
+const navhead = document.querySelector("header");
+const analyze = document.querySelector("#analyze");
+const maindiv = document.querySelector("main");
 
-const { infoPanel, stdout } = logdiv();
-infoPanel.attachTo(document.querySelector("#info"));
+const stdoutdiv = document.querySelector("#stdout");
+
+
+const {stdout, infoPanel} = logdiv();
+
+mkcollapse({title: "Log Info", defaultOpen: true}, infoPanel).attachTo(stdoutdiv);
 window.stdout = stdout;
-window.stderr = (str) => (document.querySelector("footer").innerHTML = str);
-// mkdiv(
-//   "button",
-//   {
-//     onclick: (e) => {
-//       main("./sf2-service/file.sf2");
-//       e.target.style.display = "none";
-//     },
-//   },
-//   "start"
-// ).attachTo(document.querySelector("main"));
-main("./sf2-service/file.sf2");
-
+window.stderr = stdout;// (str) => (document.querySelector("footer").innerHTML = str);
+main();
 const appState = {};
 globalThis.appState = new Proxy(appState, {
   get(target, attr) {
@@ -58,8 +54,17 @@ async function main(sf2file) {
   let sf2, uiControllers, ctx;
   stdout("start");
 
+
   const channels = [];
 
+
+
+  for (const f of sf2list) sf2select.append(mkdiv("option", {value: f}, f));
+
+  sf2select.onchange = (e) => {
+    loadSF2File(e.target.value);
+  };
+  const {mkpath} = await import("./mkpath.js");
   const midiList = await fetchmidilist();
   const midiSelect = mkdiv2({
     tag: "select",
@@ -74,22 +79,16 @@ async function main(sf2file) {
       ),
     ],
   });
-  midiSelect.attachTo($("main"));
+  midiSelect.attachTo($("#midilist"));
   midiSelect.addEventListener("input", (e) => onMidiSelect(e.target.value));
-
-  for (const f of sf2list) sf2select.append(mkdiv("option", { value: f }, f));
-
-  sf2select.onchange = (e) => {
-    loadSF2File(e.target.value);
-  };
-  const { mkpath } = await import("./mkpath.js");
-
   ctx = new AudioContext();
-  const apath = await mkpath(ctx);
+  await ctx.suspend();
+
+  const eventPipe = mkeventsPipe();
+  const apath = await mkpath(ctx, eventPipe);
   const spinner = apath.spinner;
   sf2select.value = sf2file;
 
-  const eventPipe = mkeventsPipe();
   const ui = mkui(eventPipe, $("#channelContainer"), {
     onTrackDoubleClick: async (channelId, e) => {
       const sp1 = await apath.querySpState({ query: 2 * channelId });
@@ -104,18 +103,17 @@ async function main(sf2file) {
     },
   });
   uiControllers = ui.controllers;
-  for (let i = 0; i < 16; i++) {
-    uiControllers[i].hidden = true;
-
+  for (let i = 0;i < 16;i++) {
     channels.push(createChannel(uiControllers[i], i, sf2, apath));
   }
+  const sf2loadWait = loadSF2File("static/FluidR3_GM.sf2")
+
 
   //link pipes
-
   eventPipe.onmessage(eventsHandler(channels));
   initNavigatorMidiAccess();
   async function initNavigatorMidiAccess() {
-    let midiAccess = false; // await navigator.requestMIDIAccess();
+    let midiAccess = await navigator.requestMIDIAccess();
     if (!midiAccess) {
       // eslint-disable-next-line no-unused-vars
       midiAccess = await new Promise((resolve, reject) => {
@@ -155,6 +153,7 @@ async function main(sf2file) {
           ),
         ]
       ).attachTo(navhead);
+      Array.from(midiAccess.inputs.values())[0].onmidimessage = ({data}) => eventPipe.postMessage(data);
     }
   }
   ctx.onstatechange = () => updateAppState({ audioStatus: ctx.state });
@@ -185,6 +184,7 @@ async function main(sf2file) {
   apath.bindKeyboard(() => ui.activeChannel, eventPipe);
   async function loadSF2File(sf2url) {
     sf2 = new SF2Service(sf2url);
+    sf2select.value = sf2url;
     await sf2.load();
     programList.innerHTML = "";
     drumList.innerHTML = "";
@@ -207,29 +207,72 @@ async function main(sf2file) {
       stdout(section + ": " + text);
     }
   }
-  function onMidiSelect(url) {
-    window.runSequence({url, eventPipe, rootElement: $("#sequenceroot")});
+  async function onMidiSelect(url) {
+    const midiInfo = readMidi(
+      new Uint8Array(await (await fetch(url)).arrayBuffer())
+    );
+    await Promise.all(midiInfo.presets.map(preset => {
+      const {pid, channel} = preset;
+      const bkid = channel == 10 ? 128 : 0;
+      return channels[channel].setProgram(pid, bkid);
+    }));
+    const rootElement = $("#sequenceroot");
+    runSequence({midiInfo, rootElement, eventPipe});
 
-    // runMidiPlayer(url, eventPipe, $("#midiPlayer"), async function (presets) {
-    //   for (const preset of presets) {
-    //     const { pid, channel } = preset;
-    //     const bkid = channel == 10 ? 128 : 0;
-    //     await channels[channel].setProgram(pid, bkid);
+    // const worker = new Worker("./src/timer.js");
+    // let msqn = midiInfo.tempos?.[0]?.tempo || 500000;
+    // let ppqn = midiInfo.division;
+
+    // worker.postMessage({tm: {msqn, ppqn}});
+
+    // const soundtracks = midiInfo.tracks.map((track) =>
+    //   track.filter((event) => event.t && event.channel)
+    // );
+
+    // worker.onmessage = ({data}) => {
+    //   const sysTick = data;
+
+    //   for (let i = 0;i < soundtracks.length;i++) {
+    //     const track = soundtracks[i];
+    //     while (track.length && track[0].t <= sysTick) {
+    //       const e = track.shift();
+    //       if (e.meta) onMidiMeta(stdout, e.meta);
+    //       else eventPipe.postMessage(e.channel);
+    //     }
     //   }
+    // };
+    // document.querySelectorAll("#midi-player > button").forEach((b) => {
+    //   b.addEventListener("click", (e) =>
+    //     worker.postMessage({[e.target.dataset.cmd]: 1})
+    //   );
+    //   b.disabled = false;
     // });
+
+//     document.querySelector("#channelContainer").style.background = "none"
+//  document.querySelector("#channelContainer").style.background = "none"
+//  */
+//     document.querySelector("#channelContainer").style.background = "none"
+
   }
+
   apath.ctrl_bar(document.getElementById("ctrls"));
   apath.bindToolbar();
-  await loadSF2File("sf2-service/file.sf2");
-  const cv = mkcanvas({ container: $("#stdout") });
-  const wvform = mkcanvas({ container: $("#stdout") });
+
+  const ffholder = mkdiv("div");
+  const [cv1, cv2] = [mkcanvas({container: ffholder}), mkcanvas({container: ffholder})];
+
+  mkcollapse({title: "fft", defaultOpen: true}, ffholder).attachTo(analyze);
+  const c3 = mkdiv("canvas", {class: "fixed-top-right", width: "500", height: "50"});
+  c3.attachTo(document.body);
+  const cancelFn = apath.detectClips(c3);
 
   function draw() {
-    chart(cv, apath.analysis.frequencyBins);
-    chart(wvform, apath.analysis.waveForm);
+    chart(cv1, apath.analysis.frequencyBins);
+    chart(cv2, apath.analysis.waveForm);
     requestAnimationFrame(draw);
   }
   draw();
+  maindiv.classList.remove("hidden");
 }
 
 function eventsHandler(channels) {
@@ -264,6 +307,9 @@ function eventsHandler(channels) {
           const zone = channels[ch].keyOn(key, velocity);
           //requestAnimationFrame(() => renderZ(panel2, canvas1, zone));
         }
+        break;
+      case midi_ch_cmds.pitchbend:
+        stdout("PITCH BEND " + [ch, cmd.toString(16), b, c].join("/"));
         break;
       default:
         stdout("midi cmd: " + [ch, cmd, b, c].join("/"));

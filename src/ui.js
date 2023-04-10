@@ -5,7 +5,7 @@ import {
   mkdiv2,
   wrapDiv,
   mksvg,
-} from "https://unpkg.com/mkdiv@3.1.2/mkdiv.js";
+} from "../mkdiv/mkdiv.js";
 import { midi_ch_cmds, range, midi_effects as effects } from "./constants.js";
 import { attributeKeys, defZone, newSFZoneMap } from "../spin/zoneProxy.js";
 
@@ -161,7 +161,7 @@ export function mkui(
       function rzone() {}
     }
     set hidden(h) {
-      this.container.style.display = h ? "none" : "grid";
+      // this.container.style.display = h ? "none" : "grid";
     }
     set presetId(presetId) {
       this._pid = presetId;

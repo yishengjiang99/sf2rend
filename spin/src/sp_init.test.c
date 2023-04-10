@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "pdta.c"
 #include "spin.c"
 #include "test_utils.h"
 

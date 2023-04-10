@@ -24,6 +24,14 @@ typedef struct {
 void advanceStage(EG* eg);
 float update_eg(EG* eg, int n);
 
+void eg_roll(EG* eg, int n, float* output) {
+  while (n--) {
+    eg->egval += eg->egIncrement;
+    eg->nsteps--;
+    *output++ = eg->egval;
+  }
+  if (eg->nsteps <= 7) advanceStage(eg);
+}
 /**
  * advances envelope generator by n steps..
  * shift to next stage and advance the remaining n steps
@@ -31,45 +39,40 @@ float update_eg(EG* eg, int n);
  *
  */
 float update_eg(EG* eg, int n) {
-  if (eg->nsteps < 0) {
-    return 0;
+  while (n--) {
+    eg->egval += eg->egIncrement;
+    eg->nsteps--;
   }
-  int n1 = n > eg->nsteps ? eg->nsteps : n;
-  if (n < eg->nsteps) {
-    eg->nsteps -= n1;
-    eg->egval += eg->egIncrement * (float)n1;
-  } else {
-    eg->nsteps = 0;
-    eg->egval += eg->egIncrement * (float)(n1 - eg->nsteps);
-    n1 = n - n1;
-    advanceStage(eg);
-    eg->nsteps -= n1;
-    eg->egval += eg->egIncrement * (float)n1;
-  }
+  if (eg->nsteps <= 7) advanceStage(eg);
   return eg->egval;
 }
+
 void advanceStage(EG* eg) {
   // if (eg->hasReleased > 0 && eg->stage < release) {
   //   goto EG_RELEASE;
   // }
   switch (eg->stage) {
     case inactive:  // cannot advance
+      eg->stage++;
       return;
     case init:
-      eg->egval = -960.0f;
-      eg->stage++;
-      eg->nsteps = timecent2sample(eg->delay);
-      eg->egval = -960.0f;
-      eg->egIncrement = 0.0f;
-      break;
+      eg->stage = delay;
+      if (eg->delay > -12000) {
+        eg->egval = -960.0f;
+        eg->nsteps = timecent2sample(eg->delay);
+        eg->egIncrement = 0.0f;
+        break;
+      }
     case delay:
-      eg->egval = -960.0f;
-      eg->stage++;
-      eg->nsteps = timecent2sample(eg->attack);
-      eg->egIncrement = 960.0f / (float)eg->nsteps;
-      break;
+      eg->stage = attack;
+      if (eg->attack > -12000) {
+        eg->egval = -960.0f;
+        eg->nsteps = timecent2sample(eg->attack);
+        eg->egIncrement = 960.0f / (float)eg->nsteps;
+        break;
+      }
     case attack:
-      eg->stage++;
+      eg->stage = hold;
       eg->egval = 0.0f;
       eg->nsteps = timecent2sample(eg->hold);
       eg->egIncrement = 0.0f;
@@ -128,7 +131,6 @@ one second. For example, a release time of 10 msec would be 1200log2(.01) =
       eg->nsteps = eg->egval / eg->egIncrement;
       break;
     case release:
-
       eg->stage = done;
       break;
     case done:
@@ -151,7 +153,7 @@ void init_vol_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
   eg->decay = z->VolEnvDecay * scaleFactor;
   eg->release = z->VolEnvRelease * scaleFactor;
   eg->hold = z->VolEnvHold * scaleFactor;
-  eg->sustain = z->VolEnvSustain * scaleFactor;
+  // eg->sustain = z->VolEnvSustain * scaleFactor;
   eg->stage = init;
   eg->nsteps = 0;
 }
@@ -164,11 +166,6 @@ void init_mod_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
   eg->sustain = z->ModEnvSustain;
 }
 
-void _eg_set_stage(EG* e, int n) {
-  e->stage = n - 1;
-  e->nsteps = 0;
-  advanceStage(e);
-}
 void _eg_release(EG* e) {
   e->nsteps = 0;
   e->hasReleased = 1;

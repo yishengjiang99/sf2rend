@@ -1,0 +1,23 @@
+body{
+  margin:0;
+  padding:0;
+}
+:root{
+  --timer-ticks:0;
+  --ppqn: 240;
+  --pxqn: 40;
+  --canvas-width: 30;
+}
+.canvas_container {
+  transform: translateX(calc(var(--timer-ticks)/var(--ppqn)*var(--pxqn) * -1px));
+}
+.canvas_window {
+  width: calc(var(--canvas-width) * 1vw);
+  position: fixed;
+  right: 0;
+  top: 120px;
+  height: calc(300vh-120px);
+  z-index: -2;
+  overflow-x: hidden;
+  overflow-y: scroll;
+}
