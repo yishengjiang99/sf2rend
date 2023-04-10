@@ -218,10 +218,9 @@ void _spinblock(spinner* x, int n, int blockOffset) {
       x->voleg->stage = done;
     }
     x->outputf[i * 2 + blockOffset * 2] =
-        applyCentible(outputf, (short)(db / 10 + kRateCB / 2 + panLeft / 2));
+        applyCentible(outputf, (short)(db / 10 + kRateCB + panLeft));
     x->outputf[i * 2 + blockOffset * 2 + 1] =
-        applyCentible(outputf, (short)(db / 10 + kRateCB / 2 + panRight / 2));
-    db += dbInc;
+        applyCentible(outputf, (short)(db / 10 + kRateCB + panRight));
   }
   x->position = position;
   x->fract = fract;
@@ -233,6 +232,10 @@ int spin(spinner* x, int n) {
 
   _spinblock(x, 64, 64);
 
+  if (x->voleg->egval < -2000.f) {
+    x->voleg->stage = done;
+    return 0;
+  }
   if (x->voleg->stage == done) {
     return 0;
   }

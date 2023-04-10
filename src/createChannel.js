@@ -5,6 +5,7 @@ export function createChannel(uiController, channelId, sf2, apath) {
   let program;
   const spinner = apath.spinner;
   const kd_map = Array(nvpc).fill(0);
+  let ct_cnt = 0;
   return {
     setSF2(sf2) {
       _sf2 = sf2;
@@ -30,19 +31,25 @@ export function createChannel(uiController, channelId, sf2, apath) {
       uiController.CC = { key, value: vel };
     },
     keyOn(key, vel) {
-      kd_map[key] = [];
+      kd_map[key] ||= [];
       const zones = program.filterKV(key, vel);
-      zones.slice(0, 1).map((zone, i) => {
+      stdout(ct_cnt, channelId);
+      zones.slice(0, 2).map((zone, i) => {
+        kd_map[key].push(channelId * 2 + ct_cnt);
         spinner.port.postMessage([
           midi_ch_cmds.note_on,
-          channelId * 2 + i,
+          channelId * 2 + ct_cnt,
           key, vel,
           [this.presetId, zone.ref],
-        ]);
+        ])
+
+        ct_cnt++;
+
         if (zone.FilterFC < 13500) {
           apath.lowPassFilter(channelId * 2 + 1, zone.FilterFc);
         }
       });
+
       if (!zones[0]) return;
       requestAnimationFrame(() => {
         uiController.active = true;
@@ -53,9 +60,11 @@ export function createChannel(uiController, channelId, sf2, apath) {
       return zones[0];
     },
     keyOff(key, vel) {
-      window.stdout("koff " + channelId * 2);
-      spinner.keyOff(channelId * 2, key, vel);
-
+      if (!kd_map[key]) return;
+      while (kd_map[key].length) {
+        spinner.keyOff(kd_map[key].shift(), key, vel);
+        ct_cnt--;
+      }
       requestAnimationFrame(() => (uiController.active = false));
     },
   };

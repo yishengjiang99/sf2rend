@@ -3,51 +3,27 @@ import { LowPassFilterNode } from "../lpf/lpf.js";
 import {midi_ch_cmds, midi_effects} from "./constants.js";
 import FFTNode from "../fft-64bit/fft-node.js";
 import { mkdiv } from "../mkdiv/mkdiv.js";
+import {drawLoops} from "../volume-meter/main.js";
+import createAudioMeter from "../volume-meter/volume-meter.js"
+import {anti_denom_dither} from './misc.js';
 export async function mkpath(ctx, eventPipe) {
   await SpinNode.init(ctx).catch(console.trace);
   await FFTNode.init(ctx).catch(console.trace);
   await LowPassFilterNode.init(ctx).catch(console.trace);
-  const spinner = new SpinNode(ctx, 16);
-  const merger = new GainNode(ctx);
+  const spinner = new SpinNode(ctx);
+  const mix = new GainNode(ctx);
   const lpfs = Array(32).fill(new LowPassFilterNode(ctx));
   const channelIds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
   const fft = new FFTNode(ctx);
+  const whitenoise = anti_denom_dither(ctx);
+  whitenoise.start();
+  const clipdetect = createAudioMeter(ctx)
 
-  const channelState = channelIds.map(
-    (index) =>
-      new Proxy(
-        {
-          id: index,
-          keys: [
-            "zoneObj",
-            "input",
-            "midi",
-            "velocity",
-            "program",
-            "active",
-            "decibel",
-          ],
-          values: new Array(99),
-        },
-        {
-          get(target, p) {
-            return target.values[target.keys.indexOf(p)];
-          },
-          set(target, attr, value) {
-            const index = target.keys.indexOf(attr);
-            if (index > -1) {
-              target.values[index] = value;
-              return true;
-            }
-            return false;
-          },
-        }
-      )
-  );
-  for (let i = 0; i < 16; i++) {
-    spinner.connect(lpfs[i], i).connect(merger);
-  }
-  merger.connect(fft).connect(ctx.destination);
+  whitenoise.connect(spinner).connect(ctx.destination, 0);
+  spinner.connect(fft, 1).connect(ctx.destination);
+  //spinner.connect(clipdetect, 2);
+
+  const channelState = [];
 
   const msg_cmd = (cmd, args) => spinner.port.postMessage({ ...args, cmd });
   spinner.port.onmessage = ({ data: { dv, ch } }) => {
@@ -56,6 +32,12 @@ export async function mkpath(ctx, eventPipe) {
     }
   };
   return {
+    detectClips(canvas) {
+      // const timer = drawLoops(canvas, clipdetect);
+      return function cleanup() {
+        cancelAnimationFrame(timer);
+      }
+    },
     analysis: {
       get waveForm() {
         return fft.getWaveForm();
@@ -160,7 +142,7 @@ export async function mkpath(ctx, eventPipe) {
         if (e.repeat) return;
         if (e.isComposing) return;
         const channel = get_active_channel_fn();
-        const baseOctave = this.channelState[channel].octave || 48;
+        const baseOctave = 48;
         const index = keys.indexOf(e.key);
 
         if (index < 0) return;

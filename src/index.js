@@ -54,8 +54,17 @@ async function main(sf2file) {
   let sf2, uiControllers, ctx;
   stdout("start");
 
+
   const channels = [];
 
+
+
+  for (const f of sf2list) sf2select.append(mkdiv("option", {value: f}, f));
+
+  sf2select.onchange = (e) => {
+    loadSF2File(e.target.value);
+  };
+  const {mkpath} = await import("./mkpath.js");
   const midiList = await fetchmidilist();
   const midiSelect = mkdiv2({
     tag: "select",
@@ -72,21 +81,14 @@ async function main(sf2file) {
   });
   midiSelect.attachTo($("#midilist"));
   midiSelect.addEventListener("input", (e) => onMidiSelect(e.target.value));
-
-  for (const f of sf2list) sf2select.append(mkdiv("option", { value: f }, f));
-
-  sf2select.onchange = (e) => {
-    loadSF2File(e.target.value);
-  };
-  const { mkpath } = await import("./mkpath.js");
-
   ctx = new AudioContext();
-
+  await ctx.suspend();
 
   const eventPipe = mkeventsPipe();
   const apath = await mkpath(ctx, eventPipe);
   const spinner = apath.spinner;
   sf2select.value = sf2file;
+
   const ui = mkui(eventPipe, $("#channelContainer"), {
     onTrackDoubleClick: async (channelId, e) => {
       const sp1 = await apath.querySpState({ query: 2 * channelId });
@@ -104,9 +106,10 @@ async function main(sf2file) {
   for (let i = 0;i < 16;i++) {
     channels.push(createChannel(uiControllers[i], i, sf2, apath));
   }
+  const sf2loadWait = loadSF2File("static/FluidR3_GM.sf2")
+
 
   //link pipes
-
   eventPipe.onmessage(eventsHandler(channels));
   initNavigatorMidiAccess();
   async function initNavigatorMidiAccess() {
@@ -215,55 +218,53 @@ async function main(sf2file) {
     }));
     const rootElement = $("#sequenceroot");
     runSequence({midiInfo, rootElement, eventPipe});
-    /*
 
-    const worker = new Worker("./src/timer.js");
-    let msqn = midiInfo.tempos?.[0]?.tempo || 500000;
-    let ppqn = midiInfo.division;
+    // const worker = new Worker("./src/timer.js");
+    // let msqn = midiInfo.tempos?.[0]?.tempo || 500000;
+    // let ppqn = midiInfo.division;
 
-    worker.postMessage({tm: {msqn, ppqn}});
+    // worker.postMessage({tm: {msqn, ppqn}});
 
-    const soundtracks = midiInfo.tracks.map((track) =>
-      track.filter((event) => event.t && event.channel)
-    );
+    // const soundtracks = midiInfo.tracks.map((track) =>
+    //   track.filter((event) => event.t && event.channel)
+    // );
 
-    worker.onmessage = ({data}) => {
-      const sysTick = data;
+    // worker.onmessage = ({data}) => {
+    //   const sysTick = data;
 
-      for (let i = 0;i < soundtracks.length;i++) {
-        const track = soundtracks[i];
-        while (track.length && track[0].t <= sysTick) {
-          const e = track.shift();
-          if (e.meta) onMidiMeta(stdout, e.meta);
-          else eventPipe.postMessage(e.channel);
-        }
-      }
-    };
-    document.querySelectorAll("#midi-player > button").forEach((b) => {
-      b.addEventListener("click", (e) =>
-        worker.postMessage({[e.target.dataset.cmd]: 1})
-      );
-      b.disabled = false;
-    });
-    window.runSequence({
-      midiInfo, eventPipe,
-      rootElement: $("#sequenceroot")
-    });
-    document.querySelector("#channelContainer").style.background = "none"
- document.querySelector("#channelContainer").style.background = "none"
- */
-    document.querySelector("#channelContainer").style.background = "none"
+    //   for (let i = 0;i < soundtracks.length;i++) {
+    //     const track = soundtracks[i];
+    //     while (track.length && track[0].t <= sysTick) {
+    //       const e = track.shift();
+    //       if (e.meta) onMidiMeta(stdout, e.meta);
+    //       else eventPipe.postMessage(e.channel);
+    //     }
+    //   }
+    // };
+    // document.querySelectorAll("#midi-player > button").forEach((b) => {
+    //   b.addEventListener("click", (e) =>
+    //     worker.postMessage({[e.target.dataset.cmd]: 1})
+    //   );
+    //   b.disabled = false;
+    // });
+
+//     document.querySelector("#channelContainer").style.background = "none"
+//  document.querySelector("#channelContainer").style.background = "none"
+//  */
+//     document.querySelector("#channelContainer").style.background = "none"
 
   }
 
   apath.ctrl_bar(document.getElementById("ctrls"));
   apath.bindToolbar();
+
   const ffholder = mkdiv("div");
   const [cv1, cv2] = [mkcanvas({container: ffholder}), mkcanvas({container: ffholder})];
 
   mkcollapse({title: "fft", defaultOpen: true}, ffholder).attachTo(analyze);
-
-  loadSF2File("static/FluidR3_GM.sf2")
+  const c3 = mkdiv("canvas", {class: "fixed-top-right", width: "500", height: "50"});
+  c3.attachTo(document.body);
+  const cancelFn = apath.detectClips(c3);
 
   function draw() {
     chart(cv1, apath.analysis.frequencyBins);
@@ -271,7 +272,7 @@ async function main(sf2file) {
     requestAnimationFrame(draw);
   }
   draw();
-  maindiv.classList.remove("hidden")
+  maindiv.classList.remove("hidden");
 }
 
 function eventsHandler(channels) {

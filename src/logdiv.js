@@ -52,6 +52,23 @@ export function mkcollapse({title, id, defaultOpen}, children) {
 			</p>
 		</div>
 	</div > `;
+	const cd = wrap.querySelector(".collapsible-content");
 	wrap.querySelector(".content-inner").replaceChildren(children)
+	new MutationObserver((mutationList) => {
+
+		mutationList.forEach((mutation) => {
+			switch (mutation.type) {
+				case "attributes":
+					switch (mutation.attributeName) {
+						case "style":
+							console.log(mutation);
+							break;
+					}
+					break;
+			}
+		});
+	}).observe(cd, {
+		attributeFilter: ["style"]
+	})
 	return wrap;
 }

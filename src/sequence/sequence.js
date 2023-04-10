@@ -33,19 +33,19 @@ export const Sequence = forwardRef((props, ref) => {
 			ctx.lineTo(i * barInc, height);
 			ctx.stroke();
 			if (chId === 0 && i % division === 0) {
-				ctx.strokeStyle = 'yello';
+				ctx.strokeStyle = 'yellow';
 				ctx.strokeText(i, i * barInc, 20);
 			}
 		}
 		for (let i = nsemi;i >= 0;i--) {
 			if ([1, 3, 5, 8, 10].indexOf(i % 12) > -1) {
-				ctx.fillStyle = "rgba(22, 22, 22, 0.5)";
+				ctx.fillStyle = "rgba(22, 22, 22, 1.0)";
 			} else {
-				ctx.fillStyle = "rgba(33, 33, 33, 0.5)";
+				ctx.fillStyle = "rgba(33, 33, 33, 1.0)";
 			}
 			ctx.fillRect(0, i * semiHeight, width, semiHeight);
 			ctx.beginPath();
-			ctx.strokeStyle = "rgba(1, 1, 1, 0.5)";
+			ctx.strokeStyle = "rgba(1, 1, 1, 1.0)";
 			ctx.moveTo(0, i * semiHeight);
 			ctx.lineTo(width, i * semiHeight);
 			ctx.stroke();
@@ -65,7 +65,7 @@ export const Sequence = forwardRef((props, ref) => {
 					}
 					const ctx = canvasRef.current.getContext("2d");
 					ctx.save();
-					ctx.fillStyle = `rgb(${midi * 2},${(127 - midi) * 2},0)`;
+					ctx.fillStyle = `rgb(${(127 - midi) * 2},0,${midi * 2})`;
 					ctx.fillRect(
 						t1 / ppqn * barInc - 1,
 						d * semiHeight - 1,

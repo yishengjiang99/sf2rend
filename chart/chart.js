@@ -18,10 +18,10 @@ export function chart(canvasCtx, dataArray) {
   canvasCtx.lineWidth = 1;
   canvasCtx.strokeStyle = "white";
   canvasCtx.moveTo(0, _height / 2);
-  const zoomY = Math.log(slider.value / 128) / Math.LN2
+  const zoomY = Math.log2(slider.value / 128);
   for (let i = 1; i < dataArray.length; i++) {
     x += iWIDTH;
-    canvasCtx.lineTo(x, _height / 2 + zoomY * dataArray[i]);
+    canvasCtx.lineTo(x, _height / 2 + zoomY * _height / 2 * dataArray[i]);
   }
   canvasCtx.stroke();
   canvasCtx.font = "1em Arial";
@@ -53,6 +53,7 @@ export function mkcanvas(params = {}) {
         value: 64,
         max: 128,
         min: 1,
+        step: "1"
       }),
     ]),
     canvas,

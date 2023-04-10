@@ -2,10 +2,10 @@
 let tmParams = {
 	ppqn: 240, ts: 4, msqn: 600000,
 	get waittime() {
-		return tmParams.msqn / 1000 / tmParams.ppqn * 20;
+		return tmParams.msqn / 1000 / tmParams.ppqn * 60;
 	},
 	get ticksElapsed() {
-		return 20;
+		return 60;
 	}
 }
 

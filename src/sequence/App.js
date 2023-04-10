@@ -12,14 +12,15 @@ import {
 } from "./constants";
 import useTM from "./useTM";
 import SendMidi from "./midi-send";
-import SetTempo from "./set-tempo";
-import ClockDisplay from "./clock-display";
-import Preset from "./preset";
 import "./App.css";
-import {Space} from 'antd';
-
-const M_HEIGHT = 3 * window.visualViewport?.height;
-console.time("seq-rend");
+function Space({children}) {
+  return (
+    <div style={{display: "flex", justifyContent: "space-between"}}>
+      {children}
+    </div>
+  );
+}
+const M_HEIGHT = 3 * window.visualViewport?.height - 120;
 const ranEvents = [];
 function App({timerWorker, midiInfo, eventPipe}) {
   const presetMap = midiInfo.presets.reduce(
@@ -51,20 +52,11 @@ function App({timerWorker, midiInfo, eventPipe}) {
       });
     }
   }, [midioutput, midiInfo.tracks]);
+
   useEffect(
     function () {
       switch (timerState) {
         case TIMER_STATE.RUNNING:
-          // for (let ch in midiInfo.tracks) {
-          //   const track = midiInfo.tracks[ch];
-          //   while (track.length && track[0].t <= ticks + 10) {
-          //     const e = track.shift();
-          // if (e.channel) {
-          //   eventPipe.postMessage(e.channel);
-          // }
-          //     ranEvents.push({event: e, ch});
-          //   }
-          // }
           break;
         case TIMER_STATE.REWIND:
           while (
@@ -77,6 +69,8 @@ function App({timerWorker, midiInfo, eventPipe}) {
           queueMicrotask(() => setTimerState(TIMER_STATE.RUNNING));
           break;
         case TIMER_STATE.FWD:
+          queueMicrotask(() => setTimerState(TIMER_STATE.PAUSED));
+
           break;
         default:
           break;
@@ -108,7 +102,8 @@ function App({timerWorker, midiInfo, eventPipe}) {
         while (track.length && track[0].t <= data.ticks) {
           const e = track.shift();
           if (e.channel) {
-            eventPipe.postMessage(e.channel); ranEvents.push({event: e, ch: i});
+            eventPipe.postMessage(e.channel);
+            ranEvents.push({event: e, ch: i});
           }
         }
       }
@@ -134,9 +129,20 @@ function App({timerWorker, midiInfo, eventPipe}) {
     msqn,
   ]);
   useEffect(() => {
-    if (sequencerRef.current)
-      sequencerRef.current.style.setProperty("--timer-ticks", ticks);
-  }, [ticks]);
+    if (!sequencerRef.current) return;
+    let id1, id2;
+    let ref = sequencerRef.current;
+    id1 = requestAnimationFrame(() => {
+      id2 = requestIdleCallback(() =>
+        ref.style.setProperty("--timer-ticks", ticks)
+      )
+    });
+
+    return () => {
+      cancelAnimationFrame(id1);
+      cancelIdleCallback(id2);
+    }
+  }, [sequencerRef.current, ticks]);
 
   useEffect(() => {
     // return;
@@ -159,14 +165,10 @@ function App({timerWorker, midiInfo, eventPipe}) {
       value={cmd}
     />
   );
-  return (
 
+  return (
     <main className="container">
-      <Space
-        key="adf"
-        className="container"
-        style={{display: "flex", justifyContent: "space-between"}}
-      >
+      <Space key="adf">
         <span>
           clock: {(clock / 1000).toFixed(2).toString().split(".").join(":")}
         </span>
@@ -186,18 +188,39 @@ function App({timerWorker, midiInfo, eventPipe}) {
           ))}
         </span>
 
-        <span>Bar: {~~(ticks / tm.ppqn)}</span>        <SetTempo {...{setTempo, tempo, setTS2, ts2, setTS1, ts1}} />
-        <SendMidi
+        <span>Bar: {~~(ticks / tm.ppqn)}</span>
+        <input
+          type="number"
+          step="1"
+          width={6}
+          label="bpm"
+          key="adfda"
+          onInput={(e, v) => {
+            setTempo(parseInt(e.target.value));
+          }}
+          defaultValue={tempo}
+          min={30}
+          max={600}
+        />
+        <input
+          type="number"
+          label="timesig"
+          onInput={(e) => setTS1(parseInt(e.target.value))}
+          value={ts1}
+          key="adsf"
+          min={2}
+          max={8}
+        />
+      </Space>
+      <SendMidi style={{position: "fixed", top: 0, right: 0}}
           onMidiConnected={(outputChannel) => {
             midioutput.current = outputChannel;
           }}
-        />
-      </Space>
+      />
       <div key={1} className="canvas_window">
         <div className="canvas_container" ref={sequencerRef}>
           {channels.map((ch) => (
             <div key={ch} style={{paddingTop: 10}}>
-              <Preset preset={presetMap[ch]} chId={ch} />
               <Sequence
                 preset={presetMap[ch]}
                 ref={(element) => chRef.current.push(element)}
@@ -215,7 +238,6 @@ function App({timerWorker, midiInfo, eventPipe}) {
           ))}
         </div>
       </div>
-
     </main>
   );
   function drawEventList(events, notesDown) {

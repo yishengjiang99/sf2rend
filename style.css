@@ -1,6 +1,12 @@
 th {
   position: sticky;
 }
+.fixed-top-right{
+  position:fixed;
+  top:0;
+  right:0;
+  z-index:-100;
+}
 .channelCard {
   position:relative;
 }
@@ -28,36 +34,7 @@ body {
 .sans-serif {
   font-family: -apple-system,BlinkMacSystemFont,avenir next,avenir,helvetica neue,helvetica,ubuntu,roboto,noto,segoe ui,arial,sans-serif;
 }
-main {
-  display: grid;
-  grid-template-areas: 'channelP info''channelP stdout';
-  padding:20px;
-}
+
 #channelContainer{
-  grid-area: channelP;
   overflow-y: scroll;
 }
-#stdout{
-  grid-area: stdout;
-}
-#info {
-  grid-area: info;
-}
-
-
-* { 
-  -webkit-box-sizing: border-box; 
-  -moz-box-sizing: border-box; 
-  -o-box-sizing: border-box; 
-  box-sizing: border-box; 
-  /* adds animation for all transitions */ 
-  -webkit-transition: .25s ease-in-out; 
-  -moz-transition: .25s ease-in-out; 
-  -o-transition: .25s ease-in-out; 
-  transition: .25s ease-in-out; 
-  margin: 0; 
-  padding: 0; 
-  -webkit-text-size-adjust: none; 
-  } 
-  
-  /* Makes sure that everything is 100% height */ 
