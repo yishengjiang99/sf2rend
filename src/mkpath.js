@@ -33,22 +33,21 @@ export async function mkpath2(ctx, {midi_input, sf2File, }) {
     spinner.connect(fft, _availableOutput());
     const msg_cmd = adfcdsa(spinner);
     let sf2s;
-    if (sf2File) {
-        sf2s = new SF2Service(sf2File);
-        sf2s.load();
-    }
     return {
         spinner,
-        async loadSoundFontLibrary(sffile) {
-            this.sf2 = new SF2Service(sffile);
-        },
         async loadProgram(pid, bankid) {
-            const p = this.sf2.loadProgram(pid, bankid);
-            await this.sf2.shipProgram(p, pid | bankid);
+            if (sf2File && !sf2s) {
+                sf2s = new SF2Service(sf2File);
+                await sf2s.load();
+            }
+            const p = sf2s.loadProgram(pid, bankid);
+            await spinner.shipProgram(p, pid | bankid);
+            return p;
         },
         connect(destination, outputNumber, destinationInputNumber) {
             spinner.connect(destination, outputNumber, destinationInputNumber);
         },
+
         detectClips(canvas) {
             const timer = drawLoops(canvas, clipdetect);
             spinner.connect(clipdetect, _availableOutput());

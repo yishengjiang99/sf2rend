@@ -141,7 +141,7 @@ void set_spinner_zone(spinner* x, zone_t* z) {
   set_spinner_input(x, pcm);
   x->zone = z;
 
-  if (x->zone->FilterQ > 0 && x->zone->FilterFc < 13670) {
+  if (x->zone->FilterFc < 13670) {
     x->active_dynamics_flag |= filter_active;
     lpf_initialize(x->channelId, z->FilterFc, z->FilterQ);
   }
@@ -219,7 +219,7 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   for (int i = 0; i < n; i++) {
     db = vol_eg_output[i];
 
-    stride = calcp2over200(pdiff + lfo1Out[i] * lfo1_pitch -
+    stride = calcp2over200(pdiff + lfo1Out[i] * lfo1_pitch +
                            lfo2Out[i] * lfo2_pitch);
     fract = fract + stride;
     while (fract >= 1.0f) {
@@ -235,8 +235,9 @@ void _spinblock(spinner* x, int n, int blockOffset) {
       outputf = 0.0;
       x->voleg->stage = done;
     }
-    output_L[i] = applyCentible(outputf, (short)(db / 2 + kRateCB + panLeft));
-    output_R[i] = applyCentible(outputf, (short)(db / 2 + kRateCB + panRight));
+    output_L[i] = applyCentible(outputf, (short)(db / 2.0 + kRateCB + panLeft));
+    output_R[i] =
+        applyCentible(outputf, (short)(db / 2.0 + kRateCB + panRight));
   }
   x->position = position;
   x->fract = fract;
@@ -252,7 +253,7 @@ int spin(spinner* x, int n) {
 
   _spinblock(x, 64, 64);
 
-  if (x->voleg->egval < -2000.f) {
+  if (x->voleg->egval < -1440.f) {
     x->voleg->stage = done;
     return 0;
   }

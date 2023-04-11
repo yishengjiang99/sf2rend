@@ -279,7 +279,6 @@ class SpinProcessor extends AudioWorkletProcessor {
     }
     fft_out[0].set(left);
     clip_out[0].set(right);
-    //  this.sp_reflect_snd();
     return true;
   }
   sp_reflect_snd() {
