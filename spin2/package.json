@@ -4,7 +4,8 @@
   "description": "",
   "main": "spin2.js",
   "scripts": {
-    "test": "npx karma start karma.conf.cjs"
+    "test": "npx karma start karma.conf.cjs",
+    "build": "docker run --rm -d  emsdk:latest"
   },
   "keywords": [],
   "author": "",

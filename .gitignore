@@ -16,6 +16,6 @@ spin/*wasm
 **/*o
 spin/test.html
 static/GeneralUserGS.sf2
-.vscode/launch.json
-.vscode/settings.json
-.vscode/tasks.json
+.vscode
+spin2
+spin/src/tinysp.c

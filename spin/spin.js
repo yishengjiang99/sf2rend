@@ -18,8 +18,8 @@ export class SpinNode extends AudioWorkletNode {
   constructor(ctx) {
     super(ctx, "spin-proc", {
       numberOfInputs: 1,
-      numberOfOutputs: 3,
-      outputChannelCount: [2, 1, 1],
+      numberOfOutputs: 5,
+      outputChannelCount: [2, 1, 1, 2, 2],
       processorOptions: {
         lpfmod
       }

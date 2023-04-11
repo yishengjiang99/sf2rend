@@ -4,7 +4,8 @@ module.exports = {
 		"browser": true,
 		"es2021": true
 	},
-	"extends": ['eslint:recommended',
+	"extends": [
+		'eslint:recommended',
 		'plugin:react-hooks/recommended'
 	],
 	"overrides": [
@@ -29,9 +30,6 @@ module.exports = {
 			"off",
 			"double"
 		],
-		"semi": [
-			"error",
-			"always"
-		]
+		"semi": "off"
 	}
 };

@@ -13,7 +13,6 @@ export const midi_ch_cmds = {
   keyaftertouch: 0xa0, // 10
   pitchbend: 0xe0, // 14
 };
-
 export const midi_effects = {
   bankselectcoarse: 0,
   modulationwheelcoarse: 1,
@@ -78,3 +77,4 @@ export const midi_effects = {
 
 
 export const nvpc = 4;
+export const DRUMSCHANNEL = 10;

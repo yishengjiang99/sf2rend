@@ -24,7 +24,8 @@
     "css-loader": "^6.7.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-scripts": "^2.1.3",
+    "react-scripts": "^5.0.1",
+    "sf2-service": "^1.5.0",
     "style-loader": "^3.3.2"
   }
 }

@@ -141,7 +141,10 @@ void set_spinner_zone(spinner* x, zone_t* z) {
   set_spinner_input(x, pcm);
   x->zone = z;
 
-  lpf_initialize(x->channelId, z->FilterFc, z->FilterQ);
+  if (x->zone->FilterQ > 0 && x->zone->FilterFc < 13670) {
+    x->active_dynamics_flag |= filter_active;
+    lpf_initialize(x->channelId, z->FilterFc, z->FilterQ);
+  }
 
   x->position += (unsigned short)z->StartAddrOfs +
                  (unsigned short)(z->StartAddrCoarseOfs << 15);
@@ -205,9 +208,8 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   short modeg_fc = effect_floor(x->zone->ModEnv2FilterFc);
   short modeg_vol = effect_floor(x->zone->ModEnv2Pitch);
 
-  short starting_fc = modEgOut[0] * modeg_fc / -960.f;
-  if (starting_fc < SAMPLE_RATE) {
-    x->active_dynamics_flag |= filter_active;
+  if (x->active_dynamics_flag & filter_active) {
+    short starting_fc = modEgOut[0] * modeg_fc / -960.f;
     lpf_set_fc(ch, starting_fc);
   }
   if (modEgOut[0] != modEgOut[n]) {
@@ -217,7 +219,7 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   for (int i = 0; i < n; i++) {
     db = vol_eg_output[i];
 
-    stride = calcp2over200(pdiff + lfo1Out[i] * lfo1_pitch +
+    stride = calcp2over200(pdiff + lfo1Out[i] * lfo1_pitch -
                            lfo2Out[i] * lfo2_pitch);
     fract = fract + stride;
     while (fract >= 1.0f) {

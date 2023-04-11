@@ -1,9 +1,9 @@
 import * as Spin from './spin.wasm.js';
 let module, memory;
 export async function wsmodule() {
-	if (!module) module = await WebAssembly.compile(Spin.wasmbin);;
+	if (!module) module = await WebAssembly.compile(Spin.wasmbin);
 	if (!memory) memory = new WebAssembly.Memory({initial: 2, maximum: 2, shared: true});
-	return {module, memory}
+	return {module, memory};
 }
 export async function mkInstance() {
 	const {module, memory} = await wsmodule();
