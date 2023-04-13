@@ -228,7 +228,7 @@ async function main(sf2file) {
       return channels[channel].setProgram(pid, bkid);
     }));
     const rootElement = $("#sequenceroot");
-//    runSequence({midiInfo, rootElement, eventPipe});
+    runSequence({midiInfo, rootElement, eventPipe});
   }
 
   apath.ctrl_bar(document.getElementById("ctrls"));
