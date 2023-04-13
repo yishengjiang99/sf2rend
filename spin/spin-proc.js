@@ -108,9 +108,10 @@ class SpinProcessor extends AudioWorkletProcessor {
           break;
         case 0x80: {
           const [key, vel] = args;
-          const spRef = this.sp_map[channel * 128 + midi];
-          if (spRef) this.inst.exports.trigger_release(sp);
-          else console.error("sp not found in trig release");
+          if (!this.sp_map[channel * 128 + key]) throw 'unexpected emty sp_map';
+          for (const sp of this.sp_map[channel * 128 + key]) {
+            this.inst.exports.trigger_release(sp);
+          }
           this.port.postMessage({ack: [0x80, channel]});
           break;
         }
@@ -124,8 +125,6 @@ class SpinProcessor extends AudioWorkletProcessor {
             }
             const sp = this.inst.exports.newSpinner(ch);
 
-            this.sp_map[ch * 128 + key] = sp;
-            this.spinners.push(sp);
             this.inst.exports.reset(sp);
             this.inst.exports.set_spinner_zone(sp, zonePtr);
             this.inst.exports.trigger_attack(
@@ -134,7 +133,9 @@ class SpinProcessor extends AudioWorkletProcessor {
               velocity
             );
             this.respondQuery(sp);
-
+            if (!this.sp_map[ch * 128 + key]) this.sp_map[ch * 128 + key] = [];
+            this.sp_map[ch * 128 + key].push(sp);
+            this.spinners.push(sp);
           }
           break;
         default:
@@ -191,6 +192,7 @@ class SpinProcessor extends AudioWorkletProcessor {
       left.set(noise_floor[0]);
       right.set(noise_floor[0]);
     }
+    this.inst.exports.sp_wipe_output_tab();
     const thisBus = ringbus.this_bus();
     const nextBus = ringbus.next_bus();
     let loudnorm = 1;
@@ -203,9 +205,9 @@ class SpinProcessor extends AudioWorkletProcessor {
         this.memory.buffer,
         this.inst.exports.get_sp_output(spref), 128 * 2);
       for (let j = 0;j < 128;j++) {
-        left[j] += outputf[j] * loudnorm;
-        right[j] += outputf[128 + j] * loudnorm;
-        rms += outputf[j] * outputf[j];
+        left[j] += outputf[128 + j] * .7;
+        right[j] += outputf[j] * .7;
+        rms += left[j] * right[j];
       }
       if (goAgain) nextBus.unshift(spref);
       loudnorm *= .97;
@@ -214,22 +216,20 @@ class SpinProcessor extends AudioWorkletProcessor {
     clip_out[0].set(right);
     this.rrms = rms + "|" + loudnorm;
     ringbus.bus_ran();
-
     this.sendReport();
     return true;
   }
   sendReport() {
-    if (!this.lastReport || globalThis.currentTime - this.lastReport > 0.2) {
+    if (true || !this.lastReport || globalThis.currentTime - this.lastReport > 0.2) {
       new Promise((r) => r()).then(() => {
+        this.lastReport = globalThis.currentTime;
+        const ref = this.inst.exports.spRef(this_bus?.[0] || next_bus?.[0] || this.inst.exports.sp_idx.value - 1);
+        const spinfo = spRef2json(this.memory.buffer, ref);
         this.inst.exports.sp_reflect(this.sp_reflect_arr);
         const sharedData = new Float32Array(32 * 4);
         sharedData.set(
           new Float32Array(this.memory.buffer, this.sp_reflect_arr, 32 * 4)
         );
-        this.lastReport = globalThis.currentTime;
-
-        const ref = this.inst.exports.spRef(this_bus?.[0] || next_bus?.[0], 0);
-        const spinfo = spRef2json(this.memory.buffer, ref);
         const egInfo = egStruct(
           this.memory.buffer,
           this.inst.exports.get_vol_eg(ref)
@@ -237,11 +237,11 @@ class SpinProcessor extends AudioWorkletProcessor {
         this.port.postMessage({
           sp_reflect: sharedData,
           queryResponse: {
-            activeSp: _arr,
             now: now(),
             rrms: this.rrms,
             spinfo,
-            egInfo
+            egInfo,
+            activeSp: _arr
           }
         });
       });

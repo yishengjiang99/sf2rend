@@ -11,7 +11,14 @@ float outputs[nchannels * RENDQ * 2];
 
 float silence[440];
 float calc_pitch_diff_log(zone_t* z, pcm_t* pcm, int key);
+int output_arr_len = nchannels * RENDQ * 2;
 
+
+void sp_wipe_output_tab(){
+  for(int i=0;i<output_arr_len;i++){
+     outputs[i]=0.0f;
+  }
+}
 spinner* spRef(int idx) { return &sps[idx]; }
 pcm_t* pcmRef(int sampleId) {return &pcms[sampleId];}
 spinner* allocate_sp(){
@@ -21,7 +28,7 @@ spinner* allocate_sp(){
 }
 
 void sp_reflect(float* paper) {
-  for (int j = 0, i = 0; i < 32; i++) {
+  for (int j = 0, i = sp_idx;i >0 && j<32; i--) {
     paper[j++] = (sps + i)->position;
     paper[j++] = (sps + i)->voleg.stage;
     paper[j++] = (sps + i)->voleg.egval;
