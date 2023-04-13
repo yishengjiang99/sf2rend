@@ -34,11 +34,12 @@ int main() {
   set_frequency(lfo, 0);
   printf("%f %hu,%f", timecent2hertz(1200), lfo->delay,
          lfo->phaseInc * SAMPLE_RATE / modulo_s16f_inverse);
+
   for (int ia = 0; ia < 4154; ia++) {
     // rollprint(48000, 480);
     LFO_roll_out(lfo, 16, dummy);
     for (int i = 0; i < 16; i++) {
-      printf("\n%f", dummy[i]);
+      // printf("\n%f", dummy[i]);
     }
   }
 }

@@ -18,7 +18,7 @@ export async function mkpath2(ctx, {midi_input, sf2File, }) {
         await LowPassFilterNode.init(ctx).catch(console.trace);
         init = true;
     }
-    const lpfs = Array(32).fill(new LowPassFilterNode(ctx));
+    // const lpfs = Array(32).fill(new LowPassFilterNode(ctx));
     const channelIds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
     const spinner = new SpinNode(ctx);
     const whitenoise = anti_denom_dither(ctx);
@@ -30,7 +30,7 @@ export async function mkpath2(ctx, {midi_input, sf2File, }) {
         return outputIndex++;
     }
     let fft = new FFTNode(ctx);
-    spinner.connect(fft, _availableOutput());
+    //spinner.connect(fft, _availableOutput());
     const msg_cmd = adfcdsa(spinner);
     let sf2s;
     return {
@@ -40,8 +40,8 @@ export async function mkpath2(ctx, {midi_input, sf2File, }) {
                 sf2s = new SF2Service(sf2File);
                 await sf2s.load();
             }
-            const p = sf2s.loadProgram(pid, bankid);
-            await spinner.shipProgram(p, pid | bankid);
+            const p = sf2s.loadProgram(0, bankid);
+            await spinner.shipProgram(p, 0 | bankid);
             return p;
         },
         connect(destination, outputNumber, destinationInputNumber) {
@@ -156,10 +156,12 @@ export async function mkpath2(ctx, {midi_input, sf2File, }) {
                     return;
                 const channel = get_active_channel_fn();
                 const baseOctave = 48;
+
                 const index = keys.indexOf(e.key);
                 if (index < 0)
                     return;
                 const key = index + baseOctave;
+
                 e.target.addEventListener("keyup", () => {
                     eventpipe.postMessage([0x80 | channel, key, 111]);
                 }, {once: true});

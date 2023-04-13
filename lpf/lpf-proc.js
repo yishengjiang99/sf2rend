@@ -16,6 +16,7 @@ class LowPassFilterProc extends AudioWorkletProcessor {
 
   constructor(options) {
     super(options);
+
     const {
       processorOptions: { frequency, wasmbin, Q },
     } = options;
@@ -38,6 +39,7 @@ class LowPassFilterProc extends AudioWorkletProcessor {
     console.log(data);
   }
   process([inputs], [outputs], params) {
+
     if (!inputs.length) return true;
     if (params.FilterFC[0] !== this.cutoffFc) {
       this.cutoffFc = params.FilterFC[0];
@@ -55,6 +57,8 @@ class LowPassFilterProc extends AudioWorkletProcessor {
     for (let j = 0;j < 128;j++) {
       outputs[1][j] = this.processSample(inputs[inputChan][j], this.lpf);
     }
+
+
 
     return true;
   }

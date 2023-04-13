@@ -33,7 +33,7 @@ export function mk_lpf_fade(lpfMod) {
 			for (let i = 0;i < fl_array.length;i++) {
 				const f1 = sets[0].BiQuad(fl_array[i]);
 				const f2 = sets[1].BiQuad(fl_array[i]);
-				fl_array[i] = f1 + (f2 - f1) * i / 64;
+				fl_array[i] = f1 + (f2 - f1) * i / fl_array.length;
 				cross_fade--;
 			}
 			if (cross_fade <= 0) swap();

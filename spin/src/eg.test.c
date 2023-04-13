@@ -15,7 +15,7 @@ short zero_att_hold[60] = {
 
 zone_t* z = (zone_t*)zero_att_hold;
 
-int main() {
+int maain() {
   gm_reset();
   spinner* x = newSpinner(0);
   pcms->length = 220;

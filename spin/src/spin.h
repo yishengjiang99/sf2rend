@@ -31,16 +31,16 @@ typedef struct {
   uint32_t channelId, key, velocity;
   uint32_t position, loopStart, loopEnd;
   float fract, stride, pitch_dff_log;
-  uint32_t active_dynamics_flag;
   zone_t* zone;
-  EG *voleg, *modeg;
-  LFO *modlfo, *vibrlfo;
+  EG voleg, modeg;
+  LFO modlfo, vibrlfo;
   pcm_t* pcm;
   uint32_t sampleLength;
+    uint32_t active_dynamics_flag;
 } spinner;
 
 void set_spinner_zone(spinner* x, zone_t* z);
-spinner* newSpinner(int idx);
+spinner* newSpinner(int ch);
 void reset(spinner* x);
 int spin(spinner* x, int n);
 float* spOutput(spinner* x);

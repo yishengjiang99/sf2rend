@@ -14,7 +14,7 @@ export function createChannel(uiController, channelId, sf2, apath) {
       this.presetId = pid | bid;
       program = _sf2.loadProgram(pid, bid);
       uiController.hidden = false;
-
+      debugger;
       if (!program) {
         alert(bid + " " + pid + " no found");
         uiController.hidden = true;

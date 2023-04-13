@@ -1,4 +1,4 @@
-import SF2Service from "./sf2-service/sf2.js";
+import SF2Service from "./sf2-service/index.js";
 import {mkdiv} from './mkdiv/mkdiv.js';
 import get_iirf from "./irf.js";
 import {mkpath2} from './src/mkpath.js';
@@ -7,14 +7,13 @@ import {mkpath2} from './src/mkpath.js';
 async function zone() {
     const ctx = new AudioContext();
     const apath = await mkpath2(ctx, {sf2File: "file.sf2"});
-    apath.postMessage(())
 
     const program = await apath.loadProgram(0, 0);
-
     program.zMap.map(z => ([z.FilterFc, z.FilterQ, z.VelRange, z.KeyRange]));
     const z = program.filterKV(66, 55)[0];
-    apath.spinner.port.postMessage([0x90, 0, 66, 88, z.pid
+    apath.spinner.port.postMessage([0x90, 0x0, 66, 55, [0, z.pid]]);
     apath.connect(ctx.destination);
+    console.log(ctx);
 }
 zone();
 

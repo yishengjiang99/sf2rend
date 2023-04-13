@@ -1,7 +1,8 @@
 /*
 typedef struct {
   float *inputf, *outputf;
-  uint32_t position, loopStart, loopEnd, channelId, key, velocity;
+  uint32_t channelId, key, vel,
+    position, loopStart, loopEnd, channelId, key, velocity;
   zone_t* zone;
   EG *voleg, *modeg;
   LFO *modlfo, *vibrlfo;
@@ -28,8 +29,8 @@ export function spRef2json(heap, ref) {
     fract,
     stride, 
     pdiff,
-    // inputRef,
-    // outputRef,
+    inputRef,
+    outputRef,
     position,
     loopStart,
     loopEnd,

@@ -24,7 +24,7 @@ export function logdiv(config = {}) {
         childList: true
     });
     function stdout(log) {
-        const ts = timestamp ? ((performance.now() - lp) / 1e3).toFixed(3) + ": " : "";
+        const ts = timestamp ? ((performance.now()) / 1e3).toFixed(3) + ": " : "";
         lp = performance.now();
         logs.push("\n" + ts + log.toString());
         infoPanel.textContent += "\n" + ts + log.toString();

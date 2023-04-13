@@ -14,3 +14,24 @@ spin.wasm: build/spin.o
 
 spin.wasm.js: spin.wasm
 	cat spin.wasm | npx encode-wasm-uint8 > spin.wasm.js
+
+# sprun:
+# 	clang \
+#   	--target=wasm32 \
+# 		-g \
+#   	-Wl,--no-entry \
+# 		-Wl,--allow-undefined \
+#   	-Wl,--export-all src/sp_run.c -o - |npx encode-wasm-uint8 > run.wasm.js
+
+sprun:
+	clang \
+  	--target=wasm32 \
+		-emit-llvm -c -S \
+  	-Wl,--no-entry \
+		-Wl,--allow-undefined \
+  	-Wl,--export-all \
+		src/sp_run.c  \
+		-o sprun.js
+
+sprun.js: sprun.js \
+	cat sprun.sj | npx encode-wasm-uint8 > run.wasm.js

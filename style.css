@@ -1,21 +1,23 @@
-th {
-  position: sticky;
-}
+
 .fixed-top-right{
   position:fixed;
-  top:50px;
+  top:10px;
   right:0;
+}
+.ctrls {
+  display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr;
+}
+.onoff_indicate::after{
+  content: '('+attr(name)+')'
 }
 .channelCard {
   position:relative;
 }
 .channelCard:hover {
-  background-color:gray;
-  color:black;
-  
+  border:white solid 1px;  
 }
 #stdout{
-  position:fixed;bottom:0;
+
 }
 .amp-indicate {
   height: 20px;
@@ -35,5 +37,7 @@ body {
 }
 
 #channelContainer{
+  scrollbar-color:black;
+
   overflow-y: scroll;
 }

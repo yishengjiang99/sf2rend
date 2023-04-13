@@ -1,12 +1,11 @@
-import * as lpfModule from "../lpf/lpf.wasm.js";
 
 let k, lpfmod;
 export class SpinNode extends AudioWorkletNode {
   static lpfmod;
   static async init(ctx) {
     try {
-      await ctx.audioWorklet.addModule("spin/spin-proc.js");
-      lpfmod = await WebAssembly.compile(lpfModule.wasmbin);
+      await ctx.audioWorklet.addModule("./spin/spin-proc.js");
+      //lpfmod = await WebAssembly.compile(lpfModule.wasmbin);
     } catch (e) {
       console.trace(e);
     }
@@ -19,10 +18,7 @@ export class SpinNode extends AudioWorkletNode {
     super(ctx, "spin-proc", {
       numberOfInputs: 1,
       numberOfOutputs: 5,
-      outputChannelCount: [2, 1, 1, 2, 2],
-      processorOptions: {
-        lpfmod
-      }
+      outputChannelCount: [2, 1, 1, 2, 2]
     });
     this.port.onmessageerror = (e) => alert("adfasfd", e.message); // e; // e.message;
   }

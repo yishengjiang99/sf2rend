@@ -7,7 +7,7 @@ import {
   mksvg,
 } from "../mkdiv/mkdiv.js";
 import { midi_ch_cmds, range, midi_effects as effects } from "./constants.js";
-import { attributeKeys, defZone, newSFZoneMap } from "../spin/zoneProxy.js";
+import {attributeKeys, defZone, newSFZoneMap} from "../sf2-service/zoneProxy.js";
 
 const rowheight = 40;
 const pixelPerSec = 12;
@@ -36,7 +36,7 @@ export function mkui(
           e.target.blur();
         },
       });
-      this.led = mkdiv("input", { type: "checkbox" });
+      this.led = mkdiv("input", {class: "onoff_indicate", type: "checkbox", name: "ch_" + idx});
       this.zoneEdit = mkdiv("div", {
         style: "background-color:black;color:white;display:none",
       });
@@ -117,23 +117,22 @@ export function mkui(
             "data-path_cmd": "lpf",
             "data-p1": idx,
           }),
-          mkdiv("div", [
+        ]);
+      const ctslsDiv =
+        mkdiv("div", {class: "ctrls"}, [
             mkdiv("input", {
               type: "checkbox",
               id: "mute",
               "data-path_cmd": "mute",
               "data-p1": idx,
             }),
-            mkdiv("label", {for: "mute"}, "mute"),
-          ]),
-          mkdiv("div", [
+          mkdiv("label", {for: "mute"}, "mute"),
             mkdiv(
               "input",
               {type: "checkbox", "data-path_cmd": "solo", "data-p1": idx},
               "solo"
             ),
-            mkdiv("label", {for: "solo"}, "solo"),
-          ]),
+          mkdiv("label", {for: "solo"}, "solo"),
           mkdiv(
             "span",
             {
@@ -141,9 +140,8 @@ export function mkui(
             },
             ""
           ),
-        ]
-      );
-      const container = mkdiv("div", [meterDiv, this.zoneEdit]);
+        ]);
+      const container = mkdiv("div", [meterDiv, ctslsDiv, this.zoneEdit]);
 
       this.meters = container.querySelectorAll("meter");
 
@@ -243,26 +241,22 @@ export function mkui(
               });
             },
           },
-          mkdiv("table", { border: 1 }, [
-            mkdiv("thead", [
-              mkdiv("tr", {class: "sticky"}, [
-                mkdiv("th", [
-                  mkdiv("input", {
-                    role: "button",
-                    value: "save",
-                    type: "submit",
-                  }),
-                ]),
-                mkdiv("th", {}, [ref]),
-              ]),
-            ]),
+          mkdiv("ul",
+            [mkdiv("input", {
+              role: "button",
+              value: "save",
+              type: "submit",
+            }),
             ...Array.from(this._zone.arr).map((attr, index) =>
               mkdiv("tr", [
-                mkdiv("td", {}, attributeKeys[index]),
+                mkdiv("td", {
+                  class: attr === defZone[index] ? "hidden" : "",
+                }, attributeKeys[index]),
                 mkdiv("td", {}, [
                   mkdiv("input", {
                     value: attr,
                     name: index,
+                    class: attr === defZone[index] ? "hidden" : "",
                     placeholder: "a",
                   }),
                   ...(index == 43 || index == 44

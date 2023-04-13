@@ -25,7 +25,7 @@ void advanceStage(EG* eg);
 float update_eg(EG* eg, int n);
 
 void eg_roll(EG* eg, int n, float* output) {
-  while (n--) {
+  while (n-- && eg->egval < 1.0f) {
     eg->egval += eg->egIncrement;
     eg->nsteps--;
     *output++ = eg->egval;

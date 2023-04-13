@@ -38,6 +38,9 @@ function App({timerWorker, midiInfo, eventPipe}) {
       switch (timerState) {
         case TIMER_STATE.RUNNING:
           break;
+        case TIMER_STATE.BUFFERING;
+
+          break;
         case TIMER_STATE.REWIND:
           while (
             ranEvents.length &&

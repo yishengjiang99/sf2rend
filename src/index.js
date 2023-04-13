@@ -20,15 +20,20 @@ const programList = document.querySelector("#programs");
 const navhead = document.querySelector("header");
 const analyze = document.querySelector("#analyze");
 const maindiv = document.querySelector("main");
+const debugContainer = document.querySelector("#debug");
 
 const stdoutdiv = document.querySelector("#stdout");
-
-
+const debugInfo = mkdiv("pre");
+const debugInfo2 = mkdiv("pre");
 const {stdout, infoPanel} = logdiv();
 
+mkcollapse({title: "debug2", defaultOpen: false}, debugInfo2).attachTo(debugContainer);
+mkcollapse({title: "debug", defaultOpen: false}, debugInfo).attachTo(debugContainer);
 mkcollapse({title: "Log Info", defaultOpen: true}, infoPanel).attachTo(stdoutdiv);
 window.stdout = stdout;
-window.stderr = stdout;// (str) => (document.querySelector("footer").innerHTML = str);
+window.stderr = (str) => debugInfo.innerHTML = str;
+window.stderrr = (str) => debugInfo2.innerHTML = str;
+
 main();
 const appState = {};
 globalThis.appState = new Proxy(appState, {
@@ -106,6 +111,7 @@ async function main(sf2file) {
   for (let i = 0;i < 16;i++) {
     channels.push(createChannel(uiControllers[i], i, sf2, apath));
   }
+
   const sf2loadWait = loadSF2File("static/FluidR3_GM.sf2")
 
 
@@ -165,11 +171,7 @@ async function main(sf2file) {
   );
 
   const ampIndictators = document.querySelectorAll(".amp-indicate");
-  spinner.port.onmessage = ({ data }) => {
-    if (data.spState) col5.innerHTML = JSON.stringify(data.spState);
-    if (data.egStages) col4.innerHTML = Object.values(data.egStages).join(" ");
-    if (data.queryResponse)
-      window.stderr(JSON.stringify(data.queryResponse, null, 1));
+  spinner.port.onmessage = ({data}) => {
     if (data.sp_reflect) {
       for (let i = 0; i < 16; i++) {
         ampIndictators[i].style.setProperty(
@@ -178,10 +180,19 @@ async function main(sf2file) {
         );
       }
 
-      window.stderr(Object.values(data.sp_reflect).join("\n"));
+      window.stderrr(JSON.stringify(data.sp_reflect, null, 1));
     }
+    if (data.spState) col5.innerHTML = JSON.stringify(data.spState);
+    if (data.egStages) col4.innerHTML = Object.values(data.egStages).join(" ");
+    if (data.queryResponse)
+      window.stderr(JSON.stringify(data.queryResponse, null, 1));
+    if (data.renderTimeTook) {
+      chart(cv1, data.renderTimeTook);
+    }
+
   };
   apath.bindKeyboard(() => ui.activeChannel, eventPipe);
+  onMidiSelect(midiList[42]);
   async function loadSF2File(sf2url) {
     sf2 = new SF2Service(sf2url);
     sf2select.value = sf2url;
@@ -217,42 +228,7 @@ async function main(sf2file) {
       return channels[channel].setProgram(pid, bkid);
     }));
     const rootElement = $("#sequenceroot");
-    runSequence({midiInfo, rootElement, eventPipe});
-
-    // const worker = new Worker("./src/timer.js");
-    // let msqn = midiInfo.tempos?.[0]?.tempo || 500000;
-    // let ppqn = midiInfo.division;
-
-    // worker.postMessage({tm: {msqn, ppqn}});
-
-    // const soundtracks = midiInfo.tracks.map((track) =>
-    //   track.filter((event) => event.t && event.channel)
-    // );
-
-    // worker.onmessage = ({data}) => {
-    //   const sysTick = data;
-
-    //   for (let i = 0;i < soundtracks.length;i++) {
-    //     const track = soundtracks[i];
-    //     while (track.length && track[0].t <= sysTick) {
-    //       const e = track.shift();
-    //       if (e.meta) onMidiMeta(stdout, e.meta);
-    //       else eventPipe.postMessage(e.channel);
-    //     }
-    //   }
-    // };
-    // document.querySelectorAll("#midi-player > button").forEach((b) => {
-    //   b.addEventListener("click", (e) =>
-    //     worker.postMessage({[e.target.dataset.cmd]: 1})
-    //   );
-    //   b.disabled = false;
-    // });
-
-//     document.querySelector("#channelContainer").style.background = "none"
-//  document.querySelector("#channelContainer").style.background = "none"
-//  */
-//     document.querySelector("#channelContainer").style.background = "none"
-
+//    runSequence({midiInfo, rootElement, eventPipe});
   }
 
   apath.ctrl_bar(document.getElementById("ctrls"));
@@ -271,7 +247,7 @@ async function main(sf2file) {
     chart(cv2, apath.analysis.waveForm);
     requestAnimationFrame(draw);
   }
-  draw();
+  //draw();
   maindiv.classList.remove("hidden");
 }
 
