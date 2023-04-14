@@ -115,7 +115,7 @@ async function main(sf2file) {
     channels.push(createChannel(uiControllers[i], i, sf2, apath));
   }
 
-  const sf2loadWait = loadSF2File(sf2Listcloud.find(f => f.name.includes("FluidR3")).url);
+  const sf2loadWait = loadSF2File(sf2Listcloud.find(f => f.name.includes("Vint")).url);
 
 
   //link pipes
