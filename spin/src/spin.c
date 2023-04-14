@@ -9,7 +9,7 @@ pcm_t pcms[4096];
 char midi_cc_vals[nmidiChannels * 128];
 float outputs[MAX_VOICE_CNT * RENDQ * 2];
 
-float silence[440];
+float silence[440] = {.0f};
 float calc_pitch_diff_log(zone_t* z, pcm_t* pcm, int key);
 int output_arr_len = MAX_VOICE_CNT * RENDQ * 2;
 

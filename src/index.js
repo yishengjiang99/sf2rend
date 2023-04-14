@@ -1,7 +1,7 @@
 import {mkdiv, mkdiv2} from "../mkdiv/mkdiv.js";
 import { mkui } from "./ui.js";
 import SF2Service from "../sf2-service/index.js";
-import { fetchmidilist } from "./midilist.js";
+import {fetchSF2List, fetchmidilist} from "./midilist.js";
 import { mkeventsPipe } from "./mkeventsPipe.js";
 import { createChannel } from "./createChannel.js";
 import {DRUMSCHANNEL, midi_ch_cmds} from "./constants.js";
@@ -64,9 +64,9 @@ async function main(sf2file) {
 
   const channels = [];
 
+  const sf2Listcloud = await fetchSF2List();
 
-
-  for (const f of sf2list) sf2select.append(mkdiv("option", {value: f}, f));
+  for (const f of sf2Listcloud) sf2select.append(mkdiv("option", {value: f.url}, f.name));
 
   sf2select.onchange = (e) => {
     loadSF2File(e.target.value);
@@ -88,7 +88,9 @@ async function main(sf2file) {
   });
   midiSelect.attachTo($("#midilist"));
   midiSelect.addEventListener("input", (e) => onMidiSelect(e.target.value));
-  ctx = new AudioContext();
+  ctx = new AudioContext({
+    sampleRate: 44100,
+  });
   await ctx.suspend();
 
   const eventPipe = mkeventsPipe();
@@ -113,7 +115,7 @@ async function main(sf2file) {
     channels.push(createChannel(uiControllers[i], i, sf2, apath));
   }
 
-  const sf2loadWait = loadSF2File("static/FluidR3_GM.sf2")
+  const sf2loadWait = loadSF2File(sf2Listcloud.find(f => f.name.includes("FluidR3")).url);
 
 
   //link pipes
