@@ -5,8 +5,8 @@ body{
 :root{
   --timer-ticks:0;
   --ppqn: 240;
-  --pxqn: 40;
-  --canvas-width: 30;
+  --pxqn: 20;
+  --canvas-width: 70;
 }
 .canvas_container {
   transform: translateX(calc(var(--timer-ticks)/var(--ppqn)*var(--pxqn) * -1px));
@@ -15,7 +15,7 @@ body{
   width: calc(var(--canvas-width) * 1vw);
   position: fixed;
   right: 0;
-  top: 120px;
+  top: 70px;
   height: calc(300vh-120px);
   z-index: -2;
   overflow-x: hidden;

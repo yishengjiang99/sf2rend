@@ -1,5 +1,6 @@
 import {wasmbin} from "./spin.wasm.js";
 import {egStruct, spRef2json} from "./spin-structs.js";
+import {midi_ch_cmds} from "../src/midilist.js";
 const nchannels = 16;
 const voices_per_channel = 4;
 let _arr = [[], []];
@@ -103,8 +104,9 @@ class SpinProcessor extends AudioWorkletProcessor {
       switch (cmd) {
         case 0xe0:
           break;
-        case 0xb0:
+        case midi_ch_cmds.continuous_change:
           this.inst.exports.set_midi_cc_val(channel, metric, value);
+          console.log(channel, metric, value);
           break;
         case 0x80: {
           const [key, vel] = args;
@@ -195,7 +197,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.inst.exports.sp_wipe_output_tab();
     const thisBus = ringbus.this_bus();
     const nextBus = ringbus.next_bus();
-    let loudnorm = 1;
+    let loudnorm = 1.0 / Math.sqrt(thisBus.length);
     let rms = 0;
     while (thisBus.length) {
       // we are playing each voice in a LIFO matter 
@@ -205,12 +207,11 @@ class SpinProcessor extends AudioWorkletProcessor {
         this.memory.buffer,
         this.inst.exports.get_sp_output(spref), 128 * 2);
       for (let j = 0;j < 128;j++) {
-        left[j] += outputf[128 + j] * .7;
-        right[j] += outputf[j] * .7;
+        left[j] += outputf[128 + j] * loudnorm;
+        right[j] += outputf[j] * loudnorm;
         rms += left[j] * right[j];
       }
       if (goAgain) nextBus.unshift(spref);
-      loudnorm *= .97;
     }
     if (fft_out) fft_out[0].set(left);
     clip_out[0].set(right);
@@ -220,7 +221,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     return true;
   }
   sendReport() {
-    if (true || !this.lastReport || globalThis.currentTime - this.lastReport > 0.2) {
+    if (!this.lastReport || globalThis.currentTime - this.lastReport > 0.2) {
       new Promise((r) => r()).then(() => {
         this.lastReport = globalThis.currentTime;
         const ref = this.inst.exports.spRef(this_bus?.[0] || next_bus?.[0] || this.inst.exports.sp_idx.value - 1);

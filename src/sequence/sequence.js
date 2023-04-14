@@ -67,7 +67,7 @@ export const Sequence = forwardRef((props, ref) => {
 					ctx.save();
 					ctx.fillStyle = `rgb(${(127 - midi) * 2},0,${midi * 2})`;
 					ctx.fillRect(
-						t1 / ppqn * barInc - 1,
+						(t1 / ppqn + 12) * barInc - 1,
 						d * semiHeight - 1,
 						barInc * (t2 - t1) / ppqn,
 						semiHeight
@@ -82,5 +82,5 @@ export const Sequence = forwardRef((props, ref) => {
 		[barInc, mStart, ppqn, semiHeight]
 	);
 
-	return <div className={preset ? "panel" : "hidden"}>{preset}<canvas ref={canvasRef} width={width} height={height}></canvas></div>;
+	return <div className={preset ? "panel" : "hidden"}><canvas ref={canvasRef} width={width} height={height}></canvas></div>;
 });

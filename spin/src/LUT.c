@@ -18,9 +18,9 @@ void initLUTs(FILE* fd) {
   }
   fprintf(fd, "2.0};\n");
 
-  fprintf(fd, "double p10over200[962]={ \n");
+  fprintf(fd, "double p10over200[1441]={ \n");
 
-  for (int i = -961; i < 0; i++) {
+  for (int i = -1440; i < 0; i++) {
     fprintf(fd, "%f, ", pow(10.0f, i / 200.0));
   }
   fprintf(fd, "1.0};\n\n");
@@ -38,12 +38,6 @@ void init_m_fals(FILE* fd) {
     fprintf(fd, "%f, ", log10(cos(M_PI / 2.0 * (i - 1) / 126.0f)) * 200.0f);
   }
   fprintf(fd, "-960}; \n");
-  fprintf(fd, "double panrightLUT[128]={-960.0,\n");
-  for (float i = 2; i < 127; i++) {
-    fprintf(fd, "%f,", log10(sin(M_PI / 2.0 * (i - 1) / 126.0f)) * 200.0f);
-  }
-  fprintf(fd, "0}; \n");
-
   fprintf(fd, "double panrightLUT[128]={-960.0,\n");
   for (float i = 2; i < 127; i++) {
     fprintf(fd, "%f,", log10(sin(M_PI / 2.0 * (i - 1) / 126.0f)) * 200.0f);

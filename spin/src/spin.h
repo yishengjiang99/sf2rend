@@ -36,7 +36,8 @@ typedef struct {
   LFO modlfo, vibrlfo;
   pcm_t* pcm;
   uint32_t sampleLength;
-    uint32_t active_dynamics_flag;
+  uint32_t active_dynamics_flag;
+  int is_looping;
 } spinner;
 
 void set_spinner_zone(spinner* x, zone_t* z);

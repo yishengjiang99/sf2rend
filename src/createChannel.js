@@ -13,12 +13,9 @@ export function createChannel(uiController, channelId, sf2, apath) {
     async setProgram(pid, bid) {
       this.presetId = pid | bid;
       program = _sf2.loadProgram(pid, bid);
-      uiController.hidden = false;
-      debugger;
       if (!program) {
         alert(bid + " " + pid + " no found");
         uiController.hidden = true;
-
         return;
       }
       await spinner.shipProgram(program, pid | bid);
@@ -31,18 +28,15 @@ export function createChannel(uiController, channelId, sf2, apath) {
       uiController.CC = { key, value: vel };
     },
     keyOn(key, vel) {
-      kd_map[key] ||= [];
       const zones = program.filterKV(key, vel);
-      stdout(ct_cnt, channelId);
-      zones.slice(0, 2).map((zone, i) => {
-        kd_map[key].push(channelId * 2 + ct_cnt);
+      console.log(zones.length, " found on ", channelId, " ", key, vel)
+      zones.slice(0, 1).map((zone, i) => {
         spinner.port.postMessage([
           midi_ch_cmds.note_on,
-          channelId * 2 + ct_cnt,
+          channelId,
           key, vel,
           [this.presetId, zone.ref],
         ]);
-        ct_cnt++;
         if (zone.FilterFC < 13500) {
           apath.lowPassFilter(channelId * 2 + 1, zone.FilterFc);
         }
@@ -58,11 +52,8 @@ export function createChannel(uiController, channelId, sf2, apath) {
       return zones[0];
     },
     keyOff(key, vel) {
-      if (!kd_map[key]) return;
-      while (kd_map[key].length) {
-        spinner.port.postMessage([kd_map[key].shift(), key, vel]);
-        ct_cnt--;
-      }
+      spinner.port.postMessage([midi_ch_cmds.note_off, channelId, key, vel]);
+
       requestAnimationFrame(() => (uiController.active = false));
     },
   };

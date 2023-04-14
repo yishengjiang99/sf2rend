@@ -5,7 +5,7 @@ export const TIMER_STATE = {
 	FINISHED: 3,
 	RECORDING: 4,
 	REWIND: 5,
-	FWD: BUFFERING,
+	FWD: 6,
 
 };
 const {INIT, RUNNING, PAUSED, REWIND, FWD, RECORDING} = TIMER_STATE;
@@ -28,7 +28,7 @@ export const cmd2stateChange = {
 	fwd: FWD,
 };
 export let baseOctave = 42;
-export const nbars = 12;
+export const nbars = 1200;
 
 export const marginTop = 10;
 // const pageNotes = [[]];

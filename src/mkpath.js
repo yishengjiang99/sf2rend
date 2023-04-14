@@ -9,7 +9,7 @@ import {anti_denom_dither} from './misc.js';
 import SF2Service from "../sf2-service/sf2.js";
 let init = false;
 export async function mkpath(ctx, eventPipe) {
-    return mkpath2(ctx, {midiInput: eventPipe});
+    return mkpath2(ctx, {midi_input: eventPipe});
 }
 export async function mkpath2(ctx, {midi_input, sf2File, }) {
     if (!init) {
@@ -30,7 +30,7 @@ export async function mkpath2(ctx, {midi_input, sf2File, }) {
         return outputIndex++;
     }
     let fft = new FFTNode(ctx);
-    //spinner.connect(fft, _availableOutput());
+    spinner.connect(fft, _availableOutput());
     const msg_cmd = adfcdsa(spinner);
     let sf2s;
     return {

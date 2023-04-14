@@ -38,8 +38,7 @@ function App({timerWorker, midiInfo, eventPipe}) {
       switch (timerState) {
         case TIMER_STATE.RUNNING:
           break;
-        case TIMER_STATE.BUFFERING;
-
+        case TIMER_STATE.BUFFERING:
           break;
         case TIMER_STATE.REWIND:
           while (
@@ -72,10 +71,6 @@ function App({timerWorker, midiInfo, eventPipe}) {
   useEffect(() => {
     timerWorker.postMessage(tm);
   }, [timerWorker, tm]);
-  useEffect(() => {
-    if (sequencerRef.current)
-      sequencerRef.current.style.setProperty("--ppqn", tm.ppqn);
-  }, [tm.ppqn, sequencerRef.current]);
   useEffect(() => {
     timerWorker.addEventListener("message", ({data}) => {
       if (!data.ticks) return;
@@ -132,21 +127,6 @@ function App({timerWorker, midiInfo, eventPipe}) {
     ppqn,
     msqn,
   ]);
-  useEffect(() => {
-    if (!sequencerRef.current) return;
-    let id1, id2;
-    let ref = sequencerRef.current;
-    id1 = requestAnimationFrame(() => {
-      id2 = requestIdleCallback(() =>
-        ref.style.setProperty("--timer-ticks", ticks)
-      );
-    });
-
-    return () => {
-      cancelAnimationFrame(id1);
-      cancelIdleCallback(id2);
-    };
-  }, [sequencerRef.current, ticks]);
 
   const mkbtn = (cmd) => (
     <input
@@ -163,7 +143,7 @@ function App({timerWorker, midiInfo, eventPipe}) {
   );
 
   return (
-    <main className="container">
+    <>
       <div key="adf">
         <span>
           clock: {(clock / 1000).toFixed(2).toString().split(".").join(":")}
@@ -208,29 +188,7 @@ function App({timerWorker, midiInfo, eventPipe}) {
           max={8}
         />
       </div>
-
-      <div key={1} className="canvas_window">
-        <div className="canvas_container" ref={sequencerRef}>
-          {channels.map((ch) => (
-            <div key={ch} style={{paddingTop: 10}}>
-              <Sequence
-                preset={presetMap[ch]}
-                ref={(element) => chRef.current.push(element)}
-                width={nbars * 40} //bw
-                key={ch}
-                chId={ch}
-                ppqn={ppqn}
-                height={M_HEIGHT / 16 - marginTop}
-                division={midiInfo.time_base.numerator}
-                nbars={nbars}
-                nsemi={12 * 3}
-                mStart={baseOctave}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
-    </main>
+    </>
   );
 }
 

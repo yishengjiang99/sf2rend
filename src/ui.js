@@ -58,9 +58,9 @@ export function mkui(
         [
           this.led,
           this.nameLabel,
-          mkdiv("label", { for: "mkey" }, "key"),
+          mkdiv("label", {for: "mkey"}, "key " + idx),
           mkdiv("meter", {
-            min: 0,
+            min: 1,
             max: 127,
             id: "mkey",
             aria: "key",
@@ -71,7 +71,7 @@ export function mkui(
             type: "range",
             id: "velin",
             min: 1,
-            max: 127,
+            max: 128,
             step: 1,
             aria: "vel",
             value: 60,
@@ -79,8 +79,8 @@ export function mkui(
           mkdiv("label", { for: "vol" }, "volume"),
 
           mkdiv("input", {
-            min: 0,
-            max: 127,
+            min: 1,
+            max: 128,
             value: 100,
             step: 1,
             id: "vol",
@@ -89,8 +89,8 @@ export function mkui(
           }),
           mkdiv("label", { for: "pan" }, "pan"),
           mkdiv("input", {
-            min: 0,
-            max: 127,
+            min: 1,
+            max: 128,
             step: 1,
             type: "range",
             value: 64,
@@ -98,10 +98,10 @@ export function mkui(
           }),
           mkdiv("label", { for: "expression" }, "expression"),
           mkdiv("input", {
-            min: 0,
-            max: 127,
+            min: 1,
+            max: 128,
             step: 1,
-            value: 127,
+            value: 122,
             type: "range",
             oninput: (e) => cb([0xb0 | idx, 11, e.target.value]),
           }),
@@ -159,7 +159,7 @@ export function mkui(
       function rzone() {}
     }
     set hidden(h) {
-      // this.container.style.display = h ? "none" : "grid";
+      this.container.style.display = h ? "none" : "grid";
     }
     set presetId(presetId) {
       this._pid = presetId;

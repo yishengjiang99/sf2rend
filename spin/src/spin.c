@@ -1,50 +1,55 @@
 
 #include "spin.h"
-
+#define MAX_VOICE_CNT 256
 // ghetto malloc all variables
 int sp_idx = 0;
-spinner sps[1024];
+spinner sps[MAX_VOICE_CNT];
 pcm_t pcms[4096];
 // midi ccs
 char midi_cc_vals[nmidiChannels * 128];
-float outputs[nchannels * RENDQ * 2];
+float outputs[MAX_VOICE_CNT * RENDQ * 2];
 
 float silence[440];
 float calc_pitch_diff_log(zone_t* z, pcm_t* pcm, int key);
-int output_arr_len = nchannels * RENDQ * 2;
+int output_arr_len = MAX_VOICE_CNT * RENDQ * 2;
 
-
-void sp_wipe_output_tab(){
-  for(int i=0;i<output_arr_len;i++){
-     outputs[i]=0.0f;
+void sp_wipe_output_tab() {
+  for (int i = 0; i < output_arr_len; i++) {
+    outputs[i] = 0.0f;
   }
 }
 spinner* spRef(int idx) { return &sps[idx]; }
-pcm_t* pcmRef(int sampleId) {return &pcms[sampleId];}
-spinner* allocate_sp(){
-  // dangerously rotating between 1024 pre-allocated 
+pcm_t* pcmRef(int sampleId) { return &pcms[sampleId]; }
+spinner* allocate_sp() {
+  // dangerously rotating between 1024 pre-allocated
   // structs to avoid calling malloc on audio thread
-  return &sps[sp_idx++ % 1024];
+  spinner* x = &sps[sp_idx % MAX_VOICE_CNT];
+  x->outputf = &outputs[sp_idx * RENDQ * 2];
+  sp_idx++;
+  return x;
 }
 
 void sp_reflect(float* paper) {
-  for (int j = 0, i = sp_idx;i >0 && j<32; i--) {
-    paper[j++] = (sps + i)->position;
+  for (int j = 0, i = sp_idx; i > 0 && j < 32; i--) {
+    paper[j++] = (sps + i)->channelId;
     paper[j++] = (sps + i)->voleg.stage;
     paper[j++] = (sps + i)->voleg.egval;
-    paper[j++] = (sps + i)->voleg.nsteps;
+    paper[j++] = (sps + i)->position;
   }
 }
 spinner* newSpinner(int ch) {
-  spinner* x= allocate_sp();
+  spinner* x = allocate_sp();
   x->outputf = &outputs[ch * RENDQ * 2];
   x->inputf = silence;
-  x->channelId=ch;
+  x->channelId = ch;
   return x;
 }
-void trigger_release(  spinner* x) {
+void trigger_release(spinner* x) {
   _eg_release(&x->voleg);
   _eg_release(&x->modeg);
+  if (x->zone->SampleModes == 3) {
+    x->is_looping = 0;
+  }
 }
 void reset(spinner* x) {
   x->position = 0;
@@ -74,7 +79,7 @@ float trigger_attack(spinner* x, int key, int velocity) {
   init_mod_eg(&x->modeg, x->zone, x->pcm->sampleRate);
   init_vol_eg(&x->voleg, x->zone, x->pcm->sampleRate);
   x->pitch_dff_log = calc_pitch_diff_log(x->zone, x->pcm, key);
-  x->stride = calcp2over200(x->pitch_dff_log);
+  x->stride = 1.0f;
   advanceStage(&x->voleg);
   x->modlfo.delay = timecent2sample(x->zone->ModLFODelay);
   x->vibrlfo.delay = timecent2sample(x->zone->ModLFODelay);
@@ -99,9 +104,10 @@ float calc_pitch_diff_log(zone_t* z, pcm_t* pcm, int key) {
   return diff;
 }
 void set_spinner_zone(spinner* x, zone_t* z) {
-  pcm_t*pcm= &pcms[z->SampleId];
+  pcm_t* pcm = &pcms[z->SampleId];
   set_spinner_input(x, pcm);
   x->zone = z;
+  x->is_looping = z->SampleModes > 0 ? 1 : 0;
   x->position += (unsigned short)z->StartAddrOfs +
                  (unsigned short)(z->StartAddrCoarseOfs << 15);
   x->loopStart += (unsigned short)z->StartLoopAddrOfs +
@@ -121,8 +127,7 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   float pdiff = x->pitch_dff_log;
 
   int ch = x->channelId;
-  int m_ch = ch;
-  float* output_L = &x->outputf[RENDQ];
+  float* output_L = &x->outputf[blockOffset];
   float* output_R = &x->outputf[RENDQ + blockOffset];
 
   // compute a-rate generators
@@ -139,19 +144,13 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   float fract = x->fract;
   unsigned int nsamples = x->sampleLength;
   unsigned int looplen = x->loopEnd - x->loopStart;
-  if (x->zone->SampleModes == 0 && x->voleg.stage > release) {
-    db = 0.0f;
-    dbInc = 0.0f;
-  } else {
-    db = x->voleg.egval;
-    dbInc = x->voleg.egIncrement;
-  }
   int should_skip_blocks = x->zone->SampleModes > 0 ? 1 : 0;
 
   float kRateCB = 0.0f;
   kRateCB -= (float)x->zone->Attenuation;
   kRateCB += midi_volume_log10(midi_cc_vals[ch * 128 + TML_VOLUME_MSB]);
-  kRateCB += midi_volume_log10(midi_cc_vals[ch * 128 + TML_EXPRESSION_MSB]);
+  if (x->voleg.stage < decay)
+    kRateCB += midi_volume_log10(midi_cc_vals[ch * 128 + TML_EXPRESSION_MSB]);
   kRateCB += midi_volume_log10(x->velocity);
 
   double panLeft = panleftLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]];
@@ -163,17 +162,10 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   short modeg_pitch = effect_floor(x->zone->ModEnv2Pitch);
   short modeg_fc = effect_floor(x->zone->ModEnv2FilterFc);
   short modeg_vol = effect_floor(x->zone->ModEnv2Pitch);
-
-  if (x->active_dynamics_flag & filter_active) {
-    //  short starting_fc = modEgOut[0] * modeg_fc / -960.f;
-    // lpf_set_fc(ch, starting_fc);
-  }
-  if (modEgOut[0] != modEgOut[n]) {
-    // lpf_fade_to(ch, modEgOut[n] * modeg_fc + x->zone->FilterFc, n);
-  }
-  int isLooping = x->zone->SampleModes > 0;
+  int isLooping = x->is_looping;
   for (int i = 0; i < n; i++) {
     db = volEgOut[i];
+    float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
 
     stride = calcp2over200(pdiff + lfo1Out[i] * lfo1_pitch +
                            lfo2Out[i] * lfo2_pitch);
@@ -182,18 +174,16 @@ void _spinblock(spinner* x, int n, int blockOffset) {
       position++;
       fract -= 1.0f;
     }
-    if (position >= x->loopEnd + 1 && isLooping > 0) position -= looplen;
-
-    float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
+    if (position >= x->loopEnd && isLooping > 0) position -= looplen;
 
     if (position >= nsamples) {
       position = 0;
       outputf = 0.0;
       x->voleg.stage = done;
     }
-    output_L[i] = applyCentible(outputf, (short)(db / 2.0 + kRateCB + panLeft));
+    output_L[i] = applyCentible(outputf, (short)(db / 3.0 + kRateCB + panLeft));
     output_R[i] =
-        applyCentible(outputf, (short)(db / 2.0 + kRateCB + panRight));
+        applyCentible(outputf, (short)(db / 3.0 + kRateCB + panRight));
   }
   x->position = position;
   x->fract = fract;
@@ -221,12 +211,8 @@ int spin(spinner* x, int n) {
 }
 
 unsigned int sp_byte_len() { return sizeof(spinner); }
-EG* get_vol_eg(spinner*x){
-  return &x->voleg;
-}
-float* get_sp_output(spinner*x){
-  return x->outputf;
-}
+EG* get_vol_eg(spinner* x) { return &x->voleg; }
+float* get_sp_output(spinner* x) { return x->outputf; }
 
 void gm_reset() {
   for (int idx = 0; idx < 128; idx++) {

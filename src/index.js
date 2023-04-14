@@ -4,13 +4,15 @@ import SF2Service from "../sf2-service/index.js";
 import { fetchmidilist } from "./midilist.js";
 import { mkeventsPipe } from "./mkeventsPipe.js";
 import { createChannel } from "./createChannel.js";
-import {midi_ch_cmds} from "./constants.js";
+import {DRUMSCHANNEL, midi_ch_cmds} from "./constants.js";
 import { sf2list } from "../sflist.js";
 import {readMidi} from './midiread.js'
 import {mkcanvas, chart} from "../chart/chart.js";
 import * as sequence from "../dist/sequence.js"
 import {logdiv, mkcollapse} from "./logdiv.js";
-const $ = (sel) => document.querySelector(sel);
+function $(sel) {
+  return document.querySelector(sel);
+}
 const sf2select = $("#sf2select"),
   col4 = $("#col4"),
   col5 = $("#col5");
@@ -102,7 +104,6 @@ async function main(sf2file) {
     onEditZone: (editData) => {
       spinner.port.postMessage(editData);
       return apath.subscribeNextMsg((data) => {
-        console.log(data);
         return data.zack == "update" && data.ref == editData.update[1];
       });
     },
@@ -173,11 +174,14 @@ async function main(sf2file) {
   const ampIndictators = document.querySelectorAll(".amp-indicate");
   spinner.port.onmessage = ({data}) => {
     if (data.sp_reflect) {
-      for (let i = 0; i < 16; i++) {
-        ampIndictators[i].style.setProperty(
-          "--db",
-          (data.sp_reflect[2 * i * 4] + 960) / 960
-        );
+      for (let i = 0;i < data.sp_reflect.length;i += 4) {
+        const ch = data.sp_reflect[i];
+        const eg_vol = data.sp_reflect[i + 2];
+        if (eg_vol <= -960) continue;
+        // ampIndictators[ch].style.setProperty(
+        //   "--db",
+        //   (eg_vol + 960) / 960
+        // );
       }
 
       window.stderrr(JSON.stringify(data.sp_reflect, null, 1));
@@ -192,7 +196,6 @@ async function main(sf2file) {
 
   };
   apath.bindKeyboard(() => ui.activeChannel, eventPipe);
-  onMidiSelect(midiList[42]);
   async function loadSF2File(sf2url) {
     sf2 = new SF2Service(sf2url);
     sf2select.value = sf2url;
@@ -208,7 +211,7 @@ async function main(sf2file) {
     });
     channels.forEach((c, i) => {
       c.setSF2(sf2);
-      if (i != 9) {
+      if (i != DRUMSCHANNEL) {
         c.setProgram(i << 3, 0);
       } else {
         c.setProgram(0, 128);
@@ -224,7 +227,7 @@ async function main(sf2file) {
     );
     await Promise.all(midiInfo.presets.map(preset => {
       const {pid, channel} = preset;
-      const bkid = channel == 10 ? 128 : 0;
+      const bkid = channel == DRUMSCHANNEL ? 128 : 0;
       return channels[channel].setProgram(pid, bkid);
     }));
     const rootElement = $("#sequenceroot");
@@ -247,7 +250,7 @@ async function main(sf2file) {
     chart(cv2, apath.analysis.waveForm);
     requestAnimationFrame(draw);
   }
-  //draw();
+  draw();
   maindiv.classList.remove("hidden");
 }
 

@@ -85,7 +85,7 @@ void advanceStage(EG* eg) {
          * This is the time, in absolute timecents, for a 100% change in the
     Volume Envelope value during decay phase. */
         // velopcity required to travel full 960db
-        eg->nsteps = timecent2sample(eg->decay);
+        eg->nsteps = timecent2sample(eg->decay)+ timecent2sample(eg->release);
         eg->egIncrement = -960.f / eg->nsteps;
 
         // but it's timeslice by sustain percentage?
@@ -112,25 +112,11 @@ void advanceStage(EG* eg) {
 
       // sustain = % decreased during decay
 
-    case sustain:
-    EG_RELEASE:
-      /*This is the time, in absolute timecents, for a 100% change in
-the Volume Envelope value during release phase. For the Volume Envelope,
-the release phase linearly ramps toward zero from the current level,
-causing a constant dB change for each time unit. If the current level were
-full scale, the Volume Envelope Release Time would be the time spent in
-release phase until 100dB attenuation were reached. A value of 0 indicates
-a 1-second decay time for a release from full level. SoundFont 2.01
-Technical Specification - Page 45 - 08/05/98 12:43 PM A negative value
-indicates a time less than one second; a positive value a time longer than
-one second. For example, a release time of 10 msec would be 1200log2(.01) =
--7973. 39 keynumToVolEnvHold This is the degree, in timecents per K**/
-      eg->stage = release;
-      float stepsFull =
-          (float)timecent2sample(eg->release); /*8 nsteps for full 960*/
-
+    case sustain:{
+            int stepsFull = timecent2sample(eg->release); 
       eg->egIncrement = -960.0f / stepsFull;
-      eg->nsteps = eg->egval / eg->egIncrement;
+      eg->nsteps = stepsFull * (eg->egval/-960.0f);
+    }
       break;
     case release:
       eg->stage = done;
