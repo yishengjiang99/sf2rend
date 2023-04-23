@@ -1,13 +1,14 @@
 #ifndef SPIN_H
 #define SPIN_H
+#define RENDQ 128
+#define nchannels 64
+#define nmidiChannels 16
+#define MAX_EG -1440.f
 #include "LFO.h"
 #include "calc.h"
 #include "eg.h"
 #include "sf2.h"
 
-#define RENDQ 128
-#define nchannels 64
-#define nmidiChannels 16
 extern void debugFL(float fl);
 float eps = .00001;
 

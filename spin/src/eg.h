@@ -3,6 +3,7 @@
 
 #include "calc.h"
 #include "sf2.h"
+#include "spin.h"
 
 enum eg_stages {
   inactive = 0,  //
@@ -60,7 +61,7 @@ void advanceStage(EG* eg) {
     case init:
       eg->stage = delay;
       if (eg->delay > -12000) {
-        eg->egval = -960.0f;
+        eg->egval = MAX_EG;
         eg->nsteps = timecent2sample(eg->delay);
         eg->egIncrement = 0.0f;
         break;
@@ -68,9 +69,9 @@ void advanceStage(EG* eg) {
     case delay:
       eg->stage = attack;
       if (eg->attack > -12000) {
-        eg->egval = -960.0f;
+        eg->egval = MAX_EG;
         eg->nsteps = timecent2sample(eg->attack);
-        eg->egIncrement = 960.0f / (float)eg->nsteps;
+        eg->egIncrement = -MAX_EG / (float)eg->nsteps;
         break;
       }
     case attack:
@@ -86,7 +87,7 @@ void advanceStage(EG* eg) {
     Volume Envelope value during decay phase. */
         // velopcity required to travel full 960db
         eg->nsteps = timecent2sample(eg->decay)+ timecent2sample(eg->release);
-        eg->egIncrement = -960.f / eg->nsteps;
+        eg->egIncrement = MAX_EG / eg->nsteps;
 
         // but it's timeslice by sustain percentage?
         eg->nsteps = timecent2sample(eg->decay);
@@ -113,9 +114,9 @@ void advanceStage(EG* eg) {
       // sustain = % decreased during decay
 
     case sustain:{
-            int stepsFull = timecent2sample(eg->release); 
-      eg->egIncrement = -960.0f / stepsFull;
-      eg->nsteps = stepsFull * (eg->egval/-960.0f);
+      int stepsFull = timecent2sample(eg->release);
+      eg->egIncrement = MAX_EG / stepsFull;
+      eg->nsteps = stepsFull * (eg->egval / MAX_EG);
     }
       break;
     case release:

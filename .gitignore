@@ -1,7 +1,6 @@
 node_modules
 */node_modules
 */.vscode
-dist/*
 **/*/a.out
 */a.out
 cert.pem

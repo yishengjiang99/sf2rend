@@ -2,6 +2,7 @@
 #define CALC_H
 #include "midi_normalized.h"
 #include "p1200.h"
+#include "spin.h"
 #define log_2_10 3.321928094f
 #define bit23_normalize 1.000f / 0x7fffff
 #ifndef SAMPLE_RATE
@@ -41,7 +42,7 @@ int timecent2sample(short tc) {
   return (int)(timecent2second(tc) * SAMPLE_RATE);
 }
 double attack_db_inc(short attackRate) {
-  return 960.0f / timecent2second(attackRate) / SAMPLE_RATE;
+  return -MAX_EG / timecent2second(attackRate) / SAMPLE_RATE;
 }
 float applyCentible(float signal, short centdb) {
   if (centdb > 0) return signal;

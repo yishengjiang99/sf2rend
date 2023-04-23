@@ -115,7 +115,7 @@ async function main(sf2file) {
     channels.push(createChannel(uiControllers[i], i, sf2, apath));
   }
 
-  const sf2loadWait = loadSF2File(sf2Listcloud.find(f => f.name.includes("Vint")).url);
+  const sf2loadWait = loadSF2File(sf2Listcloud.find(f => f.name.includes("Fluid")).url);
 
 
   //link pipes
@@ -162,7 +162,11 @@ async function main(sf2file) {
           ),
         ]
       ).attachTo(navhead);
-      Array.from(midiAccess.inputs.values())[0].onmidimessage = ({data}) => eventPipe.postMessage(data);
+      Array.from(midiAccess.inputs.values())[0].onmidimessage = ({data}) => {
+        console.log(data);
+        data[0] |= ui.activeChannel;
+        eventPipe.postMessage(data);
+      }
     }
   }
   ctx.onstatechange = () => updateAppState({ audioStatus: ctx.state });

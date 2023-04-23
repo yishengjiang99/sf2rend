@@ -107,7 +107,8 @@ void set_spinner_zone(spinner* x, zone_t* z) {
   pcm_t* pcm = &pcms[z->SampleId];
   set_spinner_input(x, pcm);
   x->zone = z;
-  x->is_looping = z->SampleModes > 0 ? 1 : 0;
+
+  x->is_looping = z->SampleModes > 0 && x->channelId != 10 ? 1 : 0;
   x->position += (unsigned short)z->StartAddrOfs +
                  (unsigned short)(z->StartAddrCoarseOfs << 15);
   x->loopStart += (unsigned short)z->StartLoopAddrOfs +
