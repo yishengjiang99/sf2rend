@@ -70,12 +70,12 @@ void set_midi_cc_val(int channel, int metric, int val) {
   midi_cc_vals[channel * 128 + metric] = (char)(val & 0x7f);
 }
 
-float trigger_attack(spinner* x, int key, int velocity) {
-  x->velocity = velocity;
+float trigger_attack(spinner* x, uint32_t key, uint32_t velocity) {
+  x->velocity = (unsigned char)velocity;
   x->position = 0;
   x->fract = 0.0f;
   x->voleg.stage = init;
-  x->key = (int)key;
+  x->key = (unsigned char)(key & 0x7f);
   init_mod_eg(&x->modeg, x->zone, x->pcm->sampleRate);
   init_vol_eg(&x->voleg, x->zone, x->pcm->sampleRate);
   x->pitch_dff_log = calc_pitch_diff_log(x->zone, x->pcm, key);

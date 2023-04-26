@@ -29,7 +29,7 @@ enum {
 };
 typedef struct {
   float *inputf, *outputf;
-  uint32_t channelId, key, velocity;
+  unsigned char channelId, key, velocity, p1, p2, p3, p4, p5;
   uint32_t position, loopStart, loopEnd;
   float fract, stride, pitch_dff_log;
   zone_t* zone;

@@ -4,6 +4,7 @@
   ["import {wasmbin} from "./spin.wasm.js";
 import {egStruct, spRef2json} from "./spin-structs.js";
 import {midi_ch_cmds} from "../src/midilist.js";
+import {saturate} from "../saturate"
 const nchannels = 16;
 const voices_per_channel = 4;
 let _arr = [[], []];
@@ -200,7 +201,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.inst.exports.sp_wipe_output_tab();
     const thisBus = ringbus.this_bus();
     const nextBus = ringbus.next_bus();
-    let loudnorm = 1; //1.5 / Math.sqrt(thisBus.length);
+    let loudnorm = 2.0 / Math.sqrt(thisBus.length);
     let rms = 0;
     while (thisBus.length) {
       // we are playing each voice in a LIFO matter 

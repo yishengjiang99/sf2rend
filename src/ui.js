@@ -79,7 +79,7 @@ export function mkui(
           mkdiv("label", { for: "vol" }, "volume"),
 
           mkdiv("input", {
-            min: 1,
+            min: 0,
             max: 128,
             value: 100,
             step: 1,
@@ -214,7 +214,11 @@ export function mkui(
         this.led.removeAttribute("checked");
       }
     }
+    get zone() {
+      return this._zone;
+    }
     set zone(z) {
+      this._zone = z;
       const {arr, ref} = z;
       const zmap = newSFZoneMap(ref, new Uint16Array(arr));
       this._zone = {

@@ -1,11 +1,11 @@
 import {mkdiv, mkdiv2} from "../mkdiv/mkdiv.js";
-import { mkui } from "./ui.js";
+import {mkui} from "./ui.js";
 import SF2Service from "../sf2-service/index.js";
 import {fetchSF2List, fetchmidilist} from "./midilist.js";
-import { mkeventsPipe } from "./mkeventsPipe.js";
-import { createChannel } from "./createChannel.js";
+import {mkeventsPipe} from "./mkeventsPipe.js";
+import {createChannel} from "./createChannel.js";
 import {DRUMSCHANNEL, midi_ch_cmds} from "./constants.js";
-import { sf2list } from "../sflist.js";
+import {sf2list} from "../sflist.js";
 import {readMidi} from './midiread.js'
 import {mkcanvas, chart} from "../chart/chart.js";
 import * as sequence from "../dist/sequence.js"
@@ -26,11 +26,13 @@ const debugContainer = document.querySelector("#debug");
 
 const stdoutdiv = document.querySelector("#stdout");
 const debugInfo = mkdiv("pre");
-const debugInfo2 = mkdiv("pre");
+const debugInfo2 = mkdiv("pre"); const debugInfo3 = mkdiv("div");
+
 const {stdout, infoPanel} = logdiv();
 
 mkcollapse({title: "debug2", defaultOpen: false}, debugInfo2).attachTo(debugContainer);
 mkcollapse({title: "debug", defaultOpen: false}, debugInfo).attachTo(debugContainer);
+mkcollapse({title: "debug3", defaultOpen: false}, debugInfo3).attachTo(debugContainer);
 mkcollapse({title: "Log Info", defaultOpen: true}, infoPanel).attachTo(stdoutdiv);
 window.stdout = stdout;
 window.stderr = (str) => debugInfo.innerHTML = str;
@@ -80,9 +82,9 @@ async function main(sf2file) {
       e.preventDefault();
     },
     children: [
-      mkdiv("option", { name: "select midi", value: null }, "select midi file"),
+      mkdiv("option", {name: "select midi", value: null}, "select midi file"),
       ...midiList.map((f) =>
-        mkdiv("option", { value: f.get("Url") }, f.get("Name").substring(0, 80))
+        mkdiv("option", {value: f.get("Url")}, f.get("Name").substring(0, 80))
       ),
     ],
   });
@@ -100,7 +102,7 @@ async function main(sf2file) {
 
   const ui = mkui(eventPipe, $("#channelContainer"), {
     onTrackDoubleClick: async (channelId, e) => {
-      const sp1 = await apath.querySpState({ query: 2 * channelId });
+      const sp1 = await apath.querySpState({query: 2 * channelId});
       globalThis.stderr(JSON.stringify(sp1, null, 1));
     },
     onEditZone: (editData) => {
@@ -108,14 +110,15 @@ async function main(sf2file) {
       return apath.subscribeNextMsg((data) => {
         return data.zack == "update" && data.ref == editData.update[1];
       });
-    },
+    }
   });
+
   uiControllers = ui.controllers;
   for (let i = 0;i < 16;i++) {
     channels.push(createChannel(uiControllers[i], i, sf2, apath));
   }
 
-  const sf2loadWait = loadSF2File(sf2Listcloud.find(f => f.name.includes("Fluid")).url);
+  const sf2loadWait = await loadSF2File("./static/file.sf2");
 
 
   //link pipes
@@ -145,11 +148,11 @@ async function main(sf2file) {
           oninput: (e) => {
             Array.from(midiAccess.inputs.values()).find(
               (i) => i.name === e.target.value
-            ).onmidimessage = ({ data }) => eventPipe.postMessage(data);
+            ).onmidimessage = ({data}) => eventPipe.postMessage(data);
           },
         },
         [
-          mkdiv("option", { value: null }, "select input"),
+          mkdiv("option", {value: null}, "select input"),
           ...Array.from(midiAccess.inputs.values()).map((input) =>
             mkdiv(
               "option",
@@ -169,12 +172,12 @@ async function main(sf2file) {
       }
     }
   }
-  ctx.onstatechange = () => updateAppState({ audioStatus: ctx.state });
+  ctx.onstatechange = () => updateAppState({audioStatus: ctx.state});
 
   window.addEventListener(
     "click",
     async () => ctx.state !== "running" && (await ctx.resume()),
-    { once: true }
+    {once: true}
   );
 
   const ampIndictators = document.querySelectorAll(".amp-indicate");
@@ -210,9 +213,9 @@ async function main(sf2file) {
     drumList.innerHTML = "";
     sf2.programNames.forEach((n, presetIdx) => {
       if (presetIdx < 128) {
-        mkdiv2({ tag: "option", value: n, children: n }).attachTo(programList);
+        mkdiv2({tag: "option", value: n, children: n}).attachTo(programList);
       } else {
-        mkdiv2({ tag: "option", value: n, children: n }).attachTo(drumList);
+        mkdiv2({tag: "option", value: n, children: n}).attachTo(drumList);
       }
     });
     channels.forEach((c, i) => {
@@ -249,14 +252,14 @@ async function main(sf2file) {
   mkcollapse({title: "fft", defaultOpen: true}, ffholder).attachTo(analyze);
   const c3 = mkdiv("canvas", {class: "fixed-top-right", width: "500", height: "50"});
   c3.attachTo(document.body);
-  const cancelFn = apath.detectClips(c3);
-
+  // const cancelFn = apath.detectClips(c3);
+  // cancelFn();
   function draw() {
     chart(cv1, apath.analysis.frequencyBins);
     chart(cv2, apath.analysis.waveForm);
     requestAnimationFrame(draw);
   }
-  draw();
+  //draw();
   maindiv.classList.remove("hidden");
 }
 
@@ -269,7 +272,7 @@ function eventsHandler(channels) {
     const velocity = c & 0x7f;
     switch (cmd) {
       case midi_ch_cmds.continuous_change: // set CC
-        channels[ch].setCC({ key, vel: velocity });
+        channels[ch].setCC({key, vel: velocity});
         stdout("midi set cc " + [ch, cmd, key, velocity].join("/"));
         break;
       case midi_ch_cmds.change_program: //change porg
@@ -290,7 +293,7 @@ function eventsHandler(channels) {
         } else {
           stdout([cmd, ch, key, velocity].join("/"));
           const zone = channels[ch].keyOn(key, velocity);
-          //requestAnimationFrame(() => renderZ(panel2, canvas1, zone));
+          requestAnimationFrame(() => debugInfo3.replaceChildren(renderZone(zone)));
         }
         break;
       case midi_ch_cmds.pitchbend:
@@ -336,4 +339,72 @@ function onMidiMeta(stderr, e) {
     }
   };
   stderr(metaDisplay(e.data.meta) + ": " + e.data.payload);
+}
+function renderZone(zoneSelect) {
+  return mkdiv("div", [
+    renderSampleView(zoneSelect),
+    ..."Attenuation,VolEnv,Filter,LFO"
+      .split(",")
+      .map((keyword) => renderArticle(keyword, zoneSelect)),
+  ]);
+}
+function renderSampleView(zoneSelect) {
+  return mkdiv("div", [
+    "smpl: ",
+    zoneSelect.shdr.SampleId,
+    " ",
+    zoneSelect.shdr.name,
+    "<br>nsample: ",
+    zoneSelect.shdr.nsamples,
+    "<br>originalPitch: " + zoneSelect.shdr.originalPitch,
+    "<br>Range: ",
+    zoneSelect.shdr.range.join("-"),
+    "<br>",
+    "loop: ",
+    zoneSelect.shdr.loops.join("-"),
+    "<br>",
+
+    JSON.stringify(zoneSelect.KeyRange),
+    "<br>",
+    JSON.stringify(zoneSelect.VolRange),
+  ]);
+}
+function renderArticle(keyword, zoneObj) {
+  let canvas;
+  const zattrs = Object.entries(zoneObj).filter(([k]) => k.includes(keyword));
+
+  const attrVals = mkdiv(
+    "ul",
+    zattrs.map(([k, v]) =>
+      mkdiv("li", [
+        mkdiv("label", [k, ":"]),
+        mkdiv("code", [v]),
+        mkdiv("input", {
+          type: "range",
+          ...min_max_vals(k),
+          value: v,
+          oninput: (e) => {
+            e.target.parentElement.querySelector("code").textContent =
+              e.target.value;
+            zoneObj[k] = e.target.value;
+            //if (canvas) drawEV(zoneObj, canvas);
+          },
+        }),
+      ])
+    )
+  );
+  const details = mkdiv("div");
+  const article = mkdiv("article", {class: "article"}, [attrVals, details]);
+  return article;
+}
+//drawEV(zone.arr.slice(33, 39), volEGCanvas);
+function min_max_vals(k) {
+  if (k.includes("Sustain")) {
+    return {min: 0, max: 1000, step: 10};
+  } else
+    return {
+      min: -12000,
+      max: 5000,
+      step: 10,
+    };
 }

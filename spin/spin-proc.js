@@ -1,6 +1,7 @@
 import {wasmbin} from "./spin.wasm.js";
 import {egStruct, spRef2json} from "./spin-structs.js";
 import {midi_ch_cmds} from "../src/midilist.js";
+import saturate from "../saturation/index.js";
 const nchannels = 16;
 const voices_per_channel = 4;
 let _arr = [[], []];
@@ -30,7 +31,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.port.postMessage({init: 1});
     this.eg_vol_stag = new Array(32).fill(0);
     this.sp_reflect_arr = this.malololc(32 * 4 * 4);
-    this.debug = true;
+    this.debug = false;
     this.spinners = ringbus.this_bus();
     this.busIndex = 0;
   }
@@ -114,12 +115,16 @@ class SpinProcessor extends AudioWorkletProcessor {
           for (const sp of this.sp_map[channel * 128 + key]) {
             this.inst.exports.trigger_release(sp);
           }
+          this.respondQuery(sp);
+
           this.port.postMessage({ack: [0x80, channel]});
           break;
         }
         case 0x90:
           {
+
             const [cmd, ch, key, velocity, [presetId, zoneRef]] = data;
+            console.log(key, velocity, 'keyon');
             const zonePtr = this.presetRefs[presetId]?.[zoneRef];
             if (!zonePtr) {
               console.error("cannot find present zoneref", presetId, zoneRef);
@@ -134,10 +139,11 @@ class SpinProcessor extends AudioWorkletProcessor {
               key,
               velocity
             );
-            this.respondQuery(sp);
             if (!this.sp_map[ch * 128 + key]) this.sp_map[ch * 128 + key] = [];
             this.sp_map[ch * 128 + key].push(sp);
             this.spinners.push(sp);
+            this.respondQuery(sp);
+
           }
           break;
         default:
@@ -197,7 +203,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.inst.exports.sp_wipe_output_tab();
     const thisBus = ringbus.this_bus();
     const nextBus = ringbus.next_bus();
-    let loudnorm = 1; //1.5 / Math.sqrt(thisBus.length);
+    let loudnorm = 1; // 2.0 / Math.sqrt(thisBus.length);
     let rms = 0;
     while (thisBus.length) {
       // we are playing each voice in a LIFO matter 
@@ -213,7 +219,11 @@ class SpinProcessor extends AudioWorkletProcessor {
       }
       if (goAgain) nextBus.unshift(spref);
     }
-    if (fft_out) fft_out[0].set(left);
+    for (let j = 0;j < 128;j++) {
+      left[j] = saturate(left[j]);
+      right[j] = saturate(right[j]);
+    }
+//    if (fft_out) fft_out[0].set(left);
     clip_out[0].set(right);
     this.rrms = rms + "|" + loudnorm;
     ringbus.bus_ran();
@@ -221,7 +231,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     return true;
   }
   sendReport() {
-    if (!this.lastReport || globalThis.currentTime - this.lastReport > 0.2) {
+    if (this.debug && (!this.lastReport || globalThis.currentTime - this.lastReport > 0.2)) {
       new Promise((r) => r()).then(() => {
         this.lastReport = globalThis.currentTime;
         const ref = this.inst.exports.spRef(this_bus?.[0] || next_bus?.[0] || this.inst.exports.sp_idx.value - 1);

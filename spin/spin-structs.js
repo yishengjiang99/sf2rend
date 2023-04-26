@@ -13,18 +13,23 @@ typedef struct {
 export function spRef2json(heap, ref) {
   const [
     inputRef,
-    outputRef,
-    channelId,
+    outputRef
+  ] = new Uint32Array(heap, ref, 2); // 8*4
+
+  const [channelId,
     key,
-    velocity,
+    velocity] = new Uint8Array(heap, ref + 8, 3);
+
+  const [
     position,
     loopStart,
     loopEnd,
-  ] = new Uint32Array(heap, ref, 8); // 8*4
-  const [fract, stride, pdiff] = new Float32Array(heap, ref + 32, 3); // 8*3
+  ] = new Uint32Array(heap, ref + 8 + 8, 8); // 8*4
+
+  const [fract, stride, pdiff] = new Float32Array(heap, ref + 8 + 8 + 12, 3); // 8*3
 
   const [zoneRef, volEGRef, modEGRef, modflo, vibrlfo, pcmRef] =
-    new Uint32Array(heap, ref + 44, 6);
+    new Uint32Array(heap, ref + 8 + 8 + 12 + 12, 6);
   return {
     fract,
     stride, 
