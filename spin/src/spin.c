@@ -10,7 +10,7 @@ char midi_cc_vals[nmidiChannels * 128];
 float outputs[MAX_VOICE_CNT * RENDQ * 2];
 
 float silence[440] = {.0f};
-float calc_pitch_diff_log(zone_t* z, pcm_t* pcm, int key);
+float calc_pitch_diff_log(zone_t* z, pcm_t* pcm, unsigned char key);
 int output_arr_len = MAX_VOICE_CNT * RENDQ * 2;
 
 void sp_wipe_output_tab() {
@@ -78,7 +78,7 @@ float trigger_attack(spinner* x, uint32_t key, uint32_t velocity) {
   x->key = (unsigned char)(key & 0x7f);
   init_mod_eg(&x->modeg, x->zone, x->pcm->sampleRate);
   init_vol_eg(&x->voleg, x->zone, x->pcm->sampleRate);
-  x->pitch_dff_log = calc_pitch_diff_log(x->zone, x->pcm, key);
+  x->pitch_dff_log = calc_pitch_diff_log(x->zone, x->pcm, x->key);
   x->stride = 1.0f;
   advanceStage(&x->voleg);
   x->modlfo.delay = timecent2sample(x->zone->ModLFODelay);
@@ -96,11 +96,11 @@ void set_spinner_input(spinner* x, pcm_t* pcm) {
   x->position = 0;
 }
 
-float calc_pitch_diff_log(zone_t* z, pcm_t* pcm, int key) {
+float calc_pitch_diff_log(zone_t* z, pcm_t* pcm, unsigned char key) {
   short rt = z->OverrideRootKey > -1 ? z->OverrideRootKey : pcm->originalPitch;
-  float smpl_rate = rt * 100.0f + z->CoarseTune * 100.0f + (float)z->FineTune;
-  float diff = key * 100.0f - smpl_rate + .0001f;
-  diff += ((pcm->sampleRate - SAMPLE_RATE) / 4096.f * 100.f);
+  float smpl_rate = rt * 100.f + z->CoarseTune * 100.f + z->FineTune;
+  float diff = key * 100.f - smpl_rate;
+  diff += ((pcm->sampleRate - SAMPLE_RATE) / 40.96f);
   return diff;
 }
 void set_spinner_zone(spinner* x, zone_t* z) {

@@ -40,8 +40,8 @@ export async function mkpath2(ctx, {midi_input, sf2File, }) {
                 sf2s = new SF2Service(sf2File);
                 await sf2s.load();
             }
-            const p = sf2s.loadProgram(0, bankid);
-            await spinner.shipProgram(p, 0 | bankid);
+            const p = sf2s.loadProgram(pid, bankid);
+            await spinner.shipProgram(p, pid | bankid);
             return p;
         },
         connect(destination, outputNumber, destinationInputNumber) {

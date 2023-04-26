@@ -114,8 +114,9 @@ class SpinProcessor extends AudioWorkletProcessor {
           if (!this.sp_map[channel * 128 + key]) throw 'unexpected emty sp_map';
           for (const sp of this.sp_map[channel * 128 + key]) {
             this.inst.exports.trigger_release(sp);
+            this.respondQuery(sp);
+
           }
-          this.respondQuery(sp);
 
           this.port.postMessage({ack: [0x80, channel]});
           break;
@@ -223,7 +224,7 @@ class SpinProcessor extends AudioWorkletProcessor {
       left[j] = saturate(left[j]);
       right[j] = saturate(right[j]);
     }
-//    if (fft_out) fft_out[0].set(left);
+    if (fft_out) fft_out[0].set(left);
     clip_out[0].set(right);
     this.rrms = rms + "|" + loudnorm;
     ringbus.bus_ran();

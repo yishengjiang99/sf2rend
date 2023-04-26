@@ -252,14 +252,14 @@ async function main(sf2file) {
   mkcollapse({title: "fft", defaultOpen: true}, ffholder).attachTo(analyze);
   const c3 = mkdiv("canvas", {class: "fixed-top-right", width: "500", height: "50"});
   c3.attachTo(document.body);
-  // const cancelFn = apath.detectClips(c3);
+  const cancelFn = apath.detectClips(c3);
   // cancelFn();
   function draw() {
     chart(cv1, apath.analysis.frequencyBins);
     chart(cv2, apath.analysis.waveForm);
     requestAnimationFrame(draw);
   }
-  //draw();
+  draw();
   maindiv.classList.remove("hidden");
 }
 
