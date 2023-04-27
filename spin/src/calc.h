@@ -15,7 +15,7 @@
 #define clamp(val, min, max) val > max ? max : val < min ? min : val
 const double ln2 = 0.693147180559945;
 
-float calcp2over200(float tc) {
+float calcp2over1200(float tc) {
   float m = 1.0f;
   while (tc >= 1200.f) {
     tc -= 1200;

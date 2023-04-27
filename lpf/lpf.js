@@ -2,7 +2,7 @@ import { wasmbin } from "./lpf.wasm.js";
 
 
 export class LowPassFilterNode extends AudioWorkletNode {
-  static param_defaults = { frequency: 13500, Q: 1.0 };
+  static param_defaults = {frequency: 13500, Q: 2.0};
   static async init(ctx) {
     try {
       await ctx.audioWorklet

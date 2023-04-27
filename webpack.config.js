@@ -24,6 +24,7 @@ module.exports = {
   entry: {
     sequence: "./src/sequence/index.js",
     timer: "./src/sequence/timer.js",
+    main: "./src/index.js",
   },
   module: {
     rules: [

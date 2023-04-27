@@ -120,7 +120,7 @@ void set_spinner_zone(spinner* x, zone_t* z) {
 
 float lerp(float f1, float f2, float frac) { return f1 + (f2 - f1) * frac; }
 
-#define effect_floor(v) v <= -12000 ? 0 : calcp2over200(v)
+#define effect_floor(v) v <= -12000 ? 0 : calcp2over1200(v)
 
 void _spinblock(spinner* x, int n, int blockOffset) {
   double db, dbInc;
@@ -148,7 +148,7 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   int should_skip_blocks = x->zone->SampleModes > 0 ? 1 : 0;
 
   float kRateCB = 0.0f;
-  kRateCB -= (float)x->zone->Attenuation;
+  kRateCB += (float)x->zone->Attenuation;
   kRateCB += midi_volume_log10(midi_cc_vals[ch * 128 + TML_VOLUME_MSB]);
   if (x->voleg.stage < decay)
     kRateCB += midi_volume_log10(midi_cc_vals[ch * 128 + TML_EXPRESSION_MSB]);
@@ -159,6 +159,8 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   double panRight = panrightLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]];
 
   short lfo1_pitch = effect_floor(x->zone->ModLFO2Pitch);
+  short lfo1_volume = effect_floor(x->zone->ModLFO2Vol);
+
   short lfo2_pitch = effect_floor(x->zone->VibLFO2Pitch);
   short modeg_pitch = effect_floor(x->zone->ModEnv2Pitch);
   short modeg_fc = effect_floor(x->zone->ModEnv2FilterFc);
@@ -166,10 +168,12 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   int isLooping = x->is_looping;
   for (int i = 0; i < n; i++) {
     db = volEgOut[i];
+    // db += lfo1_volume * lfo1Out[i] / 10;
     float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
 
-    stride = calcp2over200(pdiff + lfo1Out[i] * lfo1_pitch +
-                           lfo2Out[i] * lfo2_pitch);
+    stride =
+        calcp2over1200(pdiff + lfo1Out[i] * lfo1_pitch +
+                       modEgOut[i] * modeg_pitch + lfo2Out[i] * lfo2_pitch);
     fract = fract + stride;
     while (fract >= 1.0f) {
       position++;
@@ -182,18 +186,12 @@ void _spinblock(spinner* x, int n, int blockOffset) {
       outputf = 0.0;
       x->voleg.stage = done;
     }
-    output_L[i] = applyCentible(outputf, (short)(db / 3.0 + kRateCB + panLeft));
-    output_R[i] =
-        applyCentible(outputf, (short)(db / 3.0 + kRateCB + panRight));
+    output_L[i] = applyCentible(outputf, (short)(db + kRateCB + panLeft));
+    output_R[i] = applyCentible(outputf, (short)(db + kRateCB + panRight));
   }
   x->position = position;
   x->fract = fract;
   x->stride = stride;
-  // // x->active_dynamics_flag ^ filter_active;
-  // if (x->active_dynamics_flag & filter_active) {
-  //   lpf_process(ch, output_L, n);
-  //   lpf_process(ch, output_R, n);
-  // }
 }
 
 int spin(spinner* x, int n) {
@@ -214,6 +212,7 @@ int spin(spinner* x, int n) {
 unsigned int sp_byte_len() { return sizeof(spinner); }
 EG* get_vol_eg(spinner* x) { return &x->voleg; }
 float* get_sp_output(spinner* x) { return x->outputf; }
+int get_sp_channel_id(spinner* x) { return x->channelId; }
 
 void gm_reset() {
   for (int idx = 0; idx < 128; idx++) {

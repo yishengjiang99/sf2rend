@@ -195,8 +195,10 @@ class SpinProcessor extends AudioWorkletProcessor {
     await downloadData(stream, fl);
   }
 
-  process([noise_floor], [[left, right], fft_out, clip_out]) {
+  process([noise_floor], outputs) {
+    const clip_out = outputs[18][0];
     let has_sound = false;
+    let [left, right] = outputs[0];
     if (noise_floor && noise_floor[0]) {
       left.set(noise_floor[0]);
       right.set(noise_floor[0]);
@@ -204,28 +206,31 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.inst.exports.sp_wipe_output_tab();
     const thisBus = ringbus.this_bus();
     const nextBus = ringbus.next_bus();
-    let loudnorm = 1; // 2.0 / Math.sqrt(thisBus.length);
+    let loudnorm = 1;//1.5 / Math.sqrt(thisBus.length);
     let rms = 0;
     while (thisBus.length) {
       // we are playing each voice in a LIFO matter 
       const spref = thisBus.pop();
       const goAgain = this.inst.exports.spin(spref);
+      const sp_output_ref = this.inst.exports.get_sp_output(spref);
+      const sp_midi_channel = this.inst.exports.get_sp_channel_id(spref);
       const outputf = new Float32Array(
         this.memory.buffer,
-        this.inst.exports.get_sp_output(spref), 128 * 2);
+        sp_output_ref, 128 * 2);
+      const [left, right] = outputs[sp_midi_channel];
+
       for (let j = 0;j < 128;j++) {
         left[j] += outputf[128 + j] * loudnorm;
         right[j] += outputf[j] * loudnorm;
+        clip_out[j] += outputf[j];
         rms += left[j] * right[j];
       }
       if (goAgain) nextBus.unshift(spref);
     }
-    for (let j = 0;j < 128;j++) {
-      left[j] = saturate(left[j]);
-      right[j] = saturate(right[j]);
-    }
-    if (fft_out) fft_out[0].set(left);
-    clip_out[0].set(right);
+    // for (let j = 0;j < 128;j++) {
+    //   left[j] = saturate(left[j]);
+    //   right[j] = saturate(right[j]);
+    // }
     this.rrms = rms + "|" + loudnorm;
     ringbus.bus_ran();
     this.sendReport();

@@ -254,13 +254,12 @@ export function mkui(
             ...Array.from(this._zone.arr).map((attr, index) =>
               mkdiv("tr", [
                 mkdiv("td", {
-                  class: attr === defZone[index] ? "hidden" : "",
+
                 }, attributeKeys[index]),
                 mkdiv("td", {}, [
                   mkdiv("input", {
                     value: attr,
                     name: index,
-                    class: attr === defZone[index] ? "hidden" : "",
                     placeholder: "a",
                   }),
                   ...(index == 43 || index == 44

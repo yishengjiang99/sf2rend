@@ -18,20 +18,21 @@ export async function mkpath2(ctx, {midi_input, sf2File, }) {
         await LowPassFilterNode.init(ctx).catch(console.trace);
         init = true;
     }
-    // const lpfs = Array(32).fill(new LowPassFilterNode(ctx));
+    const lpfs = Array(32).fill(new LowPassFilterNode(ctx));
     const channelIds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
     const spinner = new SpinNode(ctx);
+    const mastGain = new GainNode(ctx, {gain: 1});
     const whitenoise = anti_denom_dither(ctx);
-    whitenoise.start();
+    const fft = new FFTNode(ctx);
     const clipdetect = createAudioMeter(ctx);
-    whitenoise.connect(spinner).connect(ctx.destination, 0);
-    let outputIndex = 1;
-    function _availableOutput() {
-        return outputIndex++;
+
+    whitenoise.connect(spinner);
+    for (const id of channelIds) {
+        spinner.connect(lpfs[id], id).connect(mastGain);
     }
-    let fft = new FFTNode(ctx);
-    spinner.connect(fft, _availableOutput());
-    const msg_cmd = adfcdsa(spinner);
+    //spinner.connect(clipdetect, 18);
+    whitenoise.start();
+    mastGain.connect(fft).connect(ctx.destination);
     let sf2s;
     return {
         spinner,
@@ -50,7 +51,7 @@ export async function mkpath2(ctx, {midi_input, sf2File, }) {
 
         detectClips(canvas) {
             const timer = drawLoops(canvas, clipdetect);
-            spinner.connect(clipdetect, _availableOutput());
+            spinner.connect(clipdetect, 18);
             return function cleanup() {
                 cancelAnimationFrame(timer);
             };
@@ -76,9 +77,6 @@ export async function mkpath2(ctx, {midi_input, sf2File, }) {
             });
         },
         loadPreset: spinner.shipProgram,
-        setNewZone: function (zone) {
-            return msg_cmd("newZone", {zone});
-        },
         lowPassFilter: function (channel, initialFrequency) {
             lpfs[channel].parameters
                 .get("FilterFC")
@@ -86,7 +84,8 @@ export async function mkpath2(ctx, {midi_input, sf2File, }) {
             return lpfs[channel];
         },
         silenceAll() {
-            spinner.port.postMessage({cmd: "reset_gm"});
+            mastGain.gain.linearRampToValueAtTime(0, ctx.baseLatency);
+            // spinner.port.postMessage({cmd: "reset_gm"});
         },
         async mute(channel, bool) {
             this.startAudio();
@@ -104,6 +103,12 @@ export async function mkpath2(ctx, {midi_input, sf2File, }) {
             "gm_reset|debug|querySpState"
                 .split("|")
                 .map((cmd) => mkdiv("button", {onclick: () => spinner.port.postMessage({cmd})}, cmd).attachTo(container));
+
+            mkdiv("input", {
+                type: "range", min: 0, max: 2, oninput: (e) => mastGain.gain.linearRampToValueAtTime(e.target.value, ctx.baseLatency)
+                , value: 1, title: "master G", step: .1
+            }).attachTo(container);
+
         },
         subscribeNextMsg: async function (precateFn) {
             return await new Promise((resolve, reject) => {
@@ -169,13 +174,4 @@ export async function mkpath2(ctx, {midi_input, sf2File, }) {
             };
         },
     };
-}
-function adfcdsa(spinner) {
-    const msg_cmd = (cmd, args) => spinner.port.postMessage({...args, cmd});
-    spinner.port.onmessage = ({data: {dv, ch}}) => {
-        if (dv && ch) {
-            console.log(dv, ch);
-        }
-    };
-    return msg_cmd;
 }
