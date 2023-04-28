@@ -13,6 +13,10 @@ float outputs[MAX_VOICE_CNT * RENDQ * 2];
 float silence[440] = {.0f};
 float calc_pitch_diff_log(zone_t* z, pcm_t* pcm, unsigned char key);
 int output_arr_len = MAX_VOICE_CNT * RENDQ * 2;
+float volEgOut[RENDQ];
+float modEgOut[RENDQ];
+float lfo1Out[RENDQ];
+float lfo2Out[RENDQ];
 
 void sp_wipe_output_tab() {
   for (int i = 0; i < output_arr_len; i++) {
@@ -31,7 +35,7 @@ spinner* allocate_sp() {
 }
 
 void sp_reflect(float* paper) {
-  for (int j = 0, i = sp_idx; i > 0 && j < 32; i--) {
+  for (int j = 0, i = sp_idx; i >= 0 && j < 32; i--) {
     paper[j++] = (sps + i)->channelId;
     paper[j++] = (sps + i)->voleg.stage;
     paper[j++] = (sps + i)->voleg.egval;
@@ -144,6 +148,8 @@ void set_spinner_zone(spinner* x, zone_t* z) {
 #define effect_floor(v) v <= -12000 ? 0 : calcp2over1200(v)
 
 void _spinblock(spinner* x, int n, int blockOffset) {
+#define ccval(eff) midi_cc_vals[x->channelId * 128 + eff]
+
   double db, dbInc;
   float stride = 1.0f;
   float pdiff = x->pitch_dff_log;
@@ -151,16 +157,10 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   int ch = x->channelId;
   float* output_L = &x->outputf[blockOffset];
   float* output_R = &x->outputf[RENDQ + blockOffset];
-
-  // compute a-rate generators
-  float volEgOut[n];
-  float modEgOut[n];
-  float lfo1Out[n];
-  float lfo2Out[n];
   eg_roll(&x->modeg, n, modEgOut);
   eg_roll(&x->voleg, n, volEgOut);
-  LFO_roll_out(&x->modlfo, 64, lfo1Out);
-  LFO_roll_out(&x->vibrlfo, 64, lfo2Out);
+  LFO_roll_out(&x->modlfo, n, lfo1Out);
+  LFO_roll_out(&x->vibrlfo, n, lfo2Out);
 
   unsigned int position = x->position;
   float fract = x->fract;
@@ -170,7 +170,8 @@ void _spinblock(spinner* x, int n, int blockOffset) {
 
   float kRateCB = 0.0f;
   kRateCB += (float)x->zone->Attenuation;
-  kRateCB += midi_volume_log10(midi_cc_vals[ch * 128 + TML_VOLUME_MSB]);
+  kRateCB += midi_volume_log10(ccval(TML_VOLUME_MSB));
+
   if (x->voleg.stage < decay)
     kRateCB += midi_volume_log10(midi_cc_vals[ch * 128 + TML_EXPRESSION_MSB]);
   kRateCB += midi_volume_log10(x->velocity);
@@ -237,9 +238,9 @@ int get_sp_channel_id(spinner* x) { return x->channelId; }
 
 void gm_reset() {
   for (int idx = 0; idx < nmidiChannels; idx++) {
-    midi_cc_vals[idx * nmidiChannels + TML_VOLUME_MSB] = 100;
-    midi_cc_vals[idx * nmidiChannels + TML_PAN_MSB] = 64;
-    midi_cc_vals[idx * nmidiChannels + TML_EXPRESSION_MSB] = 127;
+    midi_cc_vals[idx * num_cc_list + TML_VOLUME_MSB] = 100;
+    midi_cc_vals[idx * num_cc_list + TML_PAN_MSB] = 64;
+    midi_cc_vals[idx * num_cc_list + TML_EXPRESSION_MSB] = 127;
   }
   for (int i = 0; i < nchannels; i++) reset(&sps[i]);
 }

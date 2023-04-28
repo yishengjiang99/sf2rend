@@ -1,5 +1,6 @@
 #ifndef SPIN_H
 #define SPIN_H
+
 typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
 typedef int int32_t;
@@ -11,6 +12,69 @@ typedef unsigned int uint32_t;
 #define nmidiChannels 16
 #define num_cc_list 128
 #define MAX_EG -1440.f
+#define SAMPLE_RATE 44100.0f
+#include "calc.h"
+
+#define modulo_s16f_inverse 1.0f / 32767.1f
+#define modulo_u16f (float)(((1 << 16) + .1f))
+
+typedef struct {
+  unsigned short phase, delay;
+  unsigned short phaseInc;
+} LFO;
+
+float dummy[666];  // backward compact hack
+
+float LFO_roll_out(LFO* lfo, unsigned int n, float* output) {
+  while (n--) {
+    if (lfo->delay > 0) {
+      lfo->delay--;
+      *output++ = 0.f;
+      continue;
+    } else {
+      lfo->phase += lfo->phaseInc;
+      *output++ = (float)(((short)lfo->phase) * modulo_s16f_inverse);
+    }
+  }
+  return *output;
+}
+
+void set_frequency(LFO* lfo, short ct) {
+  double freq = timecent2hertz(ct);
+  lfo->phaseInc = (unsigned short)(modulo_u16f * freq / SAMPLE_RATE);
+}
+float centdb_val(LFO* lfo) { return (1 - lfo->phase) * 0.5; }
+
+float roll(LFO* lfo, unsigned int n) {
+  if (lfo->delay > n) {
+    lfo->delay -= n;
+    return 0.0f;
+  } else {
+    n -= lfo->delay;
+    lfo->delay = 0;
+  }
+  while (n--) lfo->phase += lfo->phaseInc;
+  float lfoval = (float)(((short)lfo->phase) * modulo_s16f_inverse);
+  return lfoval;
+}
+
+#if !defined(fp12)
+#define fp12
+const int scale = 12;
+const int fraction_mask = (1 << scale) - 1;
+const int whole_mask = -1 ^ fraction_mask;
+const double scalar_multiple = (double)(1 << scale);
+#define double2fixed(x) (x * scalar_multiple)
+inline static double fixed2double(int x) { return x / scalar_multiple; }
+#define int2fixed(x) x << scale
+#define fixed2int(x) x >> scale
+inline static double get_fraction(int x) {
+  return fixed2double(x & fraction_mask);
+}
+#define fixed_floor(x) fixed2int(x& whole_mask)
+
+#endif  // fp12
+
 enum eg_stages {
   inactive = 0,  //
   init = 1,  // this is for key on message sent and will go next render cycle
@@ -22,9 +86,129 @@ enum eg_stages {
   release = 7,
   done = 99
 };
-#include "LFO.h"
-#include "calc.h"
-#include "eg.h"
+typedef struct {
+  float egval, egIncrement;
+  int hasReleased, stage, nsteps;
+  short delay, attack, hold, decay, sustain, release, pad1, pad2;
+  int progress, progressInc;  // add prog scale to use LUT
+} EG;
+
+void advanceStage(EG* eg);
+float update_eg(EG* eg, int n);
+
+void eg_roll(EG* eg, int n, float* output) {
+  while (n-- && eg->nsteps--) {
+    if (eg->stage == attack) {
+      int lut_index = fixed_floor(eg->progress);
+      double frag = get_fraction(eg->progress);
+      double f1 = att_db_levels[lut_index], f2 = att_db_levels[lut_index + 1];
+      eg->egval = lerpd(f1, f2, frag);
+    } else {
+      eg->egval += eg->egIncrement;
+    }
+    *output++ = eg->egval;
+  }
+  if (eg->egval > 0) eg->egval = 0.0f;
+  if (eg->nsteps <= 7) advanceStage(eg);
+}
+/**
+ * advances envelope generator by n steps..
+ * shift to next stage and advance the remaining n steps
+ * if necessary
+ *
+ */
+float update_eg(EG* eg, int n) {
+  while (n--) {
+    eg->egval += eg->egIncrement;
+    eg->nsteps--;
+  }
+  if (eg->nsteps <= 7) advanceStage(eg);
+  if (eg->egval > 0) eg->egval = 0.0f;
+  return eg->egval;
+}
+
+void advanceStage(EG* eg) {
+  switch (eg->stage) {
+    case inactive:
+      eg->stage++;
+      return;
+    case init:
+      eg->stage = delay;
+      if (eg->delay > -12000) {
+        eg->egval = MAX_EG;
+        eg->nsteps = timecent2sample(eg->delay);
+        eg->egIncrement = 0.0f;
+        break;
+      }
+    case delay:
+      eg->stage = attack;
+      if (eg->attack > -12000) {
+        eg->egval = MAX_EG;
+        eg->nsteps = timecent2sample(eg->attack);
+        eg->progress = double2fixed(0);
+        eg->progressInc = double2fixed(255.0 / (double)eg->nsteps);
+        break;
+      }
+    case attack:
+      eg->stage = hold;
+      eg->egval = 0.0f;
+      eg->nsteps = timecent2sample(eg->hold);
+      eg->egIncrement = 0.0f;
+      break;
+    case hold: /** TO DECAY */
+      eg->stage = decay;
+      /*
+       * This is the time, in absolute timecents, for a 100% change in the
+  Volume Envelope value during decay phase. */
+      // velopcity required to travel full 960db
+      eg->nsteps = timecent2sample(eg->decay) + timecent2sample(eg->release);
+      eg->egIncrement = MAX_EG / eg->nsteps;
+
+      // but it's timeslice by sustain percentage?
+      eg->nsteps = timecent2sample(eg->decay);
+      break;
+
+    case decay:  // headsing to released;
+
+      /*
+      37 sustainVolEnv This is the decrease in level, expressed in centibels,
+      to which the Volume Envelope value ramps during the decay phase. For the
+      Volume Envelope, the sustain level is best expressed in centibels of
+      attenuation from full scale. A value of 0 indicates the sustain level is
+      full level; this implies a zero duration of decay phase regardless of
+      decay time. A positive value indicates a decay to the corresponding
+      level. Values less than zero are to be interpreted as zero;
+      conventionally 1000 indicates full attenuation. For example, a sustain
+      level which corresponds to an absolute value 12dB below of peak would be
+      120.*/
+      eg->stage = sustain;
+      eg->egIncrement = 0.0f;
+      eg->nsteps = 48000;
+      break;
+
+      // sustain = % decreased during decay
+
+    case sustain: {
+      int stepsFull = timecent2sample(eg->release);
+      eg->egIncrement = MAX_EG / stepsFull;
+      eg->nsteps = stepsFull * (eg->egval / MAX_EG);
+    } break;
+    case release:
+      eg->stage = done;
+      break;
+    case done:
+      break;
+  }
+}
+
+void _eg_release(EG* e) {
+  e->nsteps = 0;
+  e->stage = sustain;
+  advanceStage(e);
+}
+
+void eg_init(EG* e) { e->attack = -12000; }
+
 typedef struct {
   uint32_t loopstart, loopend, length, sampleRate, originalPitch;
   float* data;

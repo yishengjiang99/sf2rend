@@ -37,10 +37,11 @@ void initLUTs(FILE* fd) {
   fprintf(fd, "#endif");
 }
 void init_m_fals(FILE* fd) {
-  fprintf(fd, "float midi_p1200[129]={ -12000,");
-
+  fprintf(fd, "short midi_p1200[129]={ -12000,");
+  int incre = 12000.f / 128.f;
+  int val = -12000;
   for (int i = 1; i < 128; i++) {
-    fprintf(fd, "%f,\n ", 1200.0f * log2(i / 25.f));
+    fprintf(fd, "%d, ", val += incre);
   }
   fprintf(fd, "12000 }; \n");
 

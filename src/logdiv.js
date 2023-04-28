@@ -9,7 +9,7 @@ const defaultsConfig = {
 export function logdiv(config = {}) {
     const {rows, size, className, container, timestamp} = Object.assign(config, defaultsConfig);
     const infoPanel = mkdiv("textarea", {
-        id: "stdout", style: "width:57em;", rows, className
+        id: "infop", style: "width:57em;", rows, className
     });
     if (container)
         infoPanel.attachTo(container);

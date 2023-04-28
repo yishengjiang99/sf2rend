@@ -3,14 +3,7 @@
 #include "midi_normalized.h"
 #include "p1200.h"
 #include "spin.h"
-#define log_2_10 3.321928094f
-#define bit23_normalize 1.000f / 0x7fffff
-#ifndef SAMPLE_RATE
-#define SAMPLE_RATE 44100.0f
-#endif
-#define SAMPLE_RATE_LOG2 15.428491035332245f
 #define SAMPLE_BLOCK 128
-#define BLOCKS_PER_SECOND SAMPLE_RATE / SAMPLE_BLOCK
 
 #define clamp(val, min, max) val > max ? max : val < min ? min : val
 const double ln2 = 0.693147180559945;
@@ -42,9 +35,6 @@ double timecent2hertz(short tc) { return 8.176f * timecent2second(tc); }
 
 int timecent2sample(short tc) {
   return (int)(timecent2second(tc) * SAMPLE_RATE);
-}
-double attack_db_inc(short attackRate) {
-  return -MAX_EG / timecent2second(attackRate) / SAMPLE_RATE;
 }
 float applyCentible(float signal, short centdb) {
   if (centdb > 0) return signal;

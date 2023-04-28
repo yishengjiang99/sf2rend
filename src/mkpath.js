@@ -30,7 +30,6 @@ export async function mkpath2(ctx, {midi_input, sf2File, }) {
     for (const id of channelIds) {
         spinner.connect(lpfs[id], id).connect(mastGain);
     }
-    //spinner.connect(clipdetect, 18);
     whitenoise.start();
     mastGain.connect(fft).connect(ctx.destination);
     let sf2s;
@@ -100,7 +99,7 @@ export async function mkpath2(ctx, {midi_input, sf2File, }) {
                 await ctx.resume();
         },
         ctrl_bar(container) {
-            "gm_reset|debug|querySpState"
+            "gm_reset|debug|querySpState|focusQ"
                 .split("|")
                 .map((cmd) => mkdiv("button", {onclick: () => spinner.port.postMessage({cmd})}, cmd).attachTo(container));
 
@@ -168,9 +167,9 @@ export async function mkpath2(ctx, {midi_input, sf2File, }) {
                 const key = index + baseOctave;
 
                 e.target.addEventListener("keyup", () => {
-                    eventpipe.postMessage([0x80 | channel, key, 111]);
+                    eventpipe.postMessage([0x80 | channel, key, 33]);
                 }, {once: true});
-                eventpipe.postMessage([0x90 | channel, key, 120]);
+                eventpipe.postMessage([0x90 | channel, key, 55]);
             };
         },
     };

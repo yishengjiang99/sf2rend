@@ -115,7 +115,6 @@ class SpinProcessor extends AudioWorkletProcessor {
           for (const sp of this.sp_map[channel * 128 + key]) {
             this.inst.exports.trigger_release(sp);
             this.respondQuery(sp);
-
           }
 
           this.port.postMessage({ack: [0x80, channel]});
@@ -125,7 +124,6 @@ class SpinProcessor extends AudioWorkletProcessor {
           {
 
             const [cmd, ch, key, velocity, [presetId, zoneRef]] = data;
-            console.log(key, velocity, 'keyon');
             const zonePtr = this.presetRefs[presetId]?.[zoneRef];
             if (!zonePtr) {
               console.error("cannot find present zoneref", presetId, zoneRef);
@@ -144,7 +142,7 @@ class SpinProcessor extends AudioWorkletProcessor {
             this.sp_map[ch * 128 + key].push(sp);
             this.spinners.push(sp);
             this.respondQuery(sp);
-
+            this.lastRan = sp;
           }
           break;
         default:
@@ -217,6 +215,7 @@ class SpinProcessor extends AudioWorkletProcessor {
       const outputf = new Float32Array(
         this.memory.buffer,
         sp_output_ref, 128 * 2);
+
       const [left, right] = outputs[sp_midi_channel];
 
       for (let j = 0;j < 128;j++) {
@@ -227,20 +226,17 @@ class SpinProcessor extends AudioWorkletProcessor {
       }
       if (goAgain) nextBus.unshift(spref);
     }
-    // for (let j = 0;j < 128;j++) {
-    //   left[j] = saturate(left[j]);
-    //   right[j] = saturate(right[j]);
-    // }
     this.rrms = rms + "|" + loudnorm;
     ringbus.bus_ran();
     this.sendReport();
     return true;
   }
   sendReport() {
-    if (this.debug && (!this.lastReport || globalThis.currentTime - this.lastReport > 0.2)) {
+    if (!this.lastRan) return;
+    if (this.debug || this.focusQ || (!this.lastReport || globalThis.currentTime - this.lastReport > 0.2)) {
       new Promise((r) => r()).then(() => {
         this.lastReport = globalThis.currentTime;
-        const ref = this.inst.exports.spRef(this_bus?.[0] || next_bus?.[0] || this.inst.exports.sp_idx.value - 1);
+        const ref = this.inst.exports.spRef(this.lastRan); 
         const spinfo = spRef2json(this.memory.buffer, ref);
         this.inst.exports.sp_reflect(this.sp_reflect_arr);
         const sharedData = new Float32Array(32 * 4);
@@ -258,7 +254,7 @@ class SpinProcessor extends AudioWorkletProcessor {
             rrms: this.rrms,
             spinfo,
             egInfo,
-            activeSp: _arr
+            activeSp: this_bus.length + next_bus.length
           }
         });
       });

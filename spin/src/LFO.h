@@ -23,7 +23,7 @@ float LFO_roll_out(LFO* lfo, unsigned int n, float* output) {
 }
 
 void set_frequency(LFO* lfo, short ct) {
-  float freq = timecent2hertz(ct);
+  double freq = timecent2hertz(ct);
   lfo->phaseInc = (unsigned short)(modulo_u16f * freq / SAMPLE_RATE);
 }
 /*

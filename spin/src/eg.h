@@ -1,10 +1,24 @@
 #ifndef EG_H
 #define EG_H
-
+#include "calc.h"
 #include "fix_point_12.h"
-#include "p1200.h"
-#include "spin.h"
+#if !defined(maxeg)
+#define maxeg
+#define MAX_EG -1440.f
 
+#endif  // maxeg
+
+enum eg_stages {
+  inactive = 0,  //
+  init = 1,  // this is for key on message sent and will go next render cycle
+  delay = 2,
+  attack = 3,
+  hold = 4,
+  decay = 5,
+  sustain = 6,
+  release = 7,
+  done = 99
+};
 typedef struct {
   float egval, egIncrement;
   int hasReleased, stage, nsteps;
@@ -18,7 +32,7 @@ float update_eg(EG* eg, int n);
 void eg_roll(EG* eg, int n, float* output) {
   while (n-- && eg->nsteps--) {
     if (eg->stage == attack) {
-      int lut_index = floor(eg->progress);
+      int lut_index = fixed_floor(eg->progress);
       double frag = get_fraction(eg->progress);
       double f1 = att_db_levels[lut_index], f2 = att_db_levels[lut_index + 1];
       eg->egval = lerpd(f1, f2, frag);
@@ -47,9 +61,6 @@ float update_eg(EG* eg, int n) {
 }
 
 void advanceStage(EG* eg) {
-  // if (eg->hasReleased > 0 && eg->stage < release) {
-  //   goto EG_RELEASE;
-  // }
   switch (eg->stage) {
     case inactive:
       eg->stage++;
@@ -76,19 +87,14 @@ void advanceStage(EG* eg) {
       eg->egval = 0.0f;
       eg->nsteps = timecent2sample(eg->hold);
       eg->egIncrement = 0.0f;
+
       break;
     case hold: /** TO DECAY */
-        eg->stage = decay;
-        /*
-         * This is the time, in absolute timecents, for a 100% change in the
-    Volume Envelope value during decay phase. */
-        // velopcity required to travel full 960db
-        eg->nsteps = timecent2sample(eg->decay)+ timecent2sample(eg->release);
-        eg->egIncrement = MAX_EG / eg->nsteps;
-
-        // but it's timeslice by sustain percentage?
-        eg->nsteps = timecent2sample(eg->decay);
-        break;
+      eg->stage = decay;
+      eg->nsteps = timecent2sample(eg->decay) + timecent2sample(eg->release);
+      eg->egIncrement = MAX_EG / eg->nsteps;
+      eg->nsteps = timecent2sample(eg->decay);
+      break;
 
     case decay:  // headsing to released;
 
@@ -130,4 +136,6 @@ void _eg_release(EG* e) {
   e->stage = sustain;
   advanceStage(e);
 }
+
+void eg_init(EG* e) { e->attack = -12000; }
 #endif

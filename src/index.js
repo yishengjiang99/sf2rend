@@ -12,7 +12,7 @@ import {readMidi} from './midiread.js'
 import {mkcanvas, chart} from "../chart/chart.js";
 import * as sequence from "../dist/sequence.js"
 import {logdiv, mkcollapse} from "./logdiv.js";
-import {mk_vca_ctrl} from "./eqslide.js";
+import {mk_vcf_ctrl, mk_vca_ctrl, mk_attenuate, mk_eq_bar} from "./eqslide.js";
 function $(sel) {
   return document.querySelector(sel);
 }
@@ -38,9 +38,11 @@ mkcollapse({title: "ctrlbar", defaultOpen: true}, debugInfo2).attachTo(document.
 mkcollapse({title: "debug", defaultOpen: true}, debugInfo).attachTo(debugContainer);
 mkcollapse({title: "debug3", defaultOpen: false}, debugInfo3).attachTo(infoPanel);
 mkcollapse({title: "Log Info", defaultOpen: true}, infoPanel).attachTo(stdoutdiv);
+const stderrrdiv = mkdiv("pre")
 window.stdout = stdout;
+stderrrdiv.attachTo(debugContainer);
 window.stderr = (str) => debugInfo.innerHTML = str;
-window.stderrr = (str) => debugInfo.innerHTML = str;
+window.stderrr = (str) => stderrrdiv.innerHTML = str;
 
 main();
 const appState = {};
@@ -70,6 +72,7 @@ async function main(sf2file) {
 
   const channels = [];
 
+  const midiList = await fetchmidilist();
 
   for (const f of sf2list) sf2select.append(mkdiv("option", {value: f}, f));
 
@@ -88,9 +91,12 @@ async function main(sf2file) {
       mkdiv("option", {name: "select midi", value: null}, "select midi file"),
       ...mfilelist.map((f) =>
         mkdiv("option", {value: f}, decodeURI(f).split("/").pop())
+      ), ...midiList.map((f) =>
+        mkdiv("option", {value: f.get("Url")}, f.get("Name").substring(0, 80))
       ),
     ],
   });
+
   midiSelect.attachTo($("#midilist"));
   midiSelect.addEventListener("input", (e) => onMidiSelect(e.target.value));
   ctx = new AudioContext({
@@ -120,8 +126,10 @@ async function main(sf2file) {
   for (let i = 0;i < 16;i++) {
     channels.push(createChannel(uiControllers[i], i, sf2, apath));
   }
-  mk_vca_ctrl(0, eventPipe).attachTo(debugInfo2);
-
+  const get_cur_chan = () => ui.activeChannel;
+  mk_vca_ctrl(get_cur_chan, eventPipe).attachTo(debugInfo2);
+  mk_vcf_ctrl(get_cur_chan, eventPipe).attachTo(debugInfo2);
+  mk_eq_bar(get_cur_chan, eventPipe).attachTo(debugInfo2);
   const sf2loadWait = await loadSF2File("./static/file.sf2");
 
 
@@ -182,22 +190,25 @@ async function main(sf2file) {
     "click",
     async () => ctx.state !== "running" && (await ctx.resume()),
     {once: true}
-  );
+  ); 
+
 
   const ampIndictators = document.querySelectorAll(".amp-indicate");
   spinner.port.onmessage = ({data}) => {
     if (data.sp_reflect) {
+      let debugstr = ''
       for (let i = 0;i < data.sp_reflect.length;i += 4) {
         const ch = data.sp_reflect[i];
         const eg_vol = data.sp_reflect[i + 2];
-        if (eg_vol <= -960) continue;
-        // ampIndictators[ch].style.setProperty(
-        //   "--db",
-        //   (eg_vol + 960) / 960
-        // );
+        ampIndictators[ch].style.setProperty(
+          "--db",
+          Math.pow(10, eg_vol / 200)
+        );
+        debugstr += [ch, eg_vol].join("=") + ","
+
       }
 
-      window.stderrr(JSON.stringify(data.sp_reflect, null, 1));
+      window.stderrr(debugstr);
     }
     if (data.spState) col5.innerHTML = JSON.stringify(data.spState);
     if (data.egStages) col4.innerHTML = Object.values(data.egStages).join(" ");
@@ -238,6 +249,9 @@ async function main(sf2file) {
     const midiInfo = readMidi(
       new Uint8Array(await (await fetch(url)).arrayBuffer())
     );
+    onMidiLoaded(midiInfo);
+  }
+  async function onMidiLoaded(midiInfo) {
     await Promise.all(midiInfo.presets.map(preset => {
       const {pid, channel} = preset;
       const bkid = channel == DRUMSCHANNEL ? 128 : 0;
@@ -265,6 +279,13 @@ async function main(sf2file) {
   }
   draw();
   maindiv.classList.remove("hidden");
+  document.querySelector("#file-btn").addEventListener('input', async function (e) {
+    if (!e.target.files[0]) return;
+    const ab = await (e.target.files[0]).arrayBuffer();
+    const midiinfo = readMidi(new Uint8Array(ab));
+    onMidiLoaded(midiinfo);
+  })
+
 }
 
 function eventsHandler(channels) {

@@ -41,10 +41,12 @@ class LowPassFilterProc extends AudioWorkletProcessor {
   process([inputs], [outputs], params) {
 
     if (!inputs.length) return true;
+    this.setLPF()
     if (params.FilterFC[0] !== this.cutoffFc) {
       this.cutoffFc = params.FilterFC[0];
       this.lpf = this.setLPF(this.cutoffFc, this.Q);
     }
+
     if (this.cutoffFc >= 13500) {
       outputs[0].set(inputs[1]);
       outputs[1].set(inputs[1]);

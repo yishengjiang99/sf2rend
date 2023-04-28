@@ -1,25 +1,20 @@
-/* eslint-disable no-undef */
-import { mkspinner } from "../index.js";
+import {SpinNode} from '../spin.js';
+import SF2Service from "../../sf2-service/sf2.js";
+import {subScribeEvent} from '../../src/subScribeEvent.js';
 
-(async () => {
-  const sp = await mkspinner();
+apromise_test(async () => {
+  const ctx = new AudioContext();
+  await SpinNode.init(ctx).catch(console.trace);
 
-  let sp1 = sp.newSpinner();
-  console.log(sp.spinners[1]);
-})();
+  const spinner = new SpinNode(ctx, "../../static/file.sf2");
+  spinner.port.postMessage([0xb0, 1, 3, 3]);
+  spinner.port.onmessage = console.log;
 
-// promise_test(async () => {
-//   const sp = await mkspinner();
-//   sp.gm_reset();
-//   let sp1 = sp.newSppiner(1);
-//   console.log(sp.spinners[1]);
-//   assert_true(sp.spinners[0].length > 0);
-//   assert_true(sp.sp_byte_len() > 20);
-//   console.log(sp.zones[0]);
-//   assert_true(null != sp1, "method 1 of constructor");
-//   assert_true(null != sp1.volEG, "method 1 of constructor");
-//   assert_true(null != sp.zones[0], "zones array esist");
-// }, "_set_stage");
+}, "_set_stage");
+
+function apromise_test(fn, str) {
+  fn().then(() => console.log(str))
+}
 
 // promise_test(async () => {
 //   const sp = await mkspinner();
