@@ -1,3 +1,4 @@
+// bastardized from RBJ's cookbook
 #include "biquad.h"
 
 #include "p1200.h"
@@ -7,7 +8,7 @@ extern float sinf(float x);
 
 static float exp1(float x) { return (6 + x * (6 + x * (3 + x))) * 0.16666666f; }
 static float pow2(float x) { return exp1(x) / exp1(10); };
-#define sample_rate 48000
+#define sample_rate 44100
 
 biquad lpfs[1];  // singleton
 biquad *this_lpf = lpfs;
@@ -22,7 +23,7 @@ float ct2hz(short tc) {
 float get_omega(int ct) { return 2 * M_PI * ct2hz(ct) / (float)sample_rate; }
 /* Computes a BiQuad filter on a sample */
 float BiQuad(const float sample) {
-  biquad *b = this_lpf;
+  biquad *b = lpfs;
   float result;
 
   /* compute result */

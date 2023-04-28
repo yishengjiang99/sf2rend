@@ -1,15 +1,16 @@
 #ifndef LUT_C
 #define LUT_C
 
-#endif
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
+#define modulo_s16f_inverse 1.0f / 32767.1f
+#define modulo_u16f (float)(((1 << 16) + .1f))
+
 void initLUTs(FILE* fd) {
-  fprintf(fd,
-          "#ifndef lut1200 \n "
-          " #define lut1200 1\n\n");
+  fprintf(fd, "#ifndef lut1200 \n");
+  fprintf(fd, " #define lut1200 \n\n");
 
   fprintf(fd, "double p2over1200[1201]={ \n");
   for (int i = 0; i < 1200; i++) {
@@ -24,9 +25,25 @@ void initLUTs(FILE* fd) {
     fprintf(fd, "%f, ", pow(10.0f, i / 200.0));
   }
   fprintf(fd, "1.0};\n\n");
+
+  fprintf(fd, "double att_db_levels[256] = { %f,", -960.0);
+  for (int i = 1; i < 255; i++) {
+    double v = i / 255.f;
+    double db = log10(v) * 200;
+    fprintf(fd, "%f,", db);
+  }
+  fprintf(fd, "0};\n\n");
+
   fprintf(fd, "#endif");
 }
 void init_m_fals(FILE* fd) {
+  fprintf(fd, "float midi_p1200[129]={ -12000,");
+
+  for (int i = 1; i < 128; i++) {
+    fprintf(fd, "%f,\n ", 1200.0f * log2(i / 25.f));
+  }
+  fprintf(fd, "12000 }; \n");
+
   fprintf(fd, "double midi_log_10[129]={ -960.f,");
   for (int i = 1; i < 128; i++) {
     fprintf(fd, "%f, ", -200 * log10((127 * 127) / (i * i)));
@@ -48,5 +65,6 @@ void init_m_fals(FILE* fd) {
 int main() {
   initLUTs(fopen("src/p1200.h", "w"));
   init_m_fals(fopen("src/midi_normalized.h", "w"));
-  return 1;
+  return 0;
 }
+#endif

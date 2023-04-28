@@ -1,6 +1,8 @@
 
 let tmParams = {
-	ppqn: 240, ts: 4, msqn: 600000,
+	ppqn: 240,
+	ts: 4,
+	msqn: 600000,
 	get waittime() {
 		return tmParams.msqn / 1000 / tmParams.ppqn * 60;
 	},
@@ -8,14 +10,17 @@ let tmParams = {
 		return 60;
 	}
 }
+const scheduledEvents = [];
 
 
-// const intervalMillisecond = microsecondPerQuarterNote / 1000 / timeSignature;
+
 let timer = null;
 let clocktime, ticks, lastTick;
 clocktime = ticks = lastTick = 0;
 
-onmessage = ({data: {cmd, tick, tm}}) => {
+onmessage = handleMsg;
+
+function handleMsg({data: {cmd, tick, tm, processorPort}}) {
 	if (tm) {
 		tmParams = {...tmParams, ...tm};
 	}
@@ -23,15 +28,12 @@ onmessage = ({data: {cmd, tick, tm}}) => {
 		ticks = tick;
 	}
 	if (cmd) switch (cmd) {
-
 		case "start":
 			lastTick = performance.now();
 			ticks = 0;	
 			clearTimeout(timer);
 			lastTick = performance.now();
 			timer = setTimeout(ontick, tmParams.waittime);
-			break;
-		case "record":
 			break;
 		case "resume":
 			clearTimeout(timer);

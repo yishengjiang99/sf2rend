@@ -30,7 +30,7 @@ export function createChannel(uiController, channelId, sf2, apath) {
     keyOn(key, vel) {
       const zones = program.filterKV(key, vel);
       console.log(zones.length, " found on ", channelId, " ", key, vel)
-      zones.slice(0, 1).map((zone, i) => {
+      zones.slice(0, 2).map((zone, i) => {
         spinner.port.postMessage([
           midi_ch_cmds.note_on,
           channelId,

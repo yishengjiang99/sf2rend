@@ -1,0 +1,116 @@
+MIDI CC 1 Modulation Wheel (MSB) 0-127 Generally this CC controls a vibrato effect (pitch, loudness,
+brighness). What is modulated is based on the patch.
+MIDI CC 2 Breath Controller (MSB) 0-127 Often times associated with aftertouch messages. It was
+originally intended for use with a breath MIDI controller in
+which blowing harder produced higher MIDI control values. It
+can be used for modulation as well.
+MIDI CC 3 Undefined (MSB) 0-127
+MIDI CC 4 Foot Pedal (MSB) 0-127 Often used with aftertouch messages. It can send a continuous
+stream of values based on how the pedal is used.
+MIDI CC 5 Portamento Time (MSB) 0-127 Controls portamento rate to slide between 2 notes played
+subsequently.
+MIDI CC 6 Data Entry (MSB) 0-127 Controls Value for NRPN or RPN parameters.
+MIDI CC 7 Volume (MSB) 0-127 Controls the volume of the channel.
+MIDI CC 8 Balance (MSB) 0-127 Controls the left and right balance, generally for stereo patches.
+A value of 64 equals the center.
+MIDI CC 9 Undefined (MSB) 0-127
+MIDI CC 10 Pan (MSB) 0-127 Controls the left and right balance, generally for mono patches.
+A value of 64 equals the center.
+MIDI CC 11 Expression (MSB) 0-127 Expression is a percentage of volume (CC7).
+MIDI CC 12 Effect Controller 1 (MSB) 0-127 Usually used to control a parameter of an effect within the synth
+or workstation.
+MIDI CC 13 Effect Controller 2 (MSB) 0-127 Usually used to control a parameter of an effect within the synth
+or workstation.
+MIDI CC 14 Undefined (MSB) 0-127
+MIDI CC 15 Undefined (MSB) 0-127
+MIDI CC 16 – 19 General Purpose (MSB) 0-127
+MIDI CC 20 – 31 Undefined (MSB) 0-127
+MIDI CC 32 – 63 LSB Controller for 0-31 0-127
+MIDI CC 64 Damper Pedal on/off ≤63 off, ≥64 on On/off switch that controls sustain pedal. Nearly every synth
+will react to CC 64. (See also Sostenuto CC 66)
+MIDI CC 65 Portamento on/off ≤63 off, ≥64 on On/off switch
+MIDI CC 66 Sostenuto Pedal on/off ≤63 off, ≥64 on On/off switch – Like the Sustain controller (CC 64), However, it
+only holds notes that were “On” when the pedal was pressed.
+People use it to “hold” chords” and play melodies over the held
+chord.
+MIDI CC 67 Soft Pedal on/off ≤63 off, ≥64 on On/off switch – Lowers the volume of notes played.
+MIDI CC 68 Legato FootSwitch ≤63 off, ≥64 on On/off switch – Turns Legato effect between 2 subsequent notes
+on or off.
+MIDI CC 69 Hold 2 ≤63 off, ≥64 on Another way to “hold notes” (see MIDI CC 64 and MIDI CC 66).
+However notes fade out according to their release parameter
+rather than when the pedal is released.
+MIDI CC 70 Sound Controller 1 0-127 Usually controls the way a sound is produced. Default = Sound
+Variation.
+MIDI CC 71 Sound Controller 2 0-127 Allows shaping the Voltage Controlled Filter (VCF). Default
+= Resonance also (Timbre or Harmonics)
+MIDI CC 72 Sound Controller 3 0-127 Controls release time of the Voltage controlled Amplifier (VCA).
+Default = Release Time.
+MIDI CC 73 Sound Controller 4 0-127 Controls the “Attack’ of a sound. The attack is the amount of
+time it takes forthe sound to reach maximum amplitude.
+MIDI CC 74 Sound Controller 5 0-127 Controls VCFs cutoff frequency of the filter.
+by Another Producer - anotherproducer.com
+MIDI CC 75 Sound Controller 6 0-127 Generic – Some manufacturers may use to further shave their
+sounds.
+MIDI CC 76 Sound Controller 7 0-127 Generic – Some manufacturers may use to further shave their
+sounds.
+MIDI CC 77 Sound Controller 8 0-127 Generic – Some manufacturers may use to further shave their
+sounds.
+MIDI CC 78 Sound Controller 9 0-127 Generic – Some manufacturers may use to further shave their
+sounds.
+MIDI CC 79 Sound Controller 10 0-127 Generic – Some manufacturers may use to further shave their
+sounds.
+MIDI CC 80 General Purpose MIDI CC
+Controller
+0-127 Decay Generic or on/off switch ≤63 off, ≥64 on
+MIDI CC 81 General Purpose MIDI CC
+Controller
+0-127 Hi-Pass Filter Frequency or Generic on/off switch ≤63 off, ≥64
+on
+MIDI CC 82 General Purpose MIDI CC
+Controller
+0-127 Generic on/off switch ≤63 off, ≥64 on
+MIDI CC 83 General Purpose MIDI CC
+Controller
+0-127 Generic on/off switch ≤63 off, ≥64 on
+MIDI CC 84 Portamento CC Control 0-127 Controls the amount of Portamento.
+MIDI CC 85 – 87 Undefined —
+MIDI CC 88 High Resolution Velocity Prefix 0-127 Extends the range of possible velocity values
+MIDI CC 89 & 90 Undefined —
+MIDI CC 91 Effect 1 Depth 0-127 Usually controls reverb send amount
+MIDI CC 92 Effect 2 Depth 0-127 Usually controls tremolo amount
+MIDI CC 93 Effect 3 Depth 0-127 Usually controls chorus amount
+MIDI CC 94 Effect 4 Depth 0-127 Usually controls detune amount
+MIDI CC 95 Effect 5 Depth 0-127 Usually controls phaser amount
+MIDI CC 96 (+1) Data Increment N/A Usually used to increment data for RPN and NRPN messages.
+MIDI CC 97 (-1) Data Decrement N/A Usually used to decrement data for RPN and NRPN messages.
+MIDI CC 98 Non-Registered Parameter
+Number LSB (NRPN)
+0-127 For controllers 6, 38, 96, and 97, it selects the NRPN parameter.
+MIDI CC 99 Non-Registered Parameter
+Number MSB (NRPN)
+0-127 For controllers 6, 38, 96, and 97, it selects the NRPN parameter.
+MIDI CC 100 Registered Parameter Number
+LSB (RPN)
+0-127 For controllers 6, 38, 96, and 97, it selects the RPN parameter.
+MIDI CC 101 Registered Parameter Number
+MSB (RPN)
+0-127 For controllers 6, 38, 96, and 97, it selects the RPN parameter.
+MIDI CC 102 – 119 Undefined —
+MIDI CC 120 to 127 are “Channel Mode Messages.”
+MIDI CC 120 All Sound Off 0 Mutes all sound. It does so regardless of release time or sustain.
+(See MIDI CC 123)
+MIDI CC 121 Reset All Controllers 0 It will reset all controllers to their default.
+MIDI CC 122 Local on/off Switch 0 off, 127 on Turns internal connection of a MIDI keyboard or workstation,
+etc. on or off. If you use a computer, you will most likely want
+local control off to avoid notes being played twice. Once locally
+and twice when the note is sent back from the computer to your
+keyboard.
+MIDI CC 123 All Notes Off 0 Mutes all sounding notes. Release time will still be maintained,
+and notes held by sustain will not turn off until sustain pedal is
+depressed.
+MIDI CC 124 Omni Mode Off 0 Sets to “Omni Off” mode.
+MIDI CC 125 Omni Mode On 0 Sets to “Omni On” mode.
+MIDI CC 126 Mono Mode → Sets device mode to Monophonic. The value equals the number
+of channels, or 0 if the number of channels equals the number of
+voices in the receiver.
+MIDI CC 127 Poly Mode 0 Sets device mode to Polyphonic.

@@ -1,34 +1,30 @@
 #ifndef EG_H
 #define EG_H
 
-#include "calc.h"
-#include "sf2.h"
+#include "fix_point_12.h"
+#include "p1200.h"
 #include "spin.h"
 
-enum eg_stages {
-  inactive = 0,  //
-  init = 1,  // this is for key on message sent and will go next render cycle
-  delay = 2,
-  attack = 3,
-  hold = 4,
-  decay = 5,
-  sustain = 6,
-  release = 7,
-  done = 99
-};
 typedef struct {
   float egval, egIncrement;
   int hasReleased, stage, nsteps;
   short delay, attack, hold, decay, sustain, release, pad1, pad2;
+  int progress, progressInc;  // add prog scale to use LUT
 } EG;
 
 void advanceStage(EG* eg);
 float update_eg(EG* eg, int n);
 
 void eg_roll(EG* eg, int n, float* output) {
-  while (n-- && eg->egval < 1.0f) {
-    eg->egval += eg->egIncrement;
-    eg->nsteps--;
+  while (n-- && eg->nsteps--) {
+    if (eg->stage == attack) {
+      int lut_index = floor(eg->progress);
+      double frag = get_fraction(eg->progress);
+      double f1 = att_db_levels[lut_index], f2 = att_db_levels[lut_index + 1];
+      eg->egval = lerpd(f1, f2, frag);
+    } else {
+      eg->egval += eg->egIncrement;
+    }
     *output++ = eg->egval;
   }
   if (eg->egval > 0) eg->egval = 0.0f;
@@ -55,7 +51,7 @@ void advanceStage(EG* eg) {
   //   goto EG_RELEASE;
   // }
   switch (eg->stage) {
-    case inactive:  // cannot advance
+    case inactive:
       eg->stage++;
       return;
     case init:
@@ -71,7 +67,8 @@ void advanceStage(EG* eg) {
       if (eg->attack > -12000) {
         eg->egval = MAX_EG;
         eg->nsteps = timecent2sample(eg->attack);
-        eg->egIncrement = -MAX_EG / (float)eg->nsteps;
+        eg->progress = double2fixed(0);
+        eg->progressInc = double2fixed(255.0 / (double)eg->nsteps);
         break;
       }
     case attack:
@@ -125,34 +122,6 @@ void advanceStage(EG* eg) {
     case done:
       break;
   }
-}
-
-void scaleTc(EG* eg, unsigned int pcmSampleRate) {
-  float scaleFactor = SAMPLE_RATE / (float)pcmSampleRate;
-  eg->attack *= scaleFactor;
-  eg->delay *= scaleFactor;
-  eg->decay *= scaleFactor;
-  eg->release *= scaleFactor;
-  eg->hold *= scaleFactor;
-}
-void init_vol_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
-  float scaleFactor = SAMPLE_RATE / (float)pcmSampleRate;
-  eg->attack = z->VolEnvAttack * scaleFactor;
-  eg->delay = z->VolEnvDelay * scaleFactor;
-  eg->decay = z->VolEnvDecay * scaleFactor;
-  eg->release = z->VolEnvRelease * scaleFactor;
-  eg->hold = z->VolEnvHold * scaleFactor;
-  // eg->sustain = z->VolEnvSustain * scaleFactor;
-  eg->stage = init;
-  eg->nsteps = 0;
-}
-void init_mod_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
-  eg->attack = z->ModEnvAttack;
-  eg->delay = z->ModEnvDelay;
-  eg->decay = z->ModEnvDecay;
-  eg->release = z->ModEnvRelease;
-  eg->hold = z->ModEnvHold;
-  eg->sustain = z->ModEnvSustain;
 }
 
 void _eg_release(EG* e) {

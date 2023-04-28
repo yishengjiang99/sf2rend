@@ -30,6 +30,7 @@ module.exports = {
 			"off",
 			"double"
 		],
-		"semi": "off"
+		"semi": "off",
+		"html-validate(attr-quotes)": "off"
 	}
 };

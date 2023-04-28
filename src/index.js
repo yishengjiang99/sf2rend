@@ -6,10 +6,13 @@ import {mkeventsPipe} from "./mkeventsPipe.js";
 import {createChannel} from "./createChannel.js";
 import {DRUMSCHANNEL, midi_ch_cmds} from "./constants.js";
 import {sf2list} from "../sflist.js";
+import {mfilelist} from "../mfilelist.js";
+
 import {readMidi} from './midiread.js'
 import {mkcanvas, chart} from "../chart/chart.js";
 import * as sequence from "../dist/sequence.js"
 import {logdiv, mkcollapse} from "./logdiv.js";
+import {mk_vca_ctrl} from "./eqslide.js";
 function $(sel) {
   return document.querySelector(sel);
 }
@@ -26,17 +29,18 @@ const debugContainer = document.querySelector("#debug");
 
 const stdoutdiv = document.querySelector("#stdout");
 const debugInfo = mkdiv("pre");
-const debugInfo2 = mkdiv("pre"); const debugInfo3 = mkdiv("div");
+const debugInfo2 = mkdiv("pre");
+const debugInfo3 = mkdiv("div");
 
 const {stdout, infoPanel} = logdiv();
 
-mkcollapse({title: "debug2", defaultOpen: false}, debugInfo2).attachTo(debugContainer);
-mkcollapse({title: "debug", defaultOpen: false}, debugInfo).attachTo(debugContainer);
-mkcollapse({title: "debug3", defaultOpen: false}, debugInfo3).attachTo(debugContainer);
+mkcollapse({title: "ctrlbar", defaultOpen: true}, debugInfo2).attachTo(document.querySelector("#ch_ctrl_bar"));
+mkcollapse({title: "debug", defaultOpen: true}, debugInfo).attachTo(debugContainer);
+mkcollapse({title: "debug3", defaultOpen: false}, debugInfo3).attachTo(infoPanel);
 mkcollapse({title: "Log Info", defaultOpen: true}, infoPanel).attachTo(stdoutdiv);
 window.stdout = stdout;
 window.stderr = (str) => debugInfo.innerHTML = str;
-window.stderrr = (str) => debugInfo2.innerHTML = str;
+window.stderrr = (str) => debugInfo.innerHTML = str;
 
 main();
 const appState = {};
@@ -66,15 +70,14 @@ async function main(sf2file) {
 
   const channels = [];
 
-  const sf2Listcloud = await fetchSF2List();
 
-  for (const f of sf2Listcloud) sf2select.append(mkdiv("option", {value: f.url}, f.name));
+  for (const f of sf2list) sf2select.append(mkdiv("option", {value: f}, f));
 
   sf2select.onchange = (e) => {
     loadSF2File(e.target.value);
   };
   const {mkpath} = await import("./mkpath.js");
-  const midiList = await fetchmidilist();
+
   const midiSelect = mkdiv2({
     tag: "select",
     style: "width:300px",
@@ -83,8 +86,8 @@ async function main(sf2file) {
     },
     children: [
       mkdiv("option", {name: "select midi", value: null}, "select midi file"),
-      ...midiList.map((f) =>
-        mkdiv("option", {value: f.get("Url")}, f.get("Name").substring(0, 80))
+      ...mfilelist.map((f) =>
+        mkdiv("option", {value: f}, decodeURI(f).split("/").pop())
       ),
     ],
   });
@@ -117,6 +120,7 @@ async function main(sf2file) {
   for (let i = 0;i < 16;i++) {
     channels.push(createChannel(uiControllers[i], i, sf2, apath));
   }
+  mk_vca_ctrl(0, eventPipe).attachTo(debugInfo2);
 
   const sf2loadWait = await loadSF2File("./static/file.sf2");
 

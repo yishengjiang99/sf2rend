@@ -14,6 +14,8 @@
 
 #define clamp(val, min, max) val > max ? max : val < min ? min : val
 const double ln2 = 0.693147180559945;
+float lerp(float f1, float f2, float frac) { return f1 + (f2 - f1) * frac; }
+float lerpd(double f1, double f2, double frac) { return f1 + (f2 - f1) * frac; }
 
 float calcp2over1200(float tc) {
   float m = 1.0f;

@@ -1,12 +1,13 @@
 
 #include "spin.h"
 #define MAX_VOICE_CNT 256
+
 // ghetto malloc all variables
 int sp_idx = 0;
 spinner sps[MAX_VOICE_CNT];
 pcm_t pcms[4096];
 // midi ccs
-char midi_cc_vals[nmidiChannels * 128];
+unsigned char midi_cc_vals[nmidiChannels * 128] = {0};
 float outputs[MAX_VOICE_CNT * RENDQ * 2];
 
 float silence[440] = {.0f};
@@ -71,13 +72,35 @@ void set_midi_cc_val(int channel, int metric, int val) {
 }
 
 float trigger_attack(spinner* x, uint32_t key, uint32_t velocity) {
+#define ccval(eff) midi_cc_vals[x->channelId * 128 + eff]
+
   x->velocity = (unsigned char)velocity;
   x->position = 0;
   x->fract = 0.0f;
   x->voleg.stage = init;
   x->key = (unsigned char)(key & 0x7f);
+  EG* eg = &x->voleg;
+  float scaleFactor = 1.0f;
+  // SAMPLE_RATE / (float)x->pcm->sampleRate;
+  zone_t* z = x->zone;
+  eg->attack = (ccval(VCA_ATTACK_TIME) > 0)
+                   ? midi_p1200[ccval(VCA_ATTACK_TIME) | 0]
+                   : z->VolEnvAttack * scaleFactor;
+  eg->decay = (ccval(VCA_DECAY_TIME) > 0)
+                  ? midi_p1200[ccval(VCA_DECAY_TIME) | 0]
+                  : z->VolEnvDecay * scaleFactor;
+  eg->release = (ccval(VCA_RELEASE_TIME) > 0)
+                    ? midi_p1200[ccval(VCA_RELEASE_TIME) | 0]
+                    : z->VolEnvRelease * scaleFactor;
+  eg->sustain = (ccval(VCA_SUSTAIN_LEVEL) > 0)
+                    ? (short)(ccval(VCA_SUSTAIN_LEVEL) / 128.f * 1000.f)
+                    : z->VolEnvRelease * scaleFactor;
+
+  eg->delay = z->VolEnvDelay * scaleFactor;
+  eg->hold = z->VolEnvHold * scaleFactor;
+  eg->stage = init;
+  eg->nsteps = 0;
   init_mod_eg(&x->modeg, x->zone, x->pcm->sampleRate);
-  init_vol_eg(&x->voleg, x->zone, x->pcm->sampleRate);
   x->pitch_dff_log = calc_pitch_diff_log(x->zone, x->pcm, x->key);
   x->stride = 1.0f;
   advanceStage(&x->voleg);
@@ -117,8 +140,6 @@ void set_spinner_zone(spinner* x, zone_t* z) {
                 (unsigned short)(z->EndLoopAddrCoarseOfs << 15);
   x->sampleLength -= z->EndAddrOfs - (z->EndAddrCoarseOfs << 15);
 }
-
-float lerp(float f1, float f2, float frac) { return f1 + (f2 - f1) * frac; }
 
 #define effect_floor(v) v <= -12000 ? 0 : calcp2over1200(v)
 
@@ -215,7 +236,7 @@ float* get_sp_output(spinner* x) { return x->outputf; }
 int get_sp_channel_id(spinner* x) { return x->channelId; }
 
 void gm_reset() {
-  for (int idx = 0; idx < 128; idx++) {
+  for (int idx = 0; idx < nmidiChannels; idx++) {
     midi_cc_vals[idx * nmidiChannels + TML_VOLUME_MSB] = 100;
     midi_cc_vals[idx * nmidiChannels + TML_PAN_MSB] = 64;
     midi_cc_vals[idx * nmidiChannels + TML_EXPRESSION_MSB] = 127;

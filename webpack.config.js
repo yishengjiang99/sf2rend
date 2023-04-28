@@ -1,11 +1,5 @@
 const Fs = require("fs");
 const procfile = Fs.readFileSync("spin/spin-proc.js").toString("utf-8");
-Fs.writeFileSync("sp-proc-ghetto-export.js",
-  `//@prettier-ignore
-  //@ts-ignore
-  export const spmodule=URL.createObjectURL(new Blob(
-  ["${procfile}"],{type: 'text/javascript'}
-  ));`);
 Fs.writeFileSync(
   "sflist.js",
   `export const sf2list=${JSON.stringify(
@@ -16,7 +10,16 @@ Fs.writeFileSync(
       .split("\n")
   )}`
 );
-
+Fs.writeFileSync(
+  "mfilelist.js",
+  `export const mfilelist=${JSON.stringify(
+    require("child_process")
+      .execSync("ls -rS static/midi/*mid")
+      .toString()
+      .trim()
+      .split("\n").map(f => encodeURI(f))
+  )}`
+);
 const path = require("path");
 
 module.exports = {
