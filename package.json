@@ -7,7 +7,7 @@
   },
   "keywords": [],
   "author": "Yisheng Jiang",
-  "license": "ISC",
+  "license": "do-not-use",
   "devDependencies": {
     "eslint": "^8.36.0",
     "eslint-plugin-chai": "^0.0.1",
