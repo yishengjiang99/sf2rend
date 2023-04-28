@@ -22,7 +22,11 @@
   border:white solid 1px;  
 }
 #stdout{
-
+  bottom:0;
+  right:0;
+  height:200px;
+  position:fixed;
+  opacity: 88;
 }
 .amp-indicate {
   height: 20px;

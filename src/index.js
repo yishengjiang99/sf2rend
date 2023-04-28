@@ -38,11 +38,9 @@ mkcollapse({title: "ctrlbar", defaultOpen: true}, debugInfo2).attachTo(document.
 mkcollapse({title: "debug", defaultOpen: true}, debugInfo).attachTo(debugContainer);
 mkcollapse({title: "debug3", defaultOpen: false}, debugInfo3).attachTo(infoPanel);
 mkcollapse({title: "Log Info", defaultOpen: true}, infoPanel).attachTo(stdoutdiv);
-const stderrrdiv = mkdiv("pre")
 window.stdout = stdout;
-stderrrdiv.attachTo(debugContainer);
 window.stderr = (str) => debugInfo.innerHTML = str;
-window.stderrr = (str) => stderrrdiv.innerHTML = str;
+window.stderrr = (str) => {/*devnull*/} //stderrrdiv.innerHTML = str;
 
 main();
 const appState = {};
@@ -264,8 +262,9 @@ async function main(sf2file) {
   apath.ctrl_bar(document.getElementById("ctrls"));
   apath.bindToolbar();
 
-  const ffholder = mkdiv("div");
-  const [cv1, cv2] = [mkcanvas({container: ffholder}), mkcanvas({container: ffholder})];
+  const ffholder = mkdiv("div", {style: "display:flex;flex-direction:row"});
+  const canvas_w_h = {width: 220, height: 150}
+  const [cv1, cv2] = [mkcanvas({container: ffholder, ...canvas_w_h}), mkcanvas({container: ffholder, ...canvas_w_h})];
 
   mkcollapse({title: "fft", defaultOpen: true}, ffholder).attachTo(analyze);
   const c3 = mkdiv("canvas", {class: "fixed-top-right", width: "500", height: "50"});
