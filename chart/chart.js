@@ -26,8 +26,28 @@ export function chart(canvasCtx, dataArray) {
   canvasCtx.stroke();
   canvasCtx.font = "1em Arial";
 }
+export function chartRect(canvasCtx, dataArray, markers) {
+  resetCanvas(canvasCtx)
+  const [_width, _height] = get_w_h(canvasCtx);
+  let iWIDTH = _width / dataArray.length;
+  let max = 0, min = 340,
+    x = 0;
+  for (let i = 1;i < dataArray.length;i++) {
+    max = dataArray[i] > max ? dataArray[i] : max;
+    min = dataArray[i] < min ? dataArray[i] : min;
+  }
+  canvasCtx.fillStyle = "black";
+  canvasCtx.fillRect(0, 0, _width, _height);
+  canvasCtx.clearRect(0, 0, _width, _height);
+  canvasCtx.fillStyle = "red";
+  for (let i = 0;i < dataArray.length;i++) {
+    x += iWIDTH + 1;
+    canvasCtx.fillRect(x, _height - 10, iWIDTH, dataArray[i] * 120);
+  }
+
+}
 export function mkcanvas(params = {}) {
-  const { width, height, container, title } = Object.assign(
+  let {width, height, container, title} = Object.assign(
     {
       container: document.body,
       title: "",
@@ -37,8 +57,14 @@ export function mkcanvas(params = {}) {
     params
   );
   const canvas = document.createElement("canvas");
-  canvas.setAttribute("width", `${width}`);
-  canvas.setAttribute("height", `${height}`);
+  container.ondblclick = (e) => {
+    container.style = 'display:fixed; width:100vw;height:100vh;text-align:cewnter'
+  }
+  function on_resize() {
+    canvas.setAttribute("width", `${width}`);
+    canvas.setAttribute("height", `${height}`); 
+  }
+  on_resize();
   const canvasCtx = canvas.getContext("2d");
   canvasCtx.lineWidth = 1;
   canvasCtx.strokeStyle = "white";

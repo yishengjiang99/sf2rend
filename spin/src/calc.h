@@ -39,7 +39,7 @@ int timecent2sample(short tc) {
 float applyCentible(float signal, short centdb) {
   if (centdb > 0) return signal;
   if (centdb <= -1441) return 0.0f;
-  return (float)signal * p10over200[centdb + 1440];
+  return clamp(signal * p10over200[centdb + 1440], -1, 1);
 }
 
 float hermite4(float frac_offset, float xm1, float x0, float x1, float x2) {

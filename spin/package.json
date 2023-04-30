@@ -12,6 +12,7 @@
   "author": "Yisheng Jiang",
   "license": "do-not-use",
   "dependencies": {
-    "midiread": "^2.0.14"
+    "midiread": "^2.0.14",
+    "puppeteer": "^19.11.1"
   }
 }

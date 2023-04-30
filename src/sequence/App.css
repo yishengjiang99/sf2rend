@@ -15,9 +15,9 @@ body{
   width: calc(var(--canvas-width) * 1vw);
   position: fixed;
   right: 0;
-  top: 70px;
-  height: calc(300vh-120px);
-  z-index: -2;
+  top: 20px;
+  height: 190vh;
   overflow-x: hidden;
   overflow-y: scroll;
+  z-index: -399;
 }

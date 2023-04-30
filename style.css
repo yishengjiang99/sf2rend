@@ -1,9 +1,25 @@
-
+body{
+  margin:0;
+  padding:0;
+  max-width: 100vw;
+  overflow-x:hidden;
+}
 .fixed-top-right{
   position:fixed;
   top:10px;
   right:10px;
 }
+.tabs > input+label+div{
+  display:none;
+}
+.tabs > input:checked+label {
+  color:gold
+}
+.tabs > input:checked+label+div {
+  display:block;
+}
+
+.knob-set{background-color:#323233; color:white;margin-top:2em;padding:20px; display:flex;max-width:fit-content;}
 .ctrls {
   display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr;
 }
@@ -17,24 +33,21 @@
   padding:3px;
   border:black solid 1px;  
 }
+.channelCard:nth-child(2n){
+  background-color: #223322;
+}
 
 .channelCard:hover {
-  border:white solid 1px;  
 }
 #stdout{
-  bottom:0;
-  right:0;
-  height:200px;
-  position:fixed;
-  opacity: 88;
 }
 .amp-indicate {
   height: 20px;
-
-  bottom:0;
+  bottom:10x;
   position: absolute;
-  background-color: blue;
-  width: calc(var(--db)* 200px);
+  background-image: linear-gradient(to right, green, yellow, red);
+  width: calc(var(--db)* 700px);
+  
 }
 body {
   margin: 0;
@@ -47,7 +60,4 @@ body {
 
 #channelContainer{
   scrollbar-color:black;
-  max-height:80vh;
-
-  overflow-y: scroll;
 }

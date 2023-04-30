@@ -104,10 +104,38 @@ float trigger_attack(spinner* x, uint32_t key, uint32_t velocity) {
   eg->hold = z->VolEnvHold * scaleFactor;
   eg->stage = init;
   eg->nsteps = 0;
-  init_mod_eg(&x->modeg, x->zone, x->pcm->sampleRate);
+
+  eg = &x->modeg;
+  eg->stage = init;
+
+  eg->delay = z->ModEnvDecay * scaleFactor;
+  eg->hold = z->ModEnvHold * scaleFactor;
+  eg->attack = (ccval(VCF_ATTACK_TIME) > 0)
+                   ? midi_p1200[ccval(VCF_ATTACK_TIME) | 0]
+                   : z->ModEnvAttack * scaleFactor;
+  eg->decay = (ccval(VCF_DECAY_TIME) > 0)
+                  ? midi_p1200[ccval(VCF_DECAY_TIME) | 0]
+                  : z->ModEnvDecay * scaleFactor;
+  eg->release = (ccval(VCF_RELEASE_TIME) > 0)
+                    ? midi_p1200[ccval(VCF_RELEASE_TIME) | 0]
+                    : z->ModEnvRelease * scaleFactor;
+  eg->sustain = (ccval(VCF_SUSTAIN_LEVEL) > 0)
+                    ? (short)(ccval(VCF_SUSTAIN_LEVEL) / 128.f * 1000.f)
+                    : z->ModEnvRelease * scaleFactor;
+
   x->pitch_dff_log = calc_pitch_diff_log(x->zone, x->pcm, x->key);
   x->stride = 1.0f;
   advanceStage(&x->voleg);
+  advanceStage(&x->modeg);
+
+#define effect_floor(v) v <= -12000 ? 0 : calcp2over1200(v)
+
+  x->lfo1_pitch = effect_floor(x->zone->ModLFO2Pitch);
+  x->lfo1_volume = effect_floor(x->zone->ModLFO2Vol);
+  x->lfo2_pitch = effect_floor(x->zone->VibLFO2Pitch);
+  x->modeg_pitch = effect_floor(x->zone->ModEnv2Pitch);
+  x->modeg_fc = effect_floor(x->zone->ModEnv2FilterFc);
+
   x->modlfo.delay = timecent2sample(x->zone->ModLFODelay);
   x->vibrlfo.delay = timecent2sample(x->zone->ModLFODelay);
   set_frequency(&x->modlfo, x->zone->ModLFOFreq);
@@ -145,8 +173,6 @@ void set_spinner_zone(spinner* x, zone_t* z) {
   x->sampleLength -= z->EndAddrOfs - (z->EndAddrCoarseOfs << 15);
 }
 
-#define effect_floor(v) v <= -12000 ? 0 : calcp2over1200(v)
-
 void _spinblock(spinner* x, int n, int blockOffset) {
 #define ccval(eff) midi_cc_vals[x->channelId * 128 + eff]
 
@@ -180,17 +206,15 @@ void _spinblock(spinner* x, int n, int blockOffset) {
 
   double panRight = panrightLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]];
 
-  short lfo1_pitch = effect_floor(x->zone->ModLFO2Pitch);
-  short lfo1_volume = effect_floor(x->zone->ModLFO2Vol);
-
-  short lfo2_pitch = effect_floor(x->zone->VibLFO2Pitch);
-  short modeg_pitch = effect_floor(x->zone->ModEnv2Pitch);
-  short modeg_fc = effect_floor(x->zone->ModEnv2FilterFc);
-  short modeg_vol = effect_floor(x->zone->ModEnv2Pitch);
   int isLooping = x->is_looping;
+  short lfo1_volume, lfo1_pitch, modeg_pitch, lfo2_pitch;
+  lfo1_volume = x->lfo1_volume;
+  lfo1_pitch = x->lfo1_pitch;
+  modeg_pitch = x->modeg_pitch;
+  lfo2_pitch = x->lfo2_pitch;
+
   for (int i = 0; i < n; i++) {
-    db = volEgOut[i];
-    // db += lfo1_volume * lfo1Out[i] / 10;
+    db = volEgOut[i] + lfo1_volume * lfo1Out[i];
     float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
 
     stride =
@@ -233,6 +257,8 @@ int spin(spinner* x, int n) {
 
 unsigned int sp_byte_len() { return sizeof(spinner); }
 EG* get_vol_eg(spinner* x) { return &x->voleg; }
+EG* get_mod_eg(spinner* x) { return &x->modeg; }
+
 float* get_sp_output(spinner* x) { return x->outputf; }
 int get_sp_channel_id(spinner* x) { return x->channelId; }
 

@@ -17,11 +17,13 @@ export const midi_effects = {
   bankselectcoarse: 0,
   modulationwheelcoarse: 1,
   breathcontrollercoarse: 2,
+  three: 3,
   footcontrollercoarse: 4,
   portamentotimecoarse: 5,
   dataentrycoarse: 6,
   volumecoarse: 7,
   balancecoarse: 8,
+  bro_common: 9,
   pancoarse: 10,
   expressioncoarse: 11,
   pitchbendcoarse: 12,
@@ -49,16 +51,16 @@ export const midi_effects = {
   legatopedal: 68,
   hold2pedal: 69,
   soundvariation: 70,
-  VCF_RESONANCE: 71,
-  VCA_RELEASE_TIME: 72,
-  VCA_ATTACK_TIME: 73,
-  VCF_CUTOFF_FREQUENCY: 74,
-  VCA_SUSTAIN_LEVEL: 75,
-  soundcontrol7: 76,
-  soundcontrol8: 77,
-  soundcontrol9: 78,
-  soundcontrol10: 79,
-  VCA_DECAY: 80,
+  VCA_ATTACK_TIME: 71,
+  VCA_DECAY_TIME: 72,
+  VCA_SUSTAIN_LEVEL: 73,
+  VCA_RELEASE_TIME: 74,
+  VCF_ATTACK_TIME: 75,
+  VCF_DECAY_TIME: 76,
+  VCF_SUSTAIN_LEVEL: 77,
+  VCF_RELEASE_TIME: 78,
+  VCF_MOD_PITCH: 79,
+  VCF_MOD_FC: 80,
   generalpurposebutton2: 81,
   generalpurposebutton3: 82,
   generalpurposebutton4: 83,
@@ -77,4 +79,7 @@ export const midi_effects = {
 
 
 export const nvpc = 4;
-export const DRUMSCHANNEL = 10;
+export const DRUMSCHANNEL = 9;
+
+
+export const ccnames = Object.keys(midi_effects).reduce((map, name, idx) => ({...map, [midi_effects[name]]: name}), {});

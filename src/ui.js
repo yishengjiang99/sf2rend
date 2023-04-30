@@ -6,7 +6,7 @@ import {
   wrapDiv,
   mksvg,
 } from "../mkdiv/mkdiv.js";
-import { midi_ch_cmds, range, midi_effects as effects } from "./constants.js";
+import {midi_ch_cmds, range, midi_effects as effects, DRUMSCHANNEL} from "./constants.js";
 import {attributeKeys, defZone, newSFZoneMap} from "../sf2-service/zoneProxy.js";
 
 const rowheight = 40;
@@ -27,12 +27,12 @@ export function mkui(
         type: "text",
         autocomplete: "off",
         onfocus: (e) => (e.target.value = ""),
-        list: idx == 9 ? "drums" : "programs",
+        list: idx == DRUMSCHANNEL ? "drums" : "programs",
         onchange: (e) => {
           const pid = Array.from(e.target.list.options).findIndex(
             (d) => d.value == e.target.value
           );
-          cb([midi_ch_cmds.change_program | idx, pid, idx == 9 ? 128 : 0]);
+          cb([midi_ch_cmds.change_program | idx, pid, idx == DRUMSCHANNEL ? 128 : 0]);
           e.target.blur();
         },
       });
@@ -58,15 +58,12 @@ export function mkui(
         [
           this.led,
           this.nameLabel,
-          mkdiv("label", {for: "mkey"}, "key " + idx),
           mkdiv("meter", {
             min: 1,
             max: 127,
             id: "mkey",
             aria: "key",
           }),
-          mkdiv("label", { for: "velin" }, "velocity"),
-
           mkdiv("meter", {
             type: "range",
             id: "velin",
@@ -87,36 +84,36 @@ export function mkui(
             type: "range",
             oninput: (e) => cb([0xb0 | idx, 7, e.target.value]),
           }),
-          mkdiv("label", { for: "pan" }, "pan"),
-          mkdiv("input", {
-            min: 1,
-            max: 128,
-            step: 1,
-            type: "range",
-            value: 64,
-            oninput: (e) => cb([0xb0 | idx, 10, e.target.value]),
-          }),
-          mkdiv("label", { for: "expression" }, "expression"),
-          mkdiv("input", {
-            min: 1,
-            max: 128,
-            step: 1,
-            value: 122,
-            type: "range",
-            oninput: (e) => cb([0xb0 | idx, 11, e.target.value]),
-          }),
+          // mkdiv("label", { for: "pan" }, "pan"),
+          // mkdiv("input", {
+          //   min: 1,
+          //   max: 128,
+          //   step: 1,
+          //   type: "range",
+          //   value: 64,
+          //   oninput: (e) => cb([0xb0 | idx, 10, e.target.value]),
+          // }),
+          // mkdiv("label", { for: "expression" }, "expression"),
+          // mkdiv("input", {
+          //   min: 1,
+          //   max: 128,
+          //   step: 1,
+          //   value: 122,
+          //   type: "range",
+          //   oninput: (e) => cb([0xb0 | idx, 11, e.target.value]),
+          // }),
 
-          mkdiv("label", {for: "filterFC"}, "filterFC"),
-          mkdiv("input", {
-            min: 1000,
-            id: "filterFC",
-            max: 13700,
-            step: 10,
-            value: 13700,
-            type: "range",
-            "data-path_cmd": "lpf",
-            "data-p1": idx,
-          }),
+          // mkdiv("label", {for: "filterFC"}, "filterFC"),
+          // mkdiv("input", {
+          //   min: 1000,
+          //   id: "filterFC",
+          //   max: 13700,
+          //   step: 10,
+          //   value: 13700,
+          //   type: "range",
+          //   "data-path_cmd": "lpf",
+          //   "data-p1": idx,
+          // }),
         ]);
       const ctslsDiv =
         mkdiv("div", {class: "ctrls"}, [
@@ -183,18 +180,6 @@ export function mkui(
           this.sliders[0].value = value;
           this.ccLabels[0].innerHTML = "volume" + value;
           break;
-        case effects.pancoarse:
-          this.sliders[1].value = value;
-          this.ccLabels[1].innerHTML = "pan" + value;
-          break;
-        case effects.expressioncoarse:
-          this.sliders[2].value = value;
-          this.ccLabels[2].innerHTML = "exp" + value;
-          break;
-        // case effects.pitchbendcoarse:
-        //   this.sliders[3].value = "midi " + key;
-        //   this.ccLabels[3].innerHTML = "value" + value;
-        //   break;
       }
     }
     set velocity(v) {
@@ -311,6 +296,9 @@ export function mkui(
     );
     trackrow.container.addEventListener("dblclick", (e) => {
       onTrackDoubleClick(i, e);
+    });
+    trackrow.container.addEventListener("click", (e) => {
+      onTrackClick(i, e);
     });
   }
   const mkKeyboard = mkdiv(

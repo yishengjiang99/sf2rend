@@ -6,10 +6,32 @@ const defaultsConfig = {
     timestamp: true,
     container: document.body
 };
+export function mktabs({
+    ch,
+    container
+}) {
+    if (!container) container = mkdiv('div')
+    const tb = mkdiv("div", {class: "tabs"});
+    return {
+        tabs: tb,
+        push_ch: (id, title, ch) => {
+            mkdiv("input", {
+                id,
+                name: "set-group",
+                type: "radio",
+            }).attachTo(tb);
+            mkdiv("label", {
+                type: "radio",
+                text: title,
+            }, title).attachTo(tb);
+            ch.attachTo(tb);
+        }
+    }
+}
 export function logdiv(config = {}) {
     const {rows, size, className, container, timestamp} = Object.assign(config, defaultsConfig);
-    const infoPanel = mkdiv("textarea", {
-        id: "infop", style: "width:57em;", rows, className
+    const infoPanel = mkdiv("pre", {
+        id: "infop", style: "width:80em;height:120px", rows, className
     });
     if (container)
         infoPanel.attachTo(container);
@@ -26,7 +48,7 @@ export function logdiv(config = {}) {
     function stdout(log) {
         const ts = timestamp ? ((performance.now()) / 1e3).toFixed(3) + ": " : "";
         lp = performance.now();
-        logs.push("\n" + ts + log.toString());
+        logs.push("\n" + lp + ":" + log.toString());
         infoPanel.textContent += "\n" + ts + log.toString();
     }
     return {

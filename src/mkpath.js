@@ -1,5 +1,6 @@
 import { SpinNode } from "../spin/spin.js";
-import { LowPassFilterNode } from "../lpf/lpf.js";
+import WinampEQ from './WinampEQ.js';
+import {LowPassFilterNode} from "../lpf/lpf.js";
 import {midi_ch_cmds, midi_effects} from "./constants.js";
 import FFTNode from "../fft-64bit/fft-node.js";
 import { mkdiv } from "../mkdiv/mkdiv.js";
@@ -8,6 +9,8 @@ import createAudioMeter from "../volume-meter/volume-meter.js";
 import {anti_denom_dither} from './misc.js';
 import SF2Service from "../sf2-service/sf2.js";
 let init = false;
+let sf2s;
+
 export async function mkpath(ctx, eventPipe) {
     return mkpath2(ctx, {midi_input: eventPipe});
 }
@@ -15,24 +18,25 @@ export async function mkpath2(ctx, {midi_input, sf2File, }) {
     if (!init) {
         await SpinNode.init(ctx).catch(console.trace);
         await FFTNode.init(ctx).catch(console.trace);
+        await WinampEQ.init(ctx).catch(console.trace);
         await LowPassFilterNode.init(ctx).catch(console.trace);
         init = true;
     }
-    const lpfs = Array(32).fill(new LowPassFilterNode(ctx));
     const channelIds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
     const spinner = new SpinNode(ctx);
+    const lpfs = Array(16).fill(new LowPassFilterNode(ctx));
     const mastGain = new GainNode(ctx, {gain: 1});
+    this.EQ = mk_eq_bar(0);
     const whitenoise = anti_denom_dither(ctx);
     const fft = new FFTNode(ctx);
     const clipdetect = createAudioMeter(ctx);
 
-    whitenoise.connect(spinner);
+
+    whitenoise.connect(spinner); whitenoise.start();
     for (const id of channelIds) {
         spinner.connect(lpfs[id], id).connect(mastGain);
     }
-    whitenoise.start();
-    mastGain.connect(fft).connect(ctx.destination);
-    let sf2s;
+    mastGain.connect(EQ).connect(fft).connect(ctx.destination);
     return {
         spinner,
         async loadProgram(pid, bankid) {
@@ -47,10 +51,10 @@ export async function mkpath2(ctx, {midi_input, sf2File, }) {
         connect(destination, outputNumber, destinationInputNumber) {
             spinner.connect(destination, outputNumber, destinationInputNumber);
         },
-
+        eq_set: EQ.setGainAtFreq,
         detectClips(canvas) {
-            const timer = drawLoops(canvas, clipdetect);
-            spinner.connect(clipdetect, 18);
+            //const timer = drawLoops(canvas, clipdetect);
+            //spinner.connect(clipdetect, 18);
             return function cleanup() {
                 cancelAnimationFrame(timer);
             };
@@ -76,11 +80,13 @@ export async function mkpath2(ctx, {midi_input, sf2File, }) {
             });
         },
         loadPreset: spinner.shipProgram,
-        lowPassFilter: function (channel, initialFrequency) {
-            lpfs[channel].parameters
-                .get("FilterFC")
-                .linearRampToValueAtTime(initialFrequency, ctx.currentTime);
+        lowPassFilter: function (channel, cents, Q) {
+            lpfs[channel].parameters.get("FilterFC")
+                .linearRampToValueAtTime(cents, ctx.currentTime);
             return lpfs[channel];
+        },
+        eq_set(channel, freq, gain) {
+            EQ.setGainAtFreq(channel, 8.176 * Math.pow(2, cents / 1200), Q / 10);
         },
         silenceAll() {
             mastGain.gain.linearRampToValueAtTime(0, ctx.baseLatency);
@@ -158,6 +164,7 @@ export async function mkpath2(ctx, {midi_input, sf2File, }) {
                     return;
                 if (e.isComposing)
                     return;
+                stdout(e.isComposing + ' s');
                 const channel = get_active_channel_fn();
                 const baseOctave = 48;
 

@@ -315,6 +315,8 @@ typedef struct {
   uint32_t sampleLength;
   uint32_t active_dynamics_flag;
   int is_looping;
+  short lfo1_pitch, lfo1_volume, lfo2_pitch, modeg_pitch, modeg_fc, modeg_vol;
+  double pan_left, pan_right;
 } spinner;
 
 void set_spinner_zone(spinner* x, zone_t* z);
@@ -391,17 +393,16 @@ enum TMLController {
   TML_LEGATO_SWITCH,
   TML_HOLD2_SWITCH,
   TML_SOUND_CTRL1 = 70,
-  VCF_RESONANCE,  // Voltage Controlled Filter (VCF).
-  VCA_RELEASE_TIME,
-  VCA_ATTACK_TIME = 73,
-  VCF_CUTOFF_FREQUENCY,
-  VCA_SUSTAIN_LEVEL,
-  TML_SOUND_CTRL6,
-  TML_SOUND_CTRL7,
-  TML_SOUND_CTRL8,
-  TML_SOUND_CTRL9,
-  TML_SOUND_CTRL10,
-  VCA_DECAY_TIME = 80,
+  VCA_ATTACK_TIME = 71,
+  VCA_DECAY_TIME = 72,
+  VCA_SUSTAIN_LEVEL = 73,
+  VCA_RELEASE_TIME = 74,
+  VCF_ATTACK_TIME = 75,
+  VCF_DECAY_TIME = 76,
+  VCF_SUSTAIN_LEVEL = 77,
+  VCF_RELEASE_TIME = 78,
+  VCF_MOD_PITCH = 79,
+  VCF_MOD_FC = 80,
   TML_GPC6,
   TML_GPC7,
   TML_GPC8,

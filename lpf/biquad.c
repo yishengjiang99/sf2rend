@@ -41,7 +41,7 @@ float BiQuad(const float sample) {
   return result;
 }
 
-biquad *setLPF(short cent, float bandwidth) {
+biquad *setLPF(short cent, short band) {
   float omega = get_omega(cent);
   biquad *b = lpfs;
 
@@ -61,8 +61,6 @@ biquad *setLPF(short cent, float bandwidth) {
   b->a2 = b2 / a0;
   b->a3 = a1 / a0;
   b->a4 = a2 / a0;
-  //  float a0, a1, a2, a3, a4;
-
   b->x1 = b->x2 = 0;
   b->y1 = b->y2 = 0;
   return b;

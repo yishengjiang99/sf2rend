@@ -51,6 +51,12 @@ void init_m_fals(FILE* fd) {
   }
   fprintf(fd, "0.0f }; \n");
 
+  fprintf(fd, "double midi_log_10_convex[129]={ -960.f,");
+  for (int i = 1; i < 128; i++) {
+    fprintf(fd, "%f, ", -200 * log10((i * i) * (127 * 127)));
+  }
+  fprintf(fd, "0.0f }; \n");
+
   fprintf(fd, "double panleftLUT[128]={\n 0.f,");
   for (float i = 2; i < 127; i++) {
     fprintf(fd, "%f, ", log10(cos(M_PI / 2.0 * (i - 1) / 126.0f)) * 200.0f);
