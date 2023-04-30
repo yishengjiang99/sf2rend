@@ -11,6 +11,12 @@
 void initLUTs(FILE* fd) {
   fprintf(fd, "#ifndef lut1200 \n");
   fprintf(fd, " #define lut1200 \n\n");
+  fprintf(fd, "double abs_cent[129]={ \n");
+  for (int i = 0; i < 128; i++) {
+    if (i % 7 == 0) fprintf(fd, "\n");
+    fprintf(fd, "%f,", log2(i / 1200.0f));
+  }
+  fprintf(fd, "2.0};\n");
 
   fprintf(fd, "double p2over1200[1201]={ \n");
   for (int i = 0; i < 1200; i++) {

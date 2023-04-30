@@ -45,6 +45,7 @@ export function createChannel(uiController, channelId, sf2, apath) {
         uiController.velocity = vel;
         uiController.midi = key;
         uiController.zone = zones[0];
+        apath.set_ch_zone(channelId, zones[0]);
       });
       return zones[0];
     },

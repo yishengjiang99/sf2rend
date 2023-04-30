@@ -2,14 +2,13 @@ import { wasmbin } from "./lpf.wasm.js";
 
 
 export class LowPassFilterNode extends AudioWorkletNode {
-  static param_defaults = {frequency: 13500, Q: 2.0};
+  static default_params = {FilterFC: 13500, FilterQ: 0};
   static async init(ctx) {
     try {
       await ctx.audioWorklet
         .addModule("lpf-proc.js");
     } catch (e) {
       await ctx.audioWorklet.addModule('lpf/lpf-proc.js');
-
     }
   }
   constructor(ctx, options = {}) {
@@ -18,13 +17,10 @@ export class LowPassFilterNode extends AudioWorkletNode {
       numberOfOutputs: 1,
       outputChannelCount: [2],
       processorOptions: {
-        ...{frequency: 13500, Q: .8},
+        ...self.default_params,
         ...options,
         wasmbin,
       },
     });
-  }
-  set frequency(freq) {
-    this.port.postMessage(freq / this.context.sampleRate);
   }
 }

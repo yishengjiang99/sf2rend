@@ -203,7 +203,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     let [left, right] = outputs[0];
     if (noise_floor && noise_floor[0]) {
       left.set(noise_floor[0]);
-      right.set(noise_floor[0]);
+      // right.set(noise_floor[0]);
     }
     this.inst.exports.sp_wipe_output_tab();
     const thisBus = this.ringbus.this_bus;

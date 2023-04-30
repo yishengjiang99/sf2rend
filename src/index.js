@@ -12,7 +12,7 @@ import {readMidi} from './midiread.js'
 import {mkcanvas, chartRect, chart} from "../chart/chart.js";
 import * as sequence from "../dist/sequence.js"
 import {logdiv, mktabs, mkcollapse} from "./logdiv.js";
-import {mk_vcf_ctrl, mk_vca_ctrl, mk_attenuate, mk_eq_bar} from "./eqslide.js";
+import {mk_vcf_ctrl, mk_vca_ctrl, mk_filter_ctrls, mk_eq_bar} from "./eqslide.js";
 function $(sel) {
   return document.querySelector(sel);
 }
@@ -148,7 +148,7 @@ async function main(sf2file) {
       id: "mi " + i,
     });
     push_ch(i, "ch " + i, mkdiv('div', [
-      mk_attenuate(i, eventPipe),
+      mk_filter_ctrls(i),
       mk_vca_ctrl(i, eventPipe),
       mk_vcf_ctrl(i, eventPipe),
     ]));
@@ -290,6 +290,7 @@ async function main(sf2file) {
 
   apath.ctrl_bar(document.getElementById("ctrls"));
   apath.bindToolbar();
+  apath.bindReactiveElems();
 
 
   const cancelFn = apath.detectClips(c3);
@@ -332,7 +333,6 @@ function eventsHandler(channels, spinner) {
         break;
       case midi_ch_cmds.note_off:
         channels[ch].keyOff(key, velocity);
-
         break;
       case midi_ch_cmds.note_on:
         if (velocity == 0) {
@@ -344,7 +344,6 @@ function eventsHandler(channels, spinner) {
         break;
       case midi_ch_cmds.pitchbend:
         spinner.port.postMessage(data);
-
         stdout("PITCH BEND " + [ch, cmd.toString(16), b, c].join("/"));
         break;
       default:
@@ -412,7 +411,6 @@ function renderSampleView(zoneSelect) {
     "loop: ",
     zoneSelect.shdr.loops.join("-"),
     "<br>",
-
     JSON.stringify(zoneSelect.KeyRange),
     "<br>",
     JSON.stringify(zoneSelect.VolRange),
@@ -433,11 +431,9 @@ function renderArticle(keyword, zoneObj) {
           ...min_max_vals(k),
           value: v,
           oninput: (e) => {
-
             e.target.parentElement.querySelector("code").textContent =
               e.target.value;
             zoneObj[k] = e.target.value;
-            //if (canvas) drawEV(zoneObj, canvas);
           },
         }),
       ])
@@ -447,7 +443,6 @@ function renderArticle(keyword, zoneObj) {
   const article = mkdiv("article", {class: "article"}, [attrVals, details]);
   return article;
 }
-//drawEV(zone.arr.slice(33, 39), volEGCanvas);
 function min_max_vals(k) {
   if (k.includes("Sustain")) {
     return {min: 0, max: 1000, step: 10};

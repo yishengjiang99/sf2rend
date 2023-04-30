@@ -48,7 +48,7 @@ export function mkui(
       <p class='editTable'></p>
       </div>`;
 
-      const newLocal = "amp-indicate";
+      const amp_show_bar = "amp-indicate";
       const meterDiv = mkdiv(
         "span",
         {
@@ -56,8 +56,9 @@ export function mkui(
           class: "instrPanels",
         },
         [
-          this.led,
+
           this.nameLabel,
+          this.led,
           mkdiv("meter", {
             min: 1,
             max: 127,
@@ -126,19 +127,17 @@ export function mkui(
           mkdiv("label", {for: "mute"}, "mute"),
             mkdiv(
               "input",
-              {type: "checkbox", "data-path_cmd": "solo", "data-p1": idx},
+              {type: "button", value: "solo", "data-path_cmd": "solo", "data-p1": idx},
               "solo"
-            ),
-          mkdiv("label", {for: "solo"}, "solo"),
-          mkdiv(
-            "span",
-            {
-              class: newLocal,
-            },
-            ""
-          ),
+          ), this.zoneEdit
         ]);
-      const container = mkdiv("div", [meterDiv, ctslsDiv, this.zoneEdit]);
+      const container = mkdiv("div", [meterDiv, ctslsDiv, mkdiv(
+        "div",
+        {
+          class: amp_show_bar,
+        },
+        ""
+      )]);
 
       this.meters = container.querySelectorAll("meter");
 

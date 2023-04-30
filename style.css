@@ -34,12 +34,17 @@ body{
   border:black solid 1px;  
 }
 .channelCard:nth-child(2n){
-  background-color: #223322;
+  background-color: #222;
 }
 
 .channelCard:hover {
+  background-color: #333333;
 }
 #stdout{
+  position:absolute;
+  right:0;
+  bottom:0;
+  height:120px;
 }
 .amp-indicate {
   height: 20px;

@@ -1,26 +1,19 @@
 // bastardized from RBJ's cookbook
 #include "biquad.h"
 
-#include "p1200.h"
 extern float sinhf(float x);
 extern float cosf(float x);
 extern float sinf(float x);
+extern float powf(float b, float x);
+#define ONE_SEMI 8.176f
 
-static float exp1(float x) { return (6 + x * (6 + x * (3 + x))) * 0.16666666f; }
-static float pow2(float x) { return exp1(x) / exp1(10); };
-#define sample_rate 44100
+extern int sample_rate_log2;  // 1200 * log2(sample_rate/ONE_SEMI
 
 biquad lpfs[1];  // singleton
-biquad *this_lpf = lpfs;
-float Q = 10.f;
-int centFc = 13500;
-
-float ct2hz(short tc) {
-  if (tc < 0) return 1.0f / ct2hz(-1 * tc);
-  if (tc > 1200) return 2.0f * ct2hz(tc - 1200);
-  return p2over1200[tc] * 8.176f;
+float get_omega(int fc) {
+  float ratio = 1.0f;
+  return 2 * M_PI * powf(2.0f, (fc - sample_rate_log2) / 1200.0);
 }
-float get_omega(int ct) { return 2 * M_PI * ct2hz(ct) / (float)sample_rate; }
 /* Computes a BiQuad filter on a sample */
 float BiQuad(const float sample) {
   biquad *b = lpfs;
@@ -41,8 +34,8 @@ float BiQuad(const float sample) {
   return result;
 }
 
-biquad *setLPF(short cent, short band) {
-  float omega = get_omega(cent);
+biquad *setLPF(int fc, float bandwidth) {
+  float omega = get_omega(fc);
   biquad *b = lpfs;
 
   float a0, a1, a2, b0, b1, b2;
@@ -64,14 +57,6 @@ biquad *setLPF(short cent, short band) {
   b->x1 = b->x2 = 0;
   b->y1 = b->y2 = 0;
   return b;
-}
-void initialize(short cent, float q) {
-  centFc = cent;
-  Q = q;
-}
-void set_fc(short cent) {
-  centFc = cent;
-  setLPF(centFc, Q);
 }
 
 // /* sets up a BiQuad Filter */
@@ -103,7 +88,7 @@ void set_fc(short cent) {
 //     //   b1 = -(1 + cs);
 //     //   b2 = (1 + cs) / 2;
 //     //   a0 = 1 + alpha;
-//     //   a1 = -2 * cs;
+//     //   a1 = -2 * c
 //     //   a2 = 1 - alpha;
 //     //   break;
 //     // case BPF:
