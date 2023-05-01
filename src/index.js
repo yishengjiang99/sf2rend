@@ -77,17 +77,16 @@ async function main(sf2file) {
   let sf2, uiControllers, ctx, clock_diff_baseline, last_rend_end_at;
   stdout("start");
 
-
   const channels = [];
 
   const midiList = await fetchmidilist();
 
-  for (const f of sf2list) sf2select.append(mkdiv("option", {value: f}, f));
+  for (const f of sf2list) sf2select.append(mkdiv("option", { value: f }, f));
 
   sf2select.onchange = (e) => {
     loadSF2File(e.target.value);
   };
-  const {mkpath} = await import("./mkpath.js");
+  const { mkpath } = await import("./mkpath.js");
 
   const midiSelect = mkdiv2({
     tag: "select",
@@ -96,11 +95,12 @@ async function main(sf2file) {
       e.preventDefault();
     },
     children: [
-      mkdiv("option", {name: "select midi", value: null}, "select midi file"),
+      mkdiv("option", { name: "select midi", value: null }, "select midi file"),
       ...mfilelist.map((f) =>
-        mkdiv("option", {value: f}, decodeURI(f).split("/").pop())
-      ), ...midiList.map((f) =>
-        mkdiv("option", {value: f.get("Url")}, f.get("Name").substring(0, 80))
+        mkdiv("option", { value: f }, decodeURI(f).split("/").pop())
+      ),
+      ...midiList.map((f) =>
+        mkdiv("option", { value: f.get("Url") }, f.get("Name").substring(0, 80))
       ),
     ],
   });
@@ -112,9 +112,13 @@ async function main(sf2file) {
   });
 
   await ctx.suspend();
-  ctx.addEventListener("statechange", () => {
-    clock_diff_baseline = performance.now() - ctx.currentTime * 1000;
-  }, {once: true})
+  ctx.addEventListener(
+    "statechange",
+    () => {
+      clock_diff_baseline = performance.now() - ctx.currentTime * 1000;
+    },
+    { once: true }
+  );
 
   const eventPipe = mkeventsPipe();
   const apath = await mkpath(ctx, eventPipe);
@@ -123,7 +127,7 @@ async function main(sf2file) {
 
   const ui = mkui(eventPipe, $("#channelContainer"), {
     onTrackDoubleClick: async (channelId, e) => {
-      const sp1 = await apath.querySpState({query: 2 * channelId});
+      const sp1 = await apath.querySpState({ query: 2 * channelId });
       globalThis.stderr(JSON.stringify(sp1, null, 1));
     },
     onEditZone: (editData) => {
@@ -133,33 +137,36 @@ async function main(sf2file) {
       });
     },
     onTrackClick: (channelId) => {
-      document.body.querySelectorAll(`.tabs > input`)[channelId]
-        .setAttribute("checked", "");
-    }
+      document.body
+        .querySelectorAll(`.tabs > input`)
+        [channelId].setAttribute("checked", "");
+    },
   });
 
   uiControllers = ui.controllers;
 
-  for (let i = 0;i < 16;i++) {
+  for (let i = 0; i < 16; i++) {
     channels.push(createChannel(uiControllers[i], i, sf2, apath));
-    const {push_ch, tabs} = mktabs({
+    const { push_ch, tabs } = mktabs({
       ch: i,
       container: ctrbar,
       id: "mi " + i,
     });
-    push_ch(i, "ch " + i, mkdiv('div', [
-      mk_filter_ctrls(i),
-      mk_vca_ctrl(i, eventPipe),
-      mk_vcf_ctrl(i, eventPipe),
-    ]));
+    push_ch(
+      i,
+      "ch " + i,
+      mkdiv("div", [
+        mk_filter_ctrls(i),
+        mk_vca_ctrl(i, eventPipe),
+        mk_vcf_ctrl(i, eventPipe),
+      ])
+    );
     tabs.attachTo(ctrbar);
   }
   document.body.querySelector(".tabs > input").setAttribute("checked", "");
 
-
   const sf2loadWait = await loadSF2File("./static/file.sf2");
-  mk_eq_bar(0, apath.eq_set).attachTo(document.querySelector("eq"))
-
+  mk_eq_bar(0, apath.eq_set).attachTo(document.querySelector("eq"));
 
   //link pipes
   eventPipe.onmessage(eventsHandler(channels, spinner));
@@ -186,12 +193,13 @@ async function main(sf2file) {
         "select",
         {
           oninput: (e) => {
-            Array.from(midiAccess.inputs.values()).find(
-            ).onmidimessage = ({data}) => eventPipe.postMessage(data);
+            Array.from(midiAccess.inputs.values()).find().onmidimessage = ({
+              data,
+            }) => eventPipe.postMessage(data);
           },
         },
         [
-          mkdiv("option", {value: null}, "select input"),
+          mkdiv("option", { value: null }, "select input"),
           ...Array.from(midiAccess.inputs.values()).map((input) =>
             mkdiv(
               "option",
@@ -204,43 +212,45 @@ async function main(sf2file) {
           ),
         ]
       ).attachTo(navhead);
-      Array.from(midiAccess.inputs.values())[0].onmidimessage = ({data}) => {
+      Array.from(midiAccess.inputs.values())[0].onmidimessage = ({ data }) => {
         data[0] |= ui.activeChannel;
         eventPipe.postMessage(data);
-      }
+      };
     }
   }
-  ctx.onstatechange = () => updateAppState({audioStatus: ctx.state});
+  ctx.onstatechange = () => updateAppState({ audioStatus: ctx.state });
 
   window.addEventListener(
     "click",
     async () => ctx.state !== "running" && (await ctx.resume()),
-    {once: true}
-  ); 
-
+    { once: true }
+  );
 
   const ampIndictators = document.querySelectorAll(".amp-indicate");
-  const setAmpBar = (ch, ampval) => ampIndictators[ch].style.setProperty("--db", ampval);
+  const setAmpBar = (ch, ampval) =>
+    ampIndictators[ch].style.setProperty("--db", ampval);
 
-  spinner.port.onmessage = ({data}) => {
-
+  spinner.port.onmessage = ({ data }) => {
     if (data.queryResponse) {
       window.stderr(JSON.stringify(data.queryResponse, null, 1));
     }
     if (data.rend_summary) {
-      const {rend_time, rms, now} = data.rend_summary;
-      for (let i = 0;i < 16;i++) {
+      const { rend_time, rms, now } = data.rend_summary;
+      for (let i = 0; i < 16; i++) {
         if (rms[i]) {
           setAmpBar(i, Math.sqrt(rms[i]));
         }
       }
       if (rend_took_len.length > 4800) rend_took_len = [];
       const took = now - last_rend_end_at;
-      const {activeSp, spinfo, eg2Info, egInfo} = data.rend_summary;
-      const clockdiffs = (performance.now() - now * 1000);
+      const { activeSp, spinfo, eg2Info, egInfo } = data.rend_summary;
+      const clockdiffs = performance.now() - now * 1000;
 
-      debugInfo2.innerHTML = clockdiffs - Math.floor(clockdiffs)
-        + " " + JSON.stringify({activeSp, spinfo, egInfo}, null, 1);
+      debugInfo2.innerHTML =
+        clockdiffs -
+        Math.floor(clockdiffs) +
+        " " +
+        JSON.stringify({ activeSp, spinfo, egInfo }, null, 1);
 
       last_rend_end_at = now;
       JSON.stringify(data.rend_summary, null, 1);
@@ -255,9 +265,9 @@ async function main(sf2file) {
     drumList.innerHTML = "";
     sf2.programNames.forEach((n, presetIdx) => {
       if (presetIdx < 128) {
-        mkdiv2({tag: "option", value: n, children: n}).attachTo(programList);
+        mkdiv2({ tag: "option", value: n, children: n }).attachTo(programList);
       } else {
-        mkdiv2({tag: "option", value: n, children: n}).attachTo(drumList);
+        mkdiv2({ tag: "option", value: n, children: n }).attachTo(drumList);
       }
     });
     channels.forEach((c, i) => {
@@ -269,7 +279,7 @@ async function main(sf2file) {
       }
     });
     for (const [section, text] of sf2.meta) {
-      stdout(section + ": " + text);
+      //stdout(section + ": " + text);
     }
   }
   async function onMidiSelect(url) {
@@ -279,19 +289,20 @@ async function main(sf2file) {
     onMidiLoaded(midiInfo);
   }
   async function onMidiLoaded(midiInfo) {
-    await Promise.all(midiInfo.presets.map(preset => {
-      const {pid, channel} = preset;
-      const bkid = (channel == DRUMSCHANNEL) ? 120 : 0;
-      return channels[channel].setProgram(pid, bkid);
-    }));
+    await Promise.all(
+      midiInfo.presets.map((preset) => {
+        const { pid, channel } = preset;
+        const bkid = channel == DRUMSCHANNEL ? 120 : 0;
+        return channels[channel].setProgram(pid, bkid);
+      })
+    );
     const rootElement = $("#sequenceroot");
-    runSequence({midiInfo, rootElement, eventPipe});
+    runSequence({ midiInfo, rootElement, eventPipe });
   }
 
   apath.ctrl_bar(document.getElementById("ctrls"));
   apath.bindToolbar();
   apath.bindReactiveElems();
-
 
   const cancelFn = apath.detectClips(c3);
 
@@ -304,32 +315,34 @@ async function main(sf2file) {
   }
   draw();
   maindiv.classList.remove("hidden");
-  document.querySelector("#file-btn").addEventListener('input', async function (e) {
-    if (!e.target.files[0]) return;
-    const ab = await (e.target.files[0]).arrayBuffer();
-    const midiinfo = readMidi(new Uint8Array(ab));
-    onMidiLoaded(midiinfo);
-  })
-
+  document
+    .querySelector("#file-btn")
+    .addEventListener("input", async function (e) {
+      if (!e.target.files[0]) return;
+      const ab = await e.target.files[0].arrayBuffer();
+      const midiinfo = readMidi(new Uint8Array(ab));
+      onMidiLoaded(midiinfo);
+    });
 }
 
 function eventsHandler(channels, spinner) {
   return function hm(data) {
     if (data.length <= 3) {
-      const [a, b, c] = data;;
+      const [a, b, c] = data;
       return hm([a & 0xf0, a & 0x0f, b, c]);
     }
     const [cmd, ch, v1, v2] = data;
     const [key, velocity] = [v1, v2];
+
     switch (cmd) {
       case midi_ch_cmds.continuous_change: // set CC
         const [cc, val] = [v1, v2];
+
         spinner.port.postMessage([cmd, ch, v1, v2]);
-        stdout("midi set cc on channel " + ch + " effect " + cc + " ff " + val + "  " + ccnames[cc]);
+        channels[ch].setCC({ cc, val });
         break;
       case midi_ch_cmds.change_program: //change porg
-        stdout("midi change program " + [ch, cmd, key, velocity].join("/"));
-        channels[ch].setProgram(key, ch == DRUMSCHANNEL ? 128 : 0);
+        channels[ch].setProgram(key);
         break;
       case midi_ch_cmds.note_off:
         channels[ch].keyOff(key, velocity);
@@ -339,7 +352,9 @@ function eventsHandler(channels, spinner) {
           channels[ch].keyOff(key, velocity);
         } else {
           const zone = channels[ch].keyOn(key, velocity);
-          requestAnimationFrame(() => debugInfo3.replaceChildren(renderZone(zone)));
+          requestAnimationFrame(() =>
+            debugInfo3.replaceChildren(renderZone(zone))
+          );
         }
         break;
       case midi_ch_cmds.pitchbend:

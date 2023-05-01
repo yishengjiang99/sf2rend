@@ -41,11 +41,11 @@ export function mkui(
         style: "background-color:black;color:white;display:none",
       });
       this.zoneEdit.innerHTML = `          
-      <label for="modal-control${idx}"><a>zedit</a></label>
+      <label for="modal-control${idx}"><button>zedit</button></label>
       <input type="checkbox" id="modal-control${idx}" class="modal">
       <div>
-      <label for="modal-control${idx}" class="modal-close" >Close Modal</label>
-      <p class='editTable'></p>
+        <label for="modal-control${idx}" class="modal-close" >Close Modal</label>
+        <p class='editTable'></p>
       </div>`;
 
       const amp_show_bar = "amp-indicate";
@@ -56,7 +56,6 @@ export function mkui(
           class: "instrPanels",
         },
         [
-
           this.nameLabel,
           this.led,
           mkdiv("meter", {
@@ -85,37 +84,8 @@ export function mkui(
             type: "range",
             oninput: (e) => cb([0xb0 | idx, 7, e.target.value]),
           }),
-          // mkdiv("label", { for: "pan" }, "pan"),
-          // mkdiv("input", {
-          //   min: 1,
-          //   max: 128,
-          //   step: 1,
-          //   type: "range",
-          //   value: 64,
-          //   oninput: (e) => cb([0xb0 | idx, 10, e.target.value]),
-          // }),
-          // mkdiv("label", { for: "expression" }, "expression"),
-          // mkdiv("input", {
-          //   min: 1,
-          //   max: 128,
-          //   step: 1,
-          //   value: 122,
-          //   type: "range",
-          //   oninput: (e) => cb([0xb0 | idx, 11, e.target.value]),
-          // }),
-
-          // mkdiv("label", {for: "filterFC"}, "filterFC"),
-          // mkdiv("input", {
-          //   min: 1000,
-          //   id: "filterFC",
-          //   max: 13700,
-          //   step: 10,
-          //   value: 13700,
-          //   type: "range",
-          //   "data-path_cmd": "lpf",
-          //   "data-p1": idx,
-          // }),
-        ]);
+        ]
+      );
       const ctslsDiv =
         mkdiv("div", {class: "ctrls"}, [
             mkdiv("input", {

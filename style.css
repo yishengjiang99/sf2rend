@@ -43,8 +43,10 @@ body{
 #stdout{
   position:absolute;
   right:0;
-  bottom:0;
-  height:120px;
+  bottom:20px;
+  height:220px;
+
+
 }
 .amp-indicate {
   height: 20px;

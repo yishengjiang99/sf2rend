@@ -1,3 +1,9 @@
+function ct2hz(cents) {
+  return 8.176 * Math.pow(2.0, cents / 1200.0);
+}
+function hz2omg(hz) {
+  return (3.1415 * 2 * hz) / globalThis.sampleRate;
+}
 class LowPassFilterProc extends AudioWorkletProcessor {
   static get parameterDescriptors() {
     return [
@@ -17,11 +23,10 @@ class LowPassFilterProc extends AudioWorkletProcessor {
       },
     ];
   }
-
   constructor(options) {
     super(options);
     const {
-      processorOptions: {FilterFC, wasmbin, FilterQ},
+      processorOptions: { FilterFC, wasmbin, FilterQ },
     } = options;
     this.FilterFC = FilterFC;
     this.FilterQ = FilterQ;
@@ -31,7 +36,7 @@ class LowPassFilterProc extends AudioWorkletProcessor {
         cosf: (x) => Math.cos(x),
         sinhf: (x) => Math.sinh(x),
         powf: (b, x) => Math.pow(b, x),
-        sample_rate_log2: 1200 * Math.log2(globalThis.sampleRate / 8.176)
+        sample_rate_log2: 1200 * Math.log2(globalThis.sampleRate / 8.176),
       },
     });
     this.instance = instance;
@@ -44,29 +49,34 @@ class LowPassFilterProc extends AudioWorkletProcessor {
     console.log(data);
   }
   process([inputs], [outputs], params) {
-
     if (!inputs.length) return true;
     if (params.FilterQ_Cb[0] <= 0) {
       outputs[0].set(inputs[1]);
       outputs[1].set(inputs[0]);
       return true;
     }
-    const filterQ = -1 * Math.pow(10, params.FilterQ_Cb[0] / 200);
-    const bandwidth = 1 / filterQ;
-    if (params.FilterFC[0] !== this.FilterFC) {
+    console.log(params.FilterFC);
+    if (
+      params.FilterFC[0] !== this.FilterFC ||
+      params.FilterQ_Cb[0] !== this.Q
+    ) {
+      const filterQ = Math.pow(10, params.FilterQ_Cb[0] / 200);
+      const bandwidth = 1 / filterQ;
+      this.Q = filterQ;
       this.FilterFC = params.FilterFC[0];
-      this.lpf = this.setLPF(this.FilterFC, bandwidth);
+      const omg = hz2omg(ct2hz(this.FilterFC));
+      this.lpf = this.setLPF(omg, bandwidth);
+      console.log(omg, bandwidth);
     }
 
     const inputChannel = Math.min(inputs.length, outputs.length) - 1;
-    for (let j = 0;j < 128;j++) {
+    for (let j = 0; j < 128; j++) {
       outputs[0][j] = this.processSample(inputs[0][j], this.lpf);
     }
-    for (let j = 0;j < 128;j++) {
+    for (let j = 0; j < 128; j++) {
       outputs[1][j] = this.processSample(inputs[inputChannel][j], this.lpf);
+      //console.log(outputs[1][j], inputs[1][j]);
     }
-
-
 
     return true;
   }

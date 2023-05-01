@@ -4,16 +4,8 @@
 extern float sinhf(float x);
 extern float cosf(float x);
 extern float sinf(float x);
-extern float powf(float b, float x);
-#define ONE_SEMI 8.176f
-
-extern int sample_rate_log2;  // 1200 * log2(sample_rate/ONE_SEMI
 
 biquad lpfs[1];  // singleton
-float get_omega(int fc) {
-  float ratio = 1.0f;
-  return 2 * M_PI * powf(2.0f, (fc - sample_rate_log2) / 1200.0);
-}
 /* Computes a BiQuad filter on a sample */
 float BiQuad(const float sample) {
   biquad *b = lpfs;
@@ -34,8 +26,7 @@ float BiQuad(const float sample) {
   return result;
 }
 
-biquad *setLPF(int fc, float bandwidth) {
-  float omega = get_omega(fc);
+biquad *setLPF(float omega, float bandwidth) {
   biquad *b = lpfs;
 
   float a0, a1, a2, b0, b1, b2;
