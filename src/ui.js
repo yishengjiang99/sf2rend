@@ -1,13 +1,25 @@
-/* eslint-disable react/prop-types */
-/* eslint-disable no-unused-vars */
 import {
   mkdiv,
   mkdiv2,
   wrapDiv,
   mksvg,
+  mk_fa_btn,
+  wrapVertical,
+  wrapList,
 } from "../mkdiv/mkdiv.js";
-import {midi_ch_cmds, range, midi_effects as effects, DRUMSCHANNEL} from "./constants.js";
-import {attributeKeys, defZone, newSFZoneMap} from "../sf2-service/zoneProxy.js";
+import {
+  midi_ch_cmds,
+  range,
+  midi_effects as effects,
+  DRUMSCHANNEL,
+} from "./constants.js";
+import { fa_switch_btn } from "./btns.js";
+import {
+  attributeKeys,
+  defZone,
+  newSFZoneMap,
+  newSFZone,
+} from "../sf2-service/zoneProxy.js";
 
 const rowheight = 40;
 const pixelPerSec = 12;
@@ -32,23 +44,18 @@ export function mkui(
           const pid = Array.from(e.target.list.options).findIndex(
             (d) => d.value == e.target.value
           );
-          cb([midi_ch_cmds.change_program | idx, pid, idx == DRUMSCHANNEL ? 128 : 0]);
+          const change_program = midi_ch_cmds.change_program;
+          const bkid = idx == DRUMSCHANNEL ? 128 : 0;
+          cb([change_program | idx, pid, bkid]);
           e.target.blur();
         },
       });
-      this.led = mkdiv("input", {class: "onoff_indicate", type: "checkbox", name: "ch_" + idx});
-      this.zoneEdit = mkdiv("div", {
-        style: "background-color:black;color:white;display:none",
+      this.led = mkdiv("input", {
+        class: "onoff_indicate",
+        type: "checkbox",
+        name: "ch_" + idx,
       });
-      this.zoneEdit.innerHTML = `          
-      <label for="modal-control${idx}"><button>zedit</button></label>
-      <input type="checkbox" id="modal-control${idx}" class="modal">
-      <div>
-        <label for="modal-control${idx}" class="modal-close" >Close Modal</label>
-        <p class='editTable'></p>
-      </div>`;
 
-      const amp_show_bar = "amp-indicate";
       const meterDiv = mkdiv(
         "span",
         {
@@ -56,7 +63,6 @@ export function mkui(
           class: "instrPanels",
         },
         [
-          this.nameLabel,
           this.led,
           mkdiv("meter", {
             min: 1,
@@ -73,53 +79,87 @@ export function mkui(
             aria: "vel",
             value: 60,
           }),
-          mkdiv("label", { for: "vol" }, "volume"),
-
-          mkdiv("input", {
-            min: 1,
-            max: 128,
-            value: 100,
-            step: 1,
-            id: "vol",
-            type: "range",
-            oninput: (e) => cb([0xb0 | idx, 7, e.target.value]),
-          }),
         ]
       );
-      const ctslsDiv =
-        mkdiv("div", {class: "ctrls"}, [
-            mkdiv("input", {
-              type: "checkbox",
-              id: "mute",
-              "data-path_cmd": "mute",
-              "data-p1": idx,
-            }),
-          mkdiv("label", {for: "mute"}, "mute"),
-            mkdiv(
-              "input",
-              {type: "button", value: "solo", "data-path_cmd": "solo", "data-p1": idx},
-              "solo"
-          ), this.zoneEdit
-        ]);
-      const container = mkdiv("div", [meterDiv, ctslsDiv, mkdiv(
+      this.zoneEdit = mkdiv("div", [
+        `<label for="modal-control${idx}" class="toggle"> <i class='fas fa-edit'></label>`,
+        `<input type="checkbox" id="modal-control${idx}" class="modal">`,
+        `<div> <label for="modal-control${idx}" class="modal-close" >Close Modal</label>
+        <p class='editTable'></p>`,
+      ]);
+      const ctslsDiv = mkdiv("div", { class: "ctrls" }, [
+        fa_switch_btn({
+          id: "mute" + idx,
+          icons: ["fa-volume-mute", "fa-volume-up"],
+          data: {
+            path_cmd: "mute",
+            p1: idx,
+          },
+        }),
+        fa_switch_btn({
+          id: "solo" + idx,
+          icons: ["fa-headphones active", "fa-music"],
+          data: {
+            path_cmd: "solo",
+            p1: idx,
+          },
+        }),
+        this.zoneEdit,
+        mkdiv("input", {
+          min: 1,
+          max: 128,
+          value: 100,
+          step: 1,
+          id: "vol",
+          type: "range",
+          oninput: (e) => cb([0xb0 | idx, 7, e.target.value]),
+        }),
+      ]);
+      const ampshow = mkdiv("div", {
+        class: "amp-indicate",
+      });
+      const inst_header_section = mkdiv(
         "div",
         {
-          class: amp_show_bar,
+          style:
+            "display:grid; grid-template-columns:1fr 2fr 1fr; height:120px",
         },
-        ""
-      )]);
+        [
+          mkdiv(
+            "span",
+            {
+              style: "text-align:center; padding:10%",
+            },
+            [`<i class='fas fa-play'>`]
+          ),
+          mkdiv(
+            "span",
+            {
+              style: "display:flex;flex-direction:column",
+            },
+            [this.nameLabel, ctslsDiv, ampshow]
+          ),
+          mkdiv("span", [mkdiv("button", `<i class='fas fa-gears'>`)]),
+        ]
+      );
+
+      const sequencer = mkdiv(
+        "div",
+        { style: "background-color:#225522" },
+        "track here"
+      );
+      this.container = mkdiv(
+        "div",
+        { style: "width:100%; display:grid; grid-template-columns:1fr 5fr" },
+        [inst_header_section, sequencer]
+      );
 
       this.meters = container.querySelectorAll("meter");
 
       this.sliders = Array.from(
         container.querySelectorAll("input[type='range']")
       );
-      const [keyLabel, velLabel, ...ccLabels] =
-        container.querySelectorAll("label");
-      this.ccLabels = ccLabels;
 
-      this.polylines = Array.from(container.querySelectorAll("polyline"));
-      this.container = container;
       this._active = false;
       this._midi = null;
       function rzone() {}
@@ -147,7 +187,6 @@ export function mkui(
       switch (key) {
         case effects.volumecoarse:
           this.sliders[0].value = value;
-          this.ccLabels[0].innerHTML = "volume" + value;
           break;
       }
     }
@@ -169,8 +208,8 @@ export function mkui(
       }
     }
     set zone(z) {
-      const {arr, ref} = z;
-      const zmap = newSFZoneMap(ref, new Uint16Array(arr));
+      const { arr, ref } = z;
+      const zmap = newSFZone(z);
       this._zone = {
         arr,
         ref,
@@ -189,29 +228,35 @@ export function mkui(
               onEditZone({
                 arr: atts,
                 update: [this._pid, ref],
-
               }).then((confirmation1) => {
                 console.log(confirmation1);
               });
             },
           },
-          mkdiv("ul",
-            [mkdiv("input", {
+          mkdiv("ul", [
+            mkdiv("input", {
               role: "button",
               value: "save",
               type: "submit",
             }),
             ...Array.from(this._zone.arr).map((attr, index) =>
               mkdiv("tr", [
-                mkdiv("td", {
-                  class: attr === defZone[index] ? "hidden" : "",
-                }, attributeKeys[index]),
+                mkdiv(
+                  "td",
+                  {
+                    class: attr === defZone[index] ? "hidden" : "",
+                  },
+                  attributeKeys[index]
+                ),
                 mkdiv("td", {}, [
                   mkdiv("input", {
                     value: attr,
                     name: index,
                     class: attr === defZone[index] ? "hidden" : "",
                     placeholder: "a",
+                    oninput: (a) => {
+                      zmap[attributeKeys[index]] = a.target.value;
+                    },
                   }),
                   ...(index == 43 || index == 44
                     ? [
@@ -242,14 +287,12 @@ export function mkui(
   const controllers = [];
   let refcnt = 0;
   let _activeChannel = 0;
-  const tb = mkdiv("div", {
-    border: 1,
-    style: `display:flex;flex-direction:row; grid-gap:20px;flex-wrap:wrap`,
-  });
+  const tb = mkdiv("div");
 
   for (let i = 0; i < 16; i++) {
     const trackrow = new TrackUI(i, eventPipe.postMessage);
     controllers.push(trackrow);
+    trackrow.hidden = true;
     tb.append(trackrow.container);
     trackrow.container.classList.add("channelCard");
     trackrow.container.addEventListener(
