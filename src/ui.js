@@ -1,11 +1,7 @@
 import {
   mkdiv,
   mkdiv2,
-  wrapDiv,
-  mksvg,
-  mk_fa_btn,
-  wrapVertical,
-  wrapList,
+
 } from "../mkdiv/mkdiv.js";
 import {
   midi_ch_cmds,
