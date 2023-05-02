@@ -13,7 +13,7 @@ import {
   midi_effects as effects,
   DRUMSCHANNEL,
 } from "./constants.js";
-import { fa_switch_btn } from "./btns.js";
+import { fa_switch_btn, grid_tbl } from "./btns.js";
 import {
   attributeKeys,
   defZone,
@@ -143,11 +143,7 @@ export function mkui(
         ]
       );
 
-      const sequencer = mkdiv(
-        "div",
-        { style: "background-color:#225522" },
-        "track here"
-      );
+      const sequencer = mkdiv("div", {});
       this.container = mkdiv(
         "div",
         { style: "width:100%; display:grid; grid-template-columns:1fr 5fr" },
@@ -162,7 +158,6 @@ export function mkui(
 
       this._active = false;
       this._midi = null;
-      function rzone() {}
     }
     set hidden(h) {
       this.container.style.display = h ? "none" : "grid";
@@ -178,7 +173,7 @@ export function mkui(
     }
     set midi(v) {
       this._midi = v;
-      this.meters[0].value = v;
+      //this.meters[0].value = v;
     }
     get midi() {
       return this._midi;
@@ -191,7 +186,7 @@ export function mkui(
       }
     }
     set velocity(v) {
-      this.meters[1].value = v;
+      //this.meters[1].value = v;
     }
     get velocityInput() {
       return this.meters[1].value;

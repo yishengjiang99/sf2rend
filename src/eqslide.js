@@ -183,7 +183,7 @@ export function mk_filter_ctrls(ch) {
       class: "input-knob",
       value: 0,
       type: "range",
-      "data-path_cmd": "lpf_q",
+      "data-cmd": "lpf_q",
       "data-path_zdx": "FilterQ",
       "data-p1": ch,
     }),

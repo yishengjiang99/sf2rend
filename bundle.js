@@ -322,7 +322,7 @@ function mkui(
             step: 10,
             value: 13700,
             type: "range",
-            "data-path_cmd": "lpf",
+            "data-path_cmdh_cmdh_cmd": "lpf",
             "data-p1": idx,
           }),
           mkdiv("div", [
@@ -2024,7 +2024,7 @@ async function mkpath(ctx, additional_nodes = []) {
       document
         .querySelectorAll("input[type=checkbox], input[type=range]")
         .forEach((b) => {
-          if (b.dataset.path_cmd) {
+          if (b.dataset.cmd) {
             let cmd = b.dataset.path_cmd;
             let p1 = parseInt(b.dataset.p1 || "0");
             b.addEventListener("click", (e) => {
@@ -2042,7 +2042,7 @@ async function mkpath(ctx, additional_nodes = []) {
                   break;
                 default:
                   spinner.port.postMessage({
-                    cmd: b.dataset.path_cmd,
+                    cmd: b.dataset.cmd,
                   });
                   break;
               }

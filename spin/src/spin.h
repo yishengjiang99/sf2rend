@@ -17,6 +17,7 @@ typedef unsigned int uint32_t;
 
 #define modulo_s16f_inverse 1.0f / 32767.1f
 #define modulo_u16f (float)(((1 << 16) + .1f))
+extern float tanf(float t);
 
 typedef struct {
   unsigned short phase, delay;
@@ -302,6 +303,10 @@ enum grntypes {
   OverrideRootKey,
   Dummy
 };
+/* this holds the data required to update samples thru a filter */
+typedef struct {
+  double QInv, a0, a1, b1, b2, z1, z2;
+} Biquad;
 
 typedef struct {
   float *inputf, *outputf;
@@ -311,12 +316,14 @@ typedef struct {
   zone_t* zone;
   EG voleg, modeg;
   LFO modlfo, vibrlfo;
+  Biquad lpf;
   pcm_t* pcm;
   uint32_t sampleLength;
   uint32_t active_dynamics_flag;
   int is_looping;
-  short lfo1_pitch, lfo1_volume, lfo2_pitch, modeg_pitch, modeg_fc, modeg_vol;
-  double pan_left, pan_right;
+  short lfo1_pitch, lfo1_volume, lfo2_pitch, modeg_pitch, modeg_fc, modeg_vol,
+      lfo1_fc, initialFc, initialQ, pleft, pright;
+
 } spinner;
 
 void set_spinner_zone(spinner* x, zone_t* z);
@@ -427,5 +434,24 @@ enum TMLController {
   TML_POLY_OFF,
   TML_POLY_ON
 };
+extern float tanf(float a);
+
+void new_lpf(Biquad* biq, float fc, float Q) {
+  double K = tanf(3.1415f * fc);
+  double KK = K * K;
+  double norm = 1 / (1 + K / Q + KK);
+  biq->QInv = 1.0 / Q;
+  biq->a0 = KK * norm;
+  //
+  biq->a1 = 2 * biq->a0;
+  biq->b1 = 2 * (KK - 1) * norm;
+  biq->b2 = (1 - K / Q + KK) * norm;
+}
+float calc_lpf(Biquad* b, double In) {
+  double Out = In * b->a0 + b->z1;
+  b->z1 = In * b->a1 + b->z2 - b->b1 * Out;
+  b->z2 = In * b->a0 - b->b2 * Out;
+  return (float)Out;
+}
 
 #endif

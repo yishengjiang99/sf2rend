@@ -1,11 +1,14 @@
 
+
 #include "spin.h"
+
 #define MAX_VOICE_CNT 256
 
 // ghetto malloc all variables
 int sp_idx = 0;
 spinner sps[MAX_VOICE_CNT];
 pcm_t pcms[4096];
+
 // midi ccs
 unsigned char midi_cc_vals[nmidiChannels * 128] = {0};
 float outputs[MAX_VOICE_CNT * RENDQ * 2];
@@ -26,22 +29,12 @@ void sp_wipe_output_tab() {
 spinner* spRef(int idx) { return &sps[idx]; }
 pcm_t* pcmRef(int sampleId) { return &pcms[sampleId]; }
 spinner* allocate_sp() {
-  // dangerously rotating between 1024 pre-allocated
-  // structs to avoid calling malloc on audio thread
   spinner* x = &sps[sp_idx % MAX_VOICE_CNT];
   x->outputf = &outputs[sp_idx * RENDQ * 2];
   sp_idx++;
   return x;
 }
 
-void sp_reflect(float* paper) {
-  for (int j = 0, i = sp_idx; i >= 0 && j < 32; i--) {
-    paper[j++] = (sps + i)->channelId;
-    paper[j++] = (sps + i)->voleg.stage;
-    paper[j++] = (sps + i)->voleg.egval;
-    paper[j++] = (sps + i)->position;
-  }
-}
 spinner* newSpinner(int ch) {
   spinner* x = allocate_sp();
   x->outputf = &outputs[ch * RENDQ * 2];
@@ -68,6 +61,8 @@ void reset(spinner* x) {
   x->voleg.egIncrement = 0;
   x->voleg.hasReleased = 0;
   x->modeg.hasReleased = 0;
+  x->lpf.z1 = 0;
+  x->lpf.z2 = 0;
   x->active_dynamics_flag = 0;
 }
 
@@ -124,6 +119,7 @@ float trigger_attack(spinner* x, uint32_t key, uint32_t velocity) {
                     : z->ModEnvRelease * scaleFactor;
 
   x->pitch_dff_log = calc_pitch_diff_log(x->zone, x->pcm, x->key);
+
   x->stride = 1.0f;
   advanceStage(&x->voleg);
   advanceStage(&x->modeg);
@@ -135,11 +131,17 @@ float trigger_attack(spinner* x, uint32_t key, uint32_t velocity) {
   x->lfo2_pitch = effect_floor(x->zone->VibLFO2Pitch);
   x->modeg_pitch = effect_floor(x->zone->ModEnv2Pitch);
   x->modeg_fc = effect_floor(x->zone->ModEnv2FilterFc);
+  x->lfo1_fc = effect_floor(x->zone->ModLFO2FilterFc);
 
   x->modlfo.delay = timecent2sample(x->zone->ModLFODelay);
   x->vibrlfo.delay = timecent2sample(x->zone->ModLFODelay);
   set_frequency(&x->modlfo, x->zone->ModLFOFreq);
   set_frequency(&x->vibrlfo, x->zone->VibLFOFreq);
+  x->initialFc = x->zone->FilterFc;
+
+  new_lpf(&x->lpf, x->zone->FilterFc / SAMPLE_RATE,
+          p10over200[1440 - x->zone->FilterQ]);
+
   return x->stride;
 };
 void set_spinner_input(spinner* x, pcm_t* pcm) {
@@ -197,29 +199,30 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   float kRateCB = 0.0f;
   kRateCB += (float)x->zone->Attenuation;
   kRateCB += midi_volume_log10(ccval(TML_VOLUME_MSB));
-
-  if (x->voleg.stage < decay)
-    kRateCB += midi_volume_log10(midi_cc_vals[ch * 128 + TML_EXPRESSION_MSB]);
-  kRateCB += midi_volume_log10(x->velocity);
+  kRateCB += midi_volume_log10(midi_cc_vals[ch * 128 + TML_EXPRESSION_MSB]);
+  if (x->voleg.stage < decay) kRateCB += midi_volume_log10(x->velocity);
 
   double panLeft = panleftLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]];
 
   double panRight = panrightLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]];
 
   int isLooping = x->is_looping;
-  short lfo1_volume, lfo1_pitch, modeg_pitch, lfo2_pitch;
+  short lfo1_volume, lfo1_pitch, modeg_pitch, lfo2_pitch, modeg_fc;
   lfo1_volume = x->lfo1_volume;
+  modeg_fc = x->modeg_fc;
   lfo1_pitch = x->lfo1_pitch;
   modeg_pitch = x->modeg_pitch;
   lfo2_pitch = x->lfo2_pitch;
+  Biquad lpf = x->lpf;
+  short initFc = x->initialFc;
 
   for (int i = 0; i < n; i++) {
     db = volEgOut[i] + lfo1_volume * lfo1Out[i];
-    float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
+    pdiff += lfo1Out[i] * lfo1_pitch + modEgOut[i] * modeg_pitch +
+             lfo2Out[i] * lfo2_pitch;
 
-    stride =
-        calcp2over1200(pdiff + lfo1Out[i] * lfo1_pitch +
-                       modEgOut[i] * modeg_pitch + lfo2Out[i] * lfo2_pitch);
+    stride = calcp2over1200(pdiff);
+
     fract = fract + stride;
     while (fract >= 1.0f) {
       position++;
@@ -227,11 +230,16 @@ void _spinblock(spinner* x, int n, int blockOffset) {
     }
     if (position >= x->loopEnd && isLooping > 0) position -= looplen;
 
+    initFc -= modeg_fc * modEgOut[i] - x->lfo1_fc * lfo1Out[i];
+    float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
+    outputf = calc_lpf(&lpf, outputf);
+
     if (position >= nsamples) {
       position = 0;
       outputf = 0.0;
       x->voleg.stage = done;
     }
+
     output_L[i] = applyCentible(outputf, (short)(db + kRateCB + panLeft));
     output_R[i] = applyCentible(outputf, (short)(db + kRateCB + panRight));
   }
@@ -270,3 +278,24 @@ void gm_reset() {
   }
   for (int i = 0; i < nchannels; i++) reset(&sps[i]);
 }
+// #include <math.h>
+// #include <stdio.h>
+// #include <stdlib.h>
+
+// int main() {
+// FILE* fd = fopen("/dev/stdout", "rb");
+// FILE* fo = fopen("ggg.pcm", "w");
+//   float* f;
+//   float* o;
+//   if (!fd) return 1;
+//   float Q = .50f;
+//   new_lpf(b, .5f, .50f);
+
+//   while (!feof(fd)) {
+//     fread(f, sizeof(float), 1, fd);
+//     *o = calc_lpf(b, *f);
+//     fwrite(o, sizeof(float), 1, fo);
+//   }
+
+//   return 0;
+// }

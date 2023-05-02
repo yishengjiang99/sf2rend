@@ -48,6 +48,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     });
     const imports = {
       memory: this.memory,
+      tanf: Math.tan,
     };
     this.inst = new WebAssembly.Instance(new WebAssembly.Module(wasmbin), {
       env: imports,

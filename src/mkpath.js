@@ -108,7 +108,7 @@ export async function mkpath2(ctx, { midi_input, sf2File }) {
     },
     async mute(channel, bool) {
       this.startAudio();
-      const ramp = bool ? [60, 44, 3] : [33, 55, 80];
+      const ramp = bool ? [60, 44, 2] : [33, 55, 80];
       while (ramp.length) {
         midi_input.postMessage([
           midi_ch_cmds.continuous_change | channel,
@@ -184,7 +184,7 @@ export async function mkpath2(ctx, { midi_input, sf2File }) {
         let p1 = parseInt(b.dataset.p1 || "0");
 
         const run_cmd = (e) => {
-          const value = b.type == "checkbox" ? b.checked : b.value; // Genserated by https://quicktype.io
+          let value = b.type == "checkbox" ? b.checked : b.value;
           switch (cmd) {
             case "solo":
               channelIds.forEach((id) => id != p1 && this.mute(id, value));
@@ -203,7 +203,7 @@ export async function mkpath2(ctx, { midi_input, sf2File }) {
               break;
             default:
               spinner.port.postMessage({
-                cmd: b.dataset.path_cmd,
+                cmd: b.dataset.cmd,
               });
               break;
           }

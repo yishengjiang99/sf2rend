@@ -35,6 +35,7 @@ class LowPassFilterProc extends AudioWorkletProcessor {
         sinf: (x) => Math.sin(x),
         cosf: (x) => Math.cos(x),
         sinhf: (x) => Math.sinh(x),
+        tanf: (x) => Math.tanf(x),
         powf: (b, x) => Math.pow(b, x),
         sample_rate_log2: 1200 * Math.log2(globalThis.sampleRate / 8.176),
       },
@@ -51,11 +52,10 @@ class LowPassFilterProc extends AudioWorkletProcessor {
   process([inputs], [outputs], params) {
     if (!inputs.length) return true;
     if (params.FilterQ_Cb[0] <= 0) {
-      outputs[0].set(inputs[1]);
-      outputs[1].set(inputs[0]);
+      outputs[0].set(inputs[0]);
+      //outputs[1].set(inputs[0]);
       return true;
     }
-    console.log(params.FilterFC);
     if (
       params.FilterFC[0] !== this.FilterFC ||
       params.FilterQ_Cb[0] !== this.Q

@@ -17,8 +17,6 @@ function $(sel) {
   return document.querySelector(sel);
 }
 
-
-
 const sf2select = $("#sf2select"),
   col4 = $("#col4"),
   col5 = $("#col5");
@@ -28,7 +26,8 @@ const programList = document.querySelector("#programs");
 const navhead = document.querySelector("header");
 const analyze = document.querySelector("#analyze");
 const maindiv = document.querySelector("main");
-const debugContainer = document.querySelector("#debug"); const footer = document.querySelector("footer")
+const debugContainer = document.querySelector("#debug");
+const footer = document.querySelector("footer");
 
 const stdoutdiv = document.querySelector("#stdout");
 const debugInfo = mkdiv("pre");
@@ -36,23 +35,43 @@ const ctrbar = mkdiv("div");
 const debugInfo2 = mkdiv("pre");
 
 const debugInfo3 = mkdiv("div");
-const ffholder = mkdiv("div", {style: "display:flex;flex-direction:row"});
-const ff = {container: ffholder, width: 220, height: 150}
-const [cv1, cv2, cv3] = [mkcanvas({...ff, width: 520, height: 220}), mkcanvas(ff, {width: 520, height: 220}), mkcanvas(ff)];
-const c3 = mkdiv("canvas", {class: "fixed-top-right", width: "500", height: "50"});
+const ffholder = mkdiv("div", { style: "display:flex;flex-direction:row" });
+const ff = { container: ffholder, width: 220, height: 150 };
+const [cv1, cv2, cv3] = [
+  mkcanvas({ ...ff, width: 520, height: 220 }),
+  mkcanvas(ff, { width: 520, height: 220 }),
+  mkcanvas(ff),
+];
+const c3 = mkdiv("canvas", {
+  class: "fixed-top-right",
+  width: "500",
+  height: "50",
+});
 c3.attachTo(document.body);
-const {stdout, infoPanel} = logdiv();
-mkcollapse({title: "fft", defaultOpen: true}, ffholder).attachTo(analyze);
-mkcollapse({title: "ctrlbar", defaultOpen: false}, ctrbar).attachTo(document.querySelector("#ch_ctrl_bar"));
-mkcollapse({title: "debug", defaultOpen: false}, debugInfo).attachTo(debugContainer);
-mkcollapse({title: "debug2", defaultOpen: false}, debugInfo2).attachTo(debugContainer);
+const { stdout, infoPanel } = logdiv();
+mkcollapse({ title: "fft", defaultOpen: true }, ffholder).attachTo(analyze);
+mkcollapse({ title: "ctrlbar", defaultOpen: false }, ctrbar).attachTo(
+  document.querySelector("#ch_ctrl_bar")
+);
+mkcollapse({ title: "debug", defaultOpen: false }, debugInfo).attachTo(
+  debugContainer
+);
+mkcollapse({ title: "debug2", defaultOpen: false }, debugInfo2).attachTo(
+  debugContainer
+);
 
-mkcollapse({title: "debug3", defaultOpen: false}, debugInfo3).attachTo(debugContainer);
-mkcollapse({title: "Log Info", defaultOpen: true}, infoPanel).attachTo(stdoutdiv);
+mkcollapse({ title: "debug3", defaultOpen: false }, debugInfo3).attachTo(
+  debugContainer
+);
+mkcollapse({ title: "Log Info", defaultOpen: true }, infoPanel).attachTo(
+  stdoutdiv
+);
 const rend_took_len = [];
 window.stdout = stdout;
-window.stderr = (str) => debugInfo.innerHTML = str;
-window.stderrr = (str) => {/*devnull*/} //stderrrdiv.innerHTML = str;
+window.stderr = (str) => (debugInfo.innerHTML = str);
+window.stderrr = (str) => {
+  /*devnull*/
+}; //stderrrdiv.innerHTML = str;
 
 main();
 const appState = {};
@@ -163,6 +182,7 @@ async function main(sf2file) {
     );
     tabs.attachTo(ctrbar);
   }
+
   document.body.querySelector(".tabs > input").setAttribute("checked", "");
 
   const sf2loadWait = await loadSF2File("./static/file.sf2");
@@ -272,12 +292,10 @@ async function main(sf2file) {
     });
     channels.forEach((c, i) => {
       c.setSF2(sf2);
-      if (i != DRUMSCHANNEL) {
-        c.setProgram(i << 3, 0);
-      } else {
-        c.setProgram(0, 128);
-      }
     });
+    channels[0].setProgram(0, 0);
+    channels[DRUMSCHANNEL].setProgram(0, 128);
+
     for (const [section, text] of sf2.meta) {
       //stdout(section + ": " + text);
     }
@@ -325,6 +343,17 @@ async function main(sf2file) {
     });
 }
 
+const cctx = mkcanvas({
+  width: 1200,
+  height: 1000,
+  pxqn: 30,
+  pxpct: 20,
+  title: "bb",
+  container: document.body,
+});
+const events = [];
+const { inputd, x, qn, ...etc } = recordMidi(cctx, { pxqn: 210, pxct: 30 });
+
 function eventsHandler(channels, spinner) {
   return function hm(data) {
     if (data.length <= 3) {
@@ -366,43 +395,91 @@ function eventsHandler(channels, spinner) {
         stdout("midi cmd: " + [ch, cmd, b, c].join("/"));
         break;
     }
+
+    inputd(data);
   };
 }
 
-function onMidiMeta(stderr, e) {
-  const metalist = [
-    "seq num",
-    "text",
-    "cpyrght",
-    "Track Name",
-    "lyrics",
-    "instrument",
-    "marker",
-    "cue point",
-  ];
-  const metaDisplay = (num) => {
-    if (num < 8) return metalist[num];
-    switch (num) {
-      case 0x20:
-        return "mc";
-      case 0x21:
-        return "port: ";
-      case 0x2f:
-        return "end of tack";
-      case 0x51:
-        return "tempo";
-      case 0x54:
-        return "SMPTE offset";
-      case 0x58:
-        return "time signature";
-      case 0x59:
-        return "Key Sig";
+export function recordMidi(cctx, { pxqn }) {
+  const width = 1200,
+    height = 520;
+
+  const aaaa = new Int16Array(1);
+  let gxx = aaaa[0];
+  let lastClock = 0,
+    qn = 0,
+    ticks = 0,
+    xx,
+    x = 0,
+    yy,
+    ppqn;
+
+  var msqn = 500000;
+  var mlqn = msqn / 1000;
+  var events = [];
+
+  cctx.font = "25px Courier New";
+  cctx.fillRect(33, 33, 55, 100);
+  cctx.fillRect(0, 0, width, height);
+
+  function inputd(data) {
+    var ms_delay_ = performance.now() - lastClock; // / 1000;
+    var qn_delay = ms_delay_ / mlqn;
+    lastClock = performance.now();
+    var tick_delay = qn_delay * ppqn;
+
+    qn += qn_delay;
+    ticks += tick_delay;
+    events.push([tick_delay, data]);
+    x = gxx >> 8;
+    cctx.moveTo(x, 60);
+    cctx.strokeStyle = "yellow";
+    cctx.lineTo(x + pxqn * qn_delay, 60);
+    cctx.stroke();
+    let dx = pxqn * qn_delay;
+    dx *= 0xffff / 100;
+    gxx += dx;
+    stdout(x.toString(16));
+    var cmd = data[0],
+      ch = data[1],
+      midi = data[2],
+      vel = data[3];
+    var y = (midi - 20) * 20;
+    cctx.strokeWidth = "1px";
+    cctx.fillStyle = "red";
+    switch (cmd) {
+      case midi_ch_cmds.note_off:
+        cctx.fillRect(xx, yy, x - xx, 20);
+        break;
+      case midi_ch_cmds.note_on:
+        if (vel == 0) {
+          cctx.fillRect(xx, yy, x - xx, 20);
+        } else {
+          xx = gxx >> 16;
+          yy = y;
+        }
+        break;
       default:
-        return parseInt(num).toString(16);
+        break;
     }
+
+    return {
+      inputd,
+      qn,
+      ticks,
+      lastClock,
+    };
+  }
+  return {
+    inputd: inputd,
+    events,
+    qn,
+    ticks,
+    xx,
+    x,
   };
-  stderr(metaDisplay(e.data.meta) + ": " + e.data.payload);
 }
+
 function renderZone(zoneSelect) {
   return mkdiv("div", [
     renderSampleView(zoneSelect),

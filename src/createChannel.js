@@ -24,6 +24,7 @@ export function createChannel(uiController, channelId, sf2, apath) {
       uiController.hidden = false;
       uiController.name = program.name;
       uiController.presetId = this.presetId;
+      uiController.zone = program.filterKV(60, 60)[0];
     },
     setCC({ cc, val }) {
       if (cc === midi_effects.bankselectcoarse) {
@@ -32,7 +33,7 @@ export function createChannel(uiController, channelId, sf2, apath) {
       } else if (cc === midi_effects.bankselectfine) {
         bankId |= val;
       }
-      //uiController.CC = { key: cc, value: val };
+      uiController.CC = {key: cc, value: val};
     },
     keyOn(key, vel) {
       const zones = program.filterKV(key, vel);
@@ -59,7 +60,6 @@ export function createChannel(uiController, channelId, sf2, apath) {
     },
     keyOff(key, vel) {
       spinner.port.postMessage([midi_ch_cmds.note_off, channelId, key, vel]);
-
       requestAnimationFrame(() => (uiController.active = false));
     },
   };
