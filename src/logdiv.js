@@ -37,7 +37,6 @@ export function logdiv(config = {}) {
         infoPanel.attachTo(container);
     let lp = performance.now();
     const logs = [];
-    let n = 0;
     new MutationObserver(() => {
         requestIdleCallback(() => infoPanel.scrollTo({
             top: infoPanel.scrollHeight,
@@ -45,10 +44,16 @@ export function logdiv(config = {}) {
     }).observe(infoPanel, {
         childList: true
     });
-    function stdout(log) {
+    function stdout(...logp) {
+        const log = logp.join("\t");
         const ts = timestamp ? ((performance.now()) / 1e3).toFixed(3) + ": " : "";
         lp = performance.now();
-        logs.push("\n" + lp + ":" + log.toString());
+        let offset = 0;
+        logs.push(lp + ":");
+        while (offset < log.length) {
+            logs.push(log.substring(offset, 80) + "\n");
+            offset += 80;
+        }
         infoPanel.textContent += "\n" + ts + log.toString();
     }
     return {

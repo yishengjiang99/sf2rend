@@ -16,7 +16,8 @@ module.exports = {
 		"ecmaFeatures": {
 			"jsx": true
 		}
-	},
+	}, "plugins": ["jest"],
+
 	"rules": {
 		"indent": [
 			0,
@@ -26,6 +27,7 @@ module.exports = {
 			"error",
 			"unix"
 		],
+
 		"quotes": [
 			"off",
 			"double"

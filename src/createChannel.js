@@ -24,7 +24,8 @@ export function createChannel(uiController, channelId, sf2, apath) {
       uiController.hidden = false;
       uiController.name = program.name;
       uiController.presetId = this.presetId;
-      uiController.zone = program.filterKV(60, 60)[0];
+      uiController.zone = program.filterKV(60, 60)[0];;
+      return program;
     },
     setCC({ cc, val }) {
       if (cc === midi_effects.bankselectcoarse) {

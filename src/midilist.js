@@ -26,22 +26,15 @@ export function fetchmidilist(
     xhr.responseType = "document";
     xhr.send();
     xhr.onload = function () {
-      if (xhr.responseXML) {
-        const blobs = Array.from(xhr.responseXML.querySelectorAll("Blob"));
-        resolve(
-          blobs
-            .map(function (b) {
-              var ff = new Map();
-              xml_attr.forEach(function (attr) {
-                ff.set(attr, b.querySelector(attr).textContent);
-              });
-              return ff;
-            })
-            .sort((a, b) =>
-              new Date(a.LastModified) < new Date(b.lastModified) ? -1 : 1
-            )
-        );
-      }
+      if (!xhr.responseXML) return [];
+      const taglist = xhr.responseXML.querySelectorAll("Blob");
+      resolve(Array.from(taglist).map(b =>
+        new Proxy(b, {
+          get(t, attr) {
+            return t.querySelector(attr).textContent;
+          }
+        })
+      ));
     };
     xhr.onerror = reject;
     xhr.ontimeout = reject;

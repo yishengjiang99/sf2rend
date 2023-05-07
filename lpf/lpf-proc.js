@@ -18,7 +18,7 @@ class LowPassFilterProc extends AudioWorkletProcessor {
         name: "FilterQ_Cb",
         defaultValue: 0,
         minValue: -960,
-        maxValue: 0,
+        maxValue: 440,
         automationRate: "k-rate",
       },
     ];
@@ -66,7 +66,6 @@ class LowPassFilterProc extends AudioWorkletProcessor {
       this.FilterFC = params.FilterFC[0];
       const omg = hz2omg(ct2hz(this.FilterFC));
       this.lpf = this.setLPF(omg, bandwidth);
-      console.log(omg, bandwidth);
     }
 
     const inputChannel = Math.min(inputs.length, outputs.length) - 1;

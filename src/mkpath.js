@@ -122,15 +122,14 @@ export async function mkpath2(ctx, { midi_input, sf2File }) {
       if (ctx.state !== "running") await ctx.resume();
     },
     ctrl_bar(container) {
-      "gm_reset|debug|querySpState|focusQ"
-        .split("|")
-        .map((cmd) =>
-          mkdiv(
-            "button",
-            { onclick: () => spinner.port.postMessage({ cmd }) },
-            cmd
-          ).attachTo(container)
-        );
+      mkdiv("select", {
+        onselect: (e) => {
+          spinner.port.postMessage({cmd: e.target.value})
+        },
+        placeholder: "send midi gm",
+        value: null,
+      }, "gm_reset|debug|panic".split("|").map(c => new Option(c))
+      ).attachTo(container);
 
       mkdiv("input", {
         type: "range",

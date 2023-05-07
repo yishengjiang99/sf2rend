@@ -13,15 +13,14 @@ import { fa_switch_btn, grid_tbl } from "./btns.js";
 import {
   attributeKeys,
   defZone,
-  newSFZoneMap,
   newSFZone,
 } from "../sf2-service/zoneProxy.js";
+import {baseOctave} from "./sequence/constants.js";
+import {mkcanvas} from "../chart/chart.js";
 
 const rowheight = 40;
 const pixelPerSec = 12;
-let ControllerState;
-let activeChannel = 0;
-
+let _barW = 180 / 40;
 export function mkui(
   eventPipe,
   container,
@@ -29,6 +28,19 @@ export function mkui(
 ) {
   class TrackUI {
     constructor(idx, cb) {
+      this.config = {
+        nsemi: 24,
+        pxpqn: 20,
+        qnPerBar: 4,
+        qnOffset: 0,
+        pxPerSemi: 5,
+      }
+      this.setConfig = (configPartials) => {
+        this.config = {
+          ...this.config,
+          ...configPartials
+        }
+      }
       this.idx = idx;
       this.nameLabel = mkdiv2({
         tag: "input",
@@ -52,31 +64,6 @@ export function mkui(
         name: "ch_" + idx,
       });
 
-      const meterDiv = mkdiv(
-        "span",
-        {
-          style: "display:grid; grid-template-columns:1fr 1fr",
-          class: "instrPanels",
-        },
-        [
-          this.led,
-          mkdiv("meter", {
-            min: 1,
-            max: 127,
-            id: "mkey",
-            aria: "key",
-          }),
-          mkdiv("meter", {
-            type: "range",
-            id: "velin",
-            min: 1,
-            max: 128,
-            step: 1,
-            aria: "vel",
-            value: 60,
-          }),
-        ]
-      );
       this.zoneEdit = mkdiv("div", [
         `<label for="modal-control${idx}" class="toggle"> <i class='fas fa-edit'></label>`,
         `<input type="checkbox" id="modal-control${idx}" class="modal">`,
@@ -118,7 +105,7 @@ export function mkui(
         "div",
         {
           style:
-            "display:grid; grid-template-columns:1fr 2fr 1fr; height:120px",
+            "display:grid; grid-template-columns:1fr 2fr 1fr; height:140px",
         },
         [
           mkdiv(
@@ -138,8 +125,15 @@ export function mkui(
           mkdiv("span", [mkdiv("button", `<i class='fas fa-gears'>`)]),
         ]
       );
+      this.timeline = [];
+      this.open_notes = {};
 
-      const sequencer = mkdiv("div", {});
+      const sequencer = mkdiv("div", {style: "flex-grow:1;"});
+      const [W, H] = [4200, 120]
+      this.cctx = mkcanvas({width: W, height: H, container: sequencer});
+
+      this.cctx.fillStyle = 'red'
+      // this.cctx.fillRect(0, 0, W, H);
       this.container = mkdiv(
         "div",
         { style: "width:100%; display:grid; grid-template-columns:1fr 5fr" },
@@ -154,6 +148,23 @@ export function mkui(
 
       this._active = false;
       this._midi = null;
+      this.tt = 0;
+    }
+    rendFrame(time) {
+
+      const ppt = this.config.pxpqn / 24;
+
+
+      for (const [t0, k0, dt] of this.timeline) {
+        console.log(t0, k0, dt)
+
+        if (time > t0 + dt) continue;
+        else if (time < t0) continue;
+        console.log(t0, k0, dt)
+        const h1 = this.config.pxPerSemi * (k0 - baseOctave);
+        const rect = [t0 / ppt, h1, this.config.pxpqn, this.config.pxPerSemi];
+        this.cctx.fillRect(rect);
+      }
     }
     set hidden(h) {
       this.container.style.display = h ? "none" : "grid";
@@ -167,28 +178,22 @@ export function mkui(
     get name() {
       return this.nameLabel.value;
     }
-    set midi(v) {
-      this._midi = v;
-      //this.meters[0].value = v;
-    }
-    get midi() {
-      return this._midi;
-    }
-    set CC({ key, value }) {
-      switch (key) {
-        case effects.volumecoarse:
-          this.sliders[0].value = value;
-          break;
-      }
-    }
-    set velocity(v) {
-      //this.meters[1].value = v;
-    }
     get velocityInput() {
       return this.meters[1].value;
     }
-    get active() {
-      return this._active;
+
+    keyOn(k, v, delay = 0) {
+      this.open_notes[k] = [performance.now(), k, v];
+    }
+    keyOff(k, v, delay = 0) {
+      if (!this.open_notes[k]) return;
+
+      this.tt += delay;
+      const [st, k1, w1] = this.open_notes[k];
+
+      delete this.open_notes[k];
+      this.timeline.push([st, k1, w1 - st]);
+      // stdout(JSON.stringify(this.timeline));
     }
     set active(b) {
       this._active = b;
@@ -287,7 +292,7 @@ export function mkui(
     tb.append(trackrow.container);
     trackrow.container.classList.add("channelCard");
     trackrow.container.addEventListener(
-      "mouseenter",
+      "click",
       (e) => {
         _activeChannel = i;
         e.target.parentElement

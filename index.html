@@ -19,9 +19,8 @@
     <link href="fontawesome/css/all.min.css" rel="stylesheet" />
   </head>
 
-  <body class="sans-serif space-between">
+  <body class="sans-serif space-between" style="height:auto !important">
     <header>
-      <span id="midilist"></span>
       <i class="fa-regular fa-user"></i>
       <select id="sf2select">
         <option>Select SF2 File</option>
@@ -29,7 +28,7 @@
       <span id="ctrls"> </span>
       <input type="file" tabindex="0" value="send file" id="file-btn" accept=".mid" />
       </header>
-    <div id="channelContainer"></div>
+    <div id="channelContainer" style="min-height: 80vh;"></div>
 
     <main>
       <div class="row">
@@ -44,6 +43,8 @@
         </div>
         </main>
     <footer class="sticky">
+      <span id="midilist"></span>
+
       <span id="sequenceroot"></span>
       <div id="stdout"></div>
       <datalist id="programs"></datalist>

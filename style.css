@@ -122,8 +122,6 @@ main {
 #stdout {
   position: absolute;
   right: 0;
-  bottom: 20px;
-  height: 220px;
 
 
 }
@@ -139,8 +137,4 @@ main {
 
 .sans-serif {
   font-family: -apple-system, BlinkMacSystemFont, avenir next, avenir, helvetica neue, helvetica, ubuntu, roboto, noto, segoe ui, arial, sans-serif;
-}
-
-#channelContainer {
-  scrollbar-color: black;
 }

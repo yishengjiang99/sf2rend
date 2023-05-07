@@ -72,33 +72,21 @@ window.stderr = (str) => (debugInfo.innerHTML = str);
 window.stderrr = (str) => {
   /*devnull*/
 }; //stderrrdiv.innerHTML = str;
+const midiUrl = new URL(document.location).searchParams.get("midi");
 
-main();
-const appState = {};
-globalThis.appState = new Proxy(appState, {
-  get(target, attr) {
-    return target[attr];
-  },
-  set(target, attr, value) {
-    target[attr] = value;
-    infoPanel.innerHTML = JSON.stringify(appState);
-    return true;
-  },
-});
-function updateAppState(newArr) {
-  try {
-    globalThis.appState = Object.assign({}, globalThis.appState, newArr);
-  } catch (e) {
-    console.error(newArr);
-  }
-}
-async function main(sf2file) {
-  let sf2, uiControllers, ctx, clock_diff_baseline, last_rend_end_at;
+main({midiUrl});
+
+async function main({sf2file, midiUrl}) {
+  let sf2, uiControllers, ctx, last_rend_end_at, clock_diff_baseline = 0;
   stdout("start");
 
   const channels = [];
 
   const midiList = await fetchmidilist();
+  stdout(midiList[0].Url + "  ");
+
+  const mUrl = midiUrl ? midiList.map(f => f.Url).find(f => f.includes(midiUrl))
+    : "";
 
   for (const f of sf2list) sf2select.append(mkdiv("option", { value: f }, f));
 
@@ -119,13 +107,13 @@ async function main(sf2file) {
         mkdiv("option", { value: f }, decodeURI(f).split("/").pop())
       ),
       ...midiList.map((f) =>
-        mkdiv("option", { value: f.get("Url") }, f.get("Name").substring(0, 80))
+        mkdiv("option", {value: f.Url, name: f.Name})
       ),
     ],
   });
 
   midiSelect.attachTo($("#midilist"));
-  midiSelect.addEventListener("input", (e) => onMidiSelect(e.target.value));
+  midiSelect.addEventListener("input", (e) => onMidionURLSelect(e.target.value));
   ctx = new AudioContext({
     sampleRate: 44100,
   });
@@ -142,6 +130,7 @@ async function main(sf2file) {
   const eventPipe = mkeventsPipe();
   const apath = await mkpath(ctx, eventPipe);
   const spinner = apath.spinner;
+  stdout("murl " + mUrl)
   sf2select.value = sf2file;
 
   const ui = mkui(eventPipe, $("#channelContainer"), {
@@ -155,11 +144,9 @@ async function main(sf2file) {
         return data.zack == "update" && data.ref == editData.update[1];
       });
     },
-    onTrackClick: (channelId) => {
-      document.body
-        .querySelectorAll(`.tabs > input`)
-        [channelId].setAttribute("checked", "");
-    },
+    onTrackClick: (tt) => {
+
+    }
   });
 
   uiControllers = ui.controllers;
@@ -185,11 +172,22 @@ async function main(sf2file) {
 
   document.body.querySelector(".tabs > input").setAttribute("checked", "");
 
-  const sf2loadWait = await loadSF2File("./static/file.sf2");
+
+  await loadSF2File("./static/file.sf2");
+  onMidionURLSelect(mUrl);
+  if (mUrl) {
+    await onMidionURLSelect(mUrl);
+
+  } else {
+    channels[0].setProgram(0, 0);
+    channels[DRUMSCHANNEL].setProgram(0, 128);
+
+  }
+
   mk_eq_bar(0, apath.eq_set).attachTo(document.querySelector("eq"));
 
   //link pipes
-  eventPipe.onmessage(eventsHandler(channels, spinner));
+  eventPipe.onmessage(eventsHandler(channels, spinner, last_rend_end_at, ctx));
   initNavigatorMidiAccess();
   async function initNavigatorMidiAccess() {
     let midiAccess = await navigator.requestMIDIAccess();
@@ -238,7 +236,6 @@ async function main(sf2file) {
       };
     }
   }
-  ctx.onstatechange = () => updateAppState({ audioStatus: ctx.state });
 
   window.addEventListener(
     "click",
@@ -261,8 +258,6 @@ async function main(sf2file) {
           setAmpBar(i, Math.sqrt(rms[i]));
         }
       }
-      if (rend_took_len.length > 4800) rend_took_len = [];
-      const took = now - last_rend_end_at;
       const { activeSp, spinfo, eg2Info, egInfo } = data.rend_summary;
       const clockdiffs = performance.now() - now * 1000;
 
@@ -277,6 +272,12 @@ async function main(sf2file) {
     }
   };
   apath.bindKeyboard(() => ui.activeChannel, eventPipe);
+  apath.ctrl_bar(document.getElementById("ctrls"));
+  apath.bindToolbar();
+  apath.bindReactiveElems();
+
+  const cancelFn = apath.detectClips(c3);
+
   async function loadSF2File(sf2url) {
     sf2 = new SF2Service(sf2url);
     sf2select.value = sf2url;
@@ -293,41 +294,41 @@ async function main(sf2file) {
     channels.forEach((c, i) => {
       c.setSF2(sf2);
     });
-    channels[0].setProgram(0, 0);
-    channels[DRUMSCHANNEL].setProgram(0, 128);
-
     for (const [section, text] of sf2.meta) {
       //stdout(section + ": " + text);
     }
   }
-  async function onMidiSelect(url) {
+  async function onMidionURLSelect(url) {
+    stdout("loading " + url)
     const midiInfo = readMidi(
       new Uint8Array(await (await fetch(url)).arrayBuffer())
     );
-    onMidiLoaded(midiInfo);
+    console.log("mididurl sel");
+    await onMidiLoaded(midiInfo);
   }
+  window.onerror = (e) => stdout(e.message)
   async function onMidiLoaded(midiInfo) {
+    stdout("onMidiLoadedfff " + midiInfo.presets.join(","));
     await Promise.all(
       midiInfo.presets.map((preset) => {
         const { pid, channel } = preset;
         const bkid = channel == DRUMSCHANNEL ? 120 : 0;
-        return channels[channel].setProgram(pid, bkid);
+        const program = channels[channel].setProgram(pid, bkid);
+        stdout("loading " + program.name);
       })
     );
     const rootElement = $("#sequenceroot");
     runSequence({ midiInfo, rootElement, eventPipe });
   }
 
-  apath.ctrl_bar(document.getElementById("ctrls"));
-  apath.bindToolbar();
-  apath.bindReactiveElems();
-
-  const cancelFn = apath.detectClips(c3);
-
   function draw() {
     chartRect(cv1, apath.analysis.frequencyBins);
     chart(cv2, apath.analysis.waveForm);
     chart(cv3, rend_took_len);
+    for (const c of channels) {
+      if (!c.active) continue;
+      c.rendFrame(ctx.currentTime)
+    }
 
     requestAnimationFrame(draw);
   }
@@ -341,64 +342,75 @@ async function main(sf2file) {
       const midiinfo = readMidi(new Uint8Array(ab));
       onMidiLoaded(midiinfo);
     });
-}
+  function eventsHandler(channels, spinner, last_rend_end_at, ctx) {
+    const events = [];
+    return function hm(data) {
+      if (data.length <= 3) {
+        const [a, b, c] = data;
+        return hm([a & 0xf0, a & 0x0f, b, c]);
+      }
+      const [cmd, ch, v1, v2] = data;
+      const [key, velocity] = [v1, v2];
 
-const cctx = mkcanvas({
-  width: 1200,
-  height: 1000,
-  pxqn: 30,
-  pxpct: 20,
-  title: "bb",
-  container: document.body,
-});
-const events = [];
-const { inputd, x, qn, ...etc } = recordMidi(cctx, { pxqn: 210, pxct: 30 });
+      switch (cmd) {
+        case midi_ch_cmds.continuous_change: // set CC
+          spinner.port.postMessage([cmd, ch, v1, v2]);
+          break;
+        case midi_ch_cmds.change_program: //change porg
+          channels[ch].setProgram(key);
+          break;
+        // case midi_ch_cmds.note_off:
+        //   uiControllers[ch].keyOff(key, velocity, ctx.currentTime - ctx.currentFrame * ctx.baseLatency);
+        //   channels[ch].keyOff(key, velocity);
 
-function eventsHandler(channels, spinner) {
-  return function hm(data) {
-    if (data.length <= 3) {
-      const [a, b, c] = data;
-      return hm([a & 0xf0, a & 0x0f, b, c]);
-    }
-    const [cmd, ch, v1, v2] = data;
-    const [key, velocity] = [v1, v2];
+        //   break;
+        case midi_ch_cmds.note_on:
+          if (velocity == 0) {
+            channels[ch].keyOff(key, velocity);
+            requestAnimationFrame(() =>
+              uiControllers[ch].keyOff(key, velocity, ctx.currentTime - last_rend_end_at));
+          } else {
+            channels[ch].keyOn(key, velocity);
+            requestAnimationFrame(() =>
+              uiControllers[ch].keyOn(key, velocity, ctx.currentTime - last_rend_end_at));
+          }
+          break;
+        case midi_ch_cmds.note_off:
 
-    switch (cmd) {
-      case midi_ch_cmds.continuous_change: // set CC
-        const [cc, val] = [v1, v2];
-
-        spinner.port.postMessage([cmd, ch, v1, v2]);
-        channels[ch].setCC({ cc, val });
-        break;
-      case midi_ch_cmds.change_program: //change porg
-        channels[ch].setProgram(key);
-        break;
-      case midi_ch_cmds.note_off:
-        channels[ch].keyOff(key, velocity);
-        break;
-      case midi_ch_cmds.note_on:
-        if (velocity == 0) {
           channels[ch].keyOff(key, velocity);
-        } else {
-          const zone = channels[ch].keyOn(key, velocity);
+
           requestAnimationFrame(() =>
-            debugInfo3.replaceChildren(renderZone(zone))
-          );
-        }
-        break;
-      case midi_ch_cmds.pitchbend:
-        spinner.port.postMessage(data);
-        stdout("PITCH BEND " + [ch, cmd.toString(16), b, c].join("/"));
-        break;
-      default:
-        spinner.port.postMessage(data);
-        stdout("midi cmd: " + [ch, cmd, b, c].join("/"));
-        break;
+            uiControllers[ch].keyOff(key, velocity, ctx.currentTime - last_rend_end_at));
+          break;
+
+
+        case midi_ch_cmds.pitchbend:
+          spinner.port.postMessage(data);
+          //stdout("PITCH BEND " + [ch, cmd.toString(16), b, c].join("/"));
+          break;
+        default:
+          spinner.port.postMessage(data);
+          //stdout("midi cmd: " + [ch, cmd, b, c].join("/"));
+          break;
     }
 
-    inputd(data);
-  };
+      events.push(data);
+    }
 }
+
+}
+
+// const cctx = mkcanvas({
+//   width: 1200,
+//   height: 1000,
+//   pxqn: 30,
+//   pxpct: 20,
+//   title: "bb",
+//   container: document.body,
+// });
+// const events = [];
+// const { inputd, x, qn, ...etc } = recordMidi(cctx, { pxqn: 210, pxct: 30 });
+
 
 export function recordMidi(cctx, { pxqn }) {
   const width = 1200,
@@ -431,13 +443,11 @@ export function recordMidi(cctx, { pxqn }) {
     qn += qn_delay;
     ticks += tick_delay;
     events.push([tick_delay, data]);
-    x = gxx >> 8;
     cctx.moveTo(x, 60);
     cctx.strokeStyle = "yellow";
     cctx.lineTo(x + pxqn * qn_delay, 60);
     cctx.stroke();
     let dx = pxqn * qn_delay;
-    dx *= 0xffff / 100;
     gxx += dx;
     stdout(x.toString(16));
     var cmd = data[0],
