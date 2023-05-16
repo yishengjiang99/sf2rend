@@ -82,30 +82,30 @@ function App({timerWorker, midiInfo, eventPipe}) {
           if (!event.channel) continue;
           eventPipe.postMessage(event.channel);
           ranEvents.push({event, ch: i});
-          queueMicrotask(() => {
-            const [status, key, vel] = event.channel;
-            const cmd = status >> 4,
-              ch = status & 0x0f;
-            const onNoteUp = (event) => {
-              if (notesDown.has(key)) {
-                const t2 = event.t;
-                const on_env = notesDown.get(key);
-                chRef.current[ch].drawBarN(on_env.t1, t2, key, vel);
-                notesDown.delete(key);
-              }
-            };
-            switch (cmd) {
-              case 0x09:
-                if (vel > 0) notesDown.set(key, {t1: event.t, key, vel});
-                else onNoteUp(event);
-                break;
-              case 0x08:
-                onNoteUp(event);
-                break;
-              default:
-                break;
-            }
-          });
+          // queueMicrotask(() => {
+          //   const [status, key, vel] = event.channel;
+          //   const cmd = status >> 4,
+          //     ch = status & 0x0f;
+          //   const onNoteUp = (event) => {
+          //     if (notesDown.has(key)) {
+          //       const t2 = event.t;
+          //       const on_env = notesDown.get(key);
+          //       chRef.current[ch].drawBarN(on_env.t1, t2, key, vel);
+          //       notesDown.delete(key);
+          //     }
+          //   };
+          //   switch (cmd) {
+          //     case 0x09:
+          //       if (vel > 0) notesDown.set(key, {t1: event.t, key, vel});
+          //       else onNoteUp(event);
+          //       break;
+          //     case 0x08:
+          //       onNoteUp(event);
+          //       break;
+          //     default:
+          //       break;
+          //   }
+          // });
 
         }
       }
@@ -158,28 +158,7 @@ function App({timerWorker, midiInfo, eventPipe}) {
 
   return (
     <>
-      {
-        {
-          channels.map((ch) => (
-            <div key={ch} style={{paddingTop: 10}}>
-              <Sequence
-                preset={presetMap[ch]}
-                ref={(element) => chRef.current.push(element)}
-                width={nbars * 40} //bw
-                key={ch}
-                chId={ch}
-                ppqn={ppqn}
-                height={M_HEIGHT / 16 - marginTop}
-                division={midiInfo.time_base.numerator}
-                nbars={nbars}
-                nsemi={12 * 3}
-                mStart={baseOctave}
-              />
-            </div>
-          ))
-        }
-        )
-      }
+
       <div key="adf">
         <span>
           clock: {(clock / 1000).toFixed(2).toString().split(".").join(":")}

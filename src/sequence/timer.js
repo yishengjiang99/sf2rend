@@ -73,5 +73,5 @@ function ontick() {
 	const drift = (now - lastTick) - wt;
 	lastTick = now;
 	timer = setTimeout(ontick, wt - drift);
-	p
+
 }

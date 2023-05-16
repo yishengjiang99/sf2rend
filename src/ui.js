@@ -186,14 +186,14 @@ export function mkui(
       this.open_notes[k] = [performance.now(), k, v];
     }
     keyOff(k, v, delay = 0) {
-      if (!this.open_notes[k]) return;
+      // if (!this.open_notes[k]) return;
 
-      this.tt += delay;
-      const [st, k1, w1] = this.open_notes[k];
+      // this.tt += delay;
+      // const [st, k1, w1] = this.open_notes[k];
 
-      delete this.open_notes[k];
-      this.timeline.push([st, k1, w1 - st]);
-      // stdout(JSON.stringify(this.timeline));
+      // delete this.open_notes[k];
+      // // this.timeline.push([st, k1, w1 - st]);
+      // // stdout(JSON.stringify(this.timeline));
     }
     set active(b) {
       this._active = b;

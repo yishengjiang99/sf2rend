@@ -46,7 +46,7 @@ export function createChannel(uiController, channelId, sf2, apath) {
           vel,
           [this.presetId, zone.ref],
         ]);
-        if (i == 0) apath.lowPassFilter(channelId, zone.FilterFc, zone.FilterQ);
+       // if (i == 0) apath.lowPassFilter(channelId, zone.FilterFc, zone.FilterQ);
       });
 
       if (!zones[0]) return;
