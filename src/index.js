@@ -74,10 +74,7 @@ const midiUrl = new URL(document.location).searchParams.get("midi");
 main({ midiUrl });
 
 async function main({ sf2file, midiUrl }) {
-  let sf2,
-    uiControllers,
-    ctx,
-    last_rend_end_at = 0;
+  let sf2, uiControllers, ctx;
   stdout("start");
 
   const channels = [];
@@ -188,7 +185,11 @@ async function main({ sf2file, midiUrl }) {
         spinner.port.postMessage([cmd, ch, v1, v2]);
         break;
       case midi_ch_cmds.change_program: //change porg
-        channels[ch].setProgram(key, v2);
+        if (v1 == 0 && ch >= 0) {
+          channels[ch].setProgram(v1, 128);
+        } else {
+          channels[ch].setProgram(v1, ch === DRUMSCHANNEL ? 128 : 0);
+        }
         break;
       case midi_ch_cmds.note_on:
         if (velocity == 0) {
@@ -203,7 +204,6 @@ async function main({ sf2file, midiUrl }) {
         channels[ch].keyOff(key, velocity);
 
         uiControllers[ch].keyOff(key, velocity, ctx.currentTime);
-        last_rend_end_at = ctx.currentTime;
 
         break;
 
@@ -346,7 +346,9 @@ async function main({ sf2file, midiUrl }) {
     await Promise.all(
       midiInfo.presets.map((preset) => {
         const { pid, channel } = preset;
-        const bkid = channel == DRUMSCHANNEL ? 120 : 0;
+        let bkid = channel == DRUMSCHANNEL ? channel : 0;
+
+        if (pid == 0 && channel >= 9) bkid = 128;
         const program = channels[channel].setProgram(pid, bkid);
         stdout("loading " + program.name);
       })
