@@ -18,25 +18,25 @@
 }
 
 i.fas {
-  font-size: 22px
+  font-size: 22px;
 }
 
 .toggle_fa {
   cursor: pointer;
 }
 
-.toggle_fa>input {
+.toggle_fa > input {
   opacity: 0;
   position: absolute;
   right: 0;
   user-select: none;
 }
 
-.toggle_fa>input:not(:checked)+label>i+i::before {
+.toggle_fa > input:not(:checked) + label > i + i::before {
   display: none;
 }
 
-.toggle_fa>input:checked+label>i:first-of-type {
+.toggle_fa > input:checked + label > i:first-of-type {
   display: none;
 }
 
@@ -44,11 +44,11 @@ i.fas {
   margin: 0 auto;
   width: 24px;
   height: 24px;
-  background-color: #ABFF00;
+  background-color: #abff00;
   border-radius: 50%;
-  box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 7px 1px, inset #304701 0 -1px 9px, #89FF00 0 2px 12px;
+  box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 7px 1px, inset #304701 0 -1px 9px,
+    #89ff00 0 2px 12px;
 }
-
 
 body {
   margin: 0;
@@ -60,8 +60,8 @@ body {
   flex-direction: column;
 }
 
-main {  
-  display:flex;
+main {
+  display: flex;
   flex-grow: 1;
   min-height: 600px;
   height: auto !important;
@@ -74,15 +74,15 @@ main {
   right: 10px;
 }
 
-.tabs>input+label+div {
+.tabs > input + label + div {
   display: none;
 }
 
-.tabs>input:checked+label {
-  color: gold
+.tabs > input:checked + label {
+  color: gold;
 }
 
-.tabs>input:checked+label+div {
+.tabs > input:checked + label + div {
   display: block;
 }
 
@@ -101,7 +101,7 @@ main {
 }
 
 .onoff_indicate::after {
-  content: '(' +attr(name)+')'
+  content: "(" + attr(name) + ")";
 }
 
 .channelCard {
@@ -122,8 +122,6 @@ main {
 #stdout {
   position: absolute;
   right: 0;
-
-
 }
 
 .amp-indicate {
@@ -131,10 +129,15 @@ main {
   position: absolute;
   bottom: 10px;
   background-image: linear-gradient(to right, green, yellow, red);
-  width: calc(var(--db)* 700px);
+  width: calc(var(--db) * 700px);
 }
 
-
 .sans-serif {
-  font-family: -apple-system, BlinkMacSystemFont, avenir next, avenir, helvetica neue, helvetica, ubuntu, roboto, noto, segoe ui, arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, avenir next, avenir,
+    helvetica neue, helvetica, ubuntu, roboto, noto, segoe ui, arial, sans-serif;
+}
+#ch_ctrl_bar {
+  position: absolute;
+  top: 20vh;
+  right:10em;
 }

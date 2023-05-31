@@ -5,7 +5,7 @@ export function chart(canvasCtx, dataArray) {
   const slider = canvasCtx.canvas.parentElement.querySelector(
     "input[type='range']"
   );
-  slider.oninput = () => chart(canvasCtx, dataArray);
+  if (slider) slider.oninput = () => chart(canvasCtx, dataArray);
   const [_width, _height] = get_w_h(canvasCtx);
   let max = 0,
     x = 0;
@@ -18,21 +18,22 @@ export function chart(canvasCtx, dataArray) {
   canvasCtx.lineWidth = 1;
   canvasCtx.strokeStyle = "white";
   canvasCtx.moveTo(0, _height / 2);
-  const zoomY = Math.log2(slider.value / 128);
+  const zoomY = (slider && Math.log2(slider.value / 128)) || 1;
   for (let i = 1; i < dataArray.length; i++) {
     x += iWIDTH;
-    canvasCtx.lineTo(x, _height / 2 + zoomY * _height / 2 * dataArray[i]);
+    canvasCtx.lineTo(x, _height / 2 + ((zoomY * _height) / 2) * dataArray[i]);
   }
   canvasCtx.stroke();
   canvasCtx.font = "1em Arial";
 }
 export function chartRect(canvasCtx, dataArray, markers) {
-  resetCanvas(canvasCtx)
+  resetCanvas(canvasCtx);
   const [_width, _height] = get_w_h(canvasCtx);
   let iWIDTH = _width / dataArray.length;
-  let max = 0, min = 340,
+  let max = 0,
+    min = 340,
     x = 0;
-  for (let i = 1;i < dataArray.length;i++) {
+  for (let i = 1; i < dataArray.length; i++) {
     max = dataArray[i] > max ? dataArray[i] : max;
     min = dataArray[i] < min ? dataArray[i] : min;
   }
@@ -40,14 +41,13 @@ export function chartRect(canvasCtx, dataArray, markers) {
   canvasCtx.fillRect(0, 0, _width, _height);
   canvasCtx.clearRect(0, 0, _width, _height);
   canvasCtx.fillStyle = "red";
-  for (let i = 0;i < dataArray.length;i++) {
+  for (let i = 0; i < dataArray.length; i++) {
     x += iWIDTH + 1;
     canvasCtx.fillRect(x, _height - 10, iWIDTH, dataArray[i] * 120);
   }
-
 }
 export function mkcanvas(params = {}) {
-  let {width, height, container, title} = Object.assign(
+  let { width, height, container, title } = Object.assign(
     {
       container: document.body,
       title: "",
@@ -58,11 +58,12 @@ export function mkcanvas(params = {}) {
   );
   const canvas = document.createElement("canvas");
   container.ondblclick = (e) => {
-    container.style = 'display:fixed; width:100vw;height:100vh;text-align:cewnter'
-  }
+    container.style =
+      "display:fixed; width:100vw;height:100vh;text-align:cewnter";
+  };
   function on_resize() {
     canvas.setAttribute("width", `${width}`);
-    canvas.setAttribute("height", `${height}`); 
+    canvas.setAttribute("height", `${height}`);
   }
   on_resize();
   const canvasCtx = canvas.getContext("2d");
@@ -70,21 +71,21 @@ export function mkcanvas(params = {}) {
   canvasCtx.strokeStyle = "white";
   canvasCtx.fillStyle = "black";
   canvasCtx.font = "2em";
-  const wrap = mkdiv("div", {style: "position:relative;padding:2px"}, [
-    title ? mkdiv("h5", {}, title) : "",
-    mkdiv("div", { class: "cp", style: "position:absolute" }, [
-      "y-zoom",
-      mkdiv("input", {
-        type: "range",
-        value: 64,
-        max: 128,
-        min: 1,
-        step: "1"
-      }),
-    ]),
-    canvas,
-  ]);
-  container.append(wrap);
+  // const wrap = mkdiv("div", {style: "position:relative;padding:2px"}, [
+  //   title ? mkdiv("h5", {}, title) : "",
+  //   mkdiv("div", { class: "cp", style: "position:absolute" }, [
+  //     "y-zoom",
+  //     mkdiv("input", {
+  //       type: "range",
+  //       value: 64,
+  //       max: 128,
+  //       min: 1,
+  //       step: "1"
+  //     }),
+  //   ]),
+  //   canvas,
+  // ]);
+  container.append(canvas);
   canvas.ondblclick = () => resetCanvas(canvasCtx);
   return canvasCtx;
 }

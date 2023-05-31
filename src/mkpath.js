@@ -176,7 +176,7 @@ export async function mkpath2(ctx, { midi_input, sf2File }) {
       }
     },
     bindToolbar: function () {
-      const inputboxes = document.querySelectorAll("input[data-path_cmd]");
+      const inputboxes = document.querySelectorAll("[data-path_cmd]");
       inputboxes.forEach((b) => {
         if (!b.dataset.path_cmd) return;
         let cmd = b.dataset.path_cmd;
@@ -186,13 +186,20 @@ export async function mkpath2(ctx, { midi_input, sf2File }) {
           let value = b.type == "checkbox" ? b.checked : b.value;
           switch (cmd) {
             case "solo":
-              channelIds.forEach((id) => id != p1 && this.mute(id, value));
-              const cc = midi_effects.volumecoarse;
-              const sched_send_vals = [0, 50, 10, 99, 15, 126];
-              sendSequence(sched_send_vals, p1, cc);
+              {
+                channelIds.forEach((id) => id != p1 && this.mute(id, value));
+                const cc = midi_effects.volumecoarse;
+                const sched_send_vals = [0, 50, 10, 99, 15, 126];
+                sendSequence(sched_send_vals, p1, cc);
+              }
               break;
             case "mute":
               this.mute(p1, value);
+              break;
+            case "gear":
+              document
+                .querySelector(`#setting_${p1}`)
+                .setAttribute("checked", true);
               break;
             case "lpf_fc":
               this.lowPassFilter_set_fc(p1, value);

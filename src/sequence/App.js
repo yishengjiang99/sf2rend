@@ -96,7 +96,7 @@ function App({timerWorker, midiInfo, eventPipe}) {
           //   };
           //   switch (cmd) {
           //     case 0x09:
-          //       if (vel > 0) notesDown.set(key, {t1: event.t, key, vel});
+          //       if (vel > 0) notesDown.set(key, { t1: event.t, key, vel });
           //       else onNoteUp(event);
           //       break;
           //     case 0x08:

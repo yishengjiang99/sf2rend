@@ -1,16 +1,26 @@
 #include <stdio.h>
 
-#include "fix_point_12.h"
-#include "spin.h"
+#if !defined(fp12)
+#define fp12
+const int scale = 12;
+const int mask_fract = 0xfffffff >> (32 - scale);
+const int mask_floor = -1 ^ mask_fract;
+#define double_to_fp(x) x*(double)(1 << scale);
+#define fp_to_double(x) ((double)x / (double)(1 << scale))
+#define int_to_fp(x) (x << scale)
+#define fp_to_int(x) (x >> scale)
+#define fp_fract(x) (x & mask_fract)
+#define fp_floor(x) ((fp_to_int(x)) & mask_floor)
 
+#endif  // fp12
 int main() {
   int att = -9000;
-  int nsmpl = timecent2sample(att);
-  int position = double2fixed(0.0);
-  int pinc = double2fixed((255) / (double)nsmpl);
+  int nsmpl = 565555;
+  int position = double_to_fp(0.0);
+  int inc = double_to_fp(.122);
   while (nsmpl--) {
-    position += pinc;
-    printf("%f \t %d\n", get_fraction(position), floor(position));
+    position += inc;
+    printf("%f \t %d\n", fp_to_double(position), fp_floor(position));
   }
   return 0;
 }

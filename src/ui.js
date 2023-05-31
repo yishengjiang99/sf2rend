@@ -16,15 +16,16 @@ import {
   newSFZone,
 } from "../sf2-service/zoneProxy.js";
 import {baseOctave} from "./sequence/constants.js";
-import {mkcanvas} from "../chart/chart.js";
+import { mkcanvas } from "../chart/chart.js";
 
 const rowheight = 40;
 const pixelPerSec = 12;
-let _barW = 180 / 40;
+const [W, H] = [4200, 120];
+
 export function mkui(
   eventPipe,
   container,
-  { onTrackClick, onTrackDoubleClick, onEditZone }
+  { onTrackClick, onTrackDoubleClick, onEditZone, onAddChannel }
 ) {
   class TrackUI {
     constructor(idx, cb) {
@@ -34,13 +35,13 @@ export function mkui(
         qnPerBar: 4,
         qnOffset: 0,
         pxPerSemi: 5,
-      }
+      };
       this.setConfig = (configPartials) => {
         this.config = {
           ...this.config,
-          ...configPartials
-        }
-      }
+          ...configPartials,
+        };
+      };
       this.idx = idx;
       this.nameLabel = mkdiv2({
         tag: "input",
@@ -49,11 +50,9 @@ export function mkui(
         onfocus: (e) => (e.target.value = ""),
         list: idx == DRUMSCHANNEL ? "drums" : "programs",
         onchange: (e) => {
-          const pid = Array.from(e.target.list.options).findIndex(
-            (d) => d.value == e.target.value
-          );
+          const pid = e.target.value & 0x7f;
+          const bkid = e.target.value & 128;
           const change_program = midi_ch_cmds.change_program;
-          const bkid = idx == DRUMSCHANNEL ? 128 : 0;
           cb([change_program | idx, pid, bkid]);
           e.target.blur();
         },
@@ -65,7 +64,7 @@ export function mkui(
       });
 
       this.zoneEdit = mkdiv("div", [
-        `<label for="modal-control${idx}" class="toggle"> <i class='fas fa-edit'></label>`,
+        ` <label for="modal-control${idx}" class="toggle"> <i class='fas fa-edit'></label>`,
         `<input type="checkbox" id="modal-control${idx}" class="modal">`,
         `<div> <label for="modal-control${idx}" class="modal-close" >Close Modal</label>
         <p class='editTable'></p>`,
@@ -122,18 +121,26 @@ export function mkui(
             },
             [this.nameLabel, ctslsDiv, ampshow]
           ),
-          mkdiv("span", [mkdiv("button", `<i class='fas fa-gears'>`)]),
+          mkdiv("span", [
+            mkdiv(
+              "button",
+              {
+                data: {
+                  path_cmd: "gear",
+                  p1: idx,
+                },
+              },
+              `<i class='fas fa-gears'>`
+            ),
+          ]),
         ]
       );
       this.timeline = [];
       this.open_notes = {};
 
-      const sequencer = mkdiv("div", {style: "flex-grow:1;"});
-      const [W, H] = [4200, 120]
-      this.cctx = mkcanvas({width: W, height: H, container: sequencer});
-
-      this.cctx.fillStyle = 'red'
-      // this.cctx.fillRect(0, 0, W, H);
+      const sequencer = mkdiv("div", { style: "flex-grow:1;" });
+      this.cctx = mkcanvas({ width: W, height: H, container: sequencer });
+      this.cctx.fillStyle = "red";
       this.container = mkdiv(
         "div",
         { style: "width:100%; display:grid; grid-template-columns:1fr 5fr" },
@@ -150,21 +157,17 @@ export function mkui(
       this._midi = null;
       this.tt = 0;
     }
-    rendFrame(time) {
-
-      const ppt = this.config.pxpqn / 24;
-
+    rendFrame() {
+      const ppt = this.config.pxpqn * 2;
 
       for (const [t0, k0, dt] of this.timeline) {
-        console.log(t0, k0, dt)
+        const x0 = (t0 * ppt) % W;
 
-        if (time > t0 + dt) continue;
-        else if (time < t0) continue;
-        console.log(t0, k0, dt)
+        if (this.tt > t0 + 10) continue;
         const h1 = this.config.pxPerSemi * (k0 - baseOctave);
-        const rect = [t0 / ppt, h1, this.config.pxpqn, this.config.pxPerSemi];
-        this.cctx.fillRect(rect);
+        this.cctx.fillRect(x0, h1, dt * ppt, this.config.pxPerSemi);
       }
+      this.cctx.save();
     }
     set hidden(h) {
       this.container.style.display = h ? "none" : "grid";
@@ -182,18 +185,16 @@ export function mkui(
       return this.meters[1].value;
     }
 
-    keyOn(k, v, delay = 0) {
-      this.open_notes[k] = [performance.now(), k, v];
+    keyOn(k, v, t) {
+      this.tt = t;
+      this.open_notes[k] = [t, k, v];
     }
-    keyOff(k, v, delay = 0) {
-      // if (!this.open_notes[k]) return;
-
-      // this.tt += delay;
-      // const [st, k1, w1] = this.open_notes[k];
-
-      // delete this.open_notes[k];
-      // // this.timeline.push([st, k1, w1 - st]);
-      // // stdout(JSON.stringify(this.timeline));
+    keyOff(k, v, t) {
+      if (!this.open_notes[k]) return;
+      const [startT, midi] = this.open_notes[k];
+      delete this.open_notes[k];
+      this.timeline.push([startT, midi, t - startT]);
+      this.tt = t;
     }
     set active(b) {
       this._active = b;
@@ -309,6 +310,15 @@ export function mkui(
       onTrackClick(i, e);
     });
   }
+  tb.append(
+    mkdiv(
+      "button",
+      {
+        onclick: onAddChannel,
+      },
+      "+"
+    )
+  );
   const mkKeyboard = mkdiv(
     "div",
     { class: "keyboards" },

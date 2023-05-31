@@ -24,7 +24,7 @@ export function createChannel(uiController, channelId, sf2, apath) {
       uiController.hidden = false;
       uiController.name = program.name;
       uiController.presetId = this.presetId;
-      uiController.zone = program.filterKV(60, 60)[0];;
+      uiController.zone = program.filterKV(60, 60)[0];
       return program;
     },
     setCC({ cc, val }) {
@@ -44,19 +44,11 @@ export function createChannel(uiController, channelId, sf2, apath) {
           channelId,
           key,
           vel,
-          [this.presetId, zone.ref],
+          zone.arr,
         ]);
-       // if (i == 0) apath.lowPassFilter(channelId, zone.FilterFc, zone.FilterQ);
       });
 
       if (!zones[0]) return;
-      requestAnimationFrame(() => {
-        uiController.active = true;
-        uiController.velocity = vel;
-        uiController.midi = key;
-        uiController.zone = zones[0];
-        apath.set_ch_zone(channelId, zones[0]);
-      });
       return zones[0];
     },
     keyOff(key, vel) {

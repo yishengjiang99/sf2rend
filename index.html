@@ -1,54 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <script>
-      if (navigator.userAgent.indexOf("Chrome") < 0) {
-        document.write("safari users are banned from using this app");
-      }
-    </script>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>pcm playback</title>
-    <link rel="stylesheet" href="style.css" />
-    <link rel="stylesheet" href="minidark.css" />
-    <link rel="stylesheet" href="src/collapsible.css" />
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-    
-    <script src="dist/sequence.js"></script>
-    <link href="fontawesome/css/all.min.css" rel="stylesheet" />
-  </head>
+<head>
+  <script>
+    if (navigator.userAgent.indexOf("Chrome") < 0) {
+      document.write("safari users are banned from using this app");
+    }
+  </script>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pcm playback</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="minidark.css" />
+  <link rel="stylesheet" href="src/collapsible.css" />
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
-  <body class="sans-serif space-between" style="height:auto !important">
-    <header>
-      <i class="fa-regular fa-user"></i>
-      <select id="sf2select">
-        <option>Select SF2 File</option>
-      </select>
-      <span id="ctrls"> </span>
-      <input type="file" tabindex="0" value="send file" id="file-btn" accept=".mid" />
-      </header>
+  <script src="dist/sequence.js"></script>
+  <link href="fontawesome/css/all.min.css" rel="stylesheet" />
+</head>
+
+<body class="sans-serif space-between" style="height:auto !important">
+  <header>
+    <i class="fa-regular fa-user"></i>
+    <select id="sf2select" aria-placeholder="dafds">
+      <option>Select SF2 File</option>
+    </select> <span id="midilist"></span>
+    
+    <span id="ctrls"> </span>
+    <input type="file" tabindex="0" value="send file" id="file-btn" accept=".mid" />
+    </header>
     <div id="channelContainer" style="min-height: 80vh;"></div>
 
-    <main>
-      <div class="row">
-        <div class="col-md-4">
-          <div id="ch_ctrl_bar"></div>
-          <div id="analyze"></div>
-        </div>
-        <div class="col-md-5">
-          <div id="eq"></div>
-          <div id="debug"></div>
-        </div>
-        </div>
-        </main>
-    <footer class="sticky">
-      <span id="midilist"></span>
+  <main>
+    <div class="row">
+      <div class="col-md-4">
+        <div id="ch_ctrl_bar"></div>
+        <div id="analyze"></div>
+      </div>
+      <div class="col-md-5">
+        <div id="eq"></div>
+        <div id="debug"></div>
+      </div>
+    </div>
+  </main>
+  <footer class="sticky">
 
-      <span id="sequenceroot"></span>
-      <div id="stdout"></div>
-      <datalist id="programs"></datalist>
-      <datalist id="drums"></datalist>
+    <span id="sequenceroot"></span>
+    <div id="stdout"></div>
+    <datalist id="programs"></datalist>
+    <datalist id="drums"></datalist>
     </footer>
     <script type="module" src="./src/index.js"></script>
     <template> <svg width="2200" height="1600">

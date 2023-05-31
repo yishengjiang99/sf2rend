@@ -72,7 +72,7 @@ inline static double fixed2double(int x) { return x / scalar_multiple; }
 inline static double get_fraction(int x) {
   return fixed2double(x & fraction_mask);
 }
-#define fixed_floor(x) fixed2int(x& whole_mask)
+#define fixed_floor(x) x >> scale
 
 #endif  // fp12
 
@@ -170,18 +170,6 @@ void advanceStage(EG* eg) {
       break;
 
     case decay:  // headsing to released;
-
-      /*
-      37 sustainVolEnv This is the decrease in level, expressed in centibels,
-      to which the Volume Envelope value ramps during the decay phase. For the
-      Volume Envelope, the sustain level is best expressed in centibels of
-      attenuation from full scale. A value of 0 indicates the sustain level is
-      full level; this implies a zero duration of decay phase regardless of
-      decay time. A positive value indicates a decay to the corresponding
-      level. Values less than zero are to be interpreted as zero;
-      conventionally 1000 indicates full attenuation. For example, a sustain
-      level which corresponds to an absolute value 12dB below of peak would be
-      120.*/
       eg->stage = sustain;
       eg->egIncrement = 0.0f;
       eg->nsteps = 48000;
@@ -321,8 +309,9 @@ typedef struct {
   uint32_t sampleLength;
   uint32_t active_dynamics_flag;
   int is_looping;
+  float initialFc, initialQ;
   short lfo1_pitch, lfo1_volume, lfo2_pitch, modeg_pitch, modeg_fc, modeg_vol,
-      lfo1_fc, initialFc, initialQ, pleft, pright;
+      lfo1_fc, pleft, pright;
 
 } spinner;
 
@@ -434,7 +423,6 @@ enum TMLController {
   TML_POLY_OFF,
   TML_POLY_ON
 };
-extern float tanf(float a);
 
 void new_lpf(Biquad* biq, float fc, float Q) {
   double K = tanf(3.1415f * fc);
@@ -445,7 +433,7 @@ void new_lpf(Biquad* biq, float fc, float Q) {
   //
   biq->a1 = 2 * biq->a0;
   biq->b1 = 2 * (KK - 1) * norm;
-  biq->b2 = (1 - K / Q + KK) * norm;
+  biq->b2 = (1 - K * biq->QInv + KK) * norm;
 }
 float calc_lpf(Biquad* b, double In) {
   double Out = In * b->a0 + b->z1;

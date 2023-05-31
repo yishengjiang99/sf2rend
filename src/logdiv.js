@@ -6,27 +6,29 @@ const defaultsConfig = {
     timestamp: true,
     container: document.body
 };
-export function mktabs({
-    ch,
-    container
-}) {
-    if (!container) container = mkdiv('div')
-    const tb = mkdiv("div", {class: "tabs"});
-    return {
-        tabs: tb,
-        push_ch: (id, title, ch) => {
-            mkdiv("input", {
-                id,
-                name: "set-group",
-                type: "radio",
-            }).attachTo(tb);
-            mkdiv("label", {
-                type: "radio",
-                text: title,
-            }, title).attachTo(tb);
-            ch.attachTo(tb);
-        }
-    }
+export function mktabs({ container, group }) {
+  if (!container) container = mkdiv("div");
+  const tb = mkdiv("div", { class: "tabs" });
+  tb.attachTo(container);
+  return {
+    tabs: tb,
+    push_ch: (id, title, ch) => {
+      mkdiv("input", {
+        id,
+        name: group,
+        type: "radio",
+      }).attachTo(tb);
+      mkdiv(
+        "label",
+        {
+          type: "radio",
+          text: title,
+        },
+        title
+      ).attachTo(tb);
+      ch.attachTo(tb);
+    },
+  };
 }
 export function logdiv(config = {}) {
     const {rows, size, className, container, timestamp} = Object.assign(config, defaultsConfig);

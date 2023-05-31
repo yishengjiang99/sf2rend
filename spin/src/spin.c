@@ -7,9 +7,9 @@
 // ghetto malloc all variables
 int sp_idx = 0;
 spinner sps[MAX_VOICE_CNT];
-pcm_t pcms[4096];
 
-// midi ccs
+pcm_t pcms[4096];
+extern void consolef(float ff);
 unsigned char midi_cc_vals[nmidiChannels * 128] = {0};
 float outputs[MAX_VOICE_CNT * RENDQ * 2];
 
@@ -20,6 +20,7 @@ float volEgOut[RENDQ];
 float modEgOut[RENDQ];
 float lfo1Out[RENDQ];
 float lfo2Out[RENDQ];
+#define effect_floor(v) v <= -12000 ? 0 : calcp2over1200(v)
 
 void sp_wipe_output_tab() {
   for (int i = 0; i < output_arr_len; i++) {
@@ -45,7 +46,7 @@ spinner* newSpinner(int ch) {
 void trigger_release(spinner* x) {
   _eg_release(&x->voleg);
   _eg_release(&x->modeg);
-  if (x->zone->SampleModes == 3) {
+  if (x->zone->SampleModes > 0) {
     x->is_looping = 0;
   }
 }
@@ -79,8 +80,7 @@ float trigger_attack(spinner* x, uint32_t key, uint32_t velocity) {
   x->voleg.stage = init;
   x->key = (unsigned char)(key & 0x7f);
   EG* eg = &x->voleg;
-  float scaleFactor = 1.0f;
-  // SAMPLE_RATE / (float)x->pcm->sampleRate;
+  float scaleFactor = SAMPLE_RATE / (float)x->pcm->sampleRate;
   zone_t* z = x->zone;
   eg->attack = (ccval(VCA_ATTACK_TIME) > 0)
                    ? midi_p1200[ccval(VCA_ATTACK_TIME) | 0]
@@ -102,6 +102,9 @@ float trigger_attack(spinner* x, uint32_t key, uint32_t velocity) {
 
   eg = &x->modeg;
   eg->stage = init;
+  if (ccval(TML_BANK_SELECT_MSB) > 0) {
+    x->is_looping = 0;
+  }
 
   eg->delay = z->ModEnvDecay * scaleFactor;
   eg->hold = z->ModEnvHold * scaleFactor;
@@ -124,8 +127,6 @@ float trigger_attack(spinner* x, uint32_t key, uint32_t velocity) {
   advanceStage(&x->voleg);
   advanceStage(&x->modeg);
 
-#define effect_floor(v) v <= -12000 ? 0 : calcp2over1200(v)
-
   x->lfo1_pitch = effect_floor(x->zone->ModLFO2Pitch);
   x->lfo1_volume = effect_floor(x->zone->ModLFO2Vol);
   x->lfo2_pitch = effect_floor(x->zone->VibLFO2Pitch);
@@ -138,9 +139,10 @@ float trigger_attack(spinner* x, uint32_t key, uint32_t velocity) {
   set_frequency(&x->modlfo, x->zone->ModLFOFreq);
   set_frequency(&x->vibrlfo, x->zone->VibLFOFreq);
   x->initialFc = x->zone->FilterFc;
+  x->initialQ = p10over200[x->zone->FilterQ + 1400];
+  consolef(x->initialQ);
 
-  new_lpf(&x->lpf, x->zone->FilterFc / SAMPLE_RATE,
-          p10over200[1440 - x->zone->FilterQ]);
+  new_lpf(&x->lpf, x->zone->FilterFc / SAMPLE_RATE, x->initialQ);
 
   return x->stride;
 };
@@ -165,8 +167,7 @@ void set_spinner_zone(spinner* x, zone_t* z) {
   set_spinner_input(x, pcm);
   x->zone = z;
 
-  x->is_looping =
-      z->SampleModes > 0 && x->channelId != 10 && x->channelId != 9 ? 1 : 0;
+  x->is_looping = z->SampleModes == 1;
   x->position += (unsigned short)z->StartAddrOfs +
                  (unsigned short)(z->StartAddrCoarseOfs << 15);
   x->loopStart += (unsigned short)z->StartLoopAddrOfs +
@@ -215,6 +216,8 @@ void _spinblock(spinner* x, int n, int blockOffset) {
   modeg_pitch = x->modeg_pitch;
   lfo2_pitch = x->lfo2_pitch;
   Biquad lpf = x->lpf;
+  float tfc, outputf, fchertz;
+  float Q = x->initialQ;
   short initFc = x->initialFc;
 
   for (int i = 0; i < n; i++) {
@@ -231,18 +234,23 @@ void _spinblock(spinner* x, int n, int blockOffset) {
     }
     if (position >= x->loopEnd && isLooping > 0) position -= looplen;
 
-    initFc -= modeg_fc * modEgOut[i] - x->lfo1_fc * lfo1Out[i];
-    float outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
-    outputf = calc_lpf(&lpf, outputf);
+    outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
+    tfc = initFc + modeg_fc * modEgOut[i] + x->lfo1_fc * lfo1Out[i];
 
     if (position >= nsamples) {
       position = 0;
       outputf = 0.0;
       x->voleg.stage = done;
     }
+    outputf = applyCentible(outputf, (short)(db + kRateCB));
 
-    output_L[i] = applyCentible(outputf, (short)(db + kRateCB + panLeft));
-    output_R[i] = applyCentible(outputf, (short)(db + kRateCB + panRight));
+    if (tfc > .5) {
+      fchertz = timecent2hertz(tfc) / SAMPLE_RATE;
+      new_lpf(&lpf, fchertz, Q);
+      outputf = calc_lpf(&lpf, outputf);
+    }
+    output_L[i] = applyCentible(outputf, panLeft);
+    output_R[i] = applyCentible(outputf, panRight);
   }
   x->position = position;
   x->fract = fract;
@@ -276,6 +284,7 @@ void gm_reset() {
     midi_cc_vals[idx * num_cc_list + TML_VOLUME_MSB] = 100;
     midi_cc_vals[idx * num_cc_list + TML_PAN_MSB] = 64;
     midi_cc_vals[idx * num_cc_list + TML_EXPRESSION_MSB] = 127;
+    if (idx == 9) midi_cc_vals[idx * num_cc_list + TML_BANK_SELECT_MSB] = 128;
   }
   for (int i = 0; i < nchannels; i++) reset(&sps[i]);
 }

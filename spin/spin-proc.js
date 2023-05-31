@@ -40,6 +40,9 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.port.postMessage({init: 1});
     this.debug = false;
     this.ringbus = ring_bus();
+    const zonePtr = this.malololc(120);
+    this.zoneAttr = new Int16Array(this.memory.buffer, zonePtr, 60);
+
   }
   setup_wasm() {
     this.memory = new WebAssembly.Memory({
@@ -49,6 +52,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     const imports = {
       memory: this.memory,
       tanf: Math.tan,
+      consolef: (f) => console.log("--->", f),
     };
     this.inst = new WebAssembly.Instance(new WebAssembly.Module(wasmbin), {
       env: imports,
@@ -113,7 +117,7 @@ class SpinProcessor extends AudioWorkletProcessor {
       const [key, vel] = args;
       switch (cmd) {
         case midi_ch_cmds.pitchbend:
-          //this.inst.exports.ch_set_bend(channel, msb, lsb);
+          // this.inst.exports.ch_set_bend(channel, msb, lsb);
           break;
         case midi_ch_cmds.continuous_change:
           this.inst.exports.set_midi_cc_val(channel, metric, value);
@@ -126,20 +130,17 @@ class SpinProcessor extends AudioWorkletProcessor {
             this.respondQuery(sp);
           }
 
-          this.port.postMessage({ack: [0x80, channel]});
+          this.port.postMessage({ ack: [0x80, channel] });
           break;
         }
-        case 0x90:
+        case midi_ch_cmds.note_on:
           {
-            const [cmd, ch, key, velocity, [presetId, zoneRef]] = data;
-            const zonePtr = this.presetRefs[presetId]?.[zoneRef];
-            if (!zonePtr) {
-              console.error("cannot find present zoneref", presetId, zoneRef);
-              return;
-            }
+            const [cmd, ch, key, velocity, zoneArr] = data;
+            const atr = new Int16Array(this.memory.buffer, this.zoneAttr, 60);
+            atr.set(zoneArr);
             const sp = this.inst.exports.newSpinner(ch);
             this.inst.exports.reset(sp);
-            this.inst.exports.set_spinner_zone(sp, zonePtr);
+            this.inst.exports.set_spinner_zone(sp, this.zoneAttr);
             this.inst.exports.trigger_attack(sp, key, velocity);
             if (!this.sp_map[ch * 128 + key]) this.sp_map[ch * 128 + key] = [];
             this.sp_map[ch * 128 + key].push(sp);
@@ -209,7 +210,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.inst.exports.sp_wipe_output_tab();
     const thisBus = this.ringbus.this_bus;
     const nextBus = this.ringbus.next_bus;
-    let loudnorm = 1; //.6;//1.5 / Math.sqrt(thisBus.length);
+    let loudnorm = 1.5 / Math.sqrt(thisBus.length);
     let rms = 0,
       nclips;
     const ch_rms = Array(16).fill(0);
