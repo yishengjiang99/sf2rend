@@ -210,9 +210,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.inst.exports.sp_wipe_output_tab();
     const thisBus = this.ringbus.this_bus;
     const nextBus = this.ringbus.next_bus;
-    let loudnorm = 1.5 / Math.sqrt(thisBus.length);
-    let rms = 0,
-      nclips;
+    let loudnorm = 1;
     const ch_rms = Array(16).fill(0);
     const skipped = [];
 

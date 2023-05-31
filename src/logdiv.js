@@ -1,10 +1,10 @@
 import {mkdiv} from "../mkdiv/mkdiv.js";
 const defaultsConfig = {
-    rows: 30,
-    size: 70,
-    className: ".stdout",
-    timestamp: true,
-    container: document.body
+  rows: 120,
+  size: 70,
+  className: ".stdout",
+  timestamp: true,
+  container: document.body,
 };
 export function mktabs({ container, group }) {
   if (!container) container = mkdiv("div");
@@ -33,7 +33,10 @@ export function mktabs({ container, group }) {
 export function logdiv(config = {}) {
     const {rows, size, className, container, timestamp} = Object.assign(config, defaultsConfig);
     const infoPanel = mkdiv("pre", {
-        id: "infop", style: "width:80em;height:120px", rows, className
+      id: "infop",
+      style: "width:80em;",
+      rows,
+      className,
     });
     if (container)
         infoPanel.attachTo(container);

@@ -14,6 +14,7 @@ typedef unsigned int uint32_t;
 #define MAX_EG -1440.f
 #define SAMPLE_RATE 44100.0f
 #include "calc.h"
+#define def_drum_c 9
 
 #define modulo_s16f_inverse 1.0f / 32767.1f
 #define modulo_u16f (float)(((1 << 16) + .1f))

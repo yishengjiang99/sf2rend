@@ -29,26 +29,19 @@
     <span id="ctrls"> </span>
     <input type="file" tabindex="0" value="send file" id="file-btn" accept=".mid" />
     </header>
-    <div id="channelContainer" style="min-height: 80vh;"></div>
 
-  <main>
-    <div class="row">
-      <div class="col-md-4">
+        <div id="channelContainer"></div>
+        <div id="stdout"></div>
         <div id="ch_ctrl_bar"></div>
         <div id="analyze"></div>
-      </div>
-      <div class="col-md-5">
-        <div id="eq"></div>
         <div id="debug"></div>
-      </div>
-    </div>
-  </main>
   <footer class="sticky">
 
     <span id="sequenceroot"></span>
-    <div id="stdout"></div>
     <datalist id="programs"></datalist>
     <datalist id="drums"></datalist>
+    <div id="eq"></div>
+
     </footer>
     <script type="module" src="./src/index.js"></script>
     <template> <svg width="2200" height="1600">

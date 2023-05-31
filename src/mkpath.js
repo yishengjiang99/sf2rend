@@ -122,27 +122,34 @@ export async function mkpath2(ctx, { midi_input, sf2File }) {
       if (ctx.state !== "running") await ctx.resume();
     },
     ctrl_bar(container) {
-      mkdiv("select", {
-        onselect: (e) => {
-          spinner.port.postMessage({cmd: e.target.value})
-        },
-        placeholder: "send midi gm",
-        value: null,
-      }, "gm_reset|debug|panic".split("|").map(c => new Option(c))
-      ).attachTo(container);
+      // mkdiv(
+      //   "select",
+      //   {
+      //     onselect: (e) => {
+      //       spinner.port.postMessage({ cmd: e.target.value });
+      //     },
+      //     placeholder: "send midi gm",
+      //     value: null,
+      //   },
+      //   "cmd:|gm_reset|debug|panic".split("|").map((c) => new Option(c))
+      // ).attachTo(cont  iner);
 
+      mkdiv("label", { for: "masterGainSlider" }, "master gain").attachTo(
+        container
+      );
       mkdiv("input", {
         type: "range",
-        min: 0,
-        max: 4,
+        min: -960,
+        max: 30,
+        ariaLabel: "master g",
         oninput: (e) =>
           mastGain.gain.linearRampToValueAtTime(
-            e.target.value,
+            2 * Math.pow(10, e.target.value / 200),
             ctx.baseLatency
           ),
-        value: 1,
+        value: -60,
         title: "master G",
-        step: 0.1,
+        step: 1,
       }).attachTo(container);
     },
     subscribeNextMsg: async function (precateFn) {

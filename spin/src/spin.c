@@ -284,7 +284,8 @@ void gm_reset() {
     midi_cc_vals[idx * num_cc_list + TML_VOLUME_MSB] = 100;
     midi_cc_vals[idx * num_cc_list + TML_PAN_MSB] = 64;
     midi_cc_vals[idx * num_cc_list + TML_EXPRESSION_MSB] = 127;
-    if (idx == 9) midi_cc_vals[idx * num_cc_list + TML_BANK_SELECT_MSB] = 128;
+    if (idx == def_drum_c)
+      midi_cc_vals[idx * num_cc_list + TML_BANK_SELECT_MSB] = 128;
   }
   for (int i = 0; i < nchannels; i++) reset(&sps[i]);
 }

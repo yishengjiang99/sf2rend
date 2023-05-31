@@ -50,18 +50,17 @@ const c3 = mkdiv("canvas", {
 c3.attachTo(document.body);
 const { stdout, infoPanel } = logdiv();
 mkcollapse({ title: "fft", defaultOpen: true }, ffholder).attachTo(analyze);
-ctrbar.attachTo(document.querySelector("#ch_ctrl_bar"));
 mkcollapse({ title: "debug", defaultOpen: false }, debugInfo).attachTo(
   debugContainer
+);
+mkcollapse({ title: "ctr", defaultOpen: false }, ctrbar).attachTo(
+  document.querySelector("#ch_ctrl_bar")
 );
 mkcollapse({ title: "debug2", defaultOpen: false }, debugInfo2).attachTo(
   debugContainer
 );
 
-mkcollapse({ title: "debug3", defaultOpen: false }, debugInfo3).attachTo(
-  debugContainer
-);
-mkcollapse({ title: "Log Info", defaultOpen: true }, infoPanel).attachTo(
+mkcollapse({ title: "Log Info", defaultOpen: false }, infoPanel).attachTo(
   stdoutdiv
 );
 const rend_took_len = [];
@@ -126,7 +125,7 @@ async function main({ sf2file, midiUrl }) {
   const apath = await mkpath(ctx, eventPipe);
   const spinner = apath.spinner;
   stdout("murl " + mUrl);
-  sf2select.value = sf2file;
+
   let nextChannel = 0;
 
   const ui = mkui(eventPipe, $("#channelContainer"), {
@@ -146,6 +145,7 @@ async function main({ sf2file, midiUrl }) {
 
   const { push_ch, tabs } = mktabs({ group: "set_group", container: ctrbar });
   uiControllers = ui.controllers;
+  ui.mkKeyboard.attachTo(footer);
 
   for (let i = 0; i < 16; i++) {
     channels.push(createChannel(uiControllers[i], i, sf2, apath));
@@ -172,7 +172,7 @@ async function main({ sf2file, midiUrl }) {
     channels[DRUMSCHANNEL].setProgram(0, 128);
   }
 
-  mk_eq_bar(0, apath.eq_set).attachTo(document.querySelector("eq"));
+  // mk_eq_bar(0, apath.eq_set).attachTo(document.querySelector("eq"));
   //link pipes
   eventPipe.onmessage(function (dd) {
     let data;
@@ -310,7 +310,7 @@ async function main({ sf2file, midiUrl }) {
 
   async function loadSF2File(sf2url) {
     sf2 = new SF2Service(sf2url);
-    sf2select.value = sf2url;
+    // sf2select.value = sf2url;
     await sf2.load();
     programList.innerHTML = "";
     drumList.innerHTML = "";
@@ -329,7 +329,7 @@ async function main({ sf2file, midiUrl }) {
       c.setSF2(sf2);
     });
     for (const [section, text] of sf2.meta) {
-      //stdout(section + ": " + text);
+      stdout(section + ": " + text.substring(80));
     }
   }
   async function onMidionURLSelect(url) {
@@ -376,70 +376,4 @@ async function main({ sf2file, midiUrl }) {
       const midiinfo = readMidi(new Uint8Array(ab));
       onMidiLoaded(midiinfo);
     });
-}
-
-function renderZone(zoneSelect) {
-  return mkdiv("div", [
-    renderSampleView(zoneSelect),
-    ..."Attenuation,VolEnv,Filter,LFO"
-      .split(",")
-      .map((keyword) => renderArticle(keyword, zoneSelect)),
-  ]);
-}
-function renderSampleView(zoneSelect) {
-  return mkdiv("div", [
-    "smpl: ",
-    zoneSelect.shdr.SampleId,
-    " ",
-    zoneSelect.shdr.name,
-    "<br>nsample: ",
-    zoneSelect.shdr.nsamples,
-    "<br>originalPitch: " + zoneSelect.shdr.originalPitch,
-    "<br>Range: ",
-    zoneSelect.shdr.range.join("-"),
-    "<br>",
-    "loop: ",
-    zoneSelect.shdr.loops.join("-"),
-    "<br>",
-    JSON.stringify(zoneSelect.KeyRange),
-    "<br>",
-    JSON.stringify(zoneSelect.VolRange),
-  ]);
-}
-function renderArticle(keyword, zoneObj) {
-  let canvas;
-  const zattrs = Object.entries(zoneObj).filter(([k]) => k.includes(keyword));
-
-  const attrVals = mkdiv(
-    "ul",
-    zattrs.map(([k, v]) =>
-      mkdiv("li", [
-        mkdiv("label", [k, ":"]),
-        mkdiv("code", [v]),
-        mkdiv("input", {
-          type: "range",
-          ...min_max_vals(k),
-          value: v,
-          oninput: (e) => {
-            e.target.parentElement.querySelector("code").textContent =
-              e.target.value;
-            zoneObj[k] = e.target.value;
-          },
-        }),
-      ])
-    )
-  );
-  const details = mkdiv("div");
-  const article = mkdiv("article", {class: "article"}, [attrVals, details]);
-  return article;
-}
-function min_max_vals(k) {
-  if (k.includes("Sustain")) {
-    return {min: 0, max: 1000, step: 10};
-  } else
-    return {
-      min: -12000,
-      max: 5000,
-      step: 10,
-    };
 }
