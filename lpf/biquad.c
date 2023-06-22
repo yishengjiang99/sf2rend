@@ -1,3 +1,28 @@
+/**
+ * @file biquad.c
+ *
+ * Simple implementation of Biquad filters -- Tom St Denis
+ *
+ * Based on the work
+ *
+ *   Cookbook formulae for audio EQ biquad filter coefficients
+ *   ---------------------------------------------------------
+ *   by Robert Bristow-Johnson, pbjrbj@viconet.com  a.k.a. robert@audioheads.com
+ *
+ * Available on the web at
+ *    http://www.musicdsp.org/files/biquad.c
+ *
+ * Enjoy.
+ *
+ * This work is hereby placed in the public domain for all purposes, whether
+ * commercial, free [as in speech] or educational, etc.  Use the code and please
+ * give me credit if you wish.
+ *
+ * Tom St Denis -- http://tomstdenis.home.dhs.org
+ *
+ * See also: http://musicweb.ucsd.edu/~tre/biquad.pdf
+ *
+ */
 // bastardized from RBJ's cookbook
 #include "biquad.h"
 
