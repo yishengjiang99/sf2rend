@@ -160,7 +160,7 @@ async function main({ sf2file, midiUrl }) {
 
   document.body.querySelector(".tabs > input").setAttribute("checked", "");
 
-  await loadSF2File("./static/file.sf2");
+  await loadSF2File("./static/VintageDreamsWaves-v2.sf2");
   onMidionURLSelect(mUrl);
   if (mUrl) {
     await onMidionURLSelect(mUrl);
@@ -369,7 +369,6 @@ async function main({ sf2file, midiUrl }) {
     requestAnimationFrame(draw);
   }
   draw();
-  maindiv.classList.remove("hidden");
   document
     .querySelector("#file-btn")
     .addEventListener("input", async function (e) {
