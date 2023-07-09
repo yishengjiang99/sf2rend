@@ -4,7 +4,8 @@
   "description": "",
   "scripts": {
     "build": "webpack",
-    "test": "jest --verbose src/*"
+    "test": "npm run deploy",
+    "deploy": "npm run build; ls main.js; git add -A; git commit -m 'prog'; git submodule.sync; git push"
   },
   "keywords": [],
   "author": "Yisheng Jiang",

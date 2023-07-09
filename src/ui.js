@@ -51,7 +51,7 @@ export function mkui(
         list: idx == DRUMSCHANNEL ? "drums" : "programs",
         onchange: (e) => {
           const pid = e.target.value & 0x7f;
-          const bkid = e.target.value & 128;
+          const bkid = e.target.value >> 7;
           const change_program = midi_ch_cmds.change_program;
           cb([change_program | idx, pid, bkid]);
           e.target.blur();
@@ -205,6 +205,7 @@ export function mkui(
       }
     }
     set zone(z) {
+      if (!z) return;
       const { arr, ref } = z;
       const zmap = newSFZone(z);
       this._zone = {

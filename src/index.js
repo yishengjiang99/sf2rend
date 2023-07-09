@@ -242,9 +242,9 @@ async function main({ sf2file, midiUrl }) {
         "select",
         {
           oninput: (e) => {
-            Array.from(midiAccess.inputs.values()).find().onmidimessage = ({
-              data,
-            }) => eventPipe.postMessage(data);
+            Array.from(midiAccess.inputs.values()).find(
+              (input) => input.name === e.target.value
+            ).onmidimessage = ({ data }) => eventPipe.postMessage(data);
           },
         },
         [
