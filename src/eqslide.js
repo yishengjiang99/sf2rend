@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import "../lib/input-knobs.js";
 
 import { mkdiv } from "../mkdiv/mkdiv.js";
@@ -22,12 +23,13 @@ const {
   pancoarse,
 } = midi_effects;
 
+const flex_col_style =
+  "display:flex;flex-direction:column;text-align:center; max-width:fit-content;color:white;";
 function mk_flex_col(children) {
   return mkdiv(
     "div",
     {
-      style:
-        "display:flex;flex-direction:column;text-align:center; max-width:fit-content;color:white;",
+      style: flex_col_style,
     },
     children
   );
@@ -107,7 +109,7 @@ export function mk_vca_ctrl(ch, port) {
     port.postMessage(
       new Uint8Array([midi_ch_cmds.continuous_change, ch, cc_num, val])
     );
-  for (let i = VCA_ATTACK_TIME; i <= VCA_RELEASE_TIME; i++) {
+  for (let i = VCA_ATTACK_TIME; i <= VCA_RELEASE_TIME; i++)
     divbox.push(
       mkknob({
         title: inputnames.shift(),
@@ -119,7 +121,7 @@ export function mk_vca_ctrl(ch, port) {
         oninput: (e) => post_val(e.target.dataset["mcc"], e.target.value),
       })
     );
-  }
+
   const g = mkdiv("fieldset", { style: knob_set_style }, divbox);
   return g;
 }

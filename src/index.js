@@ -160,7 +160,7 @@ async function main({ sf2file, midiUrl }) {
 
   document.body.querySelector(".tabs > input").setAttribute("checked", "");
 
-  await loadSF2File("./static/VintageDreamsWaves-v2.sf2");
+  await loadSF2File("static/SoundBlasterOld.sf2");
   onMidionURLSelect(mUrl);
   if (mUrl) {
     await onMidionURLSelect(mUrl);
@@ -261,10 +261,12 @@ async function main({ sf2file, midiUrl }) {
           ),
         ]
       ).attachTo(navhead);
-      Array.from(midiAccess.inputs.values())[0].onmidimessage = ({ data }) => {
-        data[0] |= ui.activeChannel;
-        eventPipe.postMessage(data);
-      };
+      Array.from(midiAccess.inputs.values()).forEach(
+        (i, idx) =>
+          (i.onmidimessage = ({ data }) => {
+            (data[0] |= idx), eventPipe.postMessage(data);
+          })
+      );
     }
   }
 

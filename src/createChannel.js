@@ -3,12 +3,12 @@ import { DRUMSCHANNEL, midi_ch_cmds, midi_effects, nvpc } from "./constants.js";
 export function createChannel(uiController, channelId, sf2, apath) {
   let _sf2 = sf2;
   let program;
-  let bankId = channelId == DRUMSCHANNEL ? 128 : 0;
 
   const spinner = apath.spinner;
-  const kd_map = Array(nvpc).fill(0);
-  let ct_cnt = 0;
   return {
+    ct_cnt: 0,
+    kd_map: Array(nvpc).fill(0),
+    bankId: channelId == DRUMSCHANNEL ? 128 : 0,
     setSF2(sf2) {
       _sf2 = sf2;
     },
@@ -24,17 +24,17 @@ export function createChannel(uiController, channelId, sf2, apath) {
       uiController.hidden = false;
       uiController.name = program.name;
       uiController.presetId = this.presetId;
-      uiController.zone = program.filterKV(60, 60)[0];
+      //uiController.zone = program.filterKV(60, 0)[0];
       return program;
     },
     setCC({ cc, val }) {
       if (cc === midi_effects.bankselectcoarse) {
         alert("bank seleec to " + val);
-        bankId |= val << 7;
+        this.bankId |= val << 7;
       } else if (cc === midi_effects.bankselectfine) {
-        bankId |= val;
+        this.bankId |= val;
       }
-      uiController.CC = {key: cc, value: val};
+      uiController.CC = { key: cc, value: val };
     },
     keyOn(key, vel) {
       const zones = program.filterKV(key, vel);

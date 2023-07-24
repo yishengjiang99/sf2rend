@@ -11,8 +11,8 @@ typedef unsigned int uint32_t;
 #define nchannels 64
 #define nmidiChannels 16
 #define num_cc_list 128
-#define MAX_EG -1440.f
-#define SAMPLE_RATE 44100.0f
+#define MAX_EG -960.0f
+#define SAMPLE_RATE 44100.0f  // dogma
 #include "calc.h"
 #define def_drum_c 9
 

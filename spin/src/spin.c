@@ -172,9 +172,9 @@ void set_spinner_zone(spinner* x, zone_t* z) {
                  (unsigned short)(z->StartAddrCoarseOfs << 15);
   x->loopStart += (unsigned short)z->StartLoopAddrOfs +
                   (unsigned short)(z->StartLoopAddrCoarseOfs << 15);
-  x->loopEnd -= (unsigned short)z->EndLoopAddrOfs -
+  x->loopEnd -= (unsigned short)z->EndLoopAddrOfs +
                 (unsigned short)(z->EndLoopAddrCoarseOfs << 15);
-  x->sampleLength -= z->EndAddrOfs - (z->EndAddrCoarseOfs << 15);
+  x->sampleLength -= z->EndAddrOfs + (z->EndAddrCoarseOfs << 15);
 }
 
 void _spinblock(spinner* x, int n, int blockOffset) {
@@ -262,7 +262,7 @@ int spin(spinner* x, int n) {
 
   _spinblock(x, 64, 64);
 
-  if (x->voleg.egval < -1440.f) {
+  if (x->voleg.egval <= MAX_EG) {
     x->voleg.stage = done;
     return 0;
   }

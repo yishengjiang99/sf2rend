@@ -1,22 +1,30 @@
+const DEFAULT_TEMPO = {
+  tempo: 500000, //msqn,
+  t: 0, //start time
+};
+const DEFAULT_TIMEBASE = {
+  relative_ts: 4,
+  numerator: 4,
+  denum: 4,
+  ticksPerBeat: 64,
+  eigthNotePerBeat: 8,
+};
+const partial_ascii_charset =
+  ` !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[~]^_@abcdefghijklmnopqrstuvwxyz`.split(
+    ""
+  );
 export function readMidi(buffer) {
   const reader = bufferReader2(buffer);
-  const {fgetc, btoa, read32, readVarLength, read16} =
-    reader;
+  const { fgetc, btoa, read32, readVarLength, read16 } = reader;
   const chunkType = [btoa(), btoa(), btoa(), btoa()].join("");
   const headerLength = read32();
 
-  const DEFAULT_TEMPO = {
-    tempo: 500000, //msqn,
-    t: 0 //start time
-  }
   const format = read16();
   const ntracks = read16();
   const division = read16();
-  const headerInfo = {chunkType, headerLength, format};
+  const headerInfo = { chunkType, headerLength, format };
   const tracks = [];
-  const DEFAULT_TIMEBASE = {
-    relative_ts: 4, numerator: 4, denum: 4, ticksPerBeat: division, eigthNotePerBeat: 8
-  };
+
   const limit = buffer.byteLength;
   let lasttype;
 
@@ -37,7 +45,7 @@ export function readMidi(buffer) {
       t += delay;
       if (nextEvent.relative_ts) {
         time_base = nextEvent;
-        track.push({offset: reader.offset, t, delay, ...nextEvent});
+        track.push({ offset: reader.offset, t, delay, ...nextEvent });
       }
       if (nextEvent.tempo) {
         tempos.push({
@@ -46,7 +54,7 @@ export function readMidi(buffer) {
           track: track.length,
           ...nextEvent,
         });
-        const evtObj = {offset: reader.offset, t, delay, ...nextEvent};
+        const evtObj = { offset: reader.offset, t, delay, ...nextEvent };
         track.push(evtObj);
       } else if (nextEvent.channel && nextEvent.channel[0] >> 4 === 0x0c) {
         presets.push({
@@ -54,10 +62,10 @@ export function readMidi(buffer) {
           channel: nextEvent.channel[0] & 0x0f,
           pid: nextEvent.channel[1] & 0x7f,
         });
-        const evtObj = {offset: reader.offset, t, delay, ...nextEvent};
+        const evtObj = { offset: reader.offset, t, delay, ...nextEvent };
         track.push(evtObj);
       } else {
-        const evtObj = {offset: reader.offset, t, delay, ...nextEvent};
+        const evtObj = { offset: reader.offset, t, delay, ...nextEvent };
         track.push(evtObj);
       }
     }
@@ -65,14 +73,14 @@ export function readMidi(buffer) {
     reader.offset = endofTrack;
   }
   if (time_base == null) {
-    time_base = DEFAULT_TIMEBASE
+    time_base = DEFAULT_TIMEBASE;
   }
   if (tempos.length === 0) {
-    tempos.push(DEFAULT_TEMPO)
+    tempos.push(DEFAULT_TEMPO);
   }
-  return {headerInfo, division, tracks, ntracks, presets, tempos, time_base};
+  return { headerInfo, division, tracks, ntracks, presets, tempos, time_base };
   function readNextEvent() {
-    const {fgetc, read24, readString, readVarLength} = reader;
+    const { fgetc, read24, readString, readVarLength } = reader;
     let type = fgetc();
     if (type === null) return [];
     if ((type & 0xf0) === 0xf0) {
@@ -82,26 +90,38 @@ export function readMidi(buffer) {
           const len = readVarLength();
           switch (meta) {
             case 0x21:
-              return {port: fgetc()};
+              return { port: fgetc() };
             case 0x51:
-              return {tempo: read24()};
-            case 0x58:                         //0xFF 0x58 0x04 [
-              // 0x04 0x02 0x18 0x08
-              const [numerator, denomP2, ticksPerBeat, eigthNotePerBeat] = [fgetc(), fgetc(), fgetc(), fgetc()];
+              return { tempo: read24() };
+            case 0x58: {
+              // 0x04 0x02 0x18 0x08 //0xFF 0x58 0x04 [
+              const [numerator, denomP2, ticksPerBeat, eigthNotePerBeat] = [
+                fgetc(),
+                fgetc(),
+                fgetc(),
+                fgetc(),
+              ];
               const denum = Math.pow(2, denomP2);
-              const relative_ts = numerator / denum * 4;
-              return {relative_ts, numerator, denum, ticksPerBeat, eigthNotePerBeat};
+              const relative_ts = (numerator / denum) * 4;
+              return {
+                relative_ts,
+                numerator,
+                denum,
+                ticksPerBeat,
+                eigthNotePerBeat,
+              };
+            }
             case 0x59:
-              return {meta, payload: [fgetc(), fgetc()]};
+              return { meta, payload: [fgetc(), fgetc()] };
             default:
-              return {meta, payload: readString(len), len};
+              return { meta, payload: readString(len), len };
           }
         }
         case 0xf0:
         case 0xf7:
-          return {sysex: readString(readVarLength())};
+          return { sysex: readString(readVarLength()) };
         default:
-          return {type, system: readString(readVarLength())};
+          return { type, system: readString(readVarLength()) };
       }
     } else {
       let param;
@@ -150,9 +170,7 @@ function bufferReader2(bytes) {
   function btoa() {
     const code = fgetc();
     return code >= 32 && code <= 122
-      ? ` !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[~]^_@abcdefghijklmnopqrstuvwxyz`.split(
-        ""
-      )[code - 32]
+      ? partial_ascii_charset.split("")[code - 32]
       : code;
   }
   const readString = (n) => {
