@@ -5,7 +5,7 @@
   "scripts": {
     "build": "webpack",
     "test": "npm run deploy",
-    "deploy": "npm run build; ls main.js; git add -A; git commit -m 'prog'; git submodule.sync; git push"
+    "deploy": "npm run build; ls main.js; git add -A; git commit -m 'prog'; git submodule sync; git push"
   },
   "keywords": [],
   "author": "Yisheng Jiang",
