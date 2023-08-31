@@ -158,7 +158,6 @@ function App({timerWorker, midiInfo, eventPipe}) {
 
   return (
     <>
-
       <div key="adf">
         <span>
           clock: {(clock / 1000).toFixed(2).toString().split(".").join(":")}
@@ -169,7 +168,7 @@ function App({timerWorker, midiInfo, eventPipe}) {
               type="button"
               key={cmd}
               onClick={() => {
-                timerWorker.postMessage({cmd});
+                timerWorker.postMessage({ cmd });
                 if (Object.keys(cmd2stateChange).indexOf(cmd) > -1) {
                   setTimerState(cmd2stateChange[cmd]);
                 }
