@@ -1,4 +1,4 @@
-import { mkdiv, mkdiv2 } from "../mkdiv/mkdiv.js";
+import {mkdiv, mkdiv2} from "https://unpkg.com/mkdiv@3.1.2/mkdiv.js";
 import { mkui } from "./ui.js";
 import SF2Service from "../sf2-service/index.js";
 import { fetchSF2List, fetchmidilist } from "./midilist.js";
