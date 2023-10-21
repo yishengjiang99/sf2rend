@@ -1,19 +1,19 @@
-#include "spin.c"
 
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
+void consolef(float ff) { printf("%f", ff); };
 
-#define printvoleg(x)                                                \
-  {                                                                  \
-    printf("=>increment %f, egval:%f\t nsteps: %d\t stag: %d %d\n",  \
-           x->voleg->egIncrement, x->voleg->egval, x->voleg->nsteps, \
-           x->voleg->stage, x->position);                            \
+#include "spin.c"
+
+#define printvoleg(x)                                               \
+  {                                                                 \
+    printf("=>increment %f, egval:%f\t nsteps: %d\t stag: %d %d\n", \
+           x->voleg.egIncrement, x->voleg.egval, x->voleg.nsteps,   \
+           x->voleg.stage, x->position);                            \
   }
 
 int main() {
-  // spinner* x = &sps[3];
-  printf("%p", sps[3].voleg);
   spinner* x = newSpinner(0);
   pcms->length = 126815;
   pcms->loopend = 63406;
@@ -41,20 +41,18 @@ int main() {
   printvoleg(x);
   set_spinner_zone(x, z);
   printvoleg(x);
-
   trigger_attack(x, 88, 20);
   printvoleg(x);
-
   spinner* y = newSpinner(3);
   printvoleg(x);
 
   assert(y->channelId == 3);
   assert(y != x);
-  set_spinner_zone(x, z);
-  printvoleg(x);
+  set_spinner_zone(y, z);
 
-  trigger_attack(x, 1.01, 123);
-
+  trigger_attack(y, 31, 123);
+  printvoleg(y);
+  return 1;
   printvoleg(x);
   spin(x, 128);
   printvoleg(x);
@@ -62,17 +60,17 @@ int main() {
   printvoleg(x);
   spin(x, 128);
   printvoleg(x);
-  for (int i = 0; x->voleg->stage < 5; i++) {
+  for (int i = 0; x->voleg.stage < 5; i++) {
     spin(x, 128);
     printvoleg(x);
     break;
   }
   trigger_release(x);
-  for (int i = 0; x->voleg->stage < done; i++) {
+  for (int i = 0; x->voleg.stage < done; i++) {
     printvoleg(x);
 
     spin(x, 128);
-    if (x->voleg->stage < init) break;
+    if (x->voleg.stage < init) break;
     printvoleg(x);
   }
   return 1;

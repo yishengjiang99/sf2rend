@@ -45,13 +45,13 @@ export function mkui(
       this.idx = idx;
       this.nameLabel = mkdiv2({
         tag: "input",
-        type: "text",
+        type: "search",
         autocomplete: "off",
         onfocus: (e) => (e.target.value = ""),
         list: idx == DRUMSCHANNEL ? "drums" : "programs",
         onchange: (e) => {
           const pid = e.target.value & 0x7f;
-          const bkid = e.target.value >> 7;
+          const bkid = e.target.value & 0x80;
           const change_program = midi_ch_cmds.change_program;
           cb([change_program | idx, pid, bkid]);
           e.target.blur();
@@ -89,7 +89,7 @@ export function mkui(
         this.zoneEdit,
         mkdiv("input", {
           min: 1,
-          max: 128,
+          max: 127,
           value: 100,
           step: 1,
           id: "vol",

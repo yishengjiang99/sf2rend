@@ -244,11 +244,11 @@ void _spinblock(spinner* x, int n, int blockOffset) {
     }
     outputf = applyCentible(outputf, (short)(db + kRateCB));
 
-    if (tfc > .5) {
-      fchertz = timecent2hertz(tfc) / SAMPLE_RATE;
-      new_lpf(&lpf, fchertz, Q);
-      outputf = calc_lpf(&lpf, outputf);
-    }
+    // if (tfc > .5) {
+    //   fchertz = timecent2hertz(tfc) / SAMPLE_RATE;
+    //   new_lpf(&lpf, fchertz, Q);
+    //   outputf = calc_lpf(&lpf, outputf);
+    // }
     output_L[i] = applyCentible(outputf, panLeft);
     output_R[i] = applyCentible(outputf, panRight);
   }

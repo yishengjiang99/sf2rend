@@ -205,7 +205,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     let [left, right] = outputs[0];
     if (noise_floor && noise_floor[0]) {
       left.set(noise_floor[0]);
-      // right.set(noise_floor[0]);
+      right.set(noise_floor[0]);
     }
     this.inst.exports.sp_wipe_output_tab();
     const thisBus = this.ringbus.this_bus;
@@ -228,11 +228,11 @@ class SpinProcessor extends AudioWorkletProcessor {
 
       const [left, right] = outputs[sp_midi_channel];
       if (ch_rms[sp_midi_channel] > 1.0) {
-        skipped.push(sp_midi_channel);
+        //      skipped.push(sp_midi_channel);
       }
-      for (let j = 0;j < 128;j++) {
-        left[j] = saturate(left[j] + outputf[128 + j] * loudnorm);
-        right[j] = saturate(right[j] + outputf[j] * loudnorm);
+      for (let j = 0; j < 128; j++) {
+        left[j] = saturate(left[j] + outputf[j + 128] * loudnorm);
+        right[j] = saturate(right[j] + outputf[j + 128] * loudnorm);
         ch_rms[sp_midi_channel] += left[j] * left[j];
       }
       ch_rms[sp_midi_channel] /= 128;

@@ -24,10 +24,10 @@ export async function mkpath2(ctx, { midi_input, sf2File }) {
     await WinampEQ.init(ctx).catch(console.trace);
     init = true;
   }
-  const channelIds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+  const channelIds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
   const spinner = new SpinNode(ctx);
   const lpfs = Array(16).fill(new LowPassFilterNode(ctx));
-  const mastGain = new GainNode(ctx, { gain: 1 });
+  const mastGain = new GainNode(ctx, { gain: 12 });
   //this.EQ = mk_eq_bar(0);
   const whitenoise = anti_denom_dither(ctx);
   const fft = new FFTNode(ctx);
@@ -36,9 +36,9 @@ export async function mkpath2(ctx, { midi_input, sf2File }) {
   whitenoise.connect(spinner);
   whitenoise.start();
   for (const id of channelIds) {
-    spinner.connect(lpfs[id], id).connect(mastGain);
+    spinner.connect(mastGain, id);
   }
-  mastGain.connect(fft).connect(ctx.destination);
+  mastGain.connect(ctx.destination);
   return {
     spinner,
     async loadProgram(pid, bankid) {

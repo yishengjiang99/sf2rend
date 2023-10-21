@@ -186,11 +186,9 @@ eventPipe.onmessage(function (dd) {
       spinner.port.postMessage([cmd, ch, v1, v2]);
       break;
     case midi_ch_cmds.change_program: //change porg
-      if (v1 == 0 && ch >= 0) {
-        channels[ch].setProgram(v1, 128);
-      } else {
-        channels[ch].setProgram(v1, ch === DRUMSCHANNEL ? 128 : 0);
-      }
+      console.log(cmd, ch, v1, v2);
+      channels[ch].setProgram(v1, v2);
+
       break;
     case midi_ch_cmds.note_on:
       if (velocity == 0) {
