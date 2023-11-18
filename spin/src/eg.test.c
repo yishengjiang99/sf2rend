@@ -1,9 +1,8 @@
-#include "eg.h"
-
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
 
+#include "spin.c"
 #include "test_utils.h"
 int main() {
   EG eg[1];

@@ -46,7 +46,7 @@ spinner* newSpinner(int ch) {
 void trigger_release(spinner* x) {
   _eg_release(&x->voleg);
   _eg_release(&x->modeg);
-  if (x->zone->SampleModes > 0) {
+  if (x->zone->SampleModes > 1) {
     x->is_looping = 0;
   }
 }
@@ -167,7 +167,7 @@ void set_spinner_zone(spinner* x, zone_t* z) {
   set_spinner_input(x, pcm);
   x->zone = z;
 
-  x->is_looping = z->SampleModes == 1;
+  x->is_looping = z->SampleModes > 0;
   x->position += (unsigned short)z->StartAddrOfs +
                  (unsigned short)(z->StartAddrCoarseOfs << 15);
   x->loopStart += (unsigned short)z->StartLoopAddrOfs +
@@ -244,11 +244,11 @@ void _spinblock(spinner* x, int n, int blockOffset) {
     }
     outputf = applyCentible(outputf, (short)(db + kRateCB));
 
-    // if (tfc > .5) {
-    //   fchertz = timecent2hertz(tfc) / SAMPLE_RATE;
-    //   new_lpf(&lpf, fchertz, Q);
-    //   outputf = calc_lpf(&lpf, outputf);
-    // }
+    if (tfc > .5) {
+      fchertz = timecent2hertz(tfc) / SAMPLE_RATE;
+      // new_lpf(&lpf, fchertz, Q);/
+      outputf = calc_lpf(&lpf, outputf);
+    }
     output_L[i] = applyCentible(outputf, panLeft);
     output_R[i] = applyCentible(outputf, panRight);
   }

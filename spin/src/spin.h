@@ -179,7 +179,7 @@ void advanceStage(EG* eg) {
       // sustain = % decreased during decay
 
     case sustain: {
-      int stepsFull = timecent2sample(eg->release);
+      int stepsFull = timecent2sample(eg->release + eg->decay);
       eg->egIncrement = MAX_EG / stepsFull;
       eg->nsteps = stepsFull * (eg->egval / MAX_EG);
     } break;

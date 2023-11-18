@@ -140,14 +140,14 @@ export async function mkpath2(ctx, { midi_input, sf2File }) {
       mkdiv("input", {
         type: "range",
         min: -960,
-        max: 30,
+        max: 120,
         ariaLabel: "master g",
         oninput: (e) =>
           mastGain.gain.linearRampToValueAtTime(
-            2 * Math.pow(10, e.target.value / 200),
+            Math.pow(10, e.target.value / 200),
             ctx.baseLatency
           ),
-        value: -60,
+        value: 0,
         title: "master G",
         step: 1,
       }).attachTo(container);

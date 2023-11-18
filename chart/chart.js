@@ -1,5 +1,6 @@
-import {mkdiv} from "../mkdiv/mkdiv.js";
-const WIDTH = 960, HEIGHT = 420;
+import { mkdiv } from "https://unpkg.com/mkdiv@3.1.2/mkdiv.js";
+const WIDTH = 960,
+  HEIGHT = 420;
 export function chart(canvasCtx, dataArray) {
   resetCanvas(canvasCtx);
   const slider = canvasCtx.canvas.parentElement.querySelector(
@@ -30,20 +31,14 @@ export function chartRect(canvasCtx, dataArray, markers) {
   resetCanvas(canvasCtx);
   const [_width, _height] = get_w_h(canvasCtx);
   let iWIDTH = _width / dataArray.length;
-  let max = 0,
-    min = 340,
-    x = 0;
-  for (let i = 1; i < dataArray.length; i++) {
-    max = dataArray[i] > max ? dataArray[i] : max;
-    min = dataArray[i] < min ? dataArray[i] : min;
-  }
   canvasCtx.fillStyle = "black";
   canvasCtx.fillRect(0, 0, _width, _height);
   canvasCtx.clearRect(0, 0, _width, _height);
   canvasCtx.fillStyle = "red";
+  let x = 0;
   for (let i = 0; i < dataArray.length; i++) {
     x += iWIDTH + 1;
-    canvasCtx.fillRect(x, _height - 10, iWIDTH, dataArray[i] * 120);
+    canvasCtx.fillRect(x, _height - 10, iWIDTH, dataArray[i] * _height);
   }
 }
 export function mkcanvas(params = {}) {
@@ -111,7 +106,7 @@ export async function renderFrames(
     const existingSlider = canvsCtx.canvas?.parentElement?.querySelector(
       "input[type='range']"
     );
-      existingSlider ||
+    existingSlider ||
       mkdiv("input", {
         type: "range",
         min: -10,

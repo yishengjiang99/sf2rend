@@ -4,11 +4,11 @@ export function recordMidi(cctx, { pxqn, pxct }) {
   const width = 1200,
     height = 520;
 
-  let lastClock = 0,
-    qn = 0,
+  let lastClock = 0, //
+    qn = 0, //quarter n
     ticks = 0,
     xx,
-    x = 0,
+    x = 0, //
     yy,
     ppqn = 96,
     ct_offset = 2400,

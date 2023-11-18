@@ -8,6 +8,7 @@ import {
   range,
   midi_effects as effects,
   DRUMSCHANNEL,
+  midi_effects,
 } from "./constants.js";
 import { fa_switch_btn, grid_tbl } from "./btns.js";
 import {
@@ -95,6 +96,28 @@ export function mkui(
           id: "vol",
           type: "range",
           oninput: (e) => cb([0xb0 | idx, 7, e.target.value]),
+        }),
+        "EXPR",
+        mkdiv("input", {
+          min: 1,
+          max: 127,
+          value: 100,
+          step: 1,
+          id: "vol",
+          type: "range",
+          oninput: (e) =>
+            cb([0xb0 | idx, midi_effects.expressioncoarse, e.target.value]),
+        }),
+        "PAN",
+        mkdiv("input", {
+          min: 1,
+          max: 127,
+          value: 100,
+          step: 1,
+          id: "vol",
+          type: "range",
+          oninput: (e) =>
+            cb([0xb0 | idx, midi_effects.pancoarse, e.target.value]),
         }),
       ]);
       const ampshow = mkdiv("div", {

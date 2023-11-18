@@ -228,10 +228,10 @@ class SpinProcessor extends AudioWorkletProcessor {
 
       const [left, right] = outputs[sp_midi_channel];
       if (ch_rms[sp_midi_channel] > 1.0) {
-        //      skipped.push(sp_midi_channel);
+        skipped.push(sp_midi_channel);
       }
       for (let j = 0; j < 128; j++) {
-        left[j] = saturate(left[j] + outputf[j + 128] * loudnorm);
+        left[j] = saturate(left[j] + outputf[j] * loudnorm);
         right[j] = saturate(right[j] + outputf[j + 128] * loudnorm);
         ch_rms[sp_midi_channel] += left[j] * left[j];
       }

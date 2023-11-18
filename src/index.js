@@ -60,7 +60,7 @@ mkcollapse({ title: "debug", defaultOpen: false }, debugInfo).attachTo(
   debugContainer
 );
 mkcollapse({ title: "ctr", defaultOpen: false }, ctrbar).attachTo(
-  document.querySelector("#ch_ctrl_bar")
+  document.querySelector("body")
 );
 mkcollapse({ title: "debug2", defaultOpen: false }, debugInfo2).attachTo(
   debugContainer
