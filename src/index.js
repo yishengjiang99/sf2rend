@@ -1,4 +1,4 @@
-import {mkdiv, mkdiv2} from "https://unpkg.com/mkdiv@3.1.2/mkdiv.js";
+import { mkdiv, mkdiv2 } from "../mkdiv/mkdiv.js";
 import { mkui } from "./ui.js";
 import SF2Service from "../sf2-service/index.js";
 import { fetchSF2List, fetchmidilist } from "./midilist.js";
@@ -10,7 +10,7 @@ import { mfilelist } from "../mfilelist.js";
 
 import { readMidi } from "./midiread.js";
 import { mkcanvas, chartRect, chart } from "../chart/chart.js";
-import * as sequence from "../dist/sequence.js";
+// import * as sequence from "../dist/sequence.js";
 import { logdiv, mktabs, mkcollapse } from "./logdiv.js";
 import {
   mk_vcf_ctrl,
@@ -60,7 +60,7 @@ mkcollapse({ title: "debug", defaultOpen: false }, debugInfo).attachTo(
   debugContainer
 );
 mkcollapse({ title: "ctr", defaultOpen: false }, ctrbar).attachTo(
-  document.querySelector("body")
+  document.querySelector("#ch_ctrl_bar")
 );
 mkcollapse({ title: "debug2", defaultOpen: false }, debugInfo2).attachTo(
   debugContainer
@@ -72,9 +72,6 @@ mkcollapse({ title: "Log Info", defaultOpen: false }, infoPanel).attachTo(
 const rend_took_len = [];
 window.stdout = stdout;
 window.stderr = (str) => (debugInfo.innerHTML = str);
-window.stderrr = (str) => {
-  /*devnull*/
-}; //stderrrdiv.innerHTML = str;
 const midiUrl = new URL(document.location).searchParams.get("midi");
 
 let sf2, uiControllers, ctx;
@@ -186,9 +183,11 @@ eventPipe.onmessage(function (dd) {
       spinner.port.postMessage([cmd, ch, v1, v2]);
       break;
     case midi_ch_cmds.change_program: //change porg
-      console.log(cmd, ch, v1, v2);
-      channels[ch].setProgram(v1, v2);
-
+      if (v1 == 0 && ch >= 0) {
+        channels[ch].setProgram(v1, 128);
+      } else {
+        channels[ch].setProgram(v1, ch === DRUMSCHANNEL ? 128 : 0);
+      }
       break;
     case midi_ch_cmds.note_on:
       if (velocity == 0) {

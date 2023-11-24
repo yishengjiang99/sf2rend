@@ -1,6 +1,6 @@
-import {useEffect, useRef, useState} from "react";
-import {Sequence} from "./sequence";
-import React from 'react';
+import { useEffect, useRef, useState } from "react";
+import { Sequence } from "./sequence";
+import React from "react";
 import {
   TIMER_STATE,
   available_btns,
@@ -12,25 +12,25 @@ import {
 } from "./constants";
 import useTM from "./useTM";
 import "./App.css";
-import {createPortal} from "react-dom";
+import { createPortal } from "react-dom";
 
 const M_HEIGHT = window.visualViewport?.height - 120;
 const ranEvents = [];
 const notesDown = new Map();
-function App({timerWorker, midiInfo, eventPipe}) {
+function App({ timerWorker, midiInfo, eventPipe }) {
   const presetMap = midiInfo.presets.reduce(
-    (map, {pid, channel}) => ({
+    (map, { pid, channel }) => ({
       ...map,
       [channel]: pid,
     }),
-    {0: 0}
+    { 0: 0 }
   );
   const chRef = useRef([]);
-  const [tm, {setTempo, setTM, setTS1, setTS2}] = useTM(
+  const [tm, { setTempo, setTM, setTS1, setTS2 }] = useTM(
     get_time_base(midiInfo)
   );
-  const {msqn, tempo, ts1, ppqn} = tm;
-  const [{ticks, clock}, setNow] = useState({ticks: 0, clock: 0});
+  const { msqn, tempo, ts1, ppqn } = tm;
+  const [{ ticks, clock }, setNow] = useState({ ticks: 0, clock: 0 });
   const [timerState, setTimerState] = useState(TIMER_STATE.INIT);
   const sequencerRef = useRef();
   const tempos = midiInfo.tempos;
@@ -46,7 +46,7 @@ function App({timerWorker, midiInfo, eventPipe}) {
             ranEvents.length &&
             ranEvents[ranEvents.length - 1].event.t > ticks
           ) {
-            const {event, ch} = ranEvents.pop();
+            const { event, ch } = ranEvents.pop();
             midiInfo.tracks[ch].push(event);
           }
           queueMicrotask(() => setTimerState(TIMER_STATE.RUNNING));
@@ -73,7 +73,7 @@ function App({timerWorker, midiInfo, eventPipe}) {
     timerWorker.postMessage(tm);
   }, [timerWorker, tm]);
   useEffect(() => {
-    timerWorker.addEventListener("message", ({data}) => {
+    timerWorker.addEventListener("message", ({ data }) => {
       if (!data.ticks) return;
       for (let i in midiInfo.tracks) {
         const track = midiInfo.tracks[i];
@@ -81,7 +81,7 @@ function App({timerWorker, midiInfo, eventPipe}) {
           const event = track.shift();
           if (!event.channel) continue;
           eventPipe.postMessage(event.channel);
-          ranEvents.push({event, ch: i});
+          ranEvents.push({ event, ch: i });
           // queueMicrotask(() => {
           //   const [status, key, vel] = event.channel;
           //   const cmd = status >> 4,
@@ -106,7 +106,6 @@ function App({timerWorker, midiInfo, eventPipe}) {
           //       break;
           //   }
           // });
-
         }
       }
 
@@ -119,16 +118,7 @@ function App({timerWorker, midiInfo, eventPipe}) {
       }
       setNow(data);
     });
-  }, [
-    timerWorker,
-    eventPipe,
-    midiInfo.tracks,
-    tempos,
-    setTM,
-    tm,
-    ppqn,
-    msqn,
-  ]);
+  }, [timerWorker, eventPipe, midiInfo.tracks, tempos, setTM, tm, ppqn, msqn]);
 
   useEffect(() => {
     if (sequencerRef.current)
@@ -138,8 +128,7 @@ function App({timerWorker, midiInfo, eventPipe}) {
     if (!sequencerRef.current) return;
     let id1, id2;
     let ref = sequencerRef.current;
-    ref.style.setProperty("--timer-ticks", ticks)
-
+    ref.style.setProperty("--timer-ticks", ticks);
   }, [sequencerRef.current, ticks]);
 
   const mkbtn = (cmd) => (
@@ -147,7 +136,7 @@ function App({timerWorker, midiInfo, eventPipe}) {
       type="button"
       key={cmd}
       onClick={() => {
-        timerWorker.postMessage({cmd});
+        timerWorker.postMessage({ cmd });
         if (Object.keys(cmd2stateChange).indexOf(cmd) > -1) {
           setTimerState(cmd2stateChange[cmd]);
         }
@@ -159,9 +148,9 @@ function App({timerWorker, midiInfo, eventPipe}) {
   return (
     <>
       <div key="adf">
-        <span>
+        <div>
           clock: {(clock / 1000).toFixed(2).toString().split(".").join(":")}
-        </span>
+        </div>
         <span>
           {available_btns[timerState].map((cmd) => (
             <input

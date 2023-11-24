@@ -17,7 +17,8 @@ Fs.writeFileSync(
       .execSync("ls -rS static/midi/*mid")
       .toString()
       .trim()
-      .split("\n").map(f => encodeURI(f))
+      .split("\n")
+      .map((f) => encodeURI(f))
   )}`
 );
 const path = require("path");
@@ -49,7 +50,7 @@ module.exports = {
   },
   devtool: "inline-source-map",
   devServer: {
-    static: "."
+    static: ".",
   },
   output: {
     filename: "[name].js",

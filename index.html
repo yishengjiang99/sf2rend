@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <script>
     if (navigator.userAgent.indexOf("Chrome") < 0) {
@@ -24,38 +25,38 @@
     <i class="fa-regular fa-user"></i>
     <select id="sf2select" aria-placeholder="dafds">
       <option>Select SF2 File</option>
-    </select> <span id="midilist"></span>
-    <div id="ch_ctrl_bar"></div>
-    
-    <span id="ctrls"> </span>
+    </select> 
+    <span id="midilist"></span>
+   <span id="ctrls"> </span>
     <input type="file" tabindex="0" value="send file" id="file-btn" accept=".mid" />
-    </header>
+    <div id="ch_ctrl_bar"></div> 
+  </header>
+  <section>    <span id="sequenceroot"></span>
+  </section>
+  <div id="channelContainer"></div>
 
-  <main>
-    <div id="channelContainer"></div>
-  </main>
-  <footer>
-    <span id="sequenceroot"></span>
+  <div id="analyze"></div>
+  <div id="debug"></div>
+  <footer class="">
+    <div id="stdout"></div>
     <datalist id="programs"></datalist>
     <datalist id="drums"></datalist>
     <div><a href="https://github.com/yishengjiang99/sf2rend">https://github.com/yishengjiang99/sf2rend</a></div>
     <div id="eq"></div>
-    <div id="analyze"></div>
-    <div id="debug"></div>
-    <div style='position: absolute; z-index: 5555' id="stdout"></div>
 
-    </footer>
-    <script type="module" src="./src/index.js"></script>
-    <template> <svg width="2200" height="1600">
-        <defs>
-          <pattern id="tenthGrid" width="100" height="110" patternUnits="userSpaceOnUse">
-            <rect width="10" height="20" stroke='gold' fill="yellow" />
-          </pattern>
-          <pattern id="grid" width="500" height="1001" patternUnits="userSpaceOnUse">
-            <rect width="500" height="100" stroke="gold" fill="url(#tenthGrid)" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#grid)" />
-      </svg></template>
-    </body>
+  </footer>
+  <script type="module" src="./src/index.js"></script>
+  <template> <svg width="2200" height="1600">
+      <defs>
+        <pattern id="tenthGrid" width="100" height="110" patternUnits="userSpaceOnUse">
+          <rect width="10" height="20" stroke='gold' fill="yellow" />
+        </pattern>
+        <pattern id="grid" width="500" height="1001" patternUnits="userSpaceOnUse">
+          <rect width="500" height="100" stroke="gold" fill="url(#tenthGrid)" />
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#grid)" />
+    </svg></template>
+</body>
+
 </html>

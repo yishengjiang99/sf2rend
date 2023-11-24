@@ -1,4 +1,4 @@
-import { mkdiv } from "https://unpkg.com/mkdiv@3.1.2/mkdiv.js";
+import { mkdiv } from "../mkdiv/mkdiv.js";
 const WIDTH = 960,
   HEIGHT = 420;
 export function chart(canvasCtx, dataArray) {

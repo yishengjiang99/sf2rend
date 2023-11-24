@@ -81,9 +81,7 @@ export function mkknob(params) {
 }
 export function mk_eq_bar(ch, onInput) {
   const post_val = (cc_num, val) =>
-    port.postMessage(
-      new Uint8Array([midi_ch_cmds.continuous_change, ch, cc_num, val])
-    );
+    port.postMessage([midi_ch_cmds.continuous_change, ch, cc_num, val]);
   return mkdiv("fieldset", { class: "knob-set" }, [
     mkdiv("legend", "EQ"),
     ...[31.25, 62.5, 125, 250, 500, 1000, 2000, 4000, 8000, 16000].map((f) =>
@@ -104,9 +102,7 @@ export function mk_vca_ctrl(ch, port) {
   const zdx = ["VolEnvAttack", "VolEnvDecay", "VolEnvSustain", "VolEnvRelease"];
   const defaults = [9, 33, 66, 88];
   const post_val = (cc_num, val) =>
-    port.postMessage(
-      new Uint8Array([midi_ch_cmds.continuous_change, ch, cc_num, val])
-    );
+    port.postMessage([midi_ch_cmds.continuous_change, ch, cc_num, val]);
   for (let i = VCA_ATTACK_TIME; i <= VCA_RELEASE_TIME; i++) {
     divbox.push(
       mkknob({
@@ -131,9 +127,7 @@ export function mk_vcf_ctrl(ch, port) {
   const defaults = [9, 33, 66, 88, 0, 0];
 
   const post_val = (cc_num, val) =>
-    port.postMessage(
-      new Uint8Array([midi_ch_cmds.continuous_change, ch, cc_num, val])
-    );
+    port.postMessage([midi_ch_cmds.continuous_change, ch, cc_num, val]);
   const divbox = [mkdiv("legend", legendtitle)];
   for (let i = from; i <= to; i++) {
     divbox.push(

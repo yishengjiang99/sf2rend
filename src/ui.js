@@ -1,27 +1,18 @@
-import {
-  mkdiv,
-  mkdiv2,
-
-} from "../mkdiv/mkdiv.js";
+import { mkdiv, mkdiv2 } from "../mkdiv/mkdiv.js";
 import {
   midi_ch_cmds,
   range,
   midi_effects as effects,
   DRUMSCHANNEL,
-  midi_effects,
 } from "./constants.js";
 import { fa_switch_btn, grid_tbl } from "./btns.js";
-import {
-  attributeKeys,
-  defZone,
-  newSFZone,
-} from "../sf2-service/zoneProxy.js";
-import {baseOctave} from "./sequence/constants.js";
+import { attributeKeys, defZone, newSFZone } from "../sf2-service/zoneProxy.js";
+import { baseOctave } from "./sequence/constants.js";
 import { mkcanvas } from "../chart/chart.js";
 
 const rowheight = 40;
 const pixelPerSec = 12;
-const [W, H] = [4200, 120];
+const [W, H] = [(visualViewport.width / 3) * 2, 120];
 
 export function mkui(
   eventPipe,
@@ -32,8 +23,10 @@ export function mkui(
     constructor(idx, cb) {
       this.config = {
         nsemi: 24,
-        pxpqn: 20,
+        pxpqn: 50,
         qnPerBar: 4,
+        mspqn: 500000,
+        sPerqn: 0.5,
         qnOffset: 0,
         pxPerSemi: 5,
       };
@@ -46,13 +39,13 @@ export function mkui(
       this.idx = idx;
       this.nameLabel = mkdiv2({
         tag: "input",
-        type: "search",
+        type: "text",
         autocomplete: "off",
         onfocus: (e) => (e.target.value = ""),
         list: idx == DRUMSCHANNEL ? "drums" : "programs",
         onchange: (e) => {
           const pid = e.target.value & 0x7f;
-          const bkid = e.target.value & 0x80;
+          const bkid = e.target.value >> 7;
           const change_program = midi_ch_cmds.change_program;
           cb([change_program | idx, pid, bkid]);
           e.target.blur();
@@ -88,37 +81,17 @@ export function mkui(
           },
         }),
         this.zoneEdit,
-        mkdiv("input", {
-          min: 1,
-          max: 127,
-          value: 100,
-          step: 1,
-          id: "vol",
-          type: "range",
-          oninput: (e) => cb([0xb0 | idx, 7, e.target.value]),
-        }),
-        "EXPR",
-        mkdiv("input", {
-          min: 1,
-          max: 127,
-          value: 100,
-          step: 1,
-          id: "vol",
-          type: "range",
-          oninput: (e) =>
-            cb([0xb0 | idx, midi_effects.expressioncoarse, e.target.value]),
-        }),
-        "PAN",
-        mkdiv("input", {
-          min: 1,
-          max: 127,
-          value: 100,
-          step: 1,
-          id: "vol",
-          type: "range",
-          oninput: (e) =>
-            cb([0xb0 | idx, midi_effects.pancoarse, e.target.value]),
-        }),
+        mkdiv("div", [
+          mkdiv("input", {
+            min: 1,
+            max: 128,
+            value: 100,
+            step: 1,
+            id: "vol",
+            type: "range",
+            oninput: (e) => cb([0xb0 | idx, 7, e.target.value]),
+          }),
+        ]),
       ]);
       const ampshow = mkdiv("div", {
         class: "amp-indicate",
@@ -179,13 +152,21 @@ export function mkui(
       this._active = false;
       this._midi = null;
       this.tt = 0;
+      this.toffset = 0;
+      this.timePerFrame = (W / this.config.pxpqn) * this.config.sPerqn;
     }
     rendFrame() {
       const ppt = this.config.pxpqn * 2;
-
+      if (this.timePerFrame < this.tt - this.toffset) {
+        this.cctx.clearRect(0, 0, W, H);
+        this.toffset += this.timePerFrame;
+      }
+      this.cctx.clearRect(0, 0, 100, 20);
+      this.cctx.fillText(this.tt.toFixed(1), 0, 10, 100);
+      //this.tt + "|" + this.toffset, 0, 10, 100);
+      this.cctx.save();
       for (const [t0, k0, dt] of this.timeline) {
-        const x0 = (t0 * ppt) % W;
-
+        const x0 = (t0 - this.toffset) * ppt;
         if (this.tt > t0 + 10) continue;
         const h1 = this.config.pxPerSemi * (k0 - baseOctave);
         this.cctx.fillRect(x0, h1, dt * ppt, this.config.pxPerSemi);
@@ -254,26 +235,15 @@ export function mkui(
               });
             },
           },
-          mkdiv("ul", [
-            mkdiv("input", {
-              role: "button",
-              value: "save",
-              type: "submit",
-            }),
+          mkdiv("table", [
+            mkdiv("tr", [mkdiv("th", "name"), mkdiv("th", "value")]),
             ...Array.from(this._zone.arr).map((attr, index) =>
               mkdiv("tr", [
-                mkdiv(
-                  "td",
-                  {
-                    class: attr === defZone[index] ? "hidden" : "",
-                  },
-                  attributeKeys[index]
-                ),
+                mkdiv("td", attributeKeys[index]),
                 mkdiv("td", {}, [
                   mkdiv("input", {
                     value: attr,
                     name: index,
-                    class: attr === defZone[index] ? "hidden" : "",
                     placeholder: "a",
                     oninput: (a) => {
                       zmap[attributeKeys[index]] = a.target.value;
