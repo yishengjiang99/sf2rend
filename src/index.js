@@ -1,10 +1,10 @@
 import { mkdiv, mkdiv2 } from "../mkdiv/mkdiv.js";
 import { mkui } from "./ui.js";
 import SF2Service from "../sf2-service/index.js";
-import { fetchSF2List, fetchmidilist } from "./midilist.js";
+import { fetchmidilist } from "./midilist.js";
 import { mkeventsPipe } from "./mkeventsPipe.js";
 import { createChannel } from "./createChannel.js";
-import { DRUMSCHANNEL, ccnames, midi_ch_cmds } from "./constants.js";
+import { DRUMSCHANNEL, midi_ch_cmds } from "./constants.js";
 import { sf2list } from "../sflist.js";
 import { mfilelist } from "../mfilelist.js";
 
@@ -12,26 +12,17 @@ import { readMidi } from "./midiread.js";
 import { mkcanvas, chartRect, chart } from "../chart/chart.js";
 // import * as sequence from "../dist/sequence.js";
 import { logdiv, mktabs, mkcollapse } from "./logdiv.js";
-import {
-  mk_vcf_ctrl,
-  mk_vca_ctrl,
-  mk_filter_ctrls,
-  mk_eq_bar,
-} from "./eqslide.js";
+import { mk_vcf_ctrl, mk_vca_ctrl, mk_filter_ctrls } from "./eqslide.js";
 import { initNavigatorMidiAccess } from "./initNavigatorMidiAccess.js";
 function $(sel) {
   return document.querySelector(sel);
 }
 
-const sf2select = $("#sf2select"),
-  col4 = $("#col4"),
-  col5 = $("#col5");
+const sf2select = $("#sf2select");
 
 const drumList = document.querySelector("#drums");
 const programList = document.querySelector("#programs");
-export const navhead = document.querySelector("header");
 const analyze = document.querySelector("#analyze");
-const maindiv = document.querySelector("main");
 const debugContainer = document.querySelector("#debug");
 const footer = document.querySelector("footer");
 
@@ -40,7 +31,6 @@ const debugInfo = mkdiv("pre");
 const ctrbar = mkdiv("div");
 const debugInfo2 = mkdiv("pre");
 
-const debugInfo3 = mkdiv("div");
 const ffholder = mkdiv("div", { style: "display:flex;flex-direction:row" });
 const ff = { container: ffholder, width: 220, height: 150 };
 const [cv1, cv2, cv3] = [

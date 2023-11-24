@@ -52,10 +52,10 @@ export function mkcanvas(params = {}) {
     params
   );
   const canvas = document.createElement("canvas");
-  container.ondblclick = (e) => {
-    container.style =
-      "display:fixed; width:100vw;height:100vh;text-align:cewnter";
-  };
+  // container.ondblclick = (e) => {
+  //   container.style =
+  //     "display:fixed; width:100vw;height:100vh;text-align:center";
+  // };
   function on_resize() {
     canvas.setAttribute("width", `${width}`);
     canvas.setAttribute("height", `${height}`);
