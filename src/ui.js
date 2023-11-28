@@ -81,17 +81,7 @@ export function mkui(
           },
         }),
         this.zoneEdit,
-        mkdiv("div", [
-          mkdiv("input", {
-            min: 1,
-            max: 128,
-            value: 100,
-            step: 1,
-            id: "vol",
-            type: "range",
-            oninput: (e) => cb([0xb0 | idx, 7, e.target.value]),
-          }),
-        ]),
+        "<br>",
       ]);
       const ampshow = mkdiv("div", {
         class: "amp-indicate",
@@ -141,6 +131,45 @@ export function mkui(
         "div",
         { style: "width:100%; display:grid; grid-template-columns:1fr 5fr" },
         [inst_header_section, sequencer]
+      );
+      this.container.append(
+        mkdiv("div", [
+          "vol",
+          mkdiv(
+            "input",
+            {
+              min: 1,
+              max: 128,
+              value: 100,
+              step: 1,
+              id: "vol",
+              type: "range",
+              oninput: (e) => cb([0xb0 | idx, 7, e.target.value]),
+            },
+            "vol"
+          ),
+          "expression",
+          mkdiv("input", {
+            min: 1,
+            max: 128,
+            value: 100,
+            step: 1,
+            id: "vol",
+            type: "range",
+            oninput: (e) =>
+              cb([0xb0 | idx, effects.expressioncoarse, e.target.value]),
+          }),
+          "pan",
+          mkdiv("input", {
+            min: 1,
+            max: 128,
+            value: 100,
+            step: 1,
+            id: "vol",
+            type: "range",
+            oninput: (e) => cb([0xb0 | idx, effects.pancoarse, e.target.value]),
+          }),
+        ])
       );
 
       this.meters = container.querySelectorAll("meter");

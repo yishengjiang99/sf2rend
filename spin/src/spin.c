@@ -9,7 +9,6 @@ int sp_idx = 0;
 spinner sps[MAX_VOICE_CNT];
 
 pcm_t pcms[4096];
-extern void consolef(float ff);
 unsigned char midi_cc_vals[nmidiChannels * 128] = {0};
 float outputs[MAX_VOICE_CNT * RENDQ * 2];
 
@@ -22,42 +21,35 @@ float lfo1Out[RENDQ];
 float lfo2Out[RENDQ];
 #define effect_floor(v) v <= -12000 ? 0 : calcp2over1200(v)
 
-void sp_wipe_output_tab()
-{
-  for (int i = 0; i < output_arr_len; i++)
-  {
+void sp_wipe_output_tab() {
+  for (int i = 0; i < output_arr_len; i++) {
     outputs[i] = 0.0f;
   }
 }
 spinner *spRef(int idx) { return &sps[idx]; }
 pcm_t *pcmRef(int sampleId) { return &pcms[sampleId]; }
-spinner *allocate_sp()
-{
+spinner *allocate_sp() {
   spinner *x = &sps[sp_idx % MAX_VOICE_CNT];
   x->outputf = &outputs[sp_idx * RENDQ * 2];
   sp_idx++;
   return x;
 }
 
-spinner *newSpinner(int ch)
-{
+spinner *newSpinner(int ch) {
   spinner *x = allocate_sp();
   x->outputf = &outputs[ch * RENDQ * 2];
   x->inputf = silence;
   x->channelId = ch;
   return x;
 }
-void trigger_release(spinner *x)
-{
+void trigger_release(spinner *x) {
   _eg_release(&x->voleg);
   _eg_release(&x->modeg);
-  if (x->zone->SampleModes > 1)
-  {
+  if (x->zone->SampleModes > 1) {
     x->is_looping = 0;
   }
 }
-void reset(spinner *x)
-{
+void reset(spinner *x) {
   x->position = 0;
   x->stride = .0f;
   x->fract = 0.0f;
@@ -74,13 +66,11 @@ void reset(spinner *x)
   x->active_dynamics_flag = 0;
 }
 
-void set_midi_cc_val(int channel, int metric, int val)
-{
+void set_midi_cc_val(int channel, int metric, int val) {
   midi_cc_vals[channel * 128 + metric] = (char)(val & 0x7f);
 }
 
-float trigger_attack(spinner *x, uint32_t key, uint32_t velocity)
-{
+float trigger_attack(spinner *x, uint32_t key, uint32_t velocity) {
 #define ccval(eff) midi_cc_vals[x->channelId * 128 + eff]
 
   x->velocity = (unsigned char)velocity;
@@ -111,8 +101,7 @@ float trigger_attack(spinner *x, uint32_t key, uint32_t velocity)
 
   eg = &x->modeg;
   eg->stage = init;
-  if (ccval(TML_BANK_SELECT_MSB) > 0)
-  {
+  if (ccval(TML_BANK_SELECT_MSB) > 0) {
     x->is_looping = 0;
   }
 
@@ -150,14 +139,12 @@ float trigger_attack(spinner *x, uint32_t key, uint32_t velocity)
   set_frequency(&x->vibrlfo, x->zone->VibLFOFreq);
   x->initialFc = x->zone->FilterFc;
   x->initialQ = p10over200[x->zone->FilterQ + 1400];
-  consolef(x->initialQ);
 
   new_lpf(&x->lpf, x->zone->FilterFc / SAMPLE_RATE, x->initialQ);
 
   return x->stride;
 };
-void set_spinner_input(spinner *x, pcm_t *pcm)
-{
+void set_spinner_input(spinner *x, pcm_t *pcm) {
   x->loopStart = pcm->loopstart;
   x->loopEnd = pcm->loopend;
   x->inputf = pcm->data;
@@ -166,16 +153,14 @@ void set_spinner_input(spinner *x, pcm_t *pcm)
   x->position = 0;
 }
 
-float calc_pitch_diff_log(zone_t *z, pcm_t *pcm, unsigned char key)
-{
+float calc_pitch_diff_log(zone_t *z, pcm_t *pcm, unsigned char key) {
   short rt = z->OverrideRootKey > -1 ? z->OverrideRootKey : pcm->originalPitch;
   float smpl_rate = rt * 100.f + z->CoarseTune * 100.f + z->FineTune;
   float diff = key * 100.f - smpl_rate;
   diff += ((pcm->sampleRate - SAMPLE_RATE) / 40.96f);
   return diff;
 }
-void set_spinner_zone(spinner *x, zone_t *z)
-{
+void set_spinner_zone(spinner *x, zone_t *z) {
   pcm_t *pcm = &pcms[z->SampleId];
   set_spinner_input(x, pcm);
   x->zone = z;
@@ -190,8 +175,7 @@ void set_spinner_zone(spinner *x, zone_t *z)
   x->sampleLength -= z->EndAddrOfs - (z->EndAddrCoarseOfs << 15);
 }
 
-void _spinblock(spinner *x, int n, int blockOffset)
-{
+void _spinblock(spinner *x, int n, int blockOffset) {
 #define ccval(eff) midi_cc_vals[x->channelId * 128 + eff]
 
   double db, dbInc;
@@ -216,8 +200,7 @@ void _spinblock(spinner *x, int n, int blockOffset)
   kRateCB += (float)x->zone->Attenuation;
   kRateCB += midi_volume_log10(ccval(TML_VOLUME_MSB));
   kRateCB += midi_volume_log10(midi_cc_vals[ch * 128 + TML_EXPRESSION_MSB]);
-  if (x->voleg.stage < decay)
-    kRateCB += midi_volume_log10(x->velocity);
+  if (x->voleg.stage < decay) kRateCB += midi_volume_log10(x->velocity);
 
   double panLeft = panleftLUT[midi_cc_vals[ch * 128 + TML_PAN_MSB]];
 
@@ -235,8 +218,7 @@ void _spinblock(spinner *x, int n, int blockOffset)
   float Q = x->initialQ;
   short initFc = x->initialFc;
 
-  for (int i = 0; i < n; i++)
-  {
+  for (int i = 0; i < n; i++) {
     db = volEgOut[i] + lfo1_volume * lfo1Out[i];
     pdiff += lfo1Out[i] * lfo1_pitch + modEgOut[i] * modeg_pitch +
              lfo2Out[i] * lfo2_pitch;
@@ -244,27 +226,23 @@ void _spinblock(spinner *x, int n, int blockOffset)
     stride = calcp2over1200(pdiff);
 
     fract = fract + stride;
-    while (fract >= 1.0f)
-    {
+    while (fract >= 1.0f) {
       position++;
       fract -= 1.0f;
     }
-    if (position >= x->loopEnd && isLooping > 0)
-      position -= looplen;
+    if (position >= x->loopEnd && isLooping > 0) position -= looplen;
 
     outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
     tfc = initFc + modeg_fc * modEgOut[i] + x->lfo1_fc * lfo1Out[i];
 
-    if (position >= nsamples)
-    {
+    if (position >= nsamples) {
       position = 0;
       outputf = 0.0;
       x->voleg.stage = done;
     }
     outputf = applyCentible(outputf, (short)(db + kRateCB));
 
-    if (tfc > .5)
-    {
+    if (tfc > .5) {
       fchertz = timecent2hertz(tfc) / SAMPLE_RATE;
       // new_lpf(&lpf, fchertz, Q);/
       outputf = calc_lpf(&lpf, outputf);
@@ -277,19 +255,16 @@ void _spinblock(spinner *x, int n, int blockOffset)
   x->stride = stride;
 }
 
-int spin(spinner *x, int n)
-{
+int spin(spinner *x, int n) {
   _spinblock(x, 64, 0);
 
   _spinblock(x, 64, 64);
 
-  if (x->voleg.egval < -1440.f)
-  {
+  if (x->voleg.egval < -1440.f) {
     x->voleg.stage = done;
     return 0;
   }
-  if (x->voleg.stage == done)
-  {
+  if (x->voleg.stage == done) {
     return 0;
   }
   return 1;
@@ -302,18 +277,15 @@ EG *get_mod_eg(spinner *x) { return &x->modeg; }
 float *get_sp_output(spinner *x) { return x->outputf; }
 int get_sp_channel_id(spinner *x) { return x->channelId; }
 
-void gm_reset()
-{
-  for (int idx = 0; idx < nmidiChannels; idx++)
-  {
+void gm_reset() {
+  for (int idx = 0; idx < nmidiChannels; idx++) {
     midi_cc_vals[idx * num_cc_list + TML_VOLUME_MSB] = 100;
     midi_cc_vals[idx * num_cc_list + TML_PAN_MSB] = 64;
     midi_cc_vals[idx * num_cc_list + TML_EXPRESSION_MSB] = 127;
     if (idx == def_drum_c)
       midi_cc_vals[idx * num_cc_list + TML_BANK_SELECT_MSB] = 128;
   }
-  for (int i = 0; i < nchannels; i++)
-    reset(&sps[i]);
+  for (int i = 0; i < nchannels; i++) reset(&sps[i]);
 }
 // #include <math.h>
 // #include <stdio.h>

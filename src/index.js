@@ -4,7 +4,7 @@ import SF2Service from "../sf2-service/index.js";
 import { fetchmidilist } from "./midilist.js";
 import { mkeventsPipe } from "./mkeventsPipe.js";
 import { createChannel } from "./createChannel.js";
-import { DRUMSCHANNEL, midi_ch_cmds } from "./constants.js";
+import { DRUMSCHANNEL, ccnames, midi_ch_cmds } from "./constants.js";
 import { sf2list } from "../sflist.js";
 import { mfilelist } from "../mfilelist.js";
 
@@ -12,7 +12,12 @@ import { readMidi } from "./midiread.js";
 import { mkcanvas, chartRect, chart } from "../chart/chart.js";
 // import * as sequence from "../dist/sequence.js";
 import { logdiv, mktabs, mkcollapse } from "./logdiv.js";
-import { mk_vcf_ctrl, mk_vca_ctrl, mk_filter_ctrls } from "./eqslide.js";
+import {
+  mk_vcf_ctrl,
+  mk_vca_ctrl,
+  mk_filter_ctrls,
+  mk_eq_bar,
+} from "./eqslide.js";
 import { initNavigatorMidiAccess } from "./initNavigatorMidiAccess.js";
 function $(sel) {
   return document.querySelector(sel);
@@ -22,13 +27,14 @@ const sf2select = $("#sf2select");
 
 const drumList = document.querySelector("#drums");
 const programList = document.querySelector("#programs");
+export const navhead = document.querySelector("header");
 const analyze = document.querySelector("#analyze");
 const debugContainer = document.querySelector("#debug");
 const footer = document.querySelector("footer");
 
 const stdoutdiv = document.querySelector("#stdout");
 const debugInfo = mkdiv("pre");
-const ctrbar = mkdiv("div");
+const ctrbar = mkdiv("dialog");
 const debugInfo2 = mkdiv("pre");
 
 const ffholder = mkdiv("div", { style: "display:flex;flex-direction:row" });
@@ -49,7 +55,7 @@ mkcollapse({ title: "fft", defaultOpen: true }, ffholder).attachTo(analyze);
 mkcollapse({ title: "debug", defaultOpen: false }, debugInfo).attachTo(
   debugContainer
 );
-mkcollapse({ title: "ctr", defaultOpen: false }, ctrbar).attachTo(
+mkcollapse({ title: "ctr", defaultOpen: true }, ctrbar).attachTo(
   document.querySelector("#ch_ctrl_bar")
 );
 mkcollapse({ title: "debug2", defaultOpen: false }, debugInfo2).attachTo(
@@ -116,7 +122,7 @@ let nextChannel = 0;
 export const ui = mkui(eventPipe, $("#channelContainer"), {
   onTrackDoubleClick: async (channelId, e) => {
     const sp1 = await apath.querySpState({ query: 2 * channelId });
-    globalThis.stderr(JSON.stringify(sp1, null, 1));
+    // globalThis.stderr(JSON.stringify(sp1, null, 1));
   },
   onEditZone: (editData) => {
     spinner.port.postMessage(editData);

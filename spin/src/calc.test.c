@@ -1,8 +1,8 @@
-#include "calc.h"
-
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
+
+#include "spin.h"
 
 #define assert_close(x, y) assert(fabs(x - y) < .01)
 int main() {

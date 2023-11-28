@@ -139,8 +139,8 @@ export async function mkpath2(ctx, { midi_input, sf2File }) {
       );
       mkdiv("input", {
         type: "range",
-        min: -960,
-        max: 120,
+        min: -260,
+        max: 220,
         ariaLabel: "master g",
         oninput: (e) =>
           mastGain.gain.linearRampToValueAtTime(

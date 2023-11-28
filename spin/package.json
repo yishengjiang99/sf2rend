@@ -5,7 +5,7 @@
   "type": "module",
   "main": "spin.js",
   "scripts": {
-    "build": "make",
+    "build": "sh build.sh",
     "test": "gcc src/eg.test.c; ./a.out"
   },
   "keywords": [],

@@ -116,7 +116,7 @@ main {
 }
 
 .channelCard:hover {
-  background-color: #333333;
+ // background-color: #333333;
 }
 
 #stdout {

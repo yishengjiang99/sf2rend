@@ -149,7 +149,10 @@ function App({ timerWorker, midiInfo, eventPipe }) {
     <>
       <div key="adf">
         <div>
-          clock: {(clock / 1000).toFixed(2).toString().split(".").join(":")}
+          <div>
+            clock: {(clock / 1000).toFixed(2).toString().split(".").join(":")}
+          </div>
+          <span>Bar: {~~(ticks / tm.ppqn)}</span>
         </div>
         <span>
           {available_btns[timerState].map((cmd) => (
@@ -167,7 +170,6 @@ function App({ timerWorker, midiInfo, eventPipe }) {
           ))}
         </span>
 
-        <span>Bar: {~~(ticks / tm.ppqn)}</span>
         <input
           type="number"
           step="1"
