@@ -35,7 +35,6 @@ const debugContainer = document.querySelector("#debug");
 const footer = document.querySelector("footer");
 const stdoutdiv = document.querySelector("#stdout");
 const debugInfo = mkdiv("pre");
-const ctrbar = mkdiv("dialog");
 const debugInfo2 = mkdiv("pre");
 const ffholder = mkdiv("div", { style: "display:flex;flex-direction:row" });
 const ff = { container: ffholder, width: 220, height: 150 };
@@ -55,9 +54,7 @@ mkcollapse({ title: "fft", defaultOpen: true }, ffholder).attachTo(analyze);
 mkcollapse({ title: "debug", defaultOpen: false }, debugInfo).attachTo(
   debugContainer
 );
-mkcollapse({ title: "ctr", defaultOpen: true }, ctrbar).attachTo(
-  document.querySelector("#ch_ctrl_bar")
-);
+
 mkcollapse({ title: "debug2", defaultOpen: false }, debugInfo2).attachTo(
   debugContainer
 );
@@ -115,7 +112,10 @@ export const ui = mkui(
   uiInputs()
 );
 
-const { push_ch, tabs } = mktabs({ group: "set_group", container: ctrbar });
+const { push_ch, tabs } = mktabs({
+  group: "set_group",
+  container: document.querySelector("#ch_ctr_bar"),
+});
 uiControllers = ui.controllers;
 
 for (let i = 0; i < 16; i++) {
@@ -132,7 +132,7 @@ for (let i = 0; i < 16; i++) {
   );
 }
 
-document.body.querySelector(".tabs > input").setAttribute("checked", "");
+document.body.querySelector(".tabs > input")?.setAttribute("checked", "");
 
 if (midiUrl) {
   await onMidionURLSelect(midiUrl);
