@@ -1,6 +1,6 @@
-import {wasmbin} from "./spin.wasm.js";
-import {egStruct, spRef2json} from "./spin-structs.js";
-import {midi_ch_cmds} from "../src/midilist.js";
+import { wasmbin } from "./spin.wasm.js";
+import { egStruct, spRef2json } from "./spin-structs.js";
+import { midi_ch_cmds } from "../src/midilist.js";
 import saturate from "../saturation/index.js";
 const nchannels = 16;
 const voices_per_channel = 4;
@@ -37,12 +37,11 @@ class SpinProcessor extends AudioWorkletProcessor {
       this.inst.exports.midi_cc_vals,
       128 * 16
     );
-    this.port.postMessage({init: 1});
+    this.port.postMessage({ init: 1 });
     this.debug = false;
     this.ringbus = ring_bus();
     const zonePtr = this.malololc(120);
     this.zoneAttr = new Int16Array(this.memory.buffer, zonePtr, 60);
-
   }
   setup_wasm() {
     this.memory = new WebAssembly.Memory({
@@ -66,15 +65,15 @@ class SpinProcessor extends AudioWorkletProcessor {
     };
   }
   async handleMsg(e) {
-    const {data} = e;
+    const { data } = e;
     if (data.stream && data.segments) {
       await this.loadsdta(data);
-      this.port.postMessage({zack: 2});
+      this.port.postMessage({ zack: 2 });
     } else if (data.zArr && data.presetId !== null) {
-      for (const {arr, ref} of data.zArr) {
+      for (const { arr, ref } of data.zArr) {
         this.setZone(ref, arr, data.presetId); //.set
       }
-      this.port.postMessage({zack: 1});
+      this.port.postMessage({ zack: 1 });
     } else if (data.cmd) {
       switch (data.cmd) {
         case "debug":
@@ -91,7 +90,7 @@ class SpinProcessor extends AudioWorkletProcessor {
           break;
         case "newZone":
           this.setZone(data.zone.ref, data.zone.arr);
-          this.port.postMessage({ack: 1});
+          this.port.postMessage({ ack: 1 });
           break;
       }
     } else if (data.update) {
@@ -127,7 +126,6 @@ class SpinProcessor extends AudioWorkletProcessor {
           if (!this.sp_map[channel * 128 + key]) throw "unexpected emty sp_map";
           for (const sp of this.sp_map[channel * 128 + key]) {
             this.inst.exports.trigger_release(sp);
-            this.respondQuery(sp);
           }
 
           this.port.postMessage({ ack: [0x80, channel] });
@@ -168,7 +166,7 @@ class SpinProcessor extends AudioWorkletProcessor {
         eg2Info: egStruct(
           this.memory.buffer,
           this.inst.exports.get_mod_eg(ref)
-        )
+        ),
       },
     });
   }
@@ -184,7 +182,7 @@ class SpinProcessor extends AudioWorkletProcessor {
 
   async loadsdta(data) {
     const {
-      segments: {sampleId, nSamples, loops, originalPitch, sampleRate: sr},
+      segments: { sampleId, nSamples, loops, originalPitch, sampleRate: sr },
       stream,
     } = data;
     const offset = this.malololc(4 * nSamples);
@@ -210,7 +208,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.inst.exports.sp_wipe_output_tab();
     const thisBus = this.ringbus.this_bus;
     const nextBus = this.ringbus.next_bus;
-    let loudnorm = 1;
+    let loudnorm = 0.1;
     const ch_rms = Array(16).fill(0);
     const skipped = [];
 
@@ -229,21 +227,21 @@ class SpinProcessor extends AudioWorkletProcessor {
       const [left, right] = outputs[sp_midi_channel];
       if (ch_rms[sp_midi_channel] > 1.0) {
         skipped.push(sp_midi_channel);
+        continue;
       }
       for (let j = 0; j < 128; j++) {
         left[j] = saturate(left[j] + outputf[j] * loudnorm);
         right[j] = saturate(right[j] + outputf[j + 128] * loudnorm);
-        ch_rms[sp_midi_channel] += left[j] * left[j];
+        ch_rms[sp_midi_channel] += left[j] * right[j];
       }
-      ch_rms[sp_midi_channel] /= 128;
       if (goAgain) nextBus.unshift(spref);
     }
     this.ringbus.bus_ran();
     const rend_time = globalThis.currentTime - tick;
-    this.sendReport({ch_rms, skipped, rend_time});
+    this.sendReport({ ch_rms, skipped, rend_time });
     return true;
   }
-  sendReport({ch_rms, skipped, rend_time}) {
+  sendReport({ ch_rms, skipped, rend_time }) {
     if (null == this.lastRan) return;
     if (
       this.debug ||
@@ -288,7 +286,7 @@ async function downloadData(stream, fl) {
   };
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    const {done, value} = await reader.read();
+    const { done, value } = await reader.read();
     if (done) {
       await stream.closed;
       break;

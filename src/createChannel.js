@@ -34,7 +34,7 @@ export function createChannel(uiController, channelId, sf2, apath) {
       } else if (cc === midi_effects.bankselectfine) {
         bankId |= val;
       }
-      uiController.CC = {key: cc, value: val};
+      uiController.CC = { key: cc, value: val };
     },
     keyOn(key, vel) {
       const zones = program.filterKV(key, vel);

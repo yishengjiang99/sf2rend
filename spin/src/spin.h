@@ -136,6 +136,8 @@ void advanceStage(EG* eg) {
       return;
     case init:
       eg->stage = delay;
+      eg->egval = MAX_EG;
+
       if (eg->delay > -12000) {
         eg->egval = MAX_EG;
         eg->nsteps = timecent2sample(eg->delay);
@@ -144,45 +146,57 @@ void advanceStage(EG* eg) {
       }
     case delay:
       eg->stage = attack;
-      if (eg->attack > -12000) {
-        eg->egval = MAX_EG;
-        eg->nsteps = timecent2sample(eg->attack);
-        eg->progress = double2fixed(0);
-        eg->progressInc = double2fixed(255.0 / (double)eg->nsteps);
-        break;
-      }
+      eg->egval = MAX_EG;
+      eg->nsteps = timecent2sample(eg->attack);
+      eg->progress = double2fixed(0);
+      eg->progressInc = double2fixed(255.0 / (double)eg->nsteps);
+      break;
     case attack:
       eg->stage = hold;
       eg->egval = 0.0f;
       eg->nsteps = timecent2sample(eg->hold);
       eg->egIncrement = 0.0f;
+
       break;
     case hold: /** TO DECAY */
       eg->stage = decay;
-      /*
-       * This is the time, in absolute timecents, for a 100% change in the
-  Volume Envelope value during decay phase. */
-      // velopcity required to travel full 960db
-      eg->nsteps = timecent2sample(eg->decay) + timecent2sample(eg->release);
-      eg->egIncrement = MAX_EG / eg->nsteps;
 
-      // but it's timeslice by sustain percentage?
-      eg->nsteps = timecent2sample(eg->decay);
+      if (eg->sustain > 0) {
+        eg->nsteps = timecent2sample(eg->decay);
+        eg->egIncrement = (MAX_EG + eg->sustain) / eg->nsteps;
+      } else {
+        eg->nsteps = 0;
+      }
       break;
 
     case decay:  // headsing to released;
+
+      /*
+      37 sustainVolEnv This is the decrease in level, expressed in centibels,
+      to which the Volume Envelope value ramps during the decay phase. For the
+      Volume Envelope, the sustain level is best expressed in centibels of
+      attenuation from full scale. A value of 0 indicates the sustain level is
+      full level; this implies a zero duration of decay phase regardless of
+      decay time. A positive value indicates a decay to the corresponding
+      level. Values less than zero are to be interpreted as zero;
+      conventionally 1000 indicates full attenuation. For example, a sustain
+      level which corresponds to an absolute value 12dB below of peak would be
+      120.*/
       eg->stage = sustain;
       eg->egIncrement = 0.0f;
-      eg->nsteps = 48000;
+      eg->nsteps = 418000;
       break;
 
       // sustain = % decreased during decay
 
     case sustain: {
-      int stepsFull = timecent2sample(eg->release + eg->decay);
-      eg->egIncrement = MAX_EG / stepsFull;
-      eg->nsteps = stepsFull * (eg->egval / MAX_EG);
-    } break;
+      eg->stage = release;
+      int stepsFull =
+          timecent2sample(eg->release);  //+ timecent2sample(eg->decay);
+      eg->egIncrement = -eg->sustain / (float)stepsFull;
+      eg->nsteps = stepsFull;  // stepsFull * (eg->egval / MAX_EG);
+      break;
+    }
     case release:
       eg->stage = done;
       break;

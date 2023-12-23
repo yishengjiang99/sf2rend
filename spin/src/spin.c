@@ -54,9 +54,9 @@ void reset(spinner *x) {
   x->stride = .0f;
   x->fract = 0.0f;
   x->modeg.stage = inactive;
-  x->modeg.egval = -960.0f;
+  x->modeg.egval = MAX_EG;
   x->modeg.egIncrement = 0;
-  x->voleg.egval = -960.0f;
+  x->voleg.egval = MAX_EG;
   x->voleg.stage = inactive;
   x->voleg.egIncrement = 0;
   x->voleg.hasReleased = 0;
@@ -92,7 +92,7 @@ float trigger_attack(spinner *x, uint32_t key, uint32_t velocity) {
                     : z->VolEnvRelease * scaleFactor;
   eg->sustain = (ccval(VCA_SUSTAIN_LEVEL) > 0)
                     ? (short)(ccval(VCA_SUSTAIN_LEVEL) / 128.f * 1000.f)
-                    : z->VolEnvRelease * scaleFactor;
+                    : z->VolEnvSustain;
 
   eg->delay = z->VolEnvDelay * scaleFactor;
   eg->hold = z->VolEnvHold * scaleFactor;
@@ -118,7 +118,7 @@ float trigger_attack(spinner *x, uint32_t key, uint32_t velocity) {
                     : z->ModEnvRelease * scaleFactor;
   eg->sustain = (ccval(VCF_SUSTAIN_LEVEL) > 0)
                     ? (short)(ccval(VCF_SUSTAIN_LEVEL) / 128.f * 1000.f)
-                    : z->ModEnvRelease * scaleFactor;
+                    : z->ModEnvSustain;
 
   x->pitch_dff_log = calc_pitch_diff_log(x->zone, x->pcm, x->key);
 
@@ -170,9 +170,9 @@ void set_spinner_zone(spinner *x, zone_t *z) {
                  (unsigned short)(z->StartAddrCoarseOfs << 15);
   x->loopStart += (unsigned short)z->StartLoopAddrOfs +
                   (unsigned short)(z->StartLoopAddrCoarseOfs << 15);
-  x->loopEnd -= (unsigned short)z->EndLoopAddrOfs -
+  x->loopEnd -= (unsigned short)z->EndLoopAddrOfs +
                 (unsigned short)(z->EndLoopAddrCoarseOfs << 15);
-  x->sampleLength -= z->EndAddrOfs - (z->EndAddrCoarseOfs << 15);
+  x->sampleLength -= z->EndAddrOfs + (z->EndAddrCoarseOfs << 15);
 }
 
 void _spinblock(spinner *x, int n, int blockOffset) {
@@ -219,7 +219,7 @@ void _spinblock(spinner *x, int n, int blockOffset) {
   short initFc = x->initialFc;
 
   for (int i = 0; i < n; i++) {
-    db = volEgOut[i] + lfo1_volume * lfo1Out[i];
+    db = volEgOut[i];  //+ lfo1_volume * lfo1Out[i];
     pdiff += lfo1Out[i] * lfo1_pitch + modEgOut[i] * modeg_pitch +
              lfo2Out[i] * lfo2_pitch;
 
@@ -242,11 +242,11 @@ void _spinblock(spinner *x, int n, int blockOffset) {
     }
     outputf = applyCentible(outputf, (short)(db + kRateCB));
 
-    if (tfc > .5) {
-      fchertz = timecent2hertz(tfc) / SAMPLE_RATE;
-      // new_lpf(&lpf, fchertz, Q);/
-      outputf = calc_lpf(&lpf, outputf);
-    }
+    // if (tfc > .5) {
+    //   fchertz = timecent2hertz(tfc) / SAMPLE_RATE;
+    //   new_lpf(&lpf, fchertz, Q);
+    //   outputf = calc_lpf(&lpf, outputf);
+    // }
     output_L[i] = applyCentible(outputf, panLeft);
     output_R[i] = applyCentible(outputf, panRight);
   }
@@ -261,7 +261,7 @@ int spin(spinner *x, int n) {
   _spinblock(x, 64, 64);
 
   if (x->voleg.egval < -1440.f) {
-    x->voleg.stage = done;
+    // x->voleg.stage = done;
     return 0;
   }
   if (x->voleg.stage == done) {

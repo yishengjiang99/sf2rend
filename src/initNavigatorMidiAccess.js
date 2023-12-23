@@ -1,7 +1,10 @@
 import { mkdiv } from "../mkdiv/mkdiv.js";
-import { navhead, eventPipe, ui } from "./index.js";
 
-export async function initNavigatorMidiAccess() {
+export async function initNavigatorMidiAccess({
+  container,
+  eventPipe,
+  inputChannel,
+}) {
   let midiAccess = await navigator.requestMIDIAccess();
   if (!midiAccess) {
     // eslint-disable-next-line no-unused-vars
@@ -15,7 +18,7 @@ export async function initNavigatorMidiAccess() {
           },
         },
         "link midi"
-      ).attachTo(navhead);
+      ).attachTo(container);
     });
   }
   if (midiAccess) {
@@ -41,9 +44,9 @@ export async function initNavigatorMidiAccess() {
           )
         ),
       ]
-    ).attachTo(navhead);
+    ).attachTo(container);
     Array.from(midiAccess.inputs.values())[0].onmidimessage = ({ data }) => {
-      data[0] |= ui.activeChannel;
+      data[0] |= inputChannel;
       eventPipe.postMessage(data);
     };
   }

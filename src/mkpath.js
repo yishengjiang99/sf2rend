@@ -57,8 +57,8 @@ export async function mkpath2(ctx, { midi_input, sf2File }) {
       return spinner.port;
     },
     detectClips(canvas) {
-      //const timer = drawLoops(canvas, clipdetect);
-      //spinner.connect(clipdetect, 18);
+      const timer = drawLoops(canvas, clipdetect);
+      spinner.connect(clipdetect, 18);
       return function cleanup() {
         cancelAnimationFrame(timer);
       };
