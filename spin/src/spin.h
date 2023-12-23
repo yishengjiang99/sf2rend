@@ -194,7 +194,7 @@ void advanceStage(EG* eg) {
       int stepsFull =
           timecent2sample(eg->release);  //+ timecent2sample(eg->decay);
       eg->egIncrement = -eg->sustain / (float)stepsFull;
-      eg->nsteps = stepsFull;  // stepsFull * (eg->egval / MAX_EG);
+      eg->nsteps = stepsFull * (eg->egval / MAX_EG);
       break;
     }
     case release:

@@ -1,7 +1,6 @@
 import { mkdiv, mkdiv2 } from "../mkdiv/mkdiv.js";
 import { mkui } from "./ui.js";
 import SF2Service from "../sf2-service/index.js";
-import { fetchmidilist } from "./midilist.js";
 import { mkeventsPipe } from "./mkeventsPipe.js";
 import { createChannel } from "./createChannel.js";
 import { DRUMSCHANNEL, ccnames, midi_ch_cmds } from "./constants.js";
@@ -20,7 +19,7 @@ import {
 import { initNavigatorMidiAccess } from "./initNavigatorMidiAccess.js";
 
 const urlParams = new URLSearchParams(document.location.search);
-const sf2file = urlParams.get("sf2file") || "static/file.sf2";
+const sf2file = urlParams.get("sf2file") || "static/SoundBlasterOld.sf2";
 const midiUrl = urlParams.get("midiUrl") || "song.mid";
 
 // import * as sequence from "../dist/sequence.js";
@@ -74,13 +73,6 @@ let uiControllers, ctx;
 
 const channels = [];
 
-const midiList = await fetchmidilist();
-stdout(midiList[0].Url + "  ");
-
-const mUrl = midiUrl
-  ? midiList.map((f) => f.Url).find((f) => f.includes(midiUrl))
-  : midiUrl;
-
 for (const f of sf2list) sf2select.append(mkdiv("option", { value: f }, f));
 sf2select.value = sf2file;
 sf2select.onchange = (e) => {
@@ -93,19 +85,18 @@ const midiSelect = mkdiv2({
   style: "width:300px",
   value: midiUrl,
   oninput: function (e) {
-    document.location.href = "?midiUrl=" + e.target.value;
+    document.location.href = "?midiUrl=" + encodeURIComponent(e.target.value);
   },
   children: [
     mkdiv("option", { name: "select midi", value: null }, "select midi file"),
     ...mfilelist.map((f) =>
       mkdiv("option", { value: f }, decodeURI(f).split("/").pop())
     ),
-    ...midiList.map((f) => mkdiv("option", { value: f.Url, name: f.Name })),
   ],
 });
-midiSelect.value = mUrl;
 
 midiSelect.attachTo(document.querySelector("#midilist"));
+midiSelect.value = midiUrl;
 ctx = new AudioContext({
   sampleRate: 44100,
 });
@@ -143,9 +134,8 @@ for (let i = 0; i < 16; i++) {
 
 document.body.querySelector(".tabs > input").setAttribute("checked", "");
 
-// onMidionURLSelect(mUrl);
-if (mUrl) {
-  await onMidionURLSelect(mUrl);
+if (midiUrl) {
+  await onMidionURLSelect(midiUrl);
 } else {
   channels[nextChannel++].setProgram(0, 0);
   channels[DRUMSCHANNEL].setProgram(0, 128);
@@ -323,7 +313,6 @@ function draw() {
   chartRect(cv1, apath.analysis.frequencyBins);
   chart(cv2, apath.analysis.waveForm);
   for (const c of uiControllers) {
-    if (!c.active) continue;
     c.rendFrame(ctx.currentTime);
   }
 

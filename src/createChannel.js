@@ -21,7 +21,6 @@ export function createChannel(uiController, channelId, sf2, apath) {
         return;
       }
       await spinner.shipProgram(program, pid | bid);
-      uiController.hidden = false;
       uiController.name = program.name;
       uiController.presetId = this.presetId;
       uiController.zone = program.filterKV(60, 60)[0];
@@ -47,7 +46,7 @@ export function createChannel(uiController, channelId, sf2, apath) {
           zone.arr,
         ]);
       });
-
+      uiController.zone = zones[0];
       if (!zones[0]) return;
       return zones[0];
     },

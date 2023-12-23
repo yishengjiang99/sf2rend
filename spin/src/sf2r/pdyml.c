@@ -228,8 +228,6 @@ int main(int argc, char **args) {
   sprintf(str, "cshf/%s.txt", basename((char *)filename));
   printf("\n%s", str);
 
-  //  freopen(str, "w+", stdout);
-
   sheader_t *header = (sheader_t *)malloc(sizeof(sheader_t));
   header2_t *h2 = (header2_t *)malloc(sizeof(header2_t));
   fread(header, sizeof(sheader_t), 1, fd);
