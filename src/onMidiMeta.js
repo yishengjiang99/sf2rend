@@ -1,4 +1,4 @@
-function onMidiMeta(stderr, e) {
+export function onMidiMeta(stderr, e) {
   const metalist = [
     "seq num",
     "text",

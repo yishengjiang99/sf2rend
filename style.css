@@ -1,124 +1,221 @@
-th {
-  background: white;
-  position: sticky;
-  top: 0; /* Don't forget this, required for the stickiness */
-  box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
-}
-.channelCard {
-  margin: 30px;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  position:relative;
+.main {
+  display: flex;
+  width: 100%;
+  overflow: hidden;
+  padding: 0 30px;
+  margin: 5px auto;
 }
-.channelCard:hover {
-  background-color:gray;
-  color:black;
-  
-}
-.amp-indicate {
-  height: 20px;
 
-  bottom:0;
+.col {
+  height: 100%;
+}
+.col:last-child {
+  flex-grow: 1;
+}
+
+i.fas {
+  font-size: 22px;
+}
+
+.toggle_fa {
+  cursor: pointer;
+}
+
+.toggle_fa > input {
+  opacity: 0;
   position: absolute;
-  background-color: blue;
-  width: calc(var(--db)* 200px);
+  right: 0;
+  user-select: none;
 }
+
+.toggle_fa > input:not(:checked) + label > i + i::before {
+  display: none;
+}
+
+.toggle_fa > input:checked + label > i:first-of-type {
+  display: none;
+}
+
+.led-green {
+  margin: 0 auto;
+  width: 24px;
+  height: 24px;
+  background-color: #abff00;
+  border-radius: 50%;
+  box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 7px 1px, inset #304701 0 -1px 9px,
+    #89ff00 0 2px 12px;
+}
+
 body {
   margin: 0;
   padding: 0;
+  max-width: 100vw;
+  overflow-x: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
 
-}
-.sans-serif {
-  font-family: -apple-system,BlinkMacSystemFont,avenir next,avenir,helvetica neue,helvetica,ubuntu,roboto,noto,segoe ui,arial,sans-serif;
-}
 main {
+  display: flex;
+  flex-grow: 1;
+  min-height: 600px;
+  height: auto !important;
+  height: 600px;
+}
+
+.fixed-top-right {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+}
+
+.tabs > input + label + div {
+  display: none;
+}
+
+.tabs > input:checked + label {
+  color: gold;
+}
+
+.tabs > input:checked + label + div {
+  display: block;
+}
+
+.knob-set {
+  background-color: #323233;
+  color: white;
+  margin-top: 2em;
+  padding: 20px;
+  display: flex;
+  max-width: fit-content;
+}
+
+.ctrls {
   display: grid;
-  grid-template-areas: 'channelP info''channelP stdout';
-  padding:20px;
-}
-#channelContainer{
-  grid-area: channelP;
-  max-height: 80vh;
-  overflow-y: scroll;
-}
-#stdout{
-  grid-area: stdout;
-}
-#info {
-  grid-area: info;
+  grid-template-columns: 1fr 1fr 1fr 3fr;
 }
 
+.onoff_indicate::after {
+  content: "(" + attr(name) + ")";
+}
 
-* { 
-  -webkit-box-sizing: border-box; 
-  -moz-box-sizing: border-box; 
-  -o-box-sizing: border-box; 
-  box-sizing: border-box; 
-  /* adds animation for all transitions */ 
-  -webkit-transition: .25s ease-in-out; 
-  -moz-transition: .25s ease-in-out; 
-  -o-transition: .25s ease-in-out; 
-  transition: .25s ease-in-out; 
-  margin: 0; 
-  padding: 0; 
-  -webkit-text-size-adjust: none; 
-  } 
-  
-  /* Makes sure that everything is 100% height */ 
-  
-  html,body { 
-  height: 100%; 
-  overflow: hidden;   background: rgba(255,255,255,.0); 
+.channelCard {
+  position: relative;
+  border: 1px;
+  padding: 3px;
+  border: black solid 1px;
+}
 
-  } 
-  
-  /* gets the actual input out of the way; 
-  we're going to style the label instead */ 
-  
-  #drawer-toggle { 
-  position: absolute; 
-  opacity: 0; 
-  }
-  
-  #drawer-toggle-label { 
-  -webkit-touch-callout: none; 
-  -webkit-user-select: none; 
-  -khtml-user-select: none; 
-  -moz-user-select: none; 
-  -ms-user-select: none; 
-  user-select: none; 
-  left: 0px; 
-  height:50px; 
-  width: 50px; 
-  display: block; 
-  position: fixed; 
-  background: rgba(255,255,255,.0); 
-  z-index: 1; 
-  } 
-  
-  /* adds our "hamburger" menu icon */ 
-  
-  #drawer-toggle-label:before { 
-  content: ''; 
-  display: block; 
-  position: absolute; 
-  height: 2px; 
-  width: 24px; 
-  background: #8d8d8d; 
-  left: 13px; 
-  top: 18px; 
-  box-shadow: 0 6px 0 #8d8d8d, 0 12px 0 #8d8d8d; 
-  } 
-  
-  header { 
-  width: 100%; 
-  position: fixed; 
-  left: 0px; 
-  padding: 10px 10px 10px 50px; 
-  font-size: 30px; 
-  line-height: 30px; 
-  z-index: 0; 
-  margin:20px;
-  }
-  
-  /* drawer menu pane - note the 0px width */ 
-  
+.channelCard:nth-child(2n) {
+  background-color: #222;
+}
+
+.channelCard:hover {
+ // background-color: #333333;
+}
+
+#stdout {
+  position: absolute;
+  right: 0;
+}
+
+.amp-indicate {
+  height: 20px;
+  position: absolute;
+  bottom: 10px;
+  background-image: linear-gradient(to right, green, yellow, red);
+  width: calc(var(--db) * 700px);
+}
+
+.sans-serif {
+  font-family: -apple-system, BlinkMacSystemFont, avenir next, avenir,
+    helvetica neue, helvetica, ubuntu, roboto, noto, segoe ui, arial, sans-serif;
+}
+#ch_ctrl_bar {
+  position: absolute;
+  top: 20vh;
+  right:10em;
+}
+
+.keyboard {
+  height: 12em;
+  width: 38em;
+  left: 14em;
+  position: relative;
+  border: 1px solid #160801;
+  border-radius: 1em;
+  background: black;
+}
+
+.keywhite {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  position: relative;
+  float: left;
+  height: 12em;
+  width: 3em;
+  z-index: 1;
+  border-left: 1px solid #bbb;
+  border-bottom: 1px solid #bbb;
+  border-radius: 0 0 5px 5px;
+  box-shadow: -1px 0 0 rgba(255, 255, 255, 0.8) inset, 0 0 5px #ccc inset,
+    0 0 3px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(to bottom, #eee 0, #fff 100%);
+  margin: 0 0 0 -1em;
+}
+.keywhite.active {
+  border-top: 1px solid #777;
+  border-left: 1px solid #999;
+  border-bottom: 1px solid #999;
+  box-shadow: 2px 0 3px rgba(0, 0, 0, 0.1) inset, -5px 5px 20px rgba(0, 0, 0, 0.2) inset,
+    0 0 3px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(to bottom, #fff 0, #e9e9e9 100%);
+}
+.keywhite.pressed {
+  border-top: 1px solid #777;
+  border-left: 1px solid #999;
+  border-bottom: 1px solid #999;
+  box-shadow: 2px 0 3px rgba(0, 0, 0, 0.1) inset, -5px 5px 20px rgba(0, 0, 0, 0.2) inset,
+    0 0 3px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(to bottom, #fff 0, #e9e9e9 100%);
+}
+.keyblack {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  position: relative;
+  float: left;
+  height: 8em;
+  width: 1.5em;
+  margin: 0 0 0 -1em;
+  z-index: 2;
+  border: 1px solid #000;
+  border-radius: 0 0 3px 3px;
+  box-shadow: -1px -1px 2px rgba(255, 255, 255, 0.2) inset, 0 -5px 2px 3px rgba(0, 0, 0, 0.6) inset,
+    0 2px 4px rgba(0, 0, 0, 0.5);
+  background: linear-gradient(45deg, #222 0, #555 100%);
+}
+.keyblack:active {
+  box-shadow: -1px -1px 2px rgba(255, 255, 255, 0.2) inset, 0 -2px 2px 3px rgba(0, 0, 0, 0.6) inset,
+    0 1px 2px rgba(0, 0, 0, 0.5);
+  background: linear-gradient(to right, #444 0, #222 100%);
+}
+
+.keyblack:pressed {
+  box-shadow: -1px -1px 2px rgba(255, 255, 255, 0.2) inset, 0 -2px 2px 3px rgba(0, 0, 0, 0.6) inset,
+    0 1px 2px rgba(0, 0, 0, 0.5);
+  background: linear-gradient(to right, #444 0, #222 100%);
+}
+.A,
+.C,
+.D,
+.F,
+.G {
+  margin: 0 0 0 -1em;
+}

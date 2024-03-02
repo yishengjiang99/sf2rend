@@ -20,26 +20,29 @@
 
 		.note {
 			display: inline-block;
+			--track: 0;
+		}
+		.track-event {
+			top: calc(var(--track)*30px);
 		}
 
 		.note {
-			margin-left: calc(var(--delay) * 1px);
-			transform: translateY(calc(var(--midi)*1px));
+			margin-left: calc(var(--delay) * 3px);
+			transform: translateY(calc(var(--midi)*3px));
 		}
 
 		.noteoff {
 			display: inline-block;
-			width: calc(var(--delay) * 1px);
+			width: calc(var(--delay) * 3px);
 			background-color: red;
-
-			transform: translateY(calc(var(--midi)*5px));
+			transform: translateY(calc(var(--midi)*3px));
 		}
 
 		.blue {
 			height: 20px;
 			width: 20px;
 			background-color: blue;
-			transform: translateY(calc(var(--timer-bar) * 1px));
+			left: 10px;
 		}
 
 	</style>
@@ -48,21 +51,16 @@
 
 	<!-- We will put our React component inside this div. -->
 	<div id="root"></div>
-	<div style="display:flex;flex-direction:column">
-		<div class="blue"></div>
-		<div class="blue"></div>
-		<div class="blue"></div>
-		<div class="blue"></div>
-		<div class="blue"></div>
-		<div class="blue"></div>
-		<div class="blue"></div>
-	</div>
+	<div class="blue"></div>
+
 
 	<!-- Load React. -->
 	<!-- Note: when deploying, replace "development.js" with "production.min.js". -->
-	<script type="module">import {midi_ch_cmds} from "./src/midilist.js";
-		import {readMidi} from "https://unpkg.com/midiread";
-		import Sf2Service from "https://unpkg.com/sf2-service"; import {mkdiv} from "https://unpkg.com/mkdiv";
+	<script type="module">
+		import {midi_ch_cmds} from "./src/midilist.js";
+		import {readMidi} from "./src/midiread.js";
+		import Sf2Service from "./sf2-service/sf2.js";
+		import {mkdiv} from "./mkdiv/mkdiv.js";
 
 		const {change_program, continuous_change, keyaftertouch} = midi_ch_cmds;
 		const default_cc = {
@@ -78,7 +76,7 @@
 			const {presets, tracks, division, tempos, meta} = await readMidi(
 				new Uint8Array(await (await fetch(url)).arrayBuffer())
 			);
-			const worker = new Worker(`./src/timer.js?mspqn=${tempos[0].tempo}&ppqn=${division}`)
+			const worker = new Worker(`./src/sequence/timer.js?mspqn=${tempos[0].tempo}&ppqn=${division}`)
 
 
 			document.body.innerHTML += JSON.stringify(tempos) + JSON.stringify(division) + JSON.stringify(meta)
@@ -88,10 +86,12 @@
 				for (let i = 0;i < track.length & c < 5000;i++) {
 					const e = track[i];
 					if (e.cmd == '9' || e.cmd == '8') {
-						const cc = e.cmd !== '8' && e.channel[2] ? "note" : "noteoff";
+						const cc = e.cmd !== '8' && e.channel[2] ? "note track-event" : "noteoff track-event";
 						const pmk = mkdiv('label', {class: cc}, "|");
 						pmk.style.setProperty("--midi", e.channel[1]);
 						pmk.style.setProperty("--delay", e.delay);
+						pmk.style.setProperty("--track", i);
+
 						div.append(pmk);
 
 						c += e.delay;
@@ -99,9 +99,9 @@
 				}
 				document.body.append(div)
 			});
-
-			let msQn = tempos && tempos.length ? tempos[0].tempo : 500000;
-			let interval = msQn / 1000 / division;
+			const ppqn = division;
+			let msqn = tempos && tempos.length ? tempos[0].tempo : 500000;
+			//let interval = msQn / 1000 / division;
 			await sf2Loaded;
 			const programsLoaded = Promise.all(
 				presets.map(async (preset) => {
@@ -257,7 +257,8 @@
 				}
 			}
 			worker.onmessage = (e) => {
-				const sysTick = e.data;
+				const sysTick = e.data.ticks;
+				console.log(e.data)
 
 				for (let i = 0;i < soundtracks.length;i++) {
 					const track = soundtracks[i];
@@ -269,10 +270,10 @@
 
 				if (e.data % 1000 < 1) console.log(e.data);
 
-				bar.style.setProperty("--timer-bar", (ctx.currentTime << 21) >> 16);
+				bar.style.setProperty("--timer-bar", ctx.currentTime);
 			};
-			worker.postMessage({interval});
-			worker.postMessage({start: 1});
+			worker.postMessage({tm: {msqn, ppqn}});
+			worker.postMessage({cmd: "start"});
 		}
 
 		main(
