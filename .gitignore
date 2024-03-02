@@ -1,7 +1,6 @@
 node_modules
 */node_modules
 */.vscode
-dist/*
 **/*/a.out
 */a.out
 cert.pem
@@ -9,3 +8,13 @@ cert.pem
 bin/key.pem
 key.pem
 playbtn
+static
+sf2-service
+spin/*wasm
+**/*ll
+**/*o
+spin/test.html
+static/GeneralUserGS.sf2
+.vscode
+spin2
+spin/src/tinysp.c

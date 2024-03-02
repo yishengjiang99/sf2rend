@@ -1,0 +1,19 @@
+
+		.wrap-collapsible > input[type='checkbox'] {
+      display: none;
+    }
+    .collapsible-content {
+      max-height: 0px;
+      overflow: hidden;
+    }
+    .toggle:checked + .lbl-toggle + .collapsible-content {
+      max-height: 100vh;
+    }
+    .lbl-toggle {
+      display: block;
+      cursor: pointer;
+    }
+    
+    .lbl-toggle:hover {
+    text-decoration: underline;
+    }
