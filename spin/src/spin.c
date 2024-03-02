@@ -135,8 +135,8 @@ float trigger_attack(spinner *x, uint32_t key, uint32_t velocity) {
 
   x->modlfo.delay = timecent2sample(x->zone->ModLFODelay);
   x->vibrlfo.delay = timecent2sample(x->zone->ModLFODelay);
-  set_frequency(&x->modlfo, x->zone->ModLFOFreq);
-  set_frequency(&x->vibrlfo, x->zone->VibLFOFreq);
+  LFO_set_frequency(&x->modlfo, x->zone->ModLFOFreq);
+  LFO_set_frequency(&x->vibrlfo, x->zone->VibLFOFreq);
   x->initialFc = x->zone->FilterFc;
   x->initialQ = p10over200[x->zone->FilterQ + 1400];
 

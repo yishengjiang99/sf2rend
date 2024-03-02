@@ -188,7 +188,6 @@ export function mkui(
       }
       this.cctx.clearRect(0, 0, 100, 20);
       this.cctx.fillText(this.tt.toFixed(1), 0, 10, 100);
-      //this.tt + "|" + this.toffset, 0, 10, 100);
       this.cctx.save();
       for (const [t0, k0, dt] of this.timeline) {
         const x0 = (t0 - this.toffset) * ppt;
@@ -256,7 +255,7 @@ export function mkui(
   for (let i = 0; i < 16; i++) {
     const trackrow = new TrackUI(i, eventPipe.postMessage);
     controllers.push(trackrow);
-    trackrow.hidden = false;
+    trackrow.hidden = true;
     tb.append(trackrow.container);
     trackrow.container.classList.add("channelCard");
     trackrow.container.addEventListener(

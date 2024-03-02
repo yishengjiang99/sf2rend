@@ -26,6 +26,7 @@ const midiUrl = urlParams.get("midiUrl") || "song.mid";
 const sf2Loader = loadSF2File(sf2file);
 
 const sf2select = document.querySelector("#sf2select");
+const midiSelect = document.querySelector("#midiselect");
 
 const drumList = document.querySelector("#drums");
 const programList = document.querySelector("#programs");
@@ -45,8 +46,8 @@ const [cv1, cv2, cv3] = [
 ];
 const c3 = mkdiv("canvas", {
   class: "fixed-top-right",
-  width: "500",
-  height: "50",
+  width: 500,
+  height: 50,
 });
 c3.attachTo(document.body);
 const { stdout, infoPanel } = logdiv();
@@ -75,38 +76,43 @@ sf2select.value = sf2file;
 sf2select.onchange = (e) => {
   document.location.href = "?sf2file=" + e.target.value;
 };
-const { mkpath } = await import("./mkpath.js");
+for (const f of mfilelist)
+  midiSelect.append(
+    mkdiv("option", { value: f }, decodeURI(f).split("/").pop())
+  );
 
-const midiSelect = mkdiv2({
-  tag: "select",
-  style: "width:300px",
-  value: midiUrl,
-  oninput: function (e) {
-    document.location.href = "?midiUrl=" + encodeURIComponent(e.target.value);
-  },
-  children: [
-    mkdiv("option", { name: "select midi", value: null }, "select midi file"),
-    ...mfilelist.map((f) =>
-      mkdiv("option", { value: f }, decodeURI(f).split("/").pop())
-    ),
-  ],
-});
+midiSelect.onchange = (e) => {
+  document.location.href = "?midiUrl=" + encodeURI(e.target.value);
+};
+// const midiSelect = mkdiv2({
+//   tag: "select",
+//   style: "width:300px",
+//   value: midiUrl,
+//   oninput: function (e) {
+//     document.location.href = "?midiUrl=" + encodeURIComponent(e.target.value);
+//   },
+//   children: [
+//     mkdiv("option", { name: "select midi", value: null }, "select midi file"),
+//     ...mfilelist.map((f) =>
+//       mkdiv("option", { value: f }, decodeURI(f).split("/").pop())
+//     ),
+//   ],
+// });
 
-midiSelect.attachTo(document.querySelector("#midilist"));
 midiSelect.value = midiUrl;
 ctx = new AudioContext({
   sampleRate: 44100,
 });
-
+const { mkpath } = await import("./mkpath.js");
 await ctx.suspend();
 
-export const eventPipe = mkeventsPipe();
+const eventPipe = mkeventsPipe();
 const apath = await mkpath(ctx, eventPipe);
 const spinner = apath.spinner;
 
 let nextChannel = 0;
 
-export const ui = mkui(
+const ui = mkui(
   eventPipe,
   document.querySelector("#channelContainer"),
   uiInputs()
@@ -144,6 +150,7 @@ if (midiUrl) {
 // mk_eq_bar(0, apath.eq_set).attachTo(document.querySelector("eq"));
 //link pipes
 eventPipe.onmessage(function (dd) {
+  8;
   let data;
   if (dd.length <= 3) {
     const [a, b, c] = dd;
@@ -181,11 +188,9 @@ eventPipe.onmessage(function (dd) {
 
     case midi_ch_cmds.pitchbend:
       spinner.port.postMessage(data);
-      //stdout("PITCH BEND " + [ch, cmd.toString(16), b, c].join("/"));
       break;
     default:
       spinner.port.postMessage(data);
-      //stdout("midi cmd: " + [ch, cmd, b, c].join("/"));
       break;
   }
 });
@@ -234,7 +239,7 @@ apath.ctrl_bar(document.getElementById("ctrls"));
 apath.bindToolbar();
 apath.bindReactiveElems();
 
-const cancelFn = apath.detect;
+const cancelFn = apath.detectClips(c3);
 
 draw();
 document
@@ -288,7 +293,6 @@ async function onMidionURLSelect(url) {
   const midiInfo = readMidi(
     new Uint8Array(await (await fetch(url)).arrayBuffer())
   );
-  console.log("mididurl sel");
   await onMidiLoaded(midiInfo);
 }
 window.onerror = (e) => stdout(e.message);
@@ -298,7 +302,6 @@ async function onMidiLoaded(midiInfo) {
     midiInfo.presets.map((preset) => {
       const { pid, channel } = preset;
       let bkid = channel == DRUMSCHANNEL ? channel : 0;
-
       if (pid == 0 && channel >= 9) bkid = 128;
       const program = channels[channel].setProgram(pid, bkid);
       stdout("loading " + program.name);

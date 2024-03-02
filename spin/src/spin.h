@@ -20,20 +20,26 @@ typedef unsigned int uint32_t;
 #define modulo_u16f (float)(((1 << 16) + .1f))
 extern float tanf(float t);
 
-typedef struct {
+typedef struct
+{
   unsigned short phase, delay;
   unsigned short phaseInc;
 } LFO;
 
-float dummy[666];  // backward compact hack
+float dummy[666]; // backward compact hack
 
-float LFO_roll_out(LFO* lfo, unsigned int n, float* output) {
-  while (n--) {
-    if (lfo->delay > 0) {
+float LFO_roll_out(LFO *lfo, unsigned int n, float *output)
+{
+  while (n--)
+  {
+    if (lfo->delay > 0)
+    {
       lfo->delay--;
       *output++ = 0.f;
       continue;
-    } else {
+    }
+    else
+    {
       lfo->phase += lfo->phaseInc;
       *output++ = (float)(((short)lfo->phase) * modulo_s16f_inverse);
     }
@@ -41,21 +47,26 @@ float LFO_roll_out(LFO* lfo, unsigned int n, float* output) {
   return *output;
 }
 
-void set_frequency(LFO* lfo, short ct) {
+void LFO_set_frequency(LFO *lfo, short ct)
+{
   double freq = timecent2hertz(ct);
   lfo->phaseInc = (unsigned short)(modulo_u16f * freq / SAMPLE_RATE);
 }
-float centdb_val(LFO* lfo) { return (1 - lfo->phase) * 0.5; }
 
-float roll(LFO* lfo, unsigned int n) {
-  if (lfo->delay > n) {
+float LFO_roll(LFO *lfo, unsigned int n)
+{
+  if (lfo->delay > n)
+  {
     lfo->delay -= n;
     return 0.0f;
-  } else {
+  }
+  else
+  {
     n -= lfo->delay;
     lfo->delay = 0;
   }
-  while (n--) lfo->phase += lfo->phaseInc;
+  while (n--)
+    lfo->phase += lfo->phaseInc;
   float lfoval = (float)(((short)lfo->phase) * modulo_s16f_inverse);
   return lfoval;
 }
@@ -70,16 +81,18 @@ const double scalar_multiple = (double)(1 << scale);
 inline static double fixed2double(int x) { return x / scalar_multiple; }
 #define int2fixed(x) x << scale
 #define fixed2int(x) x >> scale
-inline static double get_fraction(int x) {
+inline static double get_fraction(int x)
+{
   return fixed2double(x & fraction_mask);
 }
 #define fixed_floor(x) x >> scale
 
-#endif  // fp12
+#endif // fp12
 
-enum eg_stages {
-  inactive = 0,  //
-  init = 1,  // this is for key on message sent and will go next render cycle
+enum eg_stages
+{
+  inactive = 0, //
+  init = 1,     // this is for key on message sent and will go next render cycle
   delay = 2,
   attack = 3,
   hold = 4,
@@ -88,30 +101,38 @@ enum eg_stages {
   release = 7,
   done = 99
 };
-typedef struct {
+typedef struct
+{
   float egval, egIncrement;
   int hasReleased, stage, nsteps;
   short delay, attack, hold, decay, sustain, release, pad1, pad2;
-  int progress, progressInc;  // add prog scale to use LUT
+  int progress, progressInc; // add prog scale to use LUT
 } EG;
 
-void advanceStage(EG* eg);
-float update_eg(EG* eg, int n);
+void advanceStage(EG *eg);
+float update_eg(EG *eg, int n);
 
-void eg_roll(EG* eg, int n, float* output) {
-  while (n-- && eg->nsteps--) {
-    if (eg->stage == attack) {
+void eg_roll(EG *eg, int n, float *output)
+{
+  while (n-- && eg->nsteps--)
+  {
+    if (eg->stage == attack)
+    {
       int lut_index = fixed_floor(eg->progress);
       double frag = get_fraction(eg->progress);
       double f1 = att_db_levels[lut_index], f2 = att_db_levels[lut_index + 1];
       eg->egval = lerpd(f1, f2, frag);
-    } else {
+    }
+    else
+    {
       eg->egval += eg->egIncrement;
     }
     *output++ = eg->egval;
   }
-  if (eg->egval > 0) eg->egval = 0.0f;
-  if (eg->nsteps <= 7) advanceStage(eg);
+  if (eg->egval > 0)
+    eg->egval = 0.0f;
+  if (eg->nsteps <= 7)
+    advanceStage(eg);
 }
 /**
  * advances envelope generator by n steps..
@@ -119,113 +140,129 @@ void eg_roll(EG* eg, int n, float* output) {
  * if necessary
  *
  */
-float update_eg(EG* eg, int n) {
-  while (n--) {
+float update_eg(EG *eg, int n)
+{
+  while (n--)
+  {
     eg->egval += eg->egIncrement;
     eg->nsteps--;
   }
-  if (eg->nsteps <= 7) advanceStage(eg);
-  if (eg->egval > 0) eg->egval = 0.0f;
+  if (eg->nsteps <= 7)
+    advanceStage(eg);
+  if (eg->egval > 0)
+    eg->egval = 0.0f;
   return eg->egval;
 }
 
-void advanceStage(EG* eg) {
-  switch (eg->stage) {
-    case inactive:
-      eg->stage++;
-      return;
-    case init:
-      eg->stage = delay;
+void advanceStage(EG *eg)
+{
+  switch (eg->stage)
+  {
+  case inactive:
+    eg->stage++;
+    return;
+  case init:
+    eg->stage = delay;
+    eg->egval = MAX_EG;
+
+    if (eg->delay > -12000)
+    {
       eg->egval = MAX_EG;
-
-      if (eg->delay > -12000) {
-        eg->egval = MAX_EG;
-        eg->nsteps = timecent2sample(eg->delay);
-        eg->egIncrement = 0.0f;
-        break;
-      }
-    case delay:
-      eg->stage = attack;
-      eg->egval = MAX_EG;
-      eg->nsteps = timecent2sample(eg->attack);
-      eg->progress = double2fixed(0);
-      eg->progressInc = double2fixed(255.0 / (double)eg->nsteps);
-      break;
-    case attack:
-      eg->stage = hold;
-      eg->egval = 0.0f;
-      eg->nsteps = timecent2sample(eg->hold);
+      eg->nsteps = timecent2sample(eg->delay);
       eg->egIncrement = 0.0f;
-
-      break;
-    case hold: /** TO DECAY */
-      eg->stage = decay;
-
-      if (eg->sustain > 0) {
-        eg->nsteps = timecent2sample(eg->decay);
-        eg->egIncrement = (MAX_EG + eg->sustain) / eg->nsteps;
-      } else {
-        eg->nsteps = 0;
-      }
-      break;
-
-    case decay:  // headsing to released;
-
-      /*
-      37 sustainVolEnv This is the decrease in level, expressed in centibels,
-      to which the Volume Envelope value ramps during the decay phase. For the
-      Volume Envelope, the sustain level is best expressed in centibels of
-      attenuation from full scale. A value of 0 indicates the sustain level is
-      full level; this implies a zero duration of decay phase regardless of
-      decay time. A positive value indicates a decay to the corresponding
-      level. Values less than zero are to be interpreted as zero;
-      conventionally 1000 indicates full attenuation. For example, a sustain
-      level which corresponds to an absolute value 12dB below of peak would be
-      120.*/
-      eg->stage = sustain;
-      eg->egIncrement = 0.0f;
-      eg->nsteps = 418000;
-      break;
-
-      // sustain = % decreased during decay
-
-    case sustain: {
-      eg->stage = release;
-      int stepsFull =
-          timecent2sample(eg->release);  //+ timecent2sample(eg->decay);
-      eg->egIncrement = -eg->sustain / (float)stepsFull;
-      eg->nsteps = stepsFull * (eg->egval / MAX_EG);
       break;
     }
-    case release:
-      eg->stage = done;
-      break;
-    case done:
-      break;
+  case delay:
+    eg->stage = attack;
+    eg->egval = MAX_EG;
+    eg->nsteps = timecent2sample(eg->attack);
+    eg->progress = double2fixed(0);
+    eg->progressInc = double2fixed(255.0 / (double)eg->nsteps);
+    break;
+  case attack:
+    eg->stage = hold;
+    eg->egval = 0.0f;
+    eg->nsteps = timecent2sample(eg->hold);
+    eg->egIncrement = 0.0f;
+
+    break;
+  case hold: /** TO DECAY */
+    eg->stage = decay;
+
+    if (eg->sustain > 0)
+    {
+      eg->nsteps = timecent2sample(eg->decay);
+      eg->egIncrement = (MAX_EG + eg->sustain) / eg->nsteps;
+    }
+    else
+    {
+      eg->nsteps = 0;
+    }
+    break;
+
+  case decay: // headsing to released;
+
+    /*
+    37 sustainVolEnv This is the decrease in level, expressed in centibels,
+    to which the Volume Envelope value ramps during the decay phase. For the
+    Volume Envelope, the sustain level is best expressed in centibels of
+    attenuation from full scale. A value of 0 indicates the sustain level is
+    full level; this implies a zero duration of decay phase regardless of
+    decay time. A positive value indicates a decay to the corresponding
+    level. Values less than zero are to be interpreted as zero;
+    conventionally 1000 indicates full attenuation. For example, a sustain
+    level which corresponds to an absolute value 12dB below of peak would be
+    120.*/
+    eg->stage = sustain;
+    eg->egIncrement = 0.0f;
+    eg->nsteps = 418000;
+    break;
+
+    // sustain = % decreased during decay
+
+  case sustain:
+  {
+    eg->stage = release;
+    int stepsFull =
+        timecent2sample(eg->release); //+ timecent2sample(eg->decay);
+    eg->egIncrement = -eg->sustain / (float)stepsFull;
+    eg->nsteps = stepsFull * (eg->egval / MAX_EG);
+    break;
+  }
+  case release:
+    eg->stage = done;
+    break;
+  case done:
+    break;
   }
 }
 
-void _eg_release(EG* e) {
+void _eg_release(EG *e)
+{
   e->nsteps = 0;
   e->stage = sustain;
   advanceStage(e);
 }
 
-void eg_init(EG* e) { e->attack = -12000; }
+void eg_init(EG *e) { e->attack = -12000; }
 
-typedef struct {
+typedef struct
+{
   uint32_t loopstart, loopend, length, sampleRate, originalPitch;
-  float* data;
+  float *data;
 } pcm_t;
 
-typedef struct {
+typedef struct
+{
   float mod2volume, mod2pitch, mod2filter;
 } LFOEffects;
 
-typedef struct {
+typedef struct
+{
   uint8_t lo, hi;
-} rangesType;  //  Four-character code
-typedef struct {
+} rangesType; //  Four-character code
+typedef struct
+{
   unsigned short StartAddrOfs, EndAddrOfs, StartLoopAddrOfs, EndLoopAddrOfs,
       StartAddrCoarseOfs;
   short ModLFO2Pitch, VibLFO2Pitch, ModEnv2Pitch, FilterFc, FilterQ,
@@ -244,7 +281,8 @@ typedef struct {
       OverrideRootKey, Dummy;
 } zone_t;
 
-enum grntypes {
+enum grntypes
+{
   StartAddrOfs,
   EndAddrOfs,
   StartLoopAddrOfs,
@@ -307,20 +345,22 @@ enum grntypes {
   Dummy
 };
 /* this holds the data required to update samples thru a filter */
-typedef struct {
+typedef struct
+{
   double QInv, a0, a1, b1, b2, z1, z2;
 } Biquad;
 
-typedef struct {
+typedef struct
+{
   float *inputf, *outputf;
   unsigned char channelId, key, velocity, p1, p2, p3, p4, p5;
   uint32_t position, loopStart, loopEnd;
   float fract, stride, pitch_dff_log;
-  zone_t* zone;
+  zone_t *zone;
   EG voleg, modeg;
   LFO modlfo, vibrlfo;
   Biquad lpf;
-  pcm_t* pcm;
+  pcm_t *pcm;
   uint32_t sampleLength;
   uint32_t active_dynamics_flag;
   int is_looping;
@@ -330,13 +370,14 @@ typedef struct {
 
 } spinner;
 
-void set_spinner_zone(spinner* x, zone_t* z);
-spinner* newSpinner(int ch);
-void reset(spinner* x);
-int spin(spinner* x, int n);
-float* spOutput(spinner* x);
+void set_spinner_zone(spinner *x, zone_t *z);
+spinner *newSpinner(int ch);
+void reset(spinner *x);
+int spin(spinner *x, int n);
+float *spOutput(spinner *x);
 
-void scaleTc(EG* eg, unsigned int pcmSampleRate) {
+void scaleTc(EG *eg, unsigned int pcmSampleRate)
+{
   float scaleFactor = SAMPLE_RATE / (float)pcmSampleRate;
   eg->attack *= scaleFactor;
   eg->delay *= scaleFactor;
@@ -344,7 +385,8 @@ void scaleTc(EG* eg, unsigned int pcmSampleRate) {
   eg->release *= scaleFactor;
   eg->hold *= scaleFactor;
 }
-void init_vol_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
+void init_vol_eg(EG *eg, zone_t *z, unsigned int pcmSampleRate)
+{
   float scaleFactor = SAMPLE_RATE / (float)pcmSampleRate;
   eg->attack = z->VolEnvAttack * scaleFactor;
   eg->delay = z->VolEnvDelay * scaleFactor;
@@ -355,7 +397,8 @@ void init_vol_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
   eg->stage = init;
   eg->nsteps = 0;
 }
-void init_mod_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
+void init_mod_eg(EG *eg, zone_t *z, unsigned int pcmSampleRate)
+{
   eg->attack = z->ModEnvAttack;
   eg->delay = z->ModEnvDelay;
   eg->decay = z->ModEnvDecay;
@@ -364,7 +407,8 @@ void init_mod_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
   eg->sustain = z->ModEnvSustain;
 }
 // Midi controller numbers
-enum TMLController {
+enum TMLController
+{
   TML_BANK_SELECT_MSB,
   TML_MODULATIONWHEEL_MSB,
   TML_BREATH_MSB,
@@ -439,7 +483,8 @@ enum TMLController {
   TML_POLY_ON
 };
 
-void new_lpf(Biquad* biq, float fc, float Q) {
+void new_lpf(Biquad *biq, float fc, float Q)
+{
   double K = tanf(3.1415f * fc);
   double KK = K * K;
   double norm = 1 / (1 + K / Q + KK);
@@ -450,7 +495,8 @@ void new_lpf(Biquad* biq, float fc, float Q) {
   biq->b1 = 2 * (KK - 1) * norm;
   biq->b2 = (1 - K * biq->QInv + KK) * norm;
 }
-float calc_lpf(Biquad* b, double In) {
+float calc_lpf(Biquad *b, double In)
+{
   double Out = In * b->a0 + b->z1;
   b->z1 = In * b->a1 + b->z2 - b->b1 * Out;
   b->z2 = In * b->a0 - b->b2 * Out;

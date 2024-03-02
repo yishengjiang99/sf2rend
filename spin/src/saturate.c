@@ -1,6 +1,7 @@
 #define saturation .8f
 
-float saturate(float x) {
+float saturate(float x)
+{
   float a = saturation;
   if (x < a)
     return x;

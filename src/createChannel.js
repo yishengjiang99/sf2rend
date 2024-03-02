@@ -20,6 +20,8 @@ export function createChannel(uiController, channelId, sf2, apath) {
         uiController.hidden = true;
         return;
       }
+      uiController.hidden = false;
+
       await spinner.shipProgram(program, pid | bid);
       uiController.name = program.name;
       uiController.presetId = this.presetId;

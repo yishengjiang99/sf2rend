@@ -4,7 +4,8 @@
 
 #include "spin.c"
 #include "test_utils.h"
-int main() {
+int main()
+{
   EG eg[1];
   eg_init(eg);
   assert(eg->attack == -12000);

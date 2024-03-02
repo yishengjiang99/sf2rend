@@ -38,6 +38,8 @@ export async function mkpath2(ctx, { midi_input, sf2File }) {
   for (const id of channelIds) {
     spinner.connect(mastGain, id);
   }
+  mastGain.connect(fft);
+  mastGain.connect(clipdetect);
   mastGain.connect(ctx.destination);
   return {
     spinner,

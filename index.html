@@ -18,14 +18,21 @@
 
   <script src="dist/sequence.js"></script>
 </head>
-
+<div class="container">
+  <div class="row">
+    <div class="col-sm-1"></div>  
+    <div class="col-sm-11"></div>
+  </div>
+</div>
 <body class="sans-serif space-between" style="height:auto !important">
   <header>
     <i class="fa-regular fa-user"></i>
     <select id="sf2select" aria-placeholder="dafds">
       <option>Select SF2 File</option>
     </select>
-    <span id="midilist"></span>
+    <select id="midiselect" aria-placeholder="midiselect">
+      <option>Select midi File</option>
+    </select>
     <span id="ctrls"> </span>
     <input type="file" tabindex="0" value="send file" id="file-btn" accept=".mid" />
   </header>
