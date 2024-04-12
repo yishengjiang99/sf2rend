@@ -31,6 +31,7 @@ const midiSelect = document.querySelector("#midiselect");
 const drumList = document.querySelector("#drums");
 const programList = document.querySelector("#programs");
 const navhead = document.querySelector("header");
+const nav2 = document.querySelector("nav");
 const analyze = document.querySelector("#analyze");
 const debugContainer = document.querySelector("#debug");
 const footer = document.querySelector("footer");
@@ -197,7 +198,7 @@ eventPipe.onmessage(function (dd) {
 
 //  eventPipe.onmessage(eventsHandler(channels, spinner, last_rend_end_at, ctx));
 initNavigatorMidiAccess({
-  container: navhead,
+  container: nav2,
   eventPipe,
   inputChannel: ui.activeChannel,
 });

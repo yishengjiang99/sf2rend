@@ -77,9 +77,10 @@ export const midi_effects = {
   registeredparameterfine: 101,
 };
 
-
 export const nvpc = 4;
 export const DRUMSCHANNEL = 9;
 
-
-export const ccnames = Object.keys(midi_effects).reduce((map, name, idx) => ({...map, [midi_effects[name]]: name}), {});
+export const ccnames = Object.keys(midi_effects).reduce(
+  (map, name, idx) => ({ ...map, [midi_effects[name]]: name }),
+  {}
+);

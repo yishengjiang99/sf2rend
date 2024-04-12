@@ -45,10 +45,5 @@ export async function initNavigatorMidiAccess({
         ),
       ]
     ).attachTo(container);
-
-    Array.from(midiAccess.inputs.values())[0].onmidimessage = ({ data }) => {
-      data[0] |= inputChannel;
-      eventPipe.postMessage(data);
-    };
   }
 }

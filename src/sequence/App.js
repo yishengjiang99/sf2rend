@@ -12,6 +12,7 @@ import {
 } from "./constants";
 import useTM from "./useTM";
 import "./App.css";
+import SendMidi from "./midi-send";
 import { createPortal } from "react-dom";
 
 const M_HEIGHT = window.visualViewport?.height - 120;
@@ -169,7 +170,6 @@ function App({ timerWorker, midiInfo, eventPipe }) {
             />
           ))}
         </span>
-
         <input
           type="number"
           step="1"
@@ -191,6 +191,11 @@ function App({ timerWorker, midiInfo, eventPipe }) {
           key="adsf"
           min={2}
           max={8}
+        />{" "}
+        <SendMidi
+          onMidiConnected={(e) => {
+            eventPipe;
+          }}
         />
       </div>
     </>

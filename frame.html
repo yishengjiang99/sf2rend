@@ -20,7 +20,7 @@
 				<input type="button" tabindex="0" value="send" id="send-btn" />
 
 			</section>
-			<section id="info"></section>
+			<pre id="info"></pre>
 		</div>
 
 	</div>
@@ -91,7 +91,7 @@
 			if (!e.target.files[0]) return;
 			const ab = await (e.target.files[0]).arrayBuffer();
 			midiinfo = readMidi(new Uint8Array(ab));
-			info.innerHTML = JSON.stringify(midiinfo)
+			// info.innerHTML = JSON.stringify(midiinfo, (k, v) => typeof (v) === 'array' ? v : v, "")
 		})
 		sendBtn.onclick = () => {
 			if (!midiinfo || !midiinfo.tracks) {
