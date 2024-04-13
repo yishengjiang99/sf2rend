@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+</head>
+<body>
+	<script type="module">
+		import * as module from "./yofi.wasm.js";
+		const m = new WebAssembly.Module(module.wasmbin);
+		const ll = new WebAssembly.Instance(m, {
+			env: {
+				memory: new WebAssembly.Memory({initial: 41})
+			}
+		});
+		const qq = ll.exports.getInstance();
+		fetch("song.mid").then(r => r.arrayBuffer).then(ab => {
+			const arr = new Uint8Array(ab);
+			let off = 0;
+			while (ll.exports.queue_write(qq, arr[off++]));
+
+		})
+
+
+	</script>
+</body>
+</html>

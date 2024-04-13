@@ -1,0 +1,16 @@
+{
+  "name": "grep-fifo",
+  "version": "1.0.0",
+  "description": "ES6 compliant and (typescript friendly) implementation of circular fifo in C99",
+  "main": "fifo.wasmodule.js",
+  "scripts": {
+    "build": "docker run --rm -v `pwd`:/src trzeci/emscripten-slim emcc yofi.c -s EXPORT_ALL=1 -o yofi.js",
+    "test": "node ./test.js"
+  },
+  "keywords": [
+    "pain in the arse",
+    "allegedly faster than javascript"
+  ],
+  "author": "",
+  "license": "ISC"
+}
