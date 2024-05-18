@@ -1,25 +1,20 @@
 #include <stdint.h>
 
-#define QUEUE_SIZE 1 << 16
+#define QUEUE_SIZE 0xffff
 
 typedef struct {
   uint16_t head;
   uint16_t tail;
-  char data[QUEUE_SIZE];
+  uint8_t data[QUEUE_SIZE];
 } queue_t;
 
 queue_t instance[1];
 
-queue_t* getInstance() { return instance; }
+int queue_count(queue_t* queue) { return queue->head - queue->tail; }
+uint8_t queue_read(queue_t* queue) { return queue->data[queue->tail++] & 0xff; }
 
-uint16_t queue_count(queue_t* queue) { return queue->head - queue->tail; }
-
-char queue_read(queue_t* queue) {
-  if (queue->tail == queue->head) return 0;
-  return queue->data[queue->tail++];
-}
-
-int queue_write(queue_t* queue, char c) {
+int queue_write(queue_t* queue, uint8_t c) {
+  if (queue->tail - queue->head >= QUEUE_SIZE) return 1;
   queue->data[queue->head++] = c;
   return 0;
 }

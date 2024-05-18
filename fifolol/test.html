@@ -16,10 +16,16 @@
 			}
 		});
 		const qq = ll.exports.getInstance();
-		fetch("song.mid").then(r => r.arrayBuffer).then(ab => {
+		fetch("song.mid").then(r => r.arrayBuffer()).then(ab => {
 			const arr = new Uint8Array(ab);
-			let off = 0;
-			while (ll.exports.queue_write(qq, arr[off++]));
+			let off = 0; debugger;
+			while (off < arr.length) {
+				while (ll.exports.queue_write(qq, arr[off]) < 1);
+				while (ll.exports.queue_count(qq) > 1) {
+					console.log(ll.exports.queue_read(qq));
+				}
+				off++;
+			}
 
 		})
 
