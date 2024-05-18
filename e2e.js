@@ -1,10 +1,10 @@
-import { mkcanvas, chart } from "./node_modules/mk-60fps/chart.js";
+import { mkcanvas, chart } from "./chart/chart.js";
 import { mkdiv } from "https://unpkg.com/mkdiv@3.1.0/mkdiv.js";
 import { mkpath } from "./src/mkpath.js";
 import SF2Service from "./sf2-service/index.js";
 import { newSFZone } from "./sf2-service/zoneProxy.js";
 
-const sf2url = "file.sf2";
+const sf2url = "static/GeneralUserGS.sf2";
 
 const sf2file = new SF2Service(sf2url);
 const loadWait = sf2file.load();
@@ -20,10 +20,17 @@ let program,
   audioPath,
   volMeters;
 
-renderMain();
+renderMain().then(() => {
+  if (document.hash != "") rendProgram();
+  rendProgram();
+});
+
 window.addEventListener("hashchange", rendProgram);
+
 async function renderMain() {
   await loadWait;
+  await startSpinner();
+
   document.body.innerHTML = "";
   mkdiv("nav", [
     (volMeters = mkdiv("div", { id: "volmeter", style: "min-height:2em" })),
@@ -40,7 +47,7 @@ async function renderMain() {
       mkdiv(
         "button",
         {
-          onclick: () => spinner.port.postMessage({ cmd: "panic" }),
+          onclick: () => audioPath.silenceAll(),
         },
         "panick"
       ),
@@ -78,18 +85,21 @@ async function renderMain() {
 }
 
 async function rendProgram() {
-  const presetId = document.location.hash.substring(1).split("|");
-  const intpre = parseInt(presetId);
+  const hashId = document.location.hash.substring(1).split("|");
+  const intpre = parseInt(hashId[0]);
   const pid = intpre;
   const bid = 0;
+  const zoneRef = hashId[1];
 
   program = sf2file.loadProgram(pid, bid);
-
-  if (!zone) zone = program.filterKV(55, 98)[0];
+  if (!zone)
+    zone = zoneRef
+      ? program.zMap.find((z) => z.ref == zoneRef)[0]
+      : program.filterKV(55, 98)[0];
 
   const kRangeList = program.zMap.map(
     (z) =>
-      `<option value=${z.ref} ${z.ref + "" == zone.ref ? "selected" : ""}>${
+      `<option value=${z.ref} ${z.ref + "" == zone?.ref ? "selected" : ""}>${
         z.Unused1 + "|" + z.Unused2
       } ${
         "key " +
@@ -98,20 +108,21 @@ async function rendProgram() {
         [z.VelRange.lo, z.VelRange.hi].join("-")
       }</option>`
   );
-  const articleHeader = mkdiv("div", { class: "note-header" }, [
+  const articleHeader = mkdiv(
+    "div",
+    { class: "note-header" },
+
     mkdiv(
-      "div",
-      { class: "note-menu" },
-      mkdiv(
-        "select",
-        {
-          oninput: (e) =>
-            renderZ(program.zMap.filter((z) => e.target.value)[0]),
+      "select",
+      {
+        oninput: (e) => {
+          renderZ(program.zMap.filter((z) => z.ref == e.target.value)[0]);
+          window.location.hash = "#" + pid + "|" + e.target.value;
         },
-        kRangeList
-      )
-    ),
-  ]);
+      },
+      kRangeList
+    )
+  );
   articleMain = mkdiv("div", { class: "note-preview" }, [
     mkdiv(
       "div",
@@ -123,15 +134,14 @@ async function rendProgram() {
     ),
   ]);
   const mainRight = mkdiv("div", { class: "note" }, [
-    mkdiv("div", { class: "note-title" }, [sf2file.programNames[presetId]]),
+    mkdiv("div", { class: "note-title" }, [sf2file.programNames[hashId]]),
     articleHeader,
   ]);
   rightPanel.replaceChildren(mainRight, articleMain);
 
   canvas = mkcanvas({ container: articleHeader });
-  await startSpinner();
   await spinner.shipProgram(program);
-  renderZ(zone);
+  if (zone) renderZ(zone);
 }
 async function renderZ(zoneSelect) {
   if (!zoneSelect) {
@@ -195,13 +205,13 @@ function renderArticle(keyword, zone) {
     zattrs.map(([k, v]) =>
       mkdiv("li", [
         mkdiv("label", [k, ":"]),
-        mkdiv("label", [v]),
+        mkdiv("code", [v]),
         mkdiv("input", {
           type: "range",
           ...min_max_vals(k),
           value: v,
           oninput: (e) => {
-            e.target.parentElement.querySelector("label").textContent =
+            e.target.parentElement.querySelector("code").textContent =
               e.target.value;
             zoneObj[k] = e.target.value;
             if (canvas) drawEV(zoneObj, canvas);
@@ -221,10 +231,9 @@ function renderArticle(keyword, zone) {
 let ctx;
 async function startSpinner() {
   ctx = new AudioContext();
-  const audioPath = await mkpath(ctx);
+  audioPath = await mkpath(ctx);
   await audioPath.startAudio();
   spinner = audioPath.spinner;
-  if (program) await spinner.shipProgram(program);
 
   spinner.port.onmessage = ({ data }) => {
     if (data.currentFrame) {
@@ -255,9 +264,9 @@ async function rendSample(e, zoneObj) {
   spinner.port.postMessage([
     0x90,
     0,
-    zoneObj.ref,
     zoneObj.calcPitchRatio(55, spinner.context.sampleRate),
     122,
+    [program.presetId, ref],
   ]);
   e.target.addEventListener(
     "mouseup",

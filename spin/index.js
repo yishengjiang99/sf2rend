@@ -1,7 +1,11 @@
 import { wasmbin } from "./spin.wasm.js";
 import { downloadData } from "./download.js";
-import { spRef2json } from "./spin-structs.js";
-
+const range = (x, y) =>
+  Array.from(
+    (function* _(x, y) {
+      while (x < y) yield x++;
+    })(x, y)
+  );
 export function mkSpinnerBYOW({ instance, malloc, memory }) {
   const exports = instance.exports;
   const heap = memory.buffer;
@@ -9,6 +13,9 @@ export function mkSpinnerBYOW({ instance, malloc, memory }) {
   const spRef = (idx) => exports.spRef(idx);
   const zoneRef = (k) => exports.zoneRef(k);
   const zoneArray = (k) => new Int16Array(heap, zoneRef(k), 60);
+  const spinners = range(0, 32)
+    .map((i) => spRef(i))
+    .map((ptr) => new DataView(heap, ptr, exports.sp_byte_len()));
 
   const sampleHeader = (sampleId) => new Uint32Array(heap, pcmRef(sampleId), 6);
   return {
@@ -16,6 +23,7 @@ export function mkSpinnerBYOW({ instance, malloc, memory }) {
     instance,
     malloc,
     memory,
+    spinners,
     sampleHeader,
     setZoneAttribute(index, attr, value) {
       const register = new DataView(heap, zoneRef(index), attr * 20, 2);
@@ -27,9 +35,7 @@ export function mkSpinnerBYOW({ instance, malloc, memory }) {
     setZone(index, zone) {
       zoneArray(index).set(zone);
     },
-    getSpinner(index) {
-      return spRef2json(heap, spRef(index));
-    },
+
     zoneRef,
     ccvals: new Uint8Array(
       memory.buffer,
