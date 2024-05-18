@@ -4,7 +4,7 @@ import { mkpath } from "./src/mkpath.js";
 import SF2Service from "./sf2-service/index.js";
 import { newSFZone } from "./sf2-service/zoneProxy.js";
 
-const sf2url = "file.sf2";
+const sf2url = "static/GeneralUserGS.sf2";
 
 const sf2file = new SF2Service(sf2url);
 const loadWait = sf2file.load();
@@ -22,12 +22,15 @@ let program,
 
 renderMain().then(() => {
   if (document.hash != "") rendProgram();
+  rendProgram();
 });
 
 window.addEventListener("hashchange", rendProgram);
 
 async function renderMain() {
   await loadWait;
+  await startSpinner();
+
   document.body.innerHTML = "";
   mkdiv("nav", [
     (volMeters = mkdiv("div", { id: "volmeter", style: "min-height:2em" })),
@@ -137,7 +140,6 @@ async function rendProgram() {
   rightPanel.replaceChildren(mainRight, articleMain);
 
   canvas = mkcanvas({ container: articleHeader });
-  await startSpinner();
   await spinner.shipProgram(program);
   if (zone) renderZ(zone);
 }
@@ -166,8 +168,7 @@ function renderSampleView(zoneSelect) {
     " ",
     zoneSelect.shdr.name,
     "<br>nsample: ",
-    zoneSelect.shdr.samp,
-    zoneSelect.SampleModes,
+    zoneSelect.shdr.nsamples,
     "<br>srate: " + zoneSelect.shdr.originalPitch,
     "<br>Range: ",
     zoneSelect.shdr.range.join("-"),
@@ -233,7 +234,6 @@ async function startSpinner() {
   audioPath = await mkpath(ctx);
   await audioPath.startAudio();
   spinner = audioPath.spinner;
-  if (program) await spinner.shipProgram(program);
 
   spinner.port.onmessage = ({ data }) => {
     if (data.currentFrame) {

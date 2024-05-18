@@ -1,74 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MIDI Rendering with SoundFont2</title>
-    <link rel="stylesheet" href="style.css" />
-    <link rel="stylesheet" href="minidark.css" />
-    <link rel="stylesheet" href="src/collapsible.css" />
-    <style>
-      body {
-        margin: 0;
-        padding: 0;
-      }
 
-      :root {
-        --timer-ticks: 0;
-        --ppqn: 240;
-      }
+<head>
+  <script>
+    if (navigator.userAgent.indexOf("Chrome") < 0) {
+      document.write("safari users are banned from using this app");
+    }
+  </script>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WASM MIDI Synth/Player</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="minidark.css" />
+  <link rel="stylesheet" href="src/collapsible.css" />
+  <script src="https://kit.fontawesome.com/d43066eba1.js" crossorigin="anonymous"></script>
 
-      .canvas_container {
-        transform: translateX(calc(var(--timer-ticks) / 3 * -1px));
-      }
+  <script src="dist/sequence.js"></script>
+</head>
+<div class="container">
+  <div class="row">
+    <div class="col-sm-1"></div>
+    <div class="col-sm-11"></div>
+  </div>
+</div>
+<body class="sans-serif space-between" style="height:auto !important">
+  <header>
+    <i class="fa-regular fa-user"></i>
+    <select id="sf2select" aria-placeholder="dafds">
+      <option>Select SF2 File</option>
+    </select>
+    <select id="midiselect" aria-placeholder="midiselect">
+      <option>Select midi File</option>
+    </select>
+  </header>
+  <nav>
+    <span id="ctrls"> </span>
+    <input type="file" tabindex="0" value="send file" id="file-btn" accept=".mid" />
+  </nav>
+  <section>
+    <div id="ch_ctrl_bar"></div>
+  </section>
+  <span id="sequenceroot"></span>
+  <div id="channelContainer"></div>
 
-      .canvas_window {
-        height: calc(100vh - 50px);
-        overflow-x: hidden;
-        overflow-y: scroll;
-        position: fixed;
-        top: 50px;
-        width: calc(50vw - 50px);
-        z-index: -2;
-      }
+  <div id="analyze"></div>
+  <div id="debug"></div>
+  <footer class="">
+    <div id="stdout"></div>
+    <datalist id="programs"></datalist>
+    <datalist id="drums"></datalist>
+    <div><a href="https://github.com/yishengjiang99/sf2rend">https://github.com/yishengjiang99/sf2rend</a></div>
+    <div id="eq"></div>
 
-      /*# sourceMappingURL=main.css.map*/
-    </style>
-    <!-- <script defer="defer" src="sequence/build/static/js/bundle.js"></script> -->
-    <link rel="stylesheet" href="src/collapsible.css" />
-  </head>
-  <body class="sans-serif" style="padding: 0 30px">
-    <header class="sticky" style="display: flex; justify-content: space-between">
-      <span> Rendering MIDI with Javascript/WebAssembly </span>
-      <div id="midilist"></div>
-      <div id="midi-player" class="button-group">
-        <button data-cmd="stop">stop</button>
-        <button data-cmd="start" disabled=true class="primary">
-          start<span class="icon-play"></span>
-        </button>
-        <button data-path_cmd="gm-reset" data-cmd="reset">reset</button>
-      </div>
-      <select class="antd-select" id="sf2select">
-        <option>Select SF2 File</option>
-      </select>
-      <span id="ctrls"> </span>
-      </header>
-      <main class="hidden main container">
-        <div class="row">
-          <div class="col-md-6">
-            <div id="sequenceroot"></div>
-            <div id="channelContainer"></div>
-          </div>
-          <div class="col-md-6">
-            <div id="stdout"></div>
-            <div id="analyze"></div>
-          </div>
-        </div>
-      </main>
-      <footer></footer>
-      <datalist id="programs"></datalist>
-      <datalist id="drums"></datalist>
-      <script type="module" src="./src/index.js"></script>
-      </body>
+  </footer>
+  <script type="module" src="./src/index.js"></script>
+  <template> <svg width="2200" height="1600">
+      <defs>
+        <pattern id="tenthGrid" width="100" height="110" patternUnits="userSpaceOnUse">
+          <rect width="10" height="20" stroke='gold' fill="yellow" />
+        </pattern>
+        <pattern id="grid" width="500" height="1001" patternUnits="userSpaceOnUse">
+          <rect width="500" height="100" stroke="gold" fill="url(#tenthGrid)" />
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#grid)" />
+    </svg></template>
+</body>
+
 </html>
