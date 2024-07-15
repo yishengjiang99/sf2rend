@@ -40,8 +40,10 @@ spinner *newSpinner(int ch) {
   x->outputf = &outputs[ch * RENDQ * 2];
   x->inputf = silence;
   x->channelId = ch;
+
   return x;
 }
+
 void trigger_release(spinner *x) {
   _eg_release(&x->voleg);
   _eg_release(&x->modeg);
@@ -160,6 +162,8 @@ float calc_pitch_diff_log(zone_t *z, pcm_t *pcm, unsigned char key) {
   diff += ((pcm->sampleRate - SAMPLE_RATE) / 40.96f);
   return diff;
 }
+#define ccval(eff) midi_cc_vals[x->channelId * 128 + eff]
+
 void set_spinner_zone(spinner *x, zone_t *z) {
   pcm_t *pcm = &pcms[z->SampleId];
   set_spinner_input(x, pcm);
@@ -170,14 +174,12 @@ void set_spinner_zone(spinner *x, zone_t *z) {
                  (unsigned short)(z->StartAddrCoarseOfs << 15);
   x->loopStart += (unsigned short)z->StartLoopAddrOfs +
                   (unsigned short)(z->StartLoopAddrCoarseOfs << 15);
-  x->loopEnd -= (unsigned short)z->EndLoopAddrOfs +
-                (unsigned short)(z->EndLoopAddrCoarseOfs << 15);
-  x->sampleLength -= z->EndAddrOfs + (z->EndAddrCoarseOfs << 15);
+  x->loopEnd += (unsigned short)z->EndLoopAddrOfs;
+  x->loopEnd += (unsigned short)(z->EndLoopAddrCoarseOfs << 15);
+  x->sampleLength += z->EndAddrOfs + (z->EndAddrCoarseOfs << 15);
 }
 
 void _spinblock(spinner *x, int n, int blockOffset) {
-#define ccval(eff) midi_cc_vals[x->channelId * 128 + eff]
-
   double db, dbInc;
   float stride = 1.0f;
   float pdiff = x->pitch_dff_log;

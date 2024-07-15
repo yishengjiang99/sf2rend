@@ -9,38 +9,39 @@ typedef unsigned short uint16_t;
 typedef int int32_t;
 typedef short int16_t;
 
-typedef uint32_t DWORD;  // uint32_t;
+typedef uint32_t DWORD; // uint32_t;
 typedef DWORD FOURCC;
-typedef struct {
-  uint8_t lo, hi;
-} rangesType;  //  Four-character code
-typedef struct {
-  FOURCC ckID;   //  A chunk ID identifies the type of data within the chunk.
-  DWORD ckSize;  // The size of the chunk data in bytes, excluding any pad byte.
-  char *ckDATA;  // The actual data plus a pad byte if req'd to word align.
+typedef struct
+{
+  FOURCC ckID;  //  A chunk ID identifies the type of data within the chunk.
+  DWORD ckSize; // The size of the chunk data in bytes, excluding any pad byte.
+  char *ckDATA; // The actual data plus a pad byte if req'd to word align.
 } RIFFCHUNKS;
-typedef union {
+typedef struct
+{
+  uint8_t lo, hi;
+} rangesType; //  Four-character code
+
+typedef union
+{
   rangesType ranges;
   short shAmount;
   unsigned short uAmount;
 } genAmountType;
 
-typedef struct {
-  char name[4];
-  unsigned int size;
-  char sfbk[4];
-  char list[4];
-} sheader_t;
-
-typedef struct {
+typedef struct
+{
   unsigned int size;
   char name[4];
 } header2_t;
-typedef struct {
+
+typedef struct
+{
   char name[4];
   unsigned int size;
 } section_header;
-typedef enum {
+typedef enum
+{
   monoSample = 1,
   rightSample = 2,
   leftSample = 4,
@@ -51,57 +52,66 @@ typedef enum {
   RomLinkedSample = 0x8008
 } SFSampleLink;
 
-typedef struct {
+typedef struct
+{
   unsigned short pgen_id, pmod_id;
 } pbag;
-typedef struct {
+typedef struct
+{
   unsigned short igen_id, imod_id;
 } ibag;
-typedef struct {
+typedef struct
+{
   unsigned short genid;
   genAmountType val;
 
 } pgen_t;
 typedef pgen_t pgen;
-typedef struct {
-  char data[10];
+typedef struct
+{
+  unsigned short sfModSrcOper;
+  unsigned short sfModDestOper;
+  short modAmount;
+  unsigned short sfModAmtSrcOper;
+  unsigned short sfModTransOper;
 } pmod;
-typedef struct {
+
+typedef struct
+{
   char name[20];
   unsigned short ibagNdx;
 } inst;
-typedef struct {
-  char data[10];
-} imod;
-typedef union {
+typedef pmod imod;
+typedef union
+{
   uint8_t hi, lo;
   unsigned short val;
   short word;
 } gen_val;
 
 typedef pgen_t igen;
-typedef struct {
-  // shdr's 46 byters is malloc aligned to 48 and I don't make it stop
-  // so we first read 46 chars explicitly and then casted to shdrcast defined
-  // beloe
-  uint8_t dc[46];
+typedef struct
+{
+  char name[46];
 } shdr;
-typedef struct {
+
+typedef struct
+{
   char name[20];
   uint16_t pid, bankId, pbagNdx;
+
   char idc[12];
 } phdr;
 
-typedef struct {
+typedef struct
+{
   char name[20];
-  uint32_t start, end, startloop, endloop, sampleRate;
+  unsigned int start, end, startloop, endloop, sampleRate;
 
-  char originalPitch;
-  char pitchCorrection;
-  uint16_t wSampleLink;
-  SFSampleLink sfSampleqaType;
+  unsigned char originalPitch;
+  signed char pitchCorrection;
+  uint16_t wSampleLink, sampleType;
 } shdrcast;
-
 static int nphdrs, npbags, npgens, npmods, nshdrs, ninsts, nimods, nigens,
     nibags;
 
@@ -120,7 +130,8 @@ static int nsamples;
 static float *sdta;
 static int sdtastart;
 
-typedef struct {
+typedef struct
+{
   unsigned short StartAddrOfs, EndAddrOfs, StartLoopAddrOfs, EndLoopAddrOfs,
       StartAddrCoarseOfs;
   short ModLFO2Pitch, VibLFO2Pitch, ModEnv2Pitch, FilterFc, FilterQ,
@@ -137,20 +148,16 @@ typedef struct {
       CoarseTune, FineTune, SampleId, SampleModes, Reserved3, ScaleTune,
       ExclusiveClass, OverrideRootKey, Dummy;
 } zone_t;
-typedef struct {
+typedef struct
+{
   phdr hdr;
   int npresets;
   zone_t *zones;
 } PresetZones;
-static PresetZones *presetZones;
-PresetZones findByPid(int pid, int bkid);
 
-PresetZones findPresetZones(int i, int nregions);
-PresetZones findPresetByName(const char *name);
-int findPresetZonesCount(int i);
 void readsf(FILE *f);
-
-enum grntypes {
+enum grntypes
+{
   StartAddrOfs,
   EndAddrOfs,
   StartLoopAddrOfs,
@@ -169,8 +176,8 @@ enum grntypes {
   ChorusSend,
   ReverbSend,
   Pan,
-  Unused2,
-  Unused3,
+  IBAGID,
+  PBagId,
   Unused4,
   ModLFODelay,
   ModLFOFreq,
@@ -215,13 +222,47 @@ enum grntypes {
 #define fivezeros 0, 0, 0, 0, 0
 #define defenvel -12000, -12000, -12000, -12000, 0, -12000
 
-#define defattrs                                                                        \
-  {fivezeros, 0,         0,         0,        13500,              /* 9*/                \
-   fivezeros, fivezeros, 0,         0,        -12000,             /*22*/                \
-   0,         -12000,    0,                                       /*25*/                \
-   defenvel,  0,         0,         defenvel,                     /*39*/                \
-   0,         0,         0,         0,        127 << 8, 127 << 8, /*velrange/keyrange*/ \
-   0,                                                             /*45*/                \
-   -1,        -1,        fivezeros,                               /*55*/                \
-   0,         0,         0,         100,      0,        -1,       0};
+#define defattrs                                                           \
+  {                                                                        \
+    /*StartAddrOfs:*/ 0, /*EndAddrOfs:*/ 0, /*StartLoopAddrOfs:*/ 0,       \
+        /*EndLoopAddrOfs:*/ 0, /*StartAddrCoarseOfs:*/ 0,                  \
+        /*ModLFO2Pitch:*/ 0, /*VibLFO2Pitch:*/ 0,                          \
+        /*ModEnv2Pitch:*/ 0, /*FilterFc:*/ 13500, /*FilterQ:*/ 0,          \
+        /*ModLFO2FilterFc:*/ -12000, /*ModEnv2FilterFc:*/ -12000,          \
+        /*EndAddrCoarseOfs:*/ 0, /*ModLFO2Vol:*/ -12000, /*Unused1:*/ 0,   \
+        /*ChorusSend:*/ 0, /*ReverbSend:*/ 0, /*Pan:*/ 0, /*IBAGID:*/ 0,   \
+        /*PBagId:*/ 0, /*Unused4:*/ 0,                                     \
+        /*ModLFODelay:*/ -12000,                                           \
+        /*ModLFOFreq:*/ 0,                                                 \
+        /*VibLFODelay:*/ -12000,                                           \
+        /*VibLFOFreq:*/ 0,                                                 \
+        /*ModEnvDelay:*/ -12000,                                           \
+        /*ModEnvAttack:*/ -12000,                                          \
+        /*ModEnvHold:*/ -12000,                                            \
+        /*ModEnvDecay:*/ -12000,                                           \
+        /*ModEnvSustain:*/ 0,                                              \
+        /*ModEnvRelease:*/ -12000,                                         \
+        /*Key2ModEnvHold:*/ 0,                                             \
+        /*VolEnvAttack:*/ -12000,                                          \
+        /*VolEnvHold:*/ -12000,                                            \
+        /*VolEnvDecay:*/ -12000,                                           \
+        /*VolEnvSustain:*/ 0,                                              \
+        /*VolEnvRelease:*/ -12000,                                         \
+        /*Key2VolEnvHold:*/ 0,                                             \
+        /*Key2VolEnvDecay:*/ 0,                                            \
+        /*Instrument:*/ -1,                                                \
+        /*Reserved1:*/ 0,                                                  \
+        /*KeyRange:*/ 127 << 8, /*VelRange:*/ 127 << 8,                    \
+        /*StartLoopAddrCoarseOfs:*/ 0, /*Keynum:*/ -1, /*Velocity:*/ -1,   \
+        /*Attenuation:*/ 0, /*Reserved2:*/ 0, /*EndLoopAddrCoarseOfs:*/ 0, \
+        /*CoarseTune:*/ 0, /*FineTune:*/ 0, /*SampleId:*/ -1,              \
+        /*SampleModes:*/ 1, /*Reserved3:*/ 0, /*ScaleTune:*/ 100,          \
+        /*ExclusiveClass:*/ 0, /*OverrideRootKey:*/ -1, /*Dummy:*/ 0       \
+  }
+phdr *presetHeaders[128];
+phdr *phdrRoot = 0;
+phdr drumHeaders[128];
+zone_t *presetZones;
+zone_t *root;
+zone_t *presets[0xff];
 #endif
