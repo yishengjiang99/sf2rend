@@ -1,5 +1,4 @@
 import { SpinNode } from "../spin/spin.js";
-import WinampEQ from "./WinampEQ.js";
 import { LowPassFilterNode } from "../lpf/lpf.js";
 import { midi_ch_cmds, midi_effects } from "./constants.js";
 import FFTNode from "../fft-64bit/fft-node.js";
@@ -21,7 +20,6 @@ export async function mkpath2(ctx, { midi_input, sf2File }) {
     await SpinNode.init(ctx).catch(console.trace);
     await FFTNode.init(ctx).catch(console.trace);
     await LowPassFilterNode.init(ctx).catch(console.trace);
-    await WinampEQ.init(ctx).catch(console.trace);
     init = true;
   }
   const channelIds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];

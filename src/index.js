@@ -85,39 +85,34 @@ for (const f of mfilelist)
 midiSelect.onchange = (e) => {
   document.location.href = "?midiUrl=" + encodeURI(e.target.value);
 };
-// const midiSelect = mkdiv2({
-//   tag: "select",
-//   style: "width:300px",
-//   value: midiUrl,
-//   oninput: function (e) {
-//     document.location.href = "?midiUrl=" + encodeURIComponent(e.target.value);
-//   },
-//   children: [
-//     mkdiv("option", { name: "select midi", value: null }, "select midi file"),
-//     ...mfilelist.map((f) =>
-//       mkdiv("option", { value: f }, decodeURI(f).split("/").pop())
-//     ),
-//   ],
-// });
 
 midiSelect.value = midiUrl;
+await new Promise((r) => window.addEventListener("keydown", r));
+document.querySelector("#landing").remove();
 ctx = new AudioContext({
   sampleRate: 44100,
 });
 const { mkpath } = await import("./mkpath.js");
-await ctx.suspend();
-
 const eventPipe = mkeventsPipe();
 const apath = await mkpath(ctx, eventPipe);
 const spinner = apath.spinner;
 
 let nextChannel = 0;
 
-const ui = mkui(
-  eventPipe,
-  document.querySelector("#channelContainer"),
-  uiInputs()
-);
+const ui = mkui(eventPipe, document.querySelector("#channelContainer"), {
+  onTrackDoubleClick: async (channelId, e) => {
+    const sp1 = await apath.querySpState({ query: 2 * channelId });
+  },
+  programNames: sf2.programNames,
+  onEditZone: (editData) => {
+    spinner.port.postMessage(editData);
+    return apath.subscribeNextMsg((data) => {
+      return data.zack == "update" && data.ref == editData.update[1];
+    });
+  },
+  onTrackClick: (tt) => {},
+  onAddChannel: () => channels[nextChannel++].setProgram(0, nextChannel << 3),
+});
 
 const { push_ch, tabs } = mktabs({
   group: "set_group",

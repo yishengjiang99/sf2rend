@@ -17,7 +17,7 @@ const [W, H] = [(visualViewport.width / 3) * 2, 120];
 export function mkui(
   eventPipe,
   container,
-  { onTrackClick, onTrackDoubleClick, onEditZone, onAddChannel }
+  { onTrackClick, onTrackDoubleClick, onEditZone, onAddChannel, programNames }
 ) {
   class TrackUI {
     constructor(idx, cb) {
@@ -37,16 +37,21 @@ export function mkui(
         };
       };
       this.idx = idx;
-      this.nameLabel = mkdiv("input", {
-        list: "programs",
-        oninput: (e) => {
-          const pid = e.target.value & 0x7f;
-          const bkid = e.target.value >> 7;
-          const change_program = midi_ch_cmds.change_program;
-          e.target.blur();
-          cb([change_program | idx, pid, bkid]);
+      this.nameLabel = mkdiv(
+        "select",
+        {
+          oninput: (e) => {
+            const pid = e.target.value & 0x7f;
+            const bkid = e.target.value >> 7;
+            const change_program = midi_ch_cmds.change_program;
+            e.target.blur();
+            cb([change_program | idx, pid, bkid]);
+          },
         },
-      });
+        programNames.map((name, presetIdx) =>
+          mkdiv2({ tag: "option", value: presetIdx, children: name })
+        )
+      );
       this.led = mkdiv("input", {
         class: "onoff_indicate",
         type: "checkbox",
@@ -57,7 +62,7 @@ export function mkui(
         ` <label for="modal-control${idx}" class="toggle"> <i class='fas fa-edit'></label>`,
         `<input type="checkbox" id="modal-control${idx}" class="modal">`,
         `<div> <label for="modal-control${idx}" class="modal-close" >Close Modal</label>
-        <p class='editTable'>adafdsafs</p>`,
+        <p class='editTable'></p>`,
       ]);
       const ctslsDiv = mkdiv("div", { class: "ctrls" }, [
         fa_switch_btn({
@@ -107,12 +112,10 @@ export function mkui(
             mkdiv(
               "button",
               {
-                data: {
-                  path_cmd: "gear",
-                  p1: idx,
-                },
+                "data-path_cmd": "gear",
+                p1: idx,
               },
-              `<i class='fas fa-gears'>`
+              `<i class='fa fa-gears'>`
             ),
           ]),
         ]
@@ -202,6 +205,7 @@ export function mkui(
     }
     set presetId(presetId) {
       this._pid = presetId;
+      this.nameLabel.value = presetId;
     }
     set name(id) {
       this.nameLabel.value = id;
@@ -234,6 +238,7 @@ export function mkui(
     }
     set zone(z) {
       if (!z) return;
+      this._zone = z;
     }
     set env1([a, h, d, s, r]) {
       const points = [
