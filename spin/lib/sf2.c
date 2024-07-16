@@ -348,16 +348,18 @@ void loopzone(phdr *phr, int midi, int velocity)
 
             else
             {
-              printf("\n\t\tizone %hu %s: %d", g->genid, generator[g->genid],
-                     g->val.shAmount);
+              if (g->genid == VolEnvRelease)
+                printf("\n\t\tizone %hu %s: %d", g->genid, generator[g->genid],
+                       g->val.shAmount);
             }
           }
         }
       }
       else
       {
-        printf("\n\t\tpzone %hu %s: %hd", g->genid, generator[g->genid],
-               g->val.shAmount);
+        if (g->genid == VolEnvRelease)
+          printf("\n\t\tpzone %hu %s: %hd", g->genid, generator[g->genid],
+                 g->val.shAmount);
       }
     }
   }
@@ -399,18 +401,12 @@ int main(int argc, char **args)
   readSection(imod);
   readSection(igen);
   readSection(shdr);
-  for (uint16_t i = 0; i < 128; i++)
-  {
-    phdr *phr = findPreset(i, 0x00);
+  phdr *phr = findPreset(0, 0);
 
-    printf("[%u %u] %s \n", phr->pid, phr->bankId, phr->name);
-    if (phr)
-    {
-      loopzone(phr, 48, 74);
-    }
-    break;
-  }
-  // printf("[%u %u] %s \n", phr->pid, phr->bankId,phr->name);
+  loopzone(phr, 56, 60);
+  loopzone(phr, 54, 60);
+  phr = findPreset(28, 0);
+  loopzone(phr, 54, 111);
 
   return 0;
 }

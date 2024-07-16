@@ -192,7 +192,7 @@ void advanceStage(EG *eg)
     if (eg->sustain > 0)
     {
       eg->nsteps = timecent2sample(eg->decay);
-      eg->egIncrement = (MAX_EG + eg->sustain) / eg->nsteps;
+      eg->egIncrement = (MAX_EG + eg->sustain / 1000) / eg->nsteps;
     }
     else
     {
@@ -215,22 +215,20 @@ void advanceStage(EG *eg)
     120.*/
     eg->stage = sustain;
     eg->egIncrement = 0.0f;
-    eg->nsteps = 418000;
+    eg->nsteps = 0xfffff;
     break;
 
     // sustain = % decreased during decay
 
   case sustain:
-  {
     eg->stage = release;
     int stepsFull =
         timecent2sample(eg->release); //+ timecent2sample(eg->decay);
-    eg->egIncrement = -eg->sustain / (float)stepsFull;
+    eg->egIncrement = MAX_EG / (float)stepsFull;
     eg->nsteps = stepsFull * (eg->egval / MAX_EG);
     break;
-  }
   case release:
-    eg->stage = done;
+    // eg->stage = done;
     break;
   case done:
     break;
@@ -239,7 +237,6 @@ void advanceStage(EG *eg)
 
 void _eg_release(EG *e)
 {
-  e->nsteps = 0;
   e->stage = sustain;
   advanceStage(e);
 }
