@@ -21,6 +21,7 @@ let program,
   volMeters;
 
 renderMain().then(() => {
+  alert("sss");
   if (document.hash != "") rendProgram();
   rendProgram();
 });
