@@ -17,29 +17,25 @@
             grid-template-columns: 1fr 1fr;
         }
 
-            background-color: black;
-            color: grey;
+        .article-preview {
+            margin-top: 30px;
+        }
 
-            =======.article-preview {
-                margin-top: 30px;
-            }
+        .timeseries {
+            right: 0;
+            height: 10px;
+            position: fixed;
+            top: 50%;
+        }
 
-            .timeseries {
-                right: 0;
-                height: 10px;
-                position: fixed;
-                top: 50%;
-            }
-
-            .timeseries:active {
-                height: 250px;
-            }
+        .timeseries:active {
+            height: 250px;
+        }
 
     </style>
 </head>
 <body>
     <div id="root"></div>
-
     <script src="./e2e.js" type="module"></script>
 
 </body>

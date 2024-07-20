@@ -21,16 +21,19 @@ let program,
   volMeters;
 
 renderMain().then(() => {
-  alert("sss");
-  if (document.hash != "") rendProgram();
-  rendProgram();
+  if (document.hash != "") {
+    const hashId = document.location.hash.substring(1).split("|");
+
+    rendProgram(...hashId);
+  } else {
+    rendProgram(0, 0);
+  }
 });
 
 window.addEventListener("hashchange", rendProgram);
 
 async function renderMain() {
   await loadWait;
-  await startSpinner();
 
   document.body.innerHTML = "";
   mkdiv("nav", [
@@ -85,12 +88,9 @@ async function renderMain() {
   document.body.append(main);
 }
 
-async function rendProgram() {
-  const hashId = document.location.hash.substring(1).split("|");
-  const intpre = parseInt(hashId[0]);
-  const pid = intpre;
+async function rendProgram(pid, zoneRef) {
   const bid = 0;
-  const zoneRef = hashId[1];
+  // await spinner.shipProgram(program);
 
   program = sf2file.loadProgram(pid, bid);
   if (!zone)
@@ -101,7 +101,7 @@ async function rendProgram() {
   const kRangeList = program.zMap.map(
     (z) =>
       `<option value=${z.ref} ${z.ref + "" == zone?.ref ? "selected" : ""}>${
-        z.Unused1 + "|" + z.Unused2
+        z.PBagId + "|" + z.IbagId
       } ${
         "key " +
         [z.KeyRange.lo, z.KeyRange.hi].join("-") +
@@ -118,7 +118,7 @@ async function rendProgram() {
       {
         oninput: (e) => {
           renderZ(program.zMap.filter((z) => z.ref == e.target.value)[0]);
-          window.location.hash = "#" + pid + "|" + e.target.value;
+          // window.location.hash = "#" + pid + "|" + e.target.value;
         },
       },
       kRangeList
@@ -135,13 +135,12 @@ async function rendProgram() {
     ),
   ]);
   const mainRight = mkdiv("div", { class: "note" }, [
-    mkdiv("div", { class: "note-title" }, [sf2file.programNames[hashId]]),
+    mkdiv("div", { class: "note-title" }, [sf2file.programNames[pid]]),
     articleHeader,
   ]);
   rightPanel.replaceChildren(mainRight, articleMain);
 
   canvas = mkcanvas({ container: articleHeader });
-  await spinner.shipProgram(program);
   if (zone) renderZ(zone);
 }
 async function renderZ(zoneSelect) {
@@ -180,7 +179,7 @@ function renderSampleView(zoneSelect) {
 
     JSON.stringify(zoneSelect.KeyRange),
     "<br>",
-    JSON.stringify(zoneSelect.VolRange),
+    JSON.stringify(zoneSelect.VelRange),
   ]);
 }
 
@@ -233,8 +232,13 @@ let ctx;
 async function startSpinner() {
   ctx = new AudioContext();
   audioPath = await mkpath(ctx);
+  audioPath.bindKeyboard(() => 0);
   await audioPath.startAudio();
   spinner = audioPath.spinner;
+
+  if (program) {
+    audioPath.loadProgram(program);
+  }
 
   spinner.port.onmessage = ({ data }) => {
     if (data.currentFrame) {
@@ -248,10 +252,12 @@ async function startSpinner() {
 }
 async function rendSample(e, zoneObj) {
   e.target.innerText = "loading";
-  if (!ctx || !spinner) await startSpinner();
-  if (ctx.state !== "running") await ctx.resume();
+  if (!ctx || !spinner) {
+    await startSpinner();
+  }
   if (!zoneObj) return;
-  if (!spinner) startSpinner();
+  // if (program) await spinner.shipProgram(program);
+
   const { arr, ref } = zoneObj;
   if (zoneObj.isDirty) {
     spinner.port.postMessage({
@@ -262,13 +268,7 @@ async function rendSample(e, zoneObj) {
   }
   e.target.innerText = "playing";
 
-  spinner.port.postMessage([
-    0x90,
-    0,
-    zoneObj.calcPitchRatio(55, spinner.context.sampleRate),
-    122,
-    [program.presetId, ref],
-  ]);
+  spinner.port.postMessage([0x90, 0, 55, 122, ozon.presetId, ref]);
   e.target.addEventListener(
     "mouseup",
     () => {
@@ -282,25 +282,18 @@ const drawEV = async (zone, target) => {
   const [delay, att, hold, decay, sustain, release] = zone.arr.slice(33, 39);
   console.log(delay, att, hold, decay, sustain, release);
   const tc2time = (t) => Math.pow(2, t / 1200);
-  const ctx = new OfflineAudioContext(1, 6000, 3000);
+  const ctx = new OfflineAudioContext(1, 33, 3000);
+  const o = ctx.createOscillator({ frequency: 1 });
   const amp = new GainNode(ctx, { gain: 0 });
-  const o = new ConstantSourceNode(ctx, { offset: 0.2 });
-  o.connect(new DelayNode(ctx, { delayTime: tc2time(delay) }));
-
-  // amp.gain.setValueAtTime(0, tc2time(delay));
+  amp.gain.setValueAtTime(0, 0);
   amp.gain.linearRampToValueAtTime(1, tc2time(att));
-  amp.gain.cancelAndHoldAtTime(tc2time(att));
-  amp.gain.setTargetAtTime(
-    (1440 - sustain) / 1440,
-    tc2time(att) + tc2time(hold),
-    tc2time(decay)
-  );
-  amp.gain.cancelAndHoldAtTime(
-    tc2time(att) + tc2time(tc2time(decay)) + tc2time(hold)
-  );
-  amp.gain.cancelAndHoldAtTime(
-    tc2time(att) + tc2time(tc2time(decay)) + tc2time(hold) + 0.1
-  );
+  amp.gain.linearRampToValueAtTime(1 - sustain / 1000, tc2time(decay));
+  // amp.gain.cancelAndHoldAtTime(
+  //   tc2time(att) + tc2time(tc2time(decay)) + tc2time(hold)
+  // );
+  // amp.gain.cancelAndHoldAtTime(
+  //   tc2time(att) + tc2time(tc2time(decay)) + tc2time(hold) + 0.1
+  // );
 
   o.connect(amp);
   amp.connect(ctx.destination);

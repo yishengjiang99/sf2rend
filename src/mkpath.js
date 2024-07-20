@@ -119,20 +119,21 @@ export async function mkpath2(ctx, { midi_input, sf2File }) {
       }
     },
     async startAudio() {
-      if (ctx.state !== "running") await ctx.resume();
+      if (!ctx instanceof OfflineAudioContext && ctx.state !== "running")
+        await ctx.resume();
     },
     ctrl_bar(container) {
-      // mkdiv(
-      //   "select",
-      //   {
-      //     onselect: (e) => {
-      //       spinner.port.postMessage({ cmd: e.target.value });
-      //     },
-      //     placeholder: "send midi gm",
-      //     value: null,
-      //   },
-      //   "cmd:|gm_reset|debug|panic".split("|").map((c) => new Option(c))
-      // ).attachTo(cont  iner);
+      mkdiv(
+        "select",
+        {
+          onselect: (e) => {
+            spinner.port.postMessage({ cmd: e.target.value });
+          },
+          placeholder: "send midi gm",
+          value: null,
+        },
+        "cmd:|gm_reset|debug|panic".split("|").map((c) => new Option(c))
+      ).attachTo(container);
 
       mkdiv("label", { for: "masterGainSlider" }, "master gain").attachTo(
         container
@@ -228,6 +229,7 @@ export async function mkpath2(ctx, { midi_input, sf2File }) {
     },
 
     bindKeyboard: function (get_active_channel_fn, eventpipe) {
+      if (!eventpipe) eventpipe = spinner.port;
       const keys = ["a", "w", "s", "e", "d", "f", "t", "g", "y", "h", "u", "j"];
       window.onkeydown = (e) => {
         if (e.repeat) return;

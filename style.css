@@ -1,11 +1,6 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 .main {
   display: flex;
   width: 100%;
-  overflow: hidden;
   padding: 0 30px;
   margin: 5px auto;
 }
@@ -13,6 +8,7 @@
 .col {
   height: 100%;
 }
+
 .col:last-child {
   flex-grow: 1;
 }
@@ -25,18 +21,18 @@ i.fas {
   cursor: pointer;
 }
 
-.toggle_fa > input {
+.toggle_fa>input {
   opacity: 0;
   position: absolute;
   right: 0;
   user-select: none;
 }
 
-.toggle_fa > input:not(:checked) + label > i + i::before {
+.toggle_fa>input:not(:checked)+label>i+i::before {
   display: none;
 }
 
-.toggle_fa > input:checked + label > i:first-of-type {
+.toggle_fa>input:checked+label>i:first-of-type {
   display: none;
 }
 
@@ -74,15 +70,15 @@ main {
   right: 10px;
 }
 
-.tabs > input + label + div {
+.tabs>input+label+div {
   display: none;
 }
 
-.tabs > input:checked + label {
+.tabs>input:checked+label {
   color: gold;
 }
 
-.tabs > input:checked + label + div {
+.tabs>input:checked+label+div {
   display: block;
 }
 
@@ -116,7 +112,7 @@ main {
 }
 
 .channelCard:hover {
- // background-color: #333333;
+  background-color: #333333;
 }
 
 #stdout {
@@ -136,10 +132,11 @@ main {
   font-family: -apple-system, BlinkMacSystemFont, avenir next, avenir,
     helvetica neue, helvetica, ubuntu, roboto, noto, segoe ui, arial, sans-serif;
 }
+
 #ch_ctrl_bar {
   position: absolute;
   top: 20vh;
-  right:10em;
+  right: 10em;
 }
 
 .keyboard {
@@ -169,6 +166,7 @@ main {
   background: linear-gradient(to bottom, #eee 0, #fff 100%);
   margin: 0 0 0 -1em;
 }
+
 .keywhite.active {
   border-top: 1px solid #777;
   border-left: 1px solid #999;
@@ -177,6 +175,7 @@ main {
     0 0 3px rgba(0, 0, 0, 0.2);
   background: linear-gradient(to bottom, #fff 0, #e9e9e9 100%);
 }
+
 .keywhite.pressed {
   border-top: 1px solid #777;
   border-left: 1px solid #999;
@@ -185,6 +184,7 @@ main {
     0 0 3px rgba(0, 0, 0, 0.2);
   background: linear-gradient(to bottom, #fff 0, #e9e9e9 100%);
 }
+
 .keyblack {
   margin: 0;
   padding: 0;
@@ -201,6 +201,7 @@ main {
     0 2px 4px rgba(0, 0, 0, 0.5);
   background: linear-gradient(45deg, #222 0, #555 100%);
 }
+
 .keyblack:active {
   box-shadow: -1px -1px 2px rgba(255, 255, 255, 0.2) inset, 0 -2px 2px 3px rgba(0, 0, 0, 0.6) inset,
     0 1px 2px rgba(0, 0, 0, 0.5);
@@ -212,6 +213,7 @@ main {
     0 1px 2px rgba(0, 0, 0, 0.5);
   background: linear-gradient(to right, #444 0, #222 100%);
 }
+
 .A,
 .C,
 .D,

@@ -260,7 +260,6 @@ export function mkui(
   for (let i = 0; i < 16; i++) {
     const trackrow = new TrackUI(i, eventPipe.postMessage);
     controllers.push(trackrow);
-    trackrow.hidden = true;
     tb.append(trackrow.container);
     trackrow.container.classList.add("channelCard");
     trackrow.container.addEventListener(

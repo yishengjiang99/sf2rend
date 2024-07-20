@@ -94,6 +94,50 @@ ctx = new AudioContext({
 });
 const { mkpath } = await import("./mkpath.js");
 const eventPipe = mkeventsPipe();
+eventPipe.onmessage(function (dd) {
+  let data;
+  if (dd.length <= 3) {
+    const [a, b, c] = dd;
+    data = [a & 0xf0, a & 0x0f, b, c];
+  }
+  const [cmd, ch, v1, v2] = data;
+  const [key, velocity] = [v1, v2];
+  console.log(dd);
+  switch (cmd) {
+    case midi_ch_cmds.continuous_change: // set CC
+      spinner.port.postMessage([(cmd << 7) | ch, v1, v2]);
+      break;
+    case midi_ch_cmds.change_program: //change porg
+      if (v1 == 0 && ch > 0) {
+        channels[ch].setProgram(v1, 128);
+      } else {
+        channels[ch].setProgram(v1, ch === DRUMSCHANNEL ? 128 : 0);
+      }
+      break;
+    case midi_ch_cmds.note_on:
+      if (velocity == 0) {
+        // spinner.port.postMessage(data);
+        channels[ch].keyOff(key, velocity);
+      } else {
+        channels[ch].keyOn(key, velocity);
+        //        uiControllers[ch].keyOn(key, velocity, ctx.currentTime);
+      }
+      break;
+    case midi_ch_cmds.note_off:
+      channels[ch].keyOff(key, velocity);
+
+      uiControllers[ch].keyOff(key, velocity, ctx.currentTime);
+
+      break;
+
+    case midi_ch_cmds.pitchbend:
+      spinner.port.postMessage(data);
+      break;
+    default:
+      spinner.port.postMessage(data);
+      break;
+  }
+});
 const apath = await mkpath(ctx, eventPipe);
 const spinner = apath.spinner;
 
@@ -145,51 +189,6 @@ if (midiUrl) {
 
 // mk_eq_bar(0, apath.eq_set).attachTo(document.querySelector("eq"));
 //link pipes
-eventPipe.onmessage(function (dd) {
-  8;
-  let data;
-  if (dd.length <= 3) {
-    const [a, b, c] = dd;
-    data = [a & 0xf0, a & 0x0f, b, c];
-  }
-  const [cmd, ch, v1, v2] = data;
-  const [key, velocity] = [v1, v2];
-
-  switch (cmd) {
-    case midi_ch_cmds.continuous_change: // set CC
-      spinner.port.postMessage([cmd, ch, v1, v2]);
-      break;
-    case midi_ch_cmds.change_program: //change porg
-      if (v1 == 0 && ch > 0) {
-        channels[ch].setProgram(v1, 128);
-      } else {
-        channels[ch].setProgram(v1, ch === DRUMSCHANNEL ? 128 : 0);
-      }
-      break;
-    case midi_ch_cmds.note_on:
-      if (velocity == 0) {
-        channels[ch].keyOff(key, velocity);
-        uiControllers[ch].keyOff(key, velocity, ctx.currentTime);
-      } else {
-        channels[ch].keyOn(key, velocity);
-        uiControllers[ch].keyOn(key, velocity, ctx.currentTime);
-      }
-      break;
-    case midi_ch_cmds.note_off:
-      channels[ch].keyOff(key, velocity);
-
-      uiControllers[ch].keyOff(key, velocity, ctx.currentTime);
-
-      break;
-
-    case midi_ch_cmds.pitchbend:
-      spinner.port.postMessage(data);
-      break;
-    default:
-      spinner.port.postMessage(data);
-      break;
-  }
-});
 
 //  eventPipe.onmessage(eventsHandler(channels, spinner, last_rend_end_at, ctx));
 initNavigatorMidiAccess({
