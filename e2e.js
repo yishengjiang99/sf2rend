@@ -1,13 +1,20 @@
-import { mkcanvas, chart } from "./chart/chart.js";
-import { mkdiv } from "https://unpkg.com/mkdiv@3.1.0/mkdiv.js";
-import { mkpath } from "./src/mkpath.js";
+import {mkcanvas, chart} from "./chart/chart.js";
+import {mkdiv} from "https://unpkg.com/mkdiv@3.1.0/mkdiv.js";
+import {mkpath} from "./src/mkpath.js";
 import SF2Service from "./sf2-service/index.js";
-import { newSFZone } from "./sf2-service/zoneProxy.js";
+import {newSFZone, newSFZoneMap} from "./sf2-service/zoneProxy.js";
 
 const sf2url = "static/GeneralUserGS.sf2";
 
 const sf2file = new SF2Service(sf2url);
-const loadWait = sf2file.load();
+let zoneListArr = {};
+
+const loadWait = sf2file.load({
+  onZone: (pid, zoneRef, zoneArr) => {
+    zoneListArr[pid] ||= [];
+    zoneListArr[pid].push(newSFZoneMap(zoneRef, zoneArr));
+  }
+});
 
 let program,
   spinner,
@@ -23,21 +30,24 @@ let program,
 renderMain().then(() => {
   if (document.hash != "") {
     const hashId = document.location.hash.substring(1).split("|");
-
     rendProgram(...hashId);
   } else {
     rendProgram(0, 0);
   }
 });
 
-window.addEventListener("hashchange", rendProgram);
+window.addEventListener("hashchange", (e) => {
+  const hashId = document.location.hash.substring(1).split("|");
+
+  rendProgram(...hashId);
+});
 
 async function renderMain() {
   await loadWait;
 
   document.body.innerHTML = "";
   mkdiv("nav", [
-    (volMeters = mkdiv("div", { id: "volmeter", style: "min-height:2em" })),
+    (volMeters = mkdiv("div", {id: "volmeter", style: "min-height:2em"})),
     mkdiv("div", [
       mkdiv(
         "button",
@@ -59,16 +69,16 @@ async function renderMain() {
   ]).attachTo(document.body);
   const progList = mkdiv(
     "ul",
-    { class: "notes-list" },
+    {class: "notes-list"},
     sf2file.programNames.map((n, presetId) =>
       mkdiv(
         "div",
-        { class: "menu-link" },
-        mkdiv("a", { href: `#${presetId}` }, n)
+        {class: "menu-link"},
+        mkdiv("a", {href: `#${presetId}`}, n)
       )
     )
   );
-  rightPanel = mkdiv("div", { class: "col note-viewer" }, []);
+  rightPanel = mkdiv("div", {class: "col note-viewer"}, []);
   const leftNav = mkdiv(
     "section",
     {
@@ -77,14 +87,14 @@ async function renderMain() {
     [
       mkdiv(
         "section",
-        { class: "sidebar-header" },
+        {class: "sidebar-header"},
         sf2file.url.split("/").pop()
       ),
       mkdiv("nav", {}, progList),
     ]
   );
-  const vrPanel = mkdiv("div", { class: "col" });
-  main = mkdiv("div", { class: "main" }, [leftNav, rightPanel, vrPanel]);
+  const vrPanel = mkdiv("div", {class: "col"});
+  main = mkdiv("div", {class: "main"}, [leftNav, rightPanel, vrPanel]);
   document.body.append(main);
 }
 
@@ -100,31 +110,29 @@ async function rendProgram(pid, zoneRef) {
 
   const kRangeList = program.zMap.map(
     (z) =>
-      `<option value=${z.ref} ${z.ref + "" == zone?.ref ? "selected" : ""}>${
-        z.PBagId + "|" + z.IbagId
-      } ${
-        "key " +
-        [z.KeyRange.lo, z.KeyRange.hi].join("-") +
-        " vel " +
-        [z.VelRange.lo, z.VelRange.hi].join("-")
+      `<option value=${z.ref} ${z.ref + "" == zone?.ref ? "selected" : ""}>${z.PBagId + "|" + z.IbagId
+      } ${"key " +
+      [z.KeyRange.lo, z.KeyRange.hi].join("-") +
+      " vel " +
+      [z.VelRange.lo, z.VelRange.hi].join("-")
       }</option>`
   );
   const articleHeader = mkdiv(
     "div",
-    { class: "note-header" },
+    {class: "note-header"},
 
-    mkdiv(
+    [mkdiv(
       "select",
       {
         oninput: (e) => {
-          renderZ(program.zMap.filter((z) => z.ref == e.target.value)[0]);
-          // window.location.hash = "#" + pid + "|" + e.target.value;
+          // renderZ(program.zMap.filter((z) => z.ref == e.target.value)[0]);
+          document.location.hash = "#" + pid + "|" + e.target.value;
         },
       },
       kRangeList
-    )
+    ), mkdiv("details", ["<summary>debug</summary>", ...zoneListArr[pid].map(list => JSON.stringify(Object.entries(list).filter(([k, v]) => k !== "arr" && v != 0 && v != -12000)))])]
   );
-  articleMain = mkdiv("div", { class: "note-preview" }, [
+  articleMain = mkdiv("div", {class: "note-preview"}, [
     mkdiv(
       "div",
       {
@@ -134,13 +142,13 @@ async function rendProgram(pid, zoneRef) {
       []
     ),
   ]);
-  const mainRight = mkdiv("div", { class: "note" }, [
-    mkdiv("div", { class: "note-title" }, [sf2file.programNames[pid]]),
+  const mainRight = mkdiv("div", {class: "note"}, [
+    mkdiv("div", {class: "note-title"}, [sf2file.programNames[pid]]),
     articleHeader,
   ]);
   rightPanel.replaceChildren(mainRight, articleMain);
 
-  canvas = mkcanvas({ container: articleHeader });
+  canvas = mkcanvas({container: articleHeader});
   if (zone) renderZ(zone);
 }
 async function renderZ(zoneSelect) {
@@ -186,7 +194,7 @@ function renderSampleView(zoneSelect) {
 //drawEV(zone.arr.slice(33, 39), volEGCanvas);
 function min_max_vals(k) {
   if (k.includes("Sustain")) {
-    return { min: 0, max: 1000, step: 10 };
+    return {min: 0, max: 1000, step: 10};
   } else
     return {
       min: -12000,
@@ -194,7 +202,7 @@ function min_max_vals(k) {
       step: 10,
     };
 }
-function renderLPFView(zone) {}
+function renderLPFView(zone) { }
 function renderArticle(keyword, zone) {
   let canvas;
   const zoneObj = newSFZone(zone);
@@ -221,9 +229,9 @@ function renderArticle(keyword, zone) {
     )
   );
   const details = mkdiv("div");
-  const article = mkdiv("article", { class: "article" }, [attrVals, details]);
+  const article = mkdiv("article", {class: "article"}, [attrVals, details]);
   if (keyword === "VolEnv") {
-    canvas = mkcanvas({ container: details, title: "amp eg" });
+    canvas = mkcanvas({container: details, title: "amp eg"});
     drawEV(zoneObj, canvas);
   }
   return article;
@@ -240,7 +248,7 @@ async function startSpinner() {
     audioPath.loadProgram(program);
   }
 
-  spinner.port.onmessage = ({ data }) => {
+  spinner.port.onmessage = ({data}) => {
     if (data.currentFrame) {
       volMeters.innerHTML = data.currentFrame;
     }
@@ -258,11 +266,11 @@ async function rendSample(e, zoneObj) {
   if (!zoneObj) return;
   // if (program) await spinner.shipProgram(program);
 
-  const { arr, ref } = zoneObj;
+  const {arr, ref} = zoneObj;
   if (zoneObj.isDirty) {
     spinner.port.postMessage({
       cmd: "newZone",
-      zone: { arr, ref },
+      zone: {arr, ref},
     });
     zoneObj.lastSync = new Date();
   }
@@ -275,7 +283,7 @@ async function rendSample(e, zoneObj) {
       spinner.port.postMessage([0x80, 0, 123]);
       e.target.innerText = "play";
     },
-    { once: true }
+    {once: true}
   );
 }
 const drawEV = async (zone, target) => {
@@ -283,8 +291,8 @@ const drawEV = async (zone, target) => {
   console.log(delay, att, hold, decay, sustain, release);
   const tc2time = (t) => Math.pow(2, t / 1200);
   const ctx = new OfflineAudioContext(1, 33, 3000);
-  const o = ctx.createOscillator({ frequency: 1 });
-  const amp = new GainNode(ctx, { gain: 0 });
+  const o = ctx.createOscillator({frequency: 1});
+  const amp = new GainNode(ctx, {gain: 0});
   amp.gain.setValueAtTime(0, 0);
   amp.gain.linearRampToValueAtTime(1, tc2time(att));
   amp.gain.linearRampToValueAtTime(1 - sustain / 1000, tc2time(decay));
