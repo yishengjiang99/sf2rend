@@ -16,15 +16,17 @@ function apromise_test(fn, str) {
   fn().then(() => console.log(str))
 }
 
-// promise_test(async () => {
-//   const sp = await mkspinner();
-//   const sp3 = sp.newSpinner(3);
 
-//   sp.spinners[3].zone.Attenuation = 3;
-//   sp.trigger_attack(sp.spRef(3), 0.8, 4);
-//   sp.spinners[3].zone.VolEnvAttack = -12000;
-//   console.log(sp.spinners[3].volEG, "sp3ref");
-//   assert_equals(sp.spinners[3].volEG, 1); //init, not inacgtive;
+
+// promise_test(async () => {
+const sp = await mkspinner();
+const sp3 = sp.newSpinner(3);
+
+sp.spinners[3].zone.Attenuation = 3;
+sp.trigger_attack(sp.spRef(3), 0.8, 4);
+sp.spinners[3].zone.VolEnvAttack = -12000;
+console.log(sp.spinners[3].volEG, "sp3ref");
+assert_equals(sp.spinners[3].volEG, 1); //init, not inacgtive;
 
 //   assert_equals(sp.timecent2sample(-12000), 43);
 
