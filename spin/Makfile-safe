@@ -1,4 +1,4 @@
-all: spin.wasm.js
+all: spin.wasm.js pdta.wasm.js
 
 clean: src/spin.c
 	rm -f build/*
@@ -23,15 +23,18 @@ spin.wasm.js: spin.wasm
 # 		-Wl,--allow-undefined \
 #   	-Wl,--export-all src/sp_run.c -o - |npx encode-wasm-uint8 > run.wasm.js
 
-sprun:
+pdta.wasm:
 	clang \
   	--target=wasm32 \
-		-emit-llvm -c -S \
+	-nostdlib \
+   	-Wl,--no-entry \
+	-Wl,--export-all \
   	-Wl,--no-entry \
-		-Wl,--allow-undefined \
-  	-Wl,--export-all \
-		src/sp_run.c  \
-		-o sprun.js
+	-Wl,--allow-undefined \
+	-Wl,--lto-O3 -o build/pdta.wasm \
+	src/sf2.c
+			
 
-sprun.js: sprun.js \
-	cat sprun.sj | npx encode-wasm-uint8 > run.wasm.js
+
+pdta.wasm.js: pdta.wasm 
+	cat build/sf2.wasm | npx encode-wasm-uint8 > pdta.wasm.js
