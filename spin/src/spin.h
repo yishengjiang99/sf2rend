@@ -177,6 +177,11 @@ void reset(spinner *x);
 int spin(spinner *x, int n);
 float *spOutput(spinner *x);
 
+void lpf_set_filter_q(Biquad *lpf, short filterQ);
+void lpf_set_frequency(Biquad *lpf, float fc);
+
+float lpf_calc(Biquad *b, double In);
+
 // Midi controller numbers
 enum TMLController {
   TML_BANK_SELECT_MSB,

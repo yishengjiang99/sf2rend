@@ -1,35 +1,62 @@
-import { SpinNode } from "../spin/spin.js";
-import { LowPassFilterNode } from "../lpf/lpf.js";
-import { midi_ch_cmds, midi_effects } from "./constants.js";
+import {SpinNode} from "../spin/spin.js";
+import {LowPassFilterNode} from "../lpf/lpf.js";
+import {midi_ch_cmds, midi_effects} from "./constants.js";
 import FFTNode from "../fft-64bit/fft-node.js";
-import { mkdiv } from "../mkdiv/mkdiv.js";
-import { drawLoops } from "../volume-meter/main.js";
+import {mkdiv} from "../mkdiv/mkdiv.js";
+import {drawLoops} from "../volume-meter/main.js";
 import createAudioMeter from "../volume-meter/volume-meter.js";
-import { anti_denom_dither, delay } from "./misc.js";
+import {anti_denom_dither, delay} from "./misc.js";
 import SF2Service from "../sf2-service/sf2.js";
-import { attributeKeys } from "../sf2-service/zoneProxy.js";
+import {attributeKeys, newSFZoneMap} from "../sf2-service/zoneProxy.js";
+import {mkeventsPipe} from "./mkeventsPipe.js";
 let init = false;
-let sf2s, listenerMaps;
+let sf2Service, listenerMaps, zoneListArr = [];
 const msgcc = midi_ch_cmds.continuous_change;
-
-export async function mkpath(ctx, eventPipe) {
-  return mkpath2(ctx, { midi_input: eventPipe });
-}
-export async function mkpath2(ctx, { midi_input, sf2File }) {
+const {change_program, continuous_change, note_on, note_off} = midi_ch_cmds;
+export async function mkpath(ctx, props) {
   if (!init) {
     await SpinNode.init(ctx).catch(console.trace);
     await FFTNode.init(ctx).catch(console.trace);
     await LowPassFilterNode.init(ctx).catch(console.trace);
     init = true;
   }
+  if (props.sf2Service) {
+    sf2Service = props.sf2Service;
+    await sf2Service.load({
+      onZone: (pid, zoneRef, zoneArr) => {
+        zoneListArr[pid] ||= [];
+        zoneListArr[pid].push(newSFZoneMap(zoneRef, zoneArr));
+      }
+    })
+  }
+
   const channelIds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+  const drumsChannmel = [9];
   const spinner = new SpinNode(ctx);
   const lpfs = Array(16).fill(new LowPassFilterNode(ctx));
-  const mastGain = new GainNode(ctx, { gain: 12 });
+  const mastGain = new GainNode(ctx, {gain: 12});
   //this.EQ = mk_eq_bar(0);
   const whitenoise = anti_denom_dither(ctx);
   const fft = new FFTNode(ctx);
   const clipdetect = createAudioMeter(ctx);
+  let mini_input = props.mini_input;
+  if (!mini_input) {
+    mini_input = mkeventsPipe();
+    mini_input.onmessage((data) => {
+      const [a, b, c] = data;
+      const [cmd, ch, v1, v2] = [a & 0xf0, a & 0x0f, b, c];
+      if (cmd === midi_ch_cmds.change_program) {
+        const pid = v1;
+        if (drumsChannmel.find(ch)) bid = 128;
+        else bid = 0;
+        const program = sf2Service.loadProgram(pid, bid);
+        if (!program) throw "program not found " + pid + ":" + bid;
+        spinner.shipProgram(program, pid | bid);
+      } else {
+        spinner.port.postMessage(data);
+      }
+    })
+  }
 
   whitenoise.connect(spinner);
   whitenoise.start();
@@ -42,11 +69,7 @@ export async function mkpath2(ctx, { midi_input, sf2File }) {
   return {
     spinner,
     async loadProgram(pid, bankid) {
-      if (sf2File && !sf2s) {
-        sf2s = new SF2Service(sf2File);
-        await sf2s.load();
-      }
-      const p = sf2s.loadProgram(pid, bankid);
+      const p = sf2Service.loadProgram(pid, bankid);
       await spinner.shipProgram(p, pid | bankid);
       return p;
     },
@@ -54,7 +77,7 @@ export async function mkpath2(ctx, { midi_input, sf2File }) {
       spinner.connect(destination, outputNumber, destinationInputNumber);
     },
     get msgPort() {
-      return spinner.port;
+      return mini_input;
     },
     detectClips(canvas) {
       const timer = drawLoops(canvas, clipdetect);
@@ -74,10 +97,10 @@ export async function mkpath2(ctx, { midi_input, sf2File }) {
       };
     },
     querySpState: async function aa(channelId) {
-      spinner.port.postMessage({ query: channelId });
+      spinner.port.postMessage({query: channelId});
       return await new Promise((resolve, reject) => {
         setTimeout(reject, 100);
-        spinner.port.onmessage = ({ data }) => {
+        spinner.port.onmessage = ({data}) => {
           if (data.queryResponse) resolve(data.queryResponse);
         };
       });
@@ -127,7 +150,7 @@ export async function mkpath2(ctx, { midi_input, sf2File }) {
         "select",
         {
           onselect: (e) => {
-            spinner.port.postMessage({ cmd: e.target.value });
+            spinner.port.postMessage({cmd: e.target.value});
           },
           placeholder: "send midi gm",
           value: null,
@@ -135,7 +158,7 @@ export async function mkpath2(ctx, { midi_input, sf2File }) {
         "cmd:|gm_reset|debug|panic".split("|").map((c) => new Option(c))
       ).attachTo(container);
 
-      mkdiv("label", { for: "masterGainSlider" }, "master gain").attachTo(
+      mkdiv("label", {for: "masterGainSlider"}, "master gain").attachTo(
         container
       );
       mkdiv("input", {
@@ -156,7 +179,7 @@ export async function mkpath2(ctx, { midi_input, sf2File }) {
     subscribeNextMsg: async function (precateFn) {
       return await new Promise((resolve, reject) => {
         setTimeout(reject, 2000);
-        spinner.port.onmessage = ({ data }) => {
+        spinner.port.onmessage = ({data}) => {
           if (precateFn(data)) resolve(data);
         };
       });
@@ -176,10 +199,10 @@ export async function mkpath2(ctx, { midi_input, sf2File }) {
       }, {});
     },
     set_ch_zone(ch, zone) {
-      for (let i = 0; i < 60; i++) {
+      for (let i = 0;i < 60;i++) {
         if (!listenerMaps[ch][i]) continue;
         for (const elem of listenerMaps[ch][i]) {
-          elem.dataset.msb ? (elem.value = zone.arr[i] >> 7) : zone.arr[i];
+          elem.dataset.msb ? (elem.value = zone.arr[i] << 7) : zone.arr[i];
         }
       }
     },
@@ -246,7 +269,7 @@ export async function mkpath2(ctx, { midi_input, sf2File }) {
           () => {
             eventpipe.postMessage([0x80 | channel, key, 33]);
           },
-          { once: true }
+          {once: true}
         );
         eventpipe.postMessage([0x90 | channel, key, 55]);
       };

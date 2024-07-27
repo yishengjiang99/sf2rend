@@ -1,6 +1,6 @@
-import { wasmbin } from "./spin.wasm.js";
-import { egStruct, spRef2json } from "./spin-structs.js";
-import { midi_ch_cmds } from "../src/midilist.js";
+import {wasmbin} from "./spin.wasm.js";
+import {egStruct, spRef2json} from "./spin-structs.js";
+import {midi_ch_cmds} from "../src/midilist.js";
 import saturate from "../saturation/index.js";
 const nchannels = 16;
 const voices_per_channel = 4;
@@ -37,7 +37,7 @@ class SpinProcessor extends AudioWorkletProcessor {
       this.inst.exports.midi_cc_vals,
       128 * 16
     );
-    this.port.postMessage({ init: 1 });
+    this.port.postMessage({init: 1});
     this.debug = false;
     this.ringbus = ring_bus();
     const zonePtr = this.malololc(120);
@@ -65,15 +65,15 @@ class SpinProcessor extends AudioWorkletProcessor {
     };
   }
   async handleMsg(e) {
-    const { data } = e;
+    const {data} = e;
     if (data.stream && data.segments) {
       await this.loadsdta(data);
-      this.port.postMessage({ zack: 2 });
+      this.port.postMessage({zack: 2});
     } else if (data.zArr && data.presetId !== null) {
-      for (const { arr, ref } of data.zArr) {
+      for (const {arr, ref} of data.zArr) {
         this.setZone(ref, arr, data.presetId); //.set
       }
-      this.port.postMessage({ zack: 1 });
+      this.port.postMessage({zack: 1});
     } else if (data.cmd) {
       switch (data.cmd) {
         case "debug":
@@ -90,7 +90,7 @@ class SpinProcessor extends AudioWorkletProcessor {
           break;
         case "newZone":
           this.setZone(data.zone.ref, data.zone.arr);
-          this.port.postMessage({ ack: 1 });
+          this.port.postMessage({ack: 1});
           break;
       }
     } else if (data.update) {
@@ -110,13 +110,15 @@ class SpinProcessor extends AudioWorkletProcessor {
       const spref = this.inst.exports.spRef(parseInt(data.query));
       this.respondQuery(spref);
     } else {
-      const [cmd, channel, ...args] = data;
+      const [a, ...args] = data;
+      const [cmd, ch] = [a & 0xf0, a & 0x0f];
+
       const [metric, value] = args;
       const [lsb, msb] = args;
       const [key, vel] = args;
       switch (cmd) {
         case midi_ch_cmds.pitchbend:
-          // this.inst.exports.ch_set_bend(channel, msb, lsb);
+          this.inst.exports.ch_set_bend(channel, msb, lsb);
           break;
         case midi_ch_cmds.continuous_change:
           this.inst.exports.set_midi_cc_val(channel, metric, value);
@@ -128,7 +130,7 @@ class SpinProcessor extends AudioWorkletProcessor {
             this.inst.exports.trigger_release(sp);
           }
 
-          this.port.postMessage({ ack: [0x80, channel] });
+          this.port.postMessage({ack: [0x80, channel]});
           break;
         }
         case midi_ch_cmds.note_on:
@@ -182,14 +184,13 @@ class SpinProcessor extends AudioWorkletProcessor {
 
   async loadsdta(data) {
     const {
-      segments: { sampleId, nSamples, loops, originalPitch, sampleRate: sr },
+      segments: {sampleId, nSamples, loops, originalPitch, sampleRate: sr},
       stream,
     } = data;
     const offset = this.malololc(4 * nSamples);
     const fl = new Float32Array(this.memory.buffer, offset, nSamples);
     if (sampleId > 4096)
       console.error("probably should set higher pcm limit..");
-    const stdRef = this.inst.exports.pcmRef(sampleId);
     const pcmArr = new Uint32Array(this.memory.buffer, stdRef, 6);
     pcmArr.set([loops[0], loops[1], nSamples, sr, originalPitch, offset]);
     await downloadData(stream, fl);
@@ -229,7 +230,7 @@ class SpinProcessor extends AudioWorkletProcessor {
         skipped.push(sp_midi_channel);
         continue;
       }
-      for (let j = 0; j < 128; j++) {
+      for (let j = 0;j < 128;j++) {
         left[j] = saturate(left[j] + outputf[j] * loudnorm);
         right[j] = saturate(right[j] + outputf[j + 128] * loudnorm);
         ch_rms[sp_midi_channel] += left[j] * right[j];
@@ -238,10 +239,10 @@ class SpinProcessor extends AudioWorkletProcessor {
     }
     this.ringbus.bus_ran();
     const rend_time = globalThis.currentTime - tick;
-    this.sendReport({ ch_rms, skipped, rend_time });
+    this.sendReport({ch_rms, skipped, rend_time});
     return true;
   }
-  sendReport({ ch_rms, skipped, rend_time }) {
+  sendReport({ch_rms, skipped, rend_time}) {
     if (null == this.lastRan) return;
     if (
       this.debug ||
@@ -286,7 +287,7 @@ async function downloadData(stream, fl) {
   };
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    const { done, value } = await reader.read();
+    const {done, value} = await reader.read();
     if (done) {
       await stream.closed;
       break;

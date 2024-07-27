@@ -4,6 +4,7 @@ export class SpinNode extends AudioWorkletNode {
   static async init(ctx) {
     try {
       await ctx.audioWorklet.addModule("./spin/spin-proc.js");
+      // await ctx.audioWorklet.addModule("./spin-proc.js");/
       //lpfmod = await WebAssembly.compile(lpfModule.wasmbin);
     } catch (e) {
       console.trace(e);

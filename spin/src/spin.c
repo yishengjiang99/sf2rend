@@ -71,23 +71,6 @@ void init_mod_eg(EG *eg, zone_t *z, unsigned int pcmSampleRate) {
   eg->sustain = z->ModEnvSustain;
 }
 
-void new_lpf(Biquad *biq, float fc) {
-  double K = tanf(3.1415f * fc);
-  double KK = K * K;
-  double norm = 1.0 / (1 + K * biq->QInv + KK);
-  biq->a0 = KK * norm;
-  biq->a1 = 2 * biq->a0;
-  biq->b1 = 2 * (KK - 1) * norm;
-  biq->b2 = (1 - K * biq->QInv + KK) * norm;
-}
-
-float calc_lpf(Biquad *b, double In) {
-  double Out = In * b->a0 + b->z1;
-  b->z1 = In * b->a1 + b->z2 - b->b1 * Out;
-  b->z2 = In * b->a0 - b->b2 * Out;
-  return (float)Out;
-}
-
 float LFO_roll_out(LFO *lfo, unsigned int n, float *output) {
   while (n--) {
     if (lfo->delay > 0) {
@@ -343,10 +326,16 @@ float trigger_attack(spinner *x, uint32_t key, uint32_t velocity) {
   x->vibrlfo.delay = timecent2sample(x->zone->ModLFODelay);
   LFO_set_frequency(&x->modlfo, x->zone->ModLFOFreq);
   LFO_set_frequency(&x->vibrlfo, x->zone->VibLFOFreq);
+  lpf_set_filter_q(&x->lpf, x->zone->FilterQ);
+
+  lpf_set_frequency(&x->lpf, x->zone->FilterFc);
+
   x->initialFc = x->zone->FilterFc;
+
   x->initialQ = p10over200[x->zone->FilterQ];
   x->lpf.QInv = 1.0 / p10over200[x->zone->FilterQ];
-  new_lpf(&x->lpf, x->zone->FilterFc / SAMPLE_RATE);
+  lpf_set_frequency(&x->lpf, x->zone->FilterFc);
+  lpf_set_filter_q(&x->lpf, x->zone->FilterQ);
   return x->stride;
 };
 
@@ -448,8 +437,8 @@ void _spinblock(spinner *x, int n, int blockOffset) {
 
     if (tfc > .5) {
       fchertz = timecent2hertz(tfc) / SAMPLE_RATE;
-      new_lpf(&lpf, fchertz);
-      outputf = calc_lpf(&lpf, outputf);
+      lpf_set_frequency(&lpf, tfc);
+      outputf = lpf_calc(&lpf, outputf);
     }
     output_L[i] = applyCentible(outputf, panLeft);
     output_R[i] = applyCentible(outputf, panRight);
@@ -491,7 +480,33 @@ void gm_reset() {
   }
   for (int i = 0; i < nchannels; i++) reset(&sps[i]);
 }
-#define TEST_ENV 1
+
+#define ts2hz(ts) timecent2hertz(ts)
+
+void lpf_set_filter_q(Biquad *lpf, short filterQ) {
+  lpf->QInv = 1.0 / centible[(unsigned short)filterQ & 0x0fff];
+  lpf->z1 = lpf->z2 = 0;
+}
+
+void lpf_set_frequency(Biquad *lpf, float fc) {
+  float lowpassFc = ts2hz(fc) / SAMPLE_RATE;
+  double K = tanf(3.1415f * lowpassFc);
+  double KK = K * K;
+  double norm = 1.0 / (1 + K * lpf->QInv + KK);
+  lpf->a0 = KK * norm;
+  lpf->a1 = 2 * lpf->a0;
+  lpf->b1 = 2 * (KK - 1) * norm;
+  lpf->b2 = (1 - K * lpf->QInv + KK) * norm;
+}
+
+float lpf_calc(Biquad *b, double In) {
+  double Out = In * b->a0 + b->z1;
+  b->z1 = In * b->a1 + b->z2 - b->b1 * Out;
+  b->z2 = In * b->a0 - b->b2 * Out;
+  return (float)Out;
+}
+
+#define TEST_ENV
 #ifdef TEST_ENV
 #include <math.h>
 #include <stdio.h>
@@ -504,18 +519,17 @@ int main() {
   float sample[4096] = {0.f};
   for (int i = 0; i < 4096; i++) {
     sample[i] = .5 * sinf((float)i * M_2_PI / 4096);
-    sample[i] = 2 * sinf(.5 * (float)i * M_2_PI / 4096);
+    sample[i] = .5 * sinf(.5f * (float)i * M_2_PI / 4096);
   }
   spinner *x = newSpinner(0);
-  short FilterFc = 8000;
-  short Q = 410;
-  float lowpassFc = ts2hz(FilterFc) / SAMPLE_RATE;
-  x->lpf.QInv = 1.0 / powf(10.f, Q / 200.0);
-  new_lpf(&x->lpf, lowpassFc);
+
+  short lowpassFC = 11111;
+  lpf_set_filter_q(&x->lpf, 800);
+  lpf_set_frequency(&x->lpf, 5700);
   FILE *adc;
 
   adc = popen("ffplay -loglevel debug -i pipe:0 -f f32le -ac 1 -ar 48000", "w");
-  uint32_t pinc = ts2hz(6900) * BIT32_NORMALIZATION / SAMPLE_RATE;
+  uint32_t pinc = ts2hz(5700) * BIT32_NORMALIZATION / SAMPLE_RATE;
   uint32_t wavetableBits = 12;
   uint32_t nfract = 32 - wavetableBits;
   uint32_t mask_fraction = (1L << nfract) - 1;
@@ -529,18 +543,19 @@ int main() {
     uint32_t index2 = (index + 1) & 0x0fff;
     float g1 = scalar_fractional * (float)(p & mask_fraction);
     float v = lerp(sample[index], sample[index2], g1);
-    o = calc_lpf(&x->lpf, v);
+    o = lpf_calc(&x->lpf, v);
     p += pinc;
-    // fwrite(&v, 4, 1, adc);
+
+    // fwrite(&o, 4, 1, adc);
+    if (i % 288 == 100) {
+      lowpassFC += 1500;
+      lpf_set_frequency(&x->lpf, lowpassFC);
+    }
+    if (i % 288 == 0) {
+      lowpassFC -= 1500;
+      lpf_set_frequency(&x->lpf, lowpassFC);
+    }
     fwrite(&o, 4, 1, adc);
-    if (i % 10000 == 5000) {
-      lowpassFc += 100;
-      new_lpf(&x->lpf, lowpassFc);
-    }
-    if (i % 10000 == 0) {
-      lowpassFc -= 100;
-      new_lpf(&x->lpf, lowpassFc);
-    }
   }
   if (adc) fclose(adc);
   // while (!feof(fd)) {

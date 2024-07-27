@@ -242,13 +242,11 @@ void read_sdta(FILE *fd) {
 }
 int main(int argc, char **args) {
   char *filename = "file.sf2";
-
   FILE *fd = fopen(filename, "r");
   fread(sfbk, 4, 1, fd);
   printf("%.4s\n", sfbk);
   fread(rlist, sizeof(RIFFLIST), 1, fd);
   printf("%d\t%.4s\t%.4s \n", rlist->size, rlist->id, rlist->list);
-
   fread(rchunk, sizeof(RIFF_CHUNK), 1, fd);
   printf("%d\t%.4s\n", rchunk->size, rchunk->id);
   info = (char *)malloc(rchunk->size);
@@ -260,7 +258,6 @@ int main(int argc, char **args) {
   nsamples = sech->size / 2;
   short *d = (short *)malloc(sech->size);
   fread(d, nsamples, 2, fd);
-
   fread(sfbk, 4, 1, fd);
   printf("%.4s\n", sfbk);
   fread(rchunk, sizeof(RIFF_CHUNK), 1, fd);

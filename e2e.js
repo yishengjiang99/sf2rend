@@ -44,7 +44,6 @@ window.addEventListener("hashchange", (e) => {
 
 async function renderMain() {
   await loadWait;
-
   document.body.innerHTML = "";
   mkdiv("nav", [
     (volMeters = mkdiv("div", {id: "volmeter", style: "min-height:2em"})),
@@ -239,14 +238,10 @@ function renderArticle(keyword, zone) {
 let ctx;
 async function startSpinner() {
   ctx = new AudioContext();
-  audioPath = await mkpath(ctx);
+  audioPath = await mkpath(ctx, {sf2Service: sf2file});
   audioPath.bindKeyboard(() => 0);
   await audioPath.startAudio();
   spinner = audioPath.spinner;
-
-  if (program) {
-    audioPath.loadProgram(program);
-  }
 
   spinner.port.onmessage = ({data}) => {
     if (data.currentFrame) {
@@ -264,6 +259,7 @@ async function rendSample(e, zoneObj) {
     await startSpinner();
   }
   if (!zoneObj) return;
+
   // if (program) await spinner.shipProgram(program);
 
   const {arr, ref} = zoneObj;
@@ -276,11 +272,11 @@ async function rendSample(e, zoneObj) {
   }
   e.target.innerText = "playing";
 
-  spinner.port.postMessage([0x90, 0, 55, 122, ozon.presetId, ref]);
+  audioPath.msgPort.postMessage([0x90, 55, 122, zone.presetId, ref]);
   e.target.addEventListener(
     "mouseup",
     () => {
-      spinner.port.postMessage([0x80, 0, 123]);
+      spinner.port.postMessage([0x80, 55, 123]);
       e.target.innerText = "play";
     },
     {once: true}
