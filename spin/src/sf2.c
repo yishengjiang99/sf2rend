@@ -1,7 +1,6 @@
 #include "sf2.h"
 #define cli 1
 #ifdef cli
-#include <stdio.h>
 extern int printf(const char *__restrict, ...);
 #endif
 
@@ -147,7 +146,6 @@ void readpdta(void *pdtabuffer) {
 void loopzone(phdr *phr, int midi, int velocity) {
   int nregions = 0;
   int instID = -1, lastSampId = -1;
-  printf("[%u %u] %s \n", phr->pid, phr->bankId, phr->name);
 
   for (int j = phr->pbagNdx; j < (phr + 1)->pbagNdx; j++) {
     pbag *pg = pbags + j;
@@ -220,9 +218,8 @@ void loopzone(phdr *phr, int midi, int velocity) {
     }
   }
 }
-
-#ifdef cli
-
+// #define testingenv 1
+#ifdef testingenv
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

@@ -104,7 +104,7 @@ eventPipe.onmessage(function (dd) {
   const [key, velocity] = [v1, v2];
   switch (cmd) {
     case midi_ch_cmds.continuous_change: // set CC
-      spinner.port.postMessage([(cmd << 7) | ch, v1, v2]);
+      spinner.port.postMessage(dd);
       break;
     case midi_ch_cmds.change_program: //change porg
       if (v1 == 0 && ch > 0) {

@@ -12,7 +12,6 @@ export function mkSpinnerBYOW({instance, malloc, memory}) {
   const pcmRef = (idx) => instance.exports.pcmRef(idx);
   const spRef = (idx) => exports.spRef(idx);
   const zoneRef = (k) => exports.zoneRef(k);
-  debugger;
   const zoneArray = (k) => new Int16Array(heap, zoneRef(k), 60);
   const spinners = range(0, 32)
     .map((i) => spRef(i))
@@ -79,6 +78,7 @@ export async function mkWasm() {
     env: {
       memory,
       tanf: Math.tan,
+      logf: console.log,
       consolef: (f) => console.log("--->", f),
     }
   });

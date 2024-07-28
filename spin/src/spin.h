@@ -1,6 +1,7 @@
+
 #ifndef SPIN_H
 #define SPIN_H
-
+#include "sf2.h"
 typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
 typedef int int32_t;
@@ -45,92 +46,6 @@ typedef struct {
   short delay, attack, hold, decay, sustain, release, pad1, pad2;
   int progress, progressInc;  // add prog scale to use LUT
 } EG;
-
-typedef struct {
-  uint8_t lo, hi;
-} rangesType;  //  Four-character code
-typedef struct {
-  unsigned short StartAddrOfs, EndAddrOfs, StartLoopAddrOfs, EndLoopAddrOfs,
-      StartAddrCoarseOfs;
-  short ModLFO2Pitch, VibLFO2Pitch, ModEnv2Pitch, FilterFc, FilterQ,
-      ModLFO2FilterFc, ModEnv2FilterFc, EndAddrCoarseOfs, ModLFO2Vol, Unused1,
-      ChorusSend, ReverbSend, Pan, Unused2, Unused3, Unused4, ModLFODelay,
-      ModLFOFreq, VibLFODelay, VibLFOFreq, ModEnvDelay, ModEnvAttack,
-      ModEnvHold, ModEnvDecay, ModEnvSustain, ModEnvRelease, Key2ModEnvHold,
-      Key2ModEnvDecay, VolEnvDelay, VolEnvAttack, VolEnvHold, VolEnvDecay,
-      VolEnvSustain, VolEnvRelease, Key2VolEnvHold, Key2VolEnvDecay, Instrument,
-      Reserved1;
-  rangesType KeyRange, VelRange;
-  unsigned short StartLoopAddrCoarseOfs;
-  short Keynum, Velocity, Attenuation, Reserved2;
-  unsigned short EndLoopAddrCoarseOfs, CoarseTune;
-  short FineTune, SampleId, SampleModes, Reserved3, ScaleTune, ExclusiveClass,
-      OverrideRootKey, Dummy;
-} zone_t;
-
-enum grntypes {
-  StartAddrOfs,
-  EndAddrOfs,
-  StartLoopAddrOfs,
-  EndLoopAddrOfs,
-  StartAddrCoarseOfs,
-  ModLFO2Pitch,
-  VibLFO2Pitch,
-  ModEnv2Pitch,
-  FilterFc,
-  FilterQ,
-  ModLFO2FilterFc,
-  ModEnv2FilterFc,
-  EndAddrCoarseOfs,
-  ModLFO2Vol,
-  Unused1,
-  ChorusSend,
-  ReverbSend,
-  Pan,
-  Unused2,
-  Unused3,
-  Unused4,
-  ModLFODelay,
-  ModLFOFreq,
-  VibLFODelay,
-  VibLFOFreq,
-  ModEnvDelay,
-  ModEnvAttack,
-  ModEnvHold,
-  ModEnvDecay,
-  ModEnvSustain,
-  ModEnvRelease,
-  Key2ModEnvHold,
-  Key2ModEnvDecay,
-  VolEnvDelay,
-  VolEnvAttack,
-  VolEnvHold,
-  VolEnvDecay,
-  VolEnvSustain,
-  VolEnvRelease,
-  Key2VolEnvHold,
-  Key2VolEnvDecay,
-  Instrument,
-  Reserved1,
-  KeyRange,
-  VelRange,
-  StartLoopAddrCoarseOfs,
-  Keynum,
-  Velocity,
-  Attenuation,
-  Reserved2,
-  EndLoopAddrCoarseOfs,
-  CoarseTune,
-  FineTune,
-  SampleId,
-  SampleModes,
-  Reserved3,
-  ScaleTune,
-  ExclusiveClass,
-  OverrideRootKey,
-  Dummy
-};
-/* this holds the data required to update samples thru a filter */
 typedef struct {
   double QInv, a0, a1, b1, b2, z1, z2;
 } Biquad;
@@ -172,7 +87,7 @@ inline static double get_fraction(int x) {
 #endif  // fp12
 
 void set_spinner_zone(spinner *x, zone_t *z);
-spinner *newSpinner(int ch);
+spinner *new_sp(int ch);
 void reset(spinner *x);
 int spin(spinner *x, int n);
 float *spOutput(spinner *x);

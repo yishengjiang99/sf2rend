@@ -1,4 +1,4 @@
-import { DRUMSCHANNEL, midi_ch_cmds, midi_effects, nvpc } from "./constants.js";
+import {DRUMSCHANNEL, midi_ch_cmds, midi_effects, nvpc} from "./constants.js";
 
 export function createChannel(uiController, channelId, sf2, apath) {
   let _sf2 = sf2;
@@ -28,20 +28,20 @@ export function createChannel(uiController, channelId, sf2, apath) {
       uiController.zone = program.filterKV(60, 60)[0];
       return program;
     },
-    setCC({ cc, val }) {
+    setCC({cc, val}) {
       if (cc === midi_effects.bankselectcoarse) {
         alert("bank seleec to " + val);
         bankId |= val << 7;
       } else if (cc === midi_effects.bankselectfine) {
         bankId |= val;
       }
-      uiController.CC = { key: cc, value: val };
+      uiController.CC = {key: cc, value: val};
     },
     keyOn(key, vel) {
       const zones = program.filterKV(key, vel);
       zones.map((zone, i) => {
         spinner.port.postMessage([
-          midi_ch_cmds.note_on,
+          midi_ch_cmds.note_on |
           channelId,
           key,
           vel,
@@ -53,7 +53,7 @@ export function createChannel(uiController, channelId, sf2, apath) {
       return zones[0];
     },
     keyOff(key, vel) {
-      spinner.port.postMessage([midi_ch_cmds.note_off, channelId, key, vel]);
+      spinner.port.postMessage([midi_ch_cmds.note_off | channelId, key, vel]);
       requestAnimationFrame(() => (uiController.active = false));
     },
   };

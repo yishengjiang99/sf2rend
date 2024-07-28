@@ -1,9 +1,23 @@
+import SpinProcessor from './spin-proc.js';
+import {wasmbin} from "./spin.wasm.js";
+
 let k, lpfmod;
+
+
+function registerProcessor(name, processorCtor) {
+  return `console.log(globalThis);\n${processorCtor};\nregisterProcessor('${name}', ${processorCtor.name});`;
+}
 export class SpinNode extends AudioWorkletNode {
   static lpfmod;
   static async init(ctx) {
     try {
-      await ctx.audioWorklet.addModule("./spin/spin-proc.js");
+      const procUrl = URL.createObjectURL(
+        new Blob([registerProcessor("spin-proc", SpinProcessor)], {
+          type: "text/javascript",
+        }),
+        {type: "module"}
+      );
+      await ctx.audioWorklet.addModule(procUrl);
       // await ctx.audioWorklet.addModule("./spin-proc.js");/
       //lpfmod = await WebAssembly.compile(lpfModule.wasmbin);
     } catch (e) {
@@ -19,6 +33,9 @@ export class SpinNode extends AudioWorkletNode {
       numberOfInputs: 1,
       numberOfOutputs: 20,
       outputChannelCount: [...Array(18).fill(2), 1, 1],
+      processorOptions: {
+        wasmbin
+      }
     });
     this.port.onmessageerror = (e) => alert("adfasfd", e.message); // e; // e.message;
   }

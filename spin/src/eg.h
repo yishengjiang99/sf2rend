@@ -26,8 +26,8 @@ typedef struct {
   int progress, progressInc;  // add prog scale to use LUT
 } EG;
 
-void advanceStage(EG* eg);
-float update_eg(EG* eg, int n);
+void eg_advance(EG* eg);
+float eg_update(EG* eg, int n);
 
 void eg_roll(EG* eg, int n, float* output) {
   while (n-- && eg->nsteps--) {
@@ -42,7 +42,7 @@ void eg_roll(EG* eg, int n, float* output) {
     *output++ = eg->egval;
   }
   if (eg->egval > 0) eg->egval = 0.0f;
-  if (eg->nsteps <= 7) advanceStage(eg);
+  if (eg->nsteps <= 7) eg_advance(eg);
 }
 /**
  * advances envelope generator by n steps..
@@ -50,17 +50,17 @@ void eg_roll(EG* eg, int n, float* output) {
  * if necessary
  *
  */
-float update_eg(EG* eg, int n) {
+float eg_update(EG* eg, int n) {
   while (n--) {
     eg->egval += eg->egIncrement;
     eg->nsteps--;
   }
-  if (eg->nsteps <= 7) advanceStage(eg);
+  if (eg->nsteps <= 7) eg_advance(eg);
   if (eg->egval > 0) eg->egval = 0.0f;
   return eg->egval;
 }
 
-void advanceStage(EG* eg) {
+void eg_advance(EG* eg) {
   switch (eg->stage) {
     case inactive:
       eg->stage++;
@@ -116,12 +116,11 @@ void advanceStage(EG* eg) {
 
       // sustain = % decreased during decay
 
-    case sustain:{
+    case sustain: {
       int stepsFull = timecent2sample(eg->release + eg->decay);
       eg->egIncrement = MAX_EG / stepsFull;
       eg->nsteps = stepsFull * (eg->egval / MAX_EG);
-    }
-      break;
+    } break;
     case release:
       eg->stage = done;
       break;
@@ -134,7 +133,7 @@ void _eg_release(EG* e) {
   e->nsteps = 0;
   e->hasReleased = 1;
   e->stage = sustain;
-  advanceStage(e);
+  eg_advance(e);
 }
 
 void eg_init(EG* e) { e->attack = -12000; }

@@ -24,8 +24,11 @@ function ring_bus() {
     bus_ran: () => (_idx ^= 1), // after rend block, next_bus became this_bus for next cycle
   };
 }
-class SpinProcessor extends AudioWorkletProcessor {
+class AudioWorkletProcessor { };
+
+export default class SpinProcessor extends AudioWorkletProcessor {
   constructor(options) {
+    Object.assign(this, options.processorOptions)
     super(options);
     this.setup_wasm();
     this.inst.exports.gm_reset();
@@ -44,13 +47,15 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.zoneAttr = new Int16Array(this.memory.buffer, zonePtr, 60);
   }
   setup_wasm() {
+    const wasmbin = this.wasmbin;
     this.memory = new WebAssembly.Memory({
       maximum: 1024 * 4,
       initial: 1024 * 4,
     });
     const imports = {
       memory: this.memory,
-      tanf: Math.tan,
+      tanf: Math.tan, logf: (f) => console.log("--->", f),
+
       consolef: (f) => console.log("--->", f),
     };
     this.inst = new WebAssembly.Instance(new WebAssembly.Module(wasmbin), {
@@ -115,7 +120,8 @@ class SpinProcessor extends AudioWorkletProcessor {
 
       const [metric, value] = args;
       const [lsb, msb] = args;
-      const [key, vel] = args;
+      const [key, vel, zoneArr] = args;
+      const channel = ch;
       switch (cmd) {
         case midi_ch_cmds.pitchbend:
           this.inst.exports.ch_set_bend(channel, msb, lsb);
@@ -125,23 +131,22 @@ class SpinProcessor extends AudioWorkletProcessor {
           if (this.lastRan) this.respondQuery(this.lastRan);
           break;
         case midi_ch_cmds.note_off: {
-          if (!this.sp_map[channel * 128 + key]) throw "unexpected emty sp_map";
-          for (const sp of this.sp_map[channel * 128 + key]) {
+          if (!this.sp_map[ch * 128 + key]) throw "unexpected emty sp_map";
+          for (const sp of this.sp_map[ch * 128 + key]) {
             this.inst.exports.trigger_release(sp);
           }
 
-          this.port.postMessage({ack: [0x80, channel]});
+          this.port.postMessage({ack: [0x80, ch]});
           break;
         }
         case midi_ch_cmds.note_on:
           {
-            const [cmd, ch, key, velocity, zoneArr] = data;
             const atr = new Int16Array(this.memory.buffer, this.zoneAttr, 60);
             atr.set(zoneArr);
-            const sp = this.inst.exports.newSpinner(ch);
+            const sp = this.inst.exports.new_sp(ch);
             this.inst.exports.reset(sp);
             this.inst.exports.set_spinner_zone(sp, this.zoneAttr);
-            this.inst.exports.trigger_attack(sp, key, velocity);
+            this.inst.exports.trigger_attack(sp, key, vel);
             if (!this.sp_map[ch * 128 + key]) this.sp_map[ch * 128 + key] = [];
             this.sp_map[ch * 128 + key].push(sp);
             this.ringbus.next_bus.push(sp);
@@ -172,7 +177,13 @@ class SpinProcessor extends AudioWorkletProcessor {
       },
     });
   }
-
+  sdtaRef(sampleId) {
+    return new Uint32Array(
+      this.memory.buffer,
+      this.inst.exports.pcms.value +
+      sampleId * 6 * Float32Array.BYTES_PER_ELEMENT
+    );
+  }
   setZone(zoneRef, arr, presetId) {
     const ptr = this.malololc(120);
     if (!this.presetRefs[presetId]) {
@@ -189,11 +200,19 @@ class SpinProcessor extends AudioWorkletProcessor {
     } = data;
     const offset = this.malololc(4 * nSamples);
     const fl = new Float32Array(this.memory.buffer, offset, nSamples);
-    if (sampleId > 4096)
-      console.error("probably should set higher pcm limit..");
-    const pcmArr = new Uint32Array(this.memory.buffer, stdRef, 6);
-    pcmArr.set([loops[0], loops[1], nSamples, sr, originalPitch, offset]);
     await downloadData(stream, fl);
+    this.sdtaRef(sampleId).set(
+      new Uint32Array([loops[0], loops[1], nSamples, sr, originalPitch, offset])
+    );
+
+
+    // const offset = this.malololc(4 * nSamples);
+    // const fl = new Float32Array(this.memory.buffer, offset, nSamples);
+    // if (sampleId > 4096)
+    //   console.error("probably should set higher pcm limit..");
+    // const pcmArr = new Uint32Array(this.memory.buffer, stdRef, 6);
+    // pcmArr.set([loops[0], loops[1], nSamples, sr, originalPitch, offset]);
+    // await downloadData(stream, fl);
   }
 
   process([noise_floor], outputs) {
@@ -272,7 +291,6 @@ class SpinProcessor extends AudioWorkletProcessor {
     }
   }
 }
-registerProcessor("spin-proc", SpinProcessor);
 
 function now() {
   return globalThis.currentTime;

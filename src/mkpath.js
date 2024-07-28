@@ -1,5 +1,4 @@
 import {SpinNode} from "../spin/spin.js";
-import {LowPassFilterNode} from "../lpf/lpf.js";
 import {midi_ch_cmds, midi_effects} from "./constants.js";
 import FFTNode from "../fft-64bit/fft-node.js";
 import {mkdiv} from "../mkdiv/mkdiv.js";
@@ -13,27 +12,27 @@ let init = false;
 let sf2Service, listenerMaps, zoneListArr = [];
 const msgcc = midi_ch_cmds.continuous_change;
 const {change_program, continuous_change, note_on, note_off} = midi_ch_cmds;
-export async function mkpath(ctx, props) {
+export default async function mkpath(ctx, props) {
   if (!init) {
     await SpinNode.init(ctx).catch(console.trace);
     await FFTNode.init(ctx).catch(console.trace);
-    await LowPassFilterNode.init(ctx).catch(console.trace);
+    // await LowPassFilterNode.init(ctx).catch(console.trace);
     init = true;
   }
   if (props.sf2Service) {
     sf2Service = props.sf2Service;
-    await sf2Service.load({
-      onZone: (pid, zoneRef, zoneArr) => {
-        zoneListArr[pid] ||= [];
-        zoneListArr[pid].push(newSFZoneMap(zoneRef, zoneArr));
-      }
-    })
+    // await sf2Service.load({
+    //   onZone: (pid, zoneRef, zoneArr) => {
+    //     zoneListArr[pid] ||= [];
+    //     zoneListArr[pid].push(newSFZoneMap(zoneRef, zoneArr));
+    //   }
+    // })
   }
 
   const channelIds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
   const drumsChannmel = [9];
   const spinner = new SpinNode(ctx);
-  const lpfs = Array(16).fill(new LowPassFilterNode(ctx));
+  const lpfs = [];
   const mastGain = new GainNode(ctx, {gain: 12});
   //this.EQ = mk_eq_bar(0);
   const whitenoise = anti_denom_dither(ctx);
@@ -68,6 +67,9 @@ export async function mkpath(ctx, props) {
   mastGain.connect(ctx.destination);
   return {
     spinner,
+    get sf2() {
+      return sf2Service
+    },
     async loadProgram(pid, bankid) {
       const p = sf2Service.loadProgram(pid, bankid);
       await spinner.shipProgram(p, pid | bankid);
@@ -106,23 +108,6 @@ export async function mkpath(ctx, props) {
       });
     },
     loadPreset: spinner.shipProgram,
-    lowPassFilter_set_q: (ch, Q) =>
-      lpfs[ch].parameters
-        .get("FilterQ_Cb")
-        .linearRampToValueAtTime(Q, ctx.baseLatency),
-    lowPassFilter_set_fc: (ch, fc) => {
-      fc;
-      const apa = lpfs[ch].parameters.get("FilterFC");
-      console.log("abs", fc, ch, apa);
-      apa.linearRampToValueAtTime(parseInt(fc), ctx.baseLatency);
-    },
-    lowPassFilter: function (channel, cents, Q) {
-      const params = lpfs[channel].parameters;
-      stdout(cents + "fc " + Q);
-      params.get("FilterFC").linearRampToValueAtTime(cents, ctx.baseLatency);
-      params.get("FilterQ_Cb").linearRampToValueAtTime(Q, ctx.baseLatency);
-      return lpfs[channel];
-    },
     eq_set(channel, freq, gain) {
       EQ.setGainAtFreq(channel, 8.176 * Math.pow(2, cents / 1200), Q / 10);
     },
@@ -231,12 +216,6 @@ export async function mkpath(ctx, props) {
               document
                 .querySelector(`#setting_${p1}`)
                 .setAttribute("checked", true);
-              break;
-            case "lpf_fc":
-              this.lowPassFilter_set_fc(p1, value);
-              break;
-            case "lpf_q":
-              this.lowPassFilter_set_q(p1, value);
               break;
             default:
               spinner.port.postMessage({

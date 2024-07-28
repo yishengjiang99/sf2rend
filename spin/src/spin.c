@@ -3,6 +3,7 @@
 #include "spin.h"
 
 #include "calc.h"
+#include "sf2.h"
 
 #define MAX_VOICE_CNT 256
 
@@ -18,6 +19,9 @@ float volEgOut[RENDQ];
 float modEgOut[RENDQ];
 float lfo1Out[RENDQ];
 float lfo2Out[RENDQ];
+
+void eg_advance(EG *eg);
+float eg_update(EG *eg, int n);
 
 void sp_wipe_output_tab() {
   int output_arr_len = MAX_VOICE_CNT * RENDQ * 2;
@@ -41,7 +45,7 @@ spinner *allocate_sp() {
 extern float tanf(float t);
 float dummy[666];  // backward compact hack
 
-void scaleTc(EG *eg, unsigned int pcmSampleRate) {
+void eg_scale_tc(EG *eg, unsigned int pcmSampleRate) {
   float scaleFactor = SAMPLE_RATE / (float)pcmSampleRate;
   eg->attack *= scaleFactor;
   eg->delay *= scaleFactor;
@@ -103,9 +107,6 @@ float LFO_roll(LFO *lfo, unsigned int n) {
   return lfoval;
 }
 
-void advanceStage(EG *eg);
-float update_eg(EG *eg, int n);
-
 void eg_roll(EG *eg, int n, float *output) {
   while (n-- && eg->nsteps--) {
     if (eg->stage == attack) {
@@ -119,7 +120,7 @@ void eg_roll(EG *eg, int n, float *output) {
     *output++ = eg->egval;
   }
   if (eg->egval > 0) eg->egval = 0.0f;
-  if (eg->nsteps <= 7) advanceStage(eg);
+  if (eg->nsteps <= 7) eg_advance(eg);
 }
 /**
  * advances envelope generator by n steps..
@@ -127,17 +128,17 @@ void eg_roll(EG *eg, int n, float *output) {
  * if necessary
  *
  */
-float update_eg(EG *eg, int n) {
+float eg_update(EG *eg, int n) {
   while (n--) {
     eg->egval += eg->egIncrement;
     eg->nsteps--;
   }
-  if (eg->nsteps <= 7) advanceStage(eg);
+  if (eg->nsteps <= 7) eg_advance(eg);
   if (eg->egval > 0) eg->egval = 0.0f;
   return eg->egval;
 }
 
-void advanceStage(EG *eg) {
+void eg_advance(EG *eg) {
   switch (eg->stage) {
     case inactive:
       eg->stage++;
@@ -215,43 +216,42 @@ void advanceStage(EG *eg) {
 
 void _eg_release(EG *e) {
   e->stage = sustain;
-  advanceStage(e);
+  eg_advance(e);
 }
-
-void eg_init(EG *e) { e->attack = -12000; }
-
-spinner *newSpinner(int ch) {
+spinner *new_sp(int ch) {
   spinner *x = allocate_sp();
   x->outputf = &outputs[ch * RENDQ * 2];
   x->inputf = silence;
   x->channelId = ch;
   x->lpf.z1 = x->lpf.z2 = 0;
-
   return x;
+}
+
+void sp_set_attr(spinner *x, igen *ig) {
+  switch (ig->genid) {}
 }
 
 void trigger_release(spinner *x) {
   _eg_release(&x->voleg);
   _eg_release(&x->modeg);
-  // if (x->zone->SampleModes > 1)
-  // {
-  //   x->is_looping = 0;
-  // }
 }
+
+void reset_eg(EG *eg) {
+  eg->stage = inactive;
+  eg->egval = MAX_EG;
+  eg->egIncrement = 0.0f;
+  eg->hasReleased = 0;
+  eg->attack = eg->delay = eg->hold = eg->release = -12000;
+  eg->sustain = 250;
+}
+
 void reset(spinner *x) {
   x->position = 0;
   x->stride = .0f;
   x->fract = 0.0f;
-  x->modeg.stage = inactive;
-  x->modeg.egval = MAX_EG;
-  x->modeg.egIncrement = 0;
-  x->voleg.egval = MAX_EG;
-  x->voleg.stage = inactive;
-  x->voleg.egIncrement = 0;
-  x->voleg.hasReleased = 0;
-  x->modeg.hasReleased = 0;
-  x->lpf.z1 = 0;
-  x->lpf.z2 = 0;
+  reset_eg(&x->modeg);
+  reset_eg(&x->voleg);
+  lpf_set_filter_q(&x->lpf, 0);
   x->active_dynamics_flag = 0;
 }
 
@@ -260,6 +260,7 @@ void set_midi_cc_val(int channel, int metric, int val) {
 }
 
 #define ccval(eff) midi_cc_vals[x->channelId * 128 + eff]
+#define effect_floor(v) v <= -12000 ? 0 : calcp2over1200(v)
 
 float trigger_attack(spinner *x, uint32_t key, uint32_t velocity) {
   x->velocity = (unsigned char)velocity;
@@ -293,6 +294,7 @@ float trigger_attack(spinner *x, uint32_t key, uint32_t velocity) {
   if (ccval(TML_BANK_SELECT_MSB) > 0) {
     x->is_looping = 0;
   }
+  lpf_set_filter_q(&x->lpf, x->zone->FilterQ);
 
   eg->delay = z->ModEnvDecay * scaleFactor;
   eg->hold = z->ModEnvHold * scaleFactor;
@@ -312,10 +314,9 @@ float trigger_attack(spinner *x, uint32_t key, uint32_t velocity) {
   x->pitch_dff_log = calc_pitch_diff_log(x->zone, x->pcm, x->key);
 
   x->stride = 1.0f;
-  advanceStage(&x->voleg);
-  advanceStage(&x->modeg);
+  eg_advance(&x->voleg);
+  eg_advance(&x->modeg);
 
-#define effect_floor(v) v <= -12000 ? 0 : calcp2over1200(v)
   x->lfo1_pitch = effect_floor(x->zone->ModLFO2Pitch);
   x->lfo1_volume = effect_floor(x->zone->ModLFO2Vol);
   x->lfo2_pitch = effect_floor(x->zone->VibLFO2Pitch);
@@ -336,6 +337,7 @@ float trigger_attack(spinner *x, uint32_t key, uint32_t velocity) {
   x->lpf.QInv = 1.0 / p10over200[x->zone->FilterQ];
   lpf_set_frequency(&x->lpf, x->zone->FilterFc);
   lpf_set_filter_q(&x->lpf, x->zone->FilterQ);
+
   return x->stride;
 };
 
@@ -350,8 +352,10 @@ void set_spinner_input(spinner *x, pcm_t *pcm) {
 
 float calc_pitch_diff_log(zone_t *z, pcm_t *pcm, unsigned char key) {
   short rt = z->OverrideRootKey > -1 ? z->OverrideRootKey : pcm->originalPitch;
-  float inputTS = rt * 100.0f + z->CoarseTune * 100.0f + (float)z->FineTune;
-  return (key * 100 - inputTS) / 1200.f;
+  float smpl_rate = rt * 100.0f + z->CoarseTune * 100.0f + (float)z->FineTune;
+  float diff = key * 100.0f - smpl_rate + .0001f;
+  diff += ((pcm->sampleRate - SAMPLE_RATE) / 4096.f * 100.f);
+  return diff;
 }
 #define ccval(eff) midi_cc_vals[x->channelId * 128 + eff]
 
@@ -408,7 +412,6 @@ void _spinblock(spinner *x, int n, int blockOffset) {
   lfo2_pitch = x->lfo2_pitch;
   Biquad lpf = x->lpf;
   float tfc, outputf, fchertz;
-  float Q = x->initialQ;
   short initFc = x->initialFc;
 
   for (int i = 0; i < n; i++) {
@@ -426,7 +429,7 @@ void _spinblock(spinner *x, int n, int blockOffset) {
     if (position >= x->loopEnd && isLooping > 0) position -= looplen;
 
     outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
-    tfc = initFc + modeg_fc * modEgOut[i] + x->lfo1_fc * lfo1Out[i];
+    //    tfc = initFc + modeg_fc * modEgOut[i] + x->lfo1_fc * lfo1Out[i];
 
     if (position > nsamples) {
       position = 0;
@@ -436,7 +439,6 @@ void _spinblock(spinner *x, int n, int blockOffset) {
     outputf = applyCentible(outputf, (short)(db + kRateCB));
 
     if (tfc > .5) {
-      fchertz = timecent2hertz(tfc) / SAMPLE_RATE;
       lpf_set_frequency(&lpf, tfc);
       outputf = lpf_calc(&lpf, outputf);
     }
@@ -506,7 +508,7 @@ float lpf_calc(Biquad *b, double In) {
   return (float)Out;
 }
 
-#define TEST_ENV
+// #define TEST_ENV
 #ifdef TEST_ENV
 #include <math.h>
 #include <stdio.h>
@@ -521,7 +523,7 @@ int main() {
     sample[i] = .5 * sinf((float)i * M_2_PI / 4096);
     sample[i] = .5 * sinf(.5f * (float)i * M_2_PI / 4096);
   }
-  spinner *x = newSpinner(0);
+  spinner *x = new_sp(0);
 
   short lowpassFC = 11111;
   lpf_set_filter_q(&x->lpf, 800);
