@@ -16,17 +16,16 @@ export default async function mkpath(ctx, props) {
   if (!init) {
     await SpinNode.init(ctx).catch(console.trace);
     await FFTNode.init(ctx).catch(console.trace);
-    // await LowPassFilterNode.init(ctx).catch(console.trace);
     init = true;
   }
   if (props.sf2Service) {
     sf2Service = props.sf2Service;
-    // await sf2Service.load({
-    //   onZone: (pid, zoneRef, zoneArr) => {
-    //     zoneListArr[pid] ||= [];
-    //     zoneListArr[pid].push(newSFZoneMap(zoneRef, zoneArr));
-    //   }
-    // })
+    await sf2Service.load({
+      onZone: (pid, zoneRef, zoneArr) => {
+        zoneListArr[pid] ||= [];
+        zoneListArr[pid].push(newSFZoneMap(zoneRef, zoneArr));
+      }
+    })
   }
 
   const channelIds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
@@ -69,6 +68,9 @@ export default async function mkpath(ctx, props) {
     spinner,
     get sf2() {
       return sf2Service
+    },
+    async loadsf2() {
+      sf2Service.load();
     },
     async loadProgram(pid, bankid) {
       const p = sf2Service.loadProgram(pid, bankid);

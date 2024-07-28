@@ -1,5 +1,7 @@
 import SpinProcessor from './spin-proc.js';
 import {wasmbin} from "./spin.wasm.js";
+import {midi_ch_cmds} from "../src/midilist.js";
+import {egStruct, spRef2json} from "./spin-structs.js";
 
 let k, lpfmod;
 
@@ -13,12 +15,11 @@ export class SpinNode extends AudioWorkletNode {
     try {
       const procUrl = URL.createObjectURL(
         new Blob([registerProcessor("spin-proc", SpinProcessor)], {
-          type: "text/javascript",
+          type: "application/javascript",
         }),
         {type: "module"}
       );
       await ctx.audioWorklet.addModule(procUrl);
-      // await ctx.audioWorklet.addModule("./spin-proc.js");/
       //lpfmod = await WebAssembly.compile(lpfModule.wasmbin);
     } catch (e) {
       console.trace(e);
@@ -34,7 +35,7 @@ export class SpinNode extends AudioWorkletNode {
       numberOfOutputs: 20,
       outputChannelCount: [...Array(18).fill(2), 1, 1],
       processorOptions: {
-        wasmbin
+        wasmbin, midi_ch_cmds
       }
     });
     this.port.onmessageerror = (e) => alert("adfasfd", e.message); // e; // e.message;

@@ -263,12 +263,7 @@ enum grntypes {
    /*ExclusiveClass:*/ 0,         \
    /*OverrideRootKey:*/ -1,       \
    /*Dummy:*/ 0}
-phdr *presetHeaders[128];
-phdr *phdrRoot = 0;
-phdr drumHeaders[128];
-zone_t *presetZones;
-zone_t *root;
-zone_t *presets[0xff];
+
 char *generator[60] = {"StartAddrOfs",
                        "EndAddrOfs",
                        "StartLoopAddrOfs",

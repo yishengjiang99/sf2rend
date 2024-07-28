@@ -6,7 +6,7 @@ import {createChannel} from "./createChannel.js";
 import {DRUMSCHANNEL, ccnames, midi_ch_cmds} from "./constants.js";
 import {sf2list} from "../sflist.js";
 import {mfilelist} from "../mfilelist.js";
-
+import mkpath from "./mkpath.js";
 import {readMidi} from "./midiread.js";
 import {mkcanvas, chartRect, chart} from "../chart/chart.js";
 import {logdiv, mktabs, mkcollapse} from "./logdiv.js";
@@ -19,8 +19,8 @@ import {
 import {initNavigatorMidiAccess} from "./initNavigatorMidiAccess.js";
 
 const urlParams = new URLSearchParams(document.location.search);
-const sf2file = urlParams.get("sf2file") || "static/SoundBlasterOld.sf2";
-const midiUrl = urlParams.get("midiUrl") || "song.mid";
+const sf2file = "static/SoundBlasterOld.sf2";
+const midiUrl = "song.mid";
 
 // import * as sequence from "../dist/sequence.js";
 const sf2Loader = loadSF2File(sf2file);
@@ -83,7 +83,7 @@ for (const f of mfilelist)
   );
 
 midiSelect.onchange = (e) => {
-  document.location.href = "?midiUrl=" + encodeURI(e.target.value);
+  document.location.href = "?midiUrl=" + encodeURIComponent(e.target.value);
 };
 
 midiSelect.value = midiUrl;
@@ -92,7 +92,6 @@ document.querySelector("#landing").remove();
 ctx = new AudioContext({
   sampleRate: 44100,
 });
-const {mkpath} = await import("./mkpath.js");
 const eventPipe = mkeventsPipe();
 eventPipe.onmessage(function (dd) {
   let data;

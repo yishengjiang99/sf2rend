@@ -1,35 +1,17 @@
 import {wasmbin} from "./spin.wasm.js";
-import {egStruct, spRef2json} from "./spin-structs.js";
 import {midi_ch_cmds} from "../src/midilist.js";
 import saturate from "../saturation/index.js";
 const nchannels = 16;
 const voices_per_channel = 4;
 
-function ring_bus() {
-  // circular queue of size 2
-  // bus as in bus stop
-  // not the wire
-  let _arr = [[], []];
-  let _idx = 0;
-  return {
-    get this_bus() {
-      return _arr[_idx];
-    },
-    get next_bus() {
-      return _arr[_idx ^ 1];
-    },
-    get active_voices() {
-      return _arr[0].length + _arr[1].length;
-    },
-    bus_ran: () => (_idx ^= 1), // after rend block, next_bus became this_bus for next cycle
-  };
-}
+
 class AudioWorkletProcessor { };
 
 export default class SpinProcessor extends AudioWorkletProcessor {
   constructor(options) {
-    Object.assign(this, options.processorOptions)
     super(options);
+    Object.assign(this, options.processorOptions)
+
     this.setup_wasm();
     this.inst.exports.gm_reset();
     this.presetRefs = [];
@@ -45,6 +27,28 @@ export default class SpinProcessor extends AudioWorkletProcessor {
     this.ringbus = ring_bus();
     const zonePtr = this.malololc(120);
     this.zoneAttr = new Int16Array(this.memory.buffer, zonePtr, 60);
+
+    function ring_bus() {
+      // circular queue of size 2
+      // bus as in bus stop
+      // not the wire
+      let _arr = [[], []];
+      let _idx = 0;
+      return {
+        get this_bus() {
+          return _arr[_idx];
+        },
+        get next_bus() {
+          return _arr[_idx ^ 1];
+        },
+        get active_voices() {
+          return _arr[0].length + _arr[1].length;
+        },
+        bus_ran: () => (_idx ^= 1), // after rend block, next_bus became this_bus for next cycle
+      };
+    }
+
+
   }
   setup_wasm() {
     const wasmbin = this.wasmbin;
@@ -70,6 +74,7 @@ export default class SpinProcessor extends AudioWorkletProcessor {
     };
   }
   async handleMsg(e) {
+    const midi_ch_cmds = this.midi_ch_cmds;
     const {data} = e;
     if (data.stream && data.segments) {
       await this.loadsdta(data);
@@ -167,7 +172,7 @@ export default class SpinProcessor extends AudioWorkletProcessor {
     );
     this.port.postMessage({
       queryResponse: {
-        now: now(),
+        now: globalThis.currentTime,
         spinfo,
         egInfo,
         eg2Info: egStruct(
@@ -176,6 +181,68 @@ export default class SpinProcessor extends AudioWorkletProcessor {
         ),
       },
     });
+    function spRef2json(heap, ref) {
+      const [
+        inputRef,
+        outputRef
+      ] = new Uint32Array(heap, ref, 2); // 8*4
+
+      const [channelId,
+        key,
+        velocity] = new Uint8Array(heap, ref + 8, 3);
+
+      const [
+        position,
+        loopStart,
+        loopEnd,
+      ] = new Uint32Array(heap, ref + 8 + 8, 8); // 8*4
+
+      const [fract, stride, pdiff] = new Float32Array(heap, ref + 8 + 8 + 12, 3); // 8*3
+
+      const [zoneRef, volEGRef, modEGRef, modflo, vibrlfo, pcmRef] =
+        new Uint32Array(heap, ref + 8 + 8 + 12 + 12, 6);
+      return {
+        fract,
+        stride,
+        pdiff,
+        inputRef,
+        outputRef,
+        position,
+        loopStart,
+        loopEnd,
+        zoneRef,
+        // volEGRef,
+        // modflo,
+        // vibrlfo,
+        channelId,
+        key,
+        velocity,
+      };
+    }
+    function egStruct(heap, ref) {
+      const [egval, egIncrement] = new Float32Array(heap, ref, 2);
+      const [hasRelease, stage, nsteps] = new Int32Array(heap, ref + 8, 3);
+      const [delay, attack, hold, decay, sustain, release] = new Int16Array(
+        heap,
+        ref + 20,
+        6
+      );
+      return {
+        ref,
+        egval,
+        egIncrement,
+        hasRelease,
+        stage,
+        nsteps,
+        adsr: [delay,
+          attack,
+          hold,
+          decay,
+          sustain,
+          release].join(",")
+      };
+    }
+
   }
   sdtaRef(sampleId) {
     return new Uint32Array(
@@ -204,7 +271,36 @@ export default class SpinProcessor extends AudioWorkletProcessor {
     this.sdtaRef(sampleId).set(
       new Uint32Array([loops[0], loops[1], nSamples, sr, originalPitch, offset])
     );
+    async function downloadData(stream, fl) {
+      const reader = stream.getReader();
+      let writeOffset = 0;
+      let leftover;
+      const decode = function (s1, s2) {
+        const int = s1 + (s2 << 8);
+        return int > 0x8000 ? -(0x10000 - int) / 0x8000 : int / 0x7fff;
+      };
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const {done, value} = await reader.read();
+        if (done) {
+          await stream.closed;
+          break;
+        }
+        if (!value) continue;
+        let readIndex = 0;
 
+        if (leftover != null) {
+          fl[writeOffset++] = decode(leftover, value[readIndex++]);
+          leftover = null;
+        }
+        const n = ~~value.length;
+        while (readIndex < n - 2) {
+          fl[writeOffset++] = decode(value[readIndex++], value[readIndex++]);
+        }
+        if (readIndex < value.length - 1) leftover = value[value.length - 1];
+        console.assert(readIndex + 1 == value.length || leftover != null);
+      }
+    }
 
     // const offset = this.malololc(4 * nSamples);
     // const fl = new Float32Array(this.memory.buffer, offset, nSamples);
@@ -250,8 +346,8 @@ export default class SpinProcessor extends AudioWorkletProcessor {
         continue;
       }
       for (let j = 0;j < 128;j++) {
-        left[j] = saturate(left[j] + outputf[j] * loudnorm);
-        right[j] = saturate(right[j] + outputf[j + 128] * loudnorm);
+        left[j] = left[j] + outputf[j] * loudnorm;
+        right[j] = right[j] + outputf[j + 128] * loudnorm;
         ch_rms[sp_midi_channel] += left[j] * right[j];
       }
       if (goAgain) nextBus.unshift(spref);
@@ -269,59 +365,25 @@ export default class SpinProcessor extends AudioWorkletProcessor {
       !this.lastReport ||
       globalThis.currentTime - this.lastReport > 0.016
     ) {
-      new Promise((r) => r()).then(() => {
-        this.lastReport = globalThis.currentTime;
-        const ref = this.lastRan;
-        const spinfo = spRef2json(this.memory.buffer, ref);
-        const egInfo = egStruct(
-          this.memory.buffer,
-          this.inst.exports.get_vol_eg(ref)
-        );
-        this.port.postMessage({
-          rend_summary: {
-            now: now(),
-            rms: ch_rms,
-            activeSp: this.ringbus.active_voices,
-            spinfo,
-            egInfo,
-            skipped,
-          },
-        });
-      });
+      // new Promise((r) => r()).then(() => {
+      //   this.lastReport = globalThis.currentTime;
+      //   const ref = this.lastRan;
+      //   const spinfo = spRef2json(this.memory.buffer, ref);
+      //   const egInfo = egStruct(
+      //     this.memory.buffer,
+      //     this.inst.exports.get_vol_eg(ref)
+      //   );
+      //   this.port.postMessage({
+      //     rend_summary: {
+      //       now: currentTime,
+      //       rms: ch_rms,
+      //       activeSp: this.ringbus.active_voices,
+      //       spinfo,
+      //       egInfo,
+      //       skipped,
+      //     },
+      //   });
+      // });
     }
-  }
-}
-
-function now() {
-  return globalThis.currentTime;
-}
-async function downloadData(stream, fl) {
-  const reader = stream.getReader();
-  let writeOffset = 0;
-  let leftover;
-  const decode = function (s1, s2) {
-    const int = s1 + (s2 << 8);
-    return int > 0x8000 ? -(0x10000 - int) / 0x8000 : int / 0x7fff;
-  };
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const {done, value} = await reader.read();
-    if (done) {
-      await stream.closed;
-      break;
-    }
-    if (!value) continue;
-    let readIndex = 0;
-
-    if (leftover != null) {
-      fl[writeOffset++] = decode(leftover, value[readIndex++]);
-      leftover = null;
-    }
-    const n = ~~value.length;
-    while (readIndex < n - 2) {
-      fl[writeOffset++] = decode(value[readIndex++], value[readIndex++]);
-    }
-    if (readIndex < value.length - 1) leftover = value[value.length - 1];
-    console.assert(readIndex + 1 == value.length || leftover != null);
   }
 }

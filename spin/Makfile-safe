@@ -29,12 +29,13 @@ pdta.wasm:
 	-nostdlib \
    	-Wl,--no-entry \
 	-Wl,--export-all \
-  	-Wl,--no-entry \
 	-Wl,--allow-undefined \
+  	-Wl,--no-entry \
+	-Wl,--import-memory \
 	-Wl,--lto-O3 -o build/pdta.wasm \
 	src/sf2.c
 			
 
 
 pdta.wasm.js: pdta.wasm 
-	cat build/sf2.wasm | npx encode-wasm-uint8 > pdta.wasm.js
+	cat build/pdta.wasm | npx encode-wasm-uint8 > pdta.wasm.js

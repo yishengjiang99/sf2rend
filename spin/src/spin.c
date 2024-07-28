@@ -170,15 +170,11 @@ void eg_advance(EG *eg) {
     case hold: /** TO DECAY */
       eg->stage = decay;
 
-      if (eg->sustain > 0) {
-        eg->nsteps = timecent2sample(eg->decay);
-        eg->egIncrement = (MAX_EG + eg->sustain / 1000) / eg->nsteps;
-
-      } else {
-        eg->nsteps = 0;
+      eg->nsteps = timecent2sample(eg->decay);
+      if (eg->nsteps) {
+        eg->egIncrement = eg->sustain / eg->nsteps;
+        break;
       }
-      break;
-
     case decay:  // headsing to released;
 
       /*
@@ -260,7 +256,7 @@ void set_midi_cc_val(int channel, int metric, int val) {
 }
 
 #define ccval(eff) midi_cc_vals[x->channelId * 128 + eff]
-#define effect_floor(v) v <= -12000 ? 0 : calcp2over1200(v)
+#define effect_floor(v) v <= -12000 ? 0 : v
 
 float trigger_attack(spinner *x, uint32_t key, uint32_t velocity) {
   x->velocity = (unsigned char)velocity;
@@ -429,7 +425,7 @@ void _spinblock(spinner *x, int n, int blockOffset) {
     if (position >= x->loopEnd && isLooping > 0) position -= looplen;
 
     outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
-    //    tfc = initFc + modeg_fc * modEgOut[i] + x->lfo1_fc * lfo1Out[i];
+    tfc = initFc + modeg_fc * modEgOut[i] + x->lfo1_fc * lfo1Out[i];
 
     if (position > nsamples) {
       position = 0;

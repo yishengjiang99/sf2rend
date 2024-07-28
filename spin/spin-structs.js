@@ -32,7 +32,7 @@ export function spRef2json(heap, ref) {
     new Uint32Array(heap, ref + 8 + 8 + 12 + 12, 6);
   return {
     fract,
-    stride, 
+    stride,
     pdiff,
     inputRef,
     outputRef,

@@ -4,42 +4,27 @@
 extern int printf(const char *__restrict, ...);
 #endif
 
-char sfbk[4];
-
-RIFF_CHUNK rchunk[0];
-RIFFLIST rlist[0];
-RIFF_SUBCHUNK subc[0];
-section_header sech[3];
-
-static int nphdrs, npbags, npgens, npmods, nshdrs, ninsts, nimods, nigens,
-    nibags;
-static phdr *phdrs;
-static pbag *pbags;
-static pmod *pmods;
-static pgen *pgens;
-static inst *insts;
-static ibag *ibags;
-static imod *imods;
-static igen *igens;
-static shdr *shdrs;
-static short *data;
-static void *info;
-static int nsamples;
-static float *sdta;
-static int sdtastart;
-
-#define readSection(section)                                          \
-  fread(sh, sizeof(section_header), 1, fd);                           \
-  n##section##s = sh->size / sizeof(section);                         \
-  section##s = (section *)malloc(sh->size);                           \
-  fread(section##s, sizeof(section), sh->size / sizeof(section), fd); \
-  printf("%.4s \t %d\n", sh->name, sh->size);
+int nphdrs, npbags, npgens, npmods, nshdrs, ninsts, nimods, nigens, nibags;
+phdr *phdrs;
+pbag *pbags;
+pmod *pmods;
+pgen *pgens;
+inst *insts;
+ibag *ibags;
+imod *imods;
+igen *igens;
+shdr *shdrs;
+short *data;
+void *info;
+int nsamples;
+float *sdta;
+int sdtastart;
 
 #define clamp(val, min, max) val > max ? max : val < min ? min : val
-static inline float fclamp(float val, float min, float max) {
+inline float fclamp(float val, float min, float max) {
   return val > max ? max : val < min ? min : val;
 }
-static inline short add_pbag_val_to_zone(int genop, short ival, short pval) {
+inline short add_pbag_val_to_zone(int genop, short ival, short pval) {
   int irange[2], prange[2];
   switch (genop) {
     case StartAddrOfs:
@@ -121,6 +106,7 @@ phdr *findPreset(int pid, int bank_id) {
   }
   return (void *)0;
 }
+pgen_t *globalZone(phdr *phr) { return &pgens[pbags[phr->pbagNdx].pgen_id]; }
 
 void readpdta(void *pdtabuffer) {
   section_header *sh;
@@ -130,7 +116,9 @@ void readpdta(void *pdtabuffer) {
   pdtabuffer += 8;                            \
   n##section##s = sh->size / sizeof(section); \
   section##s = (section *)pdtabuffer;         \
-  pdtabuffer += sh->size;
+  pdtabuffer += sh->size;                     \
+  printf("%.4s \t %d\n", sh->name, sh->size);
+
   srr(phdr);
   srr(pbag);
   srr(pmod);
@@ -144,81 +132,60 @@ void readpdta(void *pdtabuffer) {
 }
 
 void loopzone(phdr *phr, int midi, int velocity) {
-  int nregions = 0;
-  int instID = -1, lastSampId = -1;
+/* filter based on ranges*/
+#define filter(g, nextbag)                           \
+  for (; g->genid <= VelRange; g++) {                \
+    if (g->genid == VelRange) {                      \
+      if (g->val.ranges.lo > velocity) goto nextbag; \
+      if (g->val.ranges.hi < velocity) goto nextbag; \
+    } else if (g->genid == KeyRange) {               \
+      if (g->val.ranges.lo > midi) goto nextbag;     \
+      if (g->val.ranges.hi < midi) goto nextbag;     \
+    }                                                \
+  }
 
-  for (int j = phr->pbagNdx; j < (phr + 1)->pbagNdx; j++) {
+  pgen *g, *ig;
+  for (int j = phr->pbagNdx + 1; j < (phr + 1)->pbagNdx; j++) {
     pbag *pg = pbags + j;
-    pgen_t *lastg = pgens + pg[j + 1].pgen_id;
     int pgenId = pg->pgen_id;
-    instID = -1;
-    int lastPgenId = j < npbags - 1 ? pbags[j + 1].pgen_id : npgens - 1;
-    unsigned char plokey = 0, phikey = 127, plovel = 0, phivel = 127;
-    if (j == phr->pbagNdx) printf("\n\tGlobal Generators: %d", pgenId);
-    for (int k = pgenId; k < lastPgenId; k++) {
-      pgen *g = pgens + k;
-      if (g->genid == VelRange) {
-        if (g->val.ranges.lo > velocity) break;
-        if (g->val.ranges.hi < velocity) break;
-        continue;
-      } else if (g->genid == KeyRange) {
-        if (g->val.ranges.lo > midi) break;
-        if (g->val.ranges.hi < midi) break;
-      }
+    int lastPgenId = pbags[j + 1].pgen_id - 1;
+    g = pgens + pgenId;
+    filter(g, nextbag);
 
-      if (g->genid == VelRange || g->genid == KeyRange) {
-        printf("\n\t%hu(%s): %hu %hu", g->genid, generator[g->genid],
-               g->val.ranges.lo, g->val.ranges.hi);
-      } else if (g->genid == Instrument) {
-        instID = g->val.uAmount;
-        inst *ihead = insts + instID;
-        int ibgId = ihead->ibagNdx;
-        int lastibg = (ihead + 1)->ibagNdx;
-        for (int ibg = ibgId; ibg < lastibg; ibg++) {
-          ibag *ibgg = ibags + ibg;
-          pgen_t *lastig = ibg < nibags - 1 ? igens + (ibgg + 1)->igen_id
-                                            : igens + nigens - 1;
-          if (ibg == ihead->ibagNdx) printf("\n\t Inst Generators: %d", ibg);
-
-          unsigned char ilokey = 0, ihikey = 127, ilovel = 0, ihivel = 127;
-
-          for (pgen_t *g = igens + ibgg->igen_id; g->genid != 60 && g != lastig;
-               g++) {
-            if (g->genid == VelRange) {
-              if (g->val.ranges.lo > velocity) break;
-              if (g->val.ranges.hi < velocity) break;
-            } else if (g->genid == KeyRange) {
-              if (g->val.ranges.lo > midi) break;
-              if (g->val.ranges.hi < midi) break;
-            }
-
-            if (g->genid == VelRange || g->genid == KeyRange) {
-              printf("\n\t%hu(%s inst): %hu %hu", g->genid, generator[g->genid],
-                     g->val.ranges.lo, g->val.ranges.hi);
-            }
-
-            else if (g->genid == SampleId) {
-              if (g->val.uAmount >= nshdrs) break;
-              nregions++;
-              break;
-            }
-
-            else {
-              if (g->genid == VolEnvRelease)
-                printf("\n\t\tizone %hu %s: %d", g->genid, generator[g->genid],
-                       g->val.shAmount);
-            }
-          }
-        }
-      } else {
-        if (g->genid == VolEnvRelease)
-          printf("\n\t\tpzone %hu %s: %hd", g->genid, generator[g->genid],
-                 g->val.shAmount);
-      }
+    g = pgens + lastPgenId;
+    if (g->genid != Instrument) {
+      goto nextbag;
     }
+
+    int instID = g->val.uAmount;
+    inst *ihead = insts + instID;
+    int ibgId = ihead->ibagNdx;
+    int lastibg = (ihead + 1)->ibagNdx - 1;
+    for (int ibg = lastibg; ibg >= ibgId; ibg--) {
+      ibag *ibgg = ibags + ibg;
+      ig = igens + ibgg->igen_id;
+      filter(ig, nextibag);
+      int lastIgenId = (ibgg + 1)->igen_id - 1;
+      for (int i = lastIgenId; i >= ibgg->igen_id; i--) {
+        ig = igens + i;
+        printf("\n\t\tizone %hu %s: %d", ig->genid, generator[ig->genid],
+               ig->val.shAmount);
+      }
+    nextibag:
+      printf("\n");
+    }
+
+    printf("\nparse pzone");
+    for (int k = pgenId; k <= lastPgenId; k++) {
+      g = pgens + k;
+      printf("\n\t\tpzone %hu %s: %hd", g->genid, generator[g->genid],
+             g->val.shAmount);
+    }
+  nextbag:
+    printf("..");
   }
 }
-// #define testingenv 1
+#define testingenv 18
 #ifdef testingenv
 #include <math.h>
 #include <stdio.h>
@@ -238,6 +205,12 @@ void read_sdta(FILE *fd) {
   }
 }
 int main(int argc, char **args) {
+  char sfbk[4];
+
+  RIFF_CHUNK rchunk[0];
+  RIFFLIST rlist[0];
+  RIFF_SUBCHUNK subc[0];
+  section_header sech[3];
   char *filename = "file.sf2";
   FILE *fd = fopen(filename, "r");
   fread(sfbk, 4, 1, fd);
@@ -262,8 +235,8 @@ int main(int argc, char **args) {
   char *pdtabuffer = (char *)malloc(rchunk->size);
   fread(pdtabuffer, rchunk->size, 1, fd);
   readpdta(pdtabuffer);
-  phdr *phr = findPreset(0, 0);
-  loopzone(phr, 56, 60);
+  phdr *phr = findPreset(3, 0);
+  loopzone(phr, 56, 110);
   return 0;
 }
 #endif
