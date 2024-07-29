@@ -19,7 +19,7 @@ import {
 import {initNavigatorMidiAccess} from "./initNavigatorMidiAccess.js";
 
 const urlParams = new URLSearchParams(document.location.search);
-const sf2file = "static/SoundBlasterOld.sf2";
+const sf2file = "static/file.sf2";
 const midiUrl = "song.mid";
 
 // import * as sequence from "../dist/sequence.js";
@@ -90,58 +90,17 @@ midiSelect.value = midiUrl;
 await new Promise((r) => window.addEventListener("keydown", r));
 document.querySelector("#landing").remove();
 ctx = new AudioContext({
-  sampleRate: 44100,
+  sampleRate: 48000,
 });
-const eventPipe = mkeventsPipe();
-eventPipe.onmessage(function (dd) {
-  let data;
-  if (dd.length <= 3) {
-    const [a, b, c] = dd;
-    data = [a & 0xf0, a & 0x0f, b, c];
-  }
-  const [cmd, ch, v1, v2] = data;
-  const [key, velocity] = [v1, v2];
-  switch (cmd) {
-    case midi_ch_cmds.continuous_change: // set CC
-      spinner.port.postMessage(dd);
-      break;
-    case midi_ch_cmds.change_program: //change porg
-      if (v1 == 0 && ch > 0) {
-        channels[ch].setProgram(v1, 128);
-      } else {
-        channels[ch].setProgram(v1, ch === DRUMSCHANNEL ? 128 : 0);
-      }
-      break;
-    case midi_ch_cmds.note_on:
-      if (velocity == 0) {
-        // spinner.port.postMessage(data);
-        channels[ch].keyOff(key, velocity);
-      } else {
-        channels[ch].keyOn(key, velocity);
-        //        uiControllers[ch].keyOn(key, velocity, ctx.currentTime);
-      }
-      break;
-    case midi_ch_cmds.note_off:
-      channels[ch].keyOff(key, velocity);
 
-      uiControllers[ch].keyOff(key, velocity, ctx.currentTime);
-
-      break;
-
-    case midi_ch_cmds.pitchbend:
-      spinner.port.postMessage(data);
-      break;
-    default:
-      spinner.port.postMessage(data);
-      break;
-  }
+const apath = await mkpath(ctx, {
+  sf2Service: new SF2Service("file.sf2")
 });
-const apath = await mkpath(ctx, eventPipe);
 const spinner = apath.spinner;
-
+const eventPipe = apath.msgPort;
 let nextChannel = 0;
 
-const ui = mkui(eventPipe, document.querySelector("#channelContainer"), {
+const ui = mkui(apath.msgPort, document.querySelector("#channelContainer"), {
   onTrackDoubleClick: async (channelId, e) => {
     const sp1 = await apath.querySpState({query: 2 * channelId});
   },
@@ -184,11 +143,6 @@ if (midiUrl) {
   channels[nextChannel++].setProgram(0, 0);
   channels[DRUMSCHANNEL].setProgram(0, 128);
 }
-
-// mk_eq_bar(0, apath.eq_set).attachTo(document.querySelector("eq"));
-//link pipes
-
-//  eventPipe.onmessage(eventsHandler(channels, spinner, last_rend_end_at, ctx));
 initNavigatorMidiAccess({
   container: nav2,
   eventPipe,
@@ -233,7 +187,6 @@ apath.bindToolbar();
 apath.bindReactiveElems();
 
 const cancelFn = apath.detectClips(c3);
-
 draw();
 document
   .querySelector("#file-btn")
@@ -296,8 +249,7 @@ async function onMidiLoaded(midiInfo) {
       const {pid, channel} = preset;
       let bkid = channel == DRUMSCHANNEL ? channel : 0;
       if (pid == 0 && channel >= 9) bkid = 128;
-      const program = channels[channel].setProgram(pid, bkid);
-      stdout("loading " + program.name);
+      apath.msgPort.postMessage([midi_ch_cmds.change_program | channel, bkid | pid]);
     })
   );
   const rootElement = document.querySelector("#sequenceroot");

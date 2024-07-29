@@ -185,7 +185,7 @@ void loopzone(phdr *phr, int midi, int velocity) {
     printf("..");
   }
 }
-#define testingenv 18
+// #define testingenv 18
 #ifdef testingenv
 #include <math.h>
 #include <stdio.h>

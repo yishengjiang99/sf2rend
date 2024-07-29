@@ -349,7 +349,7 @@ void set_spinner_input(spinner *x, pcm_t *pcm) {
 float calc_pitch_diff_log(zone_t *z, pcm_t *pcm, unsigned char key) {
   short rt = z->OverrideRootKey > -1 ? z->OverrideRootKey : pcm->originalPitch;
   float smpl_rate = rt * 100.0f + z->CoarseTune * 100.0f + (float)z->FineTune;
-  float diff = key * 100.0f - smpl_rate + .0001f;
+  float diff = key * 100.0f - smpl_rate;
   diff += ((pcm->sampleRate - SAMPLE_RATE) / 4096.f * 100.f);
   return diff;
 }
@@ -411,8 +411,8 @@ void _spinblock(spinner *x, int n, int blockOffset) {
   short initFc = x->initialFc;
 
   for (int i = 0; i < n; i++) {
-    db = volEgOut[i];  //+ lfo1_volume * lfo1Out[i];
-    pdiff += lfo1Out[i] * lfo1_pitch + modEgOut[i] * modeg_pitch +
+    db = volEgOut[i] + lfo1_volume * lfo1Out[i] + modEgOut[i] * x->modeg_vol;
+    pdiff += lfo1Out[i] * lfo1_pitch - modEgOut[i] * modeg_pitch +
              lfo2Out[i] * lfo2_pitch;
 
     stride = calcp2over1200(pdiff);
@@ -425,7 +425,7 @@ void _spinblock(spinner *x, int n, int blockOffset) {
     if (position >= x->loopEnd && isLooping > 0) position -= looplen;
 
     outputf = lerp(x->inputf[position], x->inputf[position + 1], fract);
-    tfc = initFc + modeg_fc * modEgOut[i] + x->lfo1_fc * lfo1Out[i];
+    tfc = initFc - modeg_fc * modEgOut[i] + x->lfo1_fc * lfo1Out[i];
 
     if (position > nsamples) {
       position = 0;

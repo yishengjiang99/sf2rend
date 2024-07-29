@@ -41,7 +41,7 @@ double timecent2second(short tc) {
 double timecent2hertz(short tc) { return 8.176f * timecent2second(tc); }
 
 int timecent2sample(short tc) {
-  return (int)(timecent2second(tc) * SAMPLE_RATE);
+  return (int)(calcp2over1200(tc) * SAMPLE_RATE);
 }
 float applyCentible(float signal, short centdb) {
   if (centdb > 0) return signal;

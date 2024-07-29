@@ -140,14 +140,15 @@ export default class SpinProcessor extends AudioWorkletProcessor {
           for (const sp of this.sp_map[ch * 128 + key]) {
             this.inst.exports.trigger_release(sp);
           }
-
           this.port.postMessage({ack: [0x80, ch]});
           break;
         }
         case midi_ch_cmds.note_on:
           {
+            const [key, vel, zoneArr] = args;
             const atr = new Int16Array(this.memory.buffer, this.zoneAttr, 60);
             atr.set(zoneArr);
+
             const sp = this.inst.exports.new_sp(ch);
             this.inst.exports.reset(sp);
             this.inst.exports.set_spinner_zone(sp, this.zoneAttr);
@@ -317,10 +318,10 @@ export default class SpinProcessor extends AudioWorkletProcessor {
 
     let has_sound = false;
     let [left, right] = outputs[0];
-    if (noise_floor && noise_floor[0]) {
-      left.set(noise_floor[0]);
-      right.set(noise_floor[0]);
-    }
+    // if (noise_floor && noise_floor[0]) {
+    //   left.set(noise_floor[0]);
+    //   right.set(noise_floor[0]);
+    // }
     this.inst.exports.sp_wipe_output_tab();
     const thisBus = this.ringbus.this_bus;
     const nextBus = this.ringbus.next_bus;
@@ -353,8 +354,8 @@ export default class SpinProcessor extends AudioWorkletProcessor {
       if (goAgain) nextBus.unshift(spref);
     }
     this.ringbus.bus_ran();
-    const rend_time = globalThis.currentTime - tick;
-    this.sendReport({ch_rms, skipped, rend_time});
+    // const rend_time = globalThis.currentTime - tick;
+    // this.sendReport({ch_rms, skipped, rend_time});
     return true;
   }
   sendReport({ch_rms, skipped, rend_time}) {

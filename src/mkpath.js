@@ -37,22 +37,44 @@ export default async function mkpath(ctx, props) {
   const whitenoise = anti_denom_dither(ctx);
   const fft = new FFTNode(ctx);
   const clipdetect = createAudioMeter(ctx);
+  const chPrograms = new Array(16);
   let mini_input = props.mini_input;
   if (!mini_input) {
     mini_input = mkeventsPipe();
-    mini_input.onmessage((data) => {
+    mini_input.onmessage(async (data) => {
       const [a, b, c] = data;
       const [cmd, ch, v1, v2] = [a & 0xf0, a & 0x0f, b, c];
-      if (cmd === midi_ch_cmds.change_program) {
-        const pid = v1;
-        if (drumsChannmel.find(ch)) bid = 128;
-        else bid = 0;
-        const program = sf2Service.loadProgram(pid, bid);
-        if (!program) throw "program not found " + pid + ":" + bid;
-        spinner.shipProgram(program, pid | bid);
-      } else {
-        spinner.port.postMessage(data);
+      let bid;
+      switch (cmd) {
+        case midi_ch_cmds.change_program: {
+          const pid = v1;
+          if (drumsChannmel.includes(ch)) bid = 128;
+          else bid = 0;
+          const program = sf2Service.loadProgram(pid, bid);
+          if (!program) throw "program not found " + pid + ":" + bid;
+          chPrograms[ch] = program;
+          await spinner.shipProgram(program, pid | bid);
+          break;
+        }
+        case midi_ch_cmds.note_on: {
+          const zones = chPrograms[ch].filterKV(v1, v2);
+          zones.map((zone, i) => {
+            if (zone.arr)
+              spinner.port.postMessage([
+                midi_ch_cmds.note_on |
+                ch,
+                v1,
+                v2,
+                zone.arr
+              ]);
+          });
+          break;
+        }
+        default:
+          spinner.port.postMessage(data);
+          break;
       }
+
     })
   }
 
@@ -69,7 +91,7 @@ export default async function mkpath(ctx, props) {
     get sf2() {
       return sf2Service
     },
-    async loadsf2() {
+    async loadsf2(sf2url) {
       sf2Service.load();
     },
     async loadProgram(pid, bankid) {
@@ -232,8 +254,7 @@ export default async function mkpath(ctx, props) {
       });
     },
 
-    bindKeyboard: function (get_active_channel_fn, eventpipe) {
-      if (!eventpipe) eventpipe = spinner.port;
+    bindKeyboard: function (get_active_channel_fn) {
       const keys = ["a", "w", "s", "e", "d", "f", "t", "g", "y", "h", "u", "j"];
       window.onkeydown = (e) => {
         if (e.repeat) return;
@@ -248,11 +269,12 @@ export default async function mkpath(ctx, props) {
         e.target.addEventListener(
           "keyup",
           () => {
-            eventpipe.postMessage([0x80 | channel, key, 33]);
+            mini_input.postMessage([0x80 | channel, key, 55]);
           },
           {once: true}
         );
-        eventpipe.postMessage([0x90 | channel, key, 55]);
+        console.log(key)
+        mini_input.postMessage([0x90 | channel, key, 55]);
       };
     },
   };
