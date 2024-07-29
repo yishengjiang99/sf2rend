@@ -10,8 +10,8 @@ let timer = null,
   ticks = 0;
 let startTime,
   lastTick = 0;
-onmessage = ({ data }) => {
-  const { tm, stop, start, reset, load } = data;
+onmessage = ({data}) => {
+  const {tm, stop, start, reset, load} = data;
 
   if (tm) {
     ppqn = tm.ppqn;

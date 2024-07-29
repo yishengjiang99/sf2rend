@@ -1,12 +1,12 @@
-import { wasmbin } from "./spin.wasm.js";
-import { downloadData } from "./download.js";
+import {wasmbin} from "./spin.wasm.js";
+import {downloadData} from "./download.js";
 const range = (x, y) =>
   Array.from(
     (function* _(x, y) {
       while (x < y) yield x++;
     })(x, y)
   );
-export function mkSpinnerBYOW({ instance, malloc, memory }) {
+export function mkSpinnerBYOW({instance, malloc, memory}) {
   const exports = instance.exports;
   const heap = memory.buffer;
   const pcmRef = (idx) => instance.exports.pcmRef(idx);
@@ -26,7 +26,7 @@ export function mkSpinnerBYOW({ instance, malloc, memory }) {
     spinners,
     sampleHeader,
     setZoneAttribute(index, attr, value) {
-      const register = new DataView(heap, zoneRef(index), attr * 20, 2);
+      const register = new DataView(heap, exports.zoneRef(index), attr * 20, 2);
       register.setInt16(0, value, true);
     },
     getZone(index) {
@@ -42,9 +42,9 @@ export function mkSpinnerBYOW({ instance, malloc, memory }) {
       instance.exports.midi_cc_vals.value,
       128 * 16
     ),
-    loadSampleData: function ({ header, segments, data, stream }) {
+    loadSampleData: function ({header, segments, data, stream}) {
       header = header || segments; //backword compatiblity
-      const { nSamples, loops, originalPitch, sr } = header;
+      const {nSamples, loops, originalPitch, sr} = header;
       const offset = this.malloc(4 * nSamples);
       const floatArray = new Float32Array(heap, offset, nSamples);
       if (data) floatArray.set(data);
@@ -75,7 +75,12 @@ export async function mkWasm() {
   });
   const mod = await WebAssembly.compile(wasmbin);
   const instance = await WebAssembly.instantiate(mod, {
-    env: { memory },
+    env: {
+      memory,
+      tanf: Math.tan,
+      logf: console.log,
+      consolef: (f) => console.log("--->", f),
+    }
   });
   let brk = 0x30000;
   function malloc(len) {
@@ -84,5 +89,5 @@ export async function mkWasm() {
     if (brk > memory.buffer.byteLength) throw "no mem";
     return ret;
   }
-  return { instance, malloc, memory };
+  return {instance, malloc, memory};
 }

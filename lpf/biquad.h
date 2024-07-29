@@ -16,7 +16,7 @@ typedef struct {
   float x1, x2, y1, y2;
 } biquad;
 
-extern float BiQuad(const float sample, biquad *const b);
+extern float BiQuad(const float sample);
 extern biquad *BiQuad_new(const int type, float dbGain, /* gain of filter */
                           const float freq,             /* center frequency */
                           const float srate,            /* sampling rate */
