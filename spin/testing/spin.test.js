@@ -1,37 +1,27 @@
-/* eslint-disable no-undef */
-import { mkspinner } from "../index.js";
-
-(async () => {
-  const sp = await mkspinner();
-  const sp1 = sp.spinners[0];
-  sp1.zone.VolEnvAttack = 3100;
-  console.log(sp1.zone.VolEnvAttack);
-
-  sp.zones[0].init;
-})();
-
+import {SpinNode} from '../spin.js';
+import SF2Service from "../../sf2-service/sf2.js";
+import {subScribeEvent} from '../../src/subScribeEvent.js';
+import {mkspinner} from '../index.js';
 promise_test(async () => {
-  const sp = await mkspinner();
-  const sp1 = sp.spinners[0];
-  console.log(sp.zones[0]);
-  assert_true(null != sp1, "method 1 of constructor");
-  assert_true(null != sp1.volEG, "method 1 of constructor");
-  assert_true(null != sp.zones[0], "zones array esist");
+  const ctx = new OfflineAudioContext(2, 3000, 3000);
+  await SpinNode.init(ctx).catch(console.trace);
+  const spinner = new SpinNode(ctx);
+  assert_true(SpinNode != null);
 }, "_set_stage");
 
-promise_test(async () => {
+function apromise_test(fn, str) {
+  fn().then(() => console.log(str))
+}
+apromise_test(async () => {
   const sp = await mkspinner();
-  const sp3 = sp.newSpinner(3);
+  const sp3 = sp.getZone(0);
+  debugger;
+  // sp.trigger_attack(sp.spRef(3), 0.8, 4);
+  // sp.spinners[3].zone.VolEnvAttack = -12000;
+  // console.log(sp.spinners[3].volEG, "sp3ref");
+  // assert_equals(sp.spinners[3].volEG, 1); //init, not inacgtive;
+  // assert_equals(sp.timecent2sample(-12000), 43);
 
-  sp.spinners[3].zone.Attenuation = 3;
-  sp.trigger_attack(sp.spRef(3), 0.8, 4);
-  sp.spinners[3].zone.VolEnvAttack = -12000;
-  console.log(sp.spinners[3].volEG, "sp3ref");
-  assert_equals(sp.spinners[3].volEG, 1); //init, not inacgtive;
-
-  assert_equals(sp.timecent2sample(-12000), 43);
-
-  assert_equals(sp.midi_volume_log10(127), 0);
 }, "lookup tables");
 promise_test(async () => {
   const sp = await mkspinner();

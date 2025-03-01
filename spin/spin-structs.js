@@ -1,9 +1,8 @@
-import { newSFZoneMap } from "./zoneProxy.js";
-
 /*
 typedef struct {
   float *inputf, *outputf;
-  uint32_t position, loopStart, loopEnd, channelId, key, velocity;
+  uint32_t channelId, key, vel,
+    position, loopStart, loopEnd, channelId, key, velocity;
   zone_t* zone;
   EG *voleg, *modeg;
   LFO *modlfo, *vibrlfo;
@@ -14,39 +13,36 @@ typedef struct {
 export function spRef2json(heap, ref) {
   const [
     inputRef,
-    outputRef,
+    outputRef
+  ] = new Uint32Array(heap, ref, 2); // 8*4
+
+  const [channelId,
+    key,
+    velocity] = new Uint8Array(heap, ref + 8, 3);
+
+  const [
     position,
     loopStart,
     loopEnd,
-    channelId,
-    key,
-    velocity,
-  ] = new Uint32Array(heap, ref, 8); // 8*4
-  const [fract, stride] = new Float32Array(heap, ref + 32, 3); // 8*3
+  ] = new Uint32Array(heap, ref + 8 + 8, 8); // 8*4
 
-  const [zoneRef, volEGRef, modEGRef, modflo, vibrlfo] = new Uint32Array(
-    heap,
-    ref + 44,
-    5
-  );
-  if (!outputRef) throw "bad spinner no crit refs";
+  const [fract, stride, pdiff] = new Float32Array(heap, ref + 8 + 8 + 12, 3); // 8*3
+
+  const [zoneRef, volEGRef, modEGRef, modflo, vibrlfo, pcmRef] =
+    new Uint32Array(heap, ref + 8 + 8 + 12 + 12, 6);
   return {
     fract,
     stride,
+    pdiff,
     inputRef,
     outputRef,
-    outputf: new Float32Array(heap, outputRef, 128 * 2),
     position,
     loopStart,
     loopEnd,
     zoneRef,
-    zone: zoneRef
-      ? newSFZoneMap(zoneRef, new Int16Array(heap, zoneRef, 60))
-      : null,
-    volEG: volEGRef ? egStruct(heap, volEGRef) : null,
-    modEG: modEGRef ? egStruct(heap, modEGRef) : null,
-    modflo,
-    vibrlfo,
+    // volEGRef,
+    // modflo,
+    // vibrlfo,
     channelId,
     key,
     velocity,
@@ -67,10 +63,10 @@ typedef struct {
 
 export function egStruct(heap, ref) {
   const [egval, egIncrement] = new Float32Array(heap, ref, 2);
-  const [hasRelease, stage, nsamples] = new Int32Array(heap, ref, 3);
+  const [hasRelease, stage, nsteps] = new Int32Array(heap, ref + 8, 3);
   const [delay, attack, hold, decay, sustain, release] = new Int16Array(
     heap,
-    ref + 8,
+    ref + 20,
     6
   );
   return {
@@ -79,12 +75,12 @@ export function egStruct(heap, ref) {
     egIncrement,
     hasRelease,
     stage,
-    nsamples,
-    delay,
-    attack,
-    hold,
-    decay,
-    sustain,
-    release,
+    nsteps,
+    adsr: [delay,
+      attack,
+      hold,
+      decay,
+      sustain,
+      release].join(",")
   };
 }
