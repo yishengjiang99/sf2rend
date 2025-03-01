@@ -1,7 +1,29 @@
-let k;
+import SpinProcessor from './spin-proc.js';
+import {wasmbin} from "./spin.wasm.js";
+import {midi_ch_cmds} from "../src/midilist.js";
+import {egStruct, spRef2json} from "./spin-structs.js";
+
+let k, lpfmod;
+
+
+function registerProcessor(name, processorCtor) {
+  return `console.log(globalThis);\n${processorCtor};\nregisterProcessor('${name}', ${processorCtor.name});`;
+}
 export class SpinNode extends AudioWorkletNode {
+  static lpfmod;
   static async init(ctx) {
-    await ctx.audioWorklet.addModule("spin/spin-proc.js");
+    try {
+      const procUrl = URL.createObjectURL(
+        new Blob([registerProcessor("spin-proc", SpinProcessor)], {
+          type: "application/javascript",
+        }),
+        {type: "module"}
+      );
+      await ctx.audioWorklet.addModule(procUrl);
+      //lpfmod = await WebAssembly.compile(lpfModule.wasmbin);
+    } catch (e) {
+      console.trace(e);
+    }
   }
   static alloc(ctx) {
     if (!k) k = new SpinNode(ctx);
@@ -9,26 +31,15 @@ export class SpinNode extends AudioWorkletNode {
   }
   constructor(ctx) {
     super(ctx, "spin-proc", {
-      numberOfInputs: 0,
-      numberOfOutputs: 16,
-      outputChannelCount: new Array(16).fill(2),
+      numberOfInputs: 1,
+      numberOfOutputs: 20,
+      outputChannelCount: [...Array(18).fill(2), 1, 1],
+      processorOptions: {
+        wasmbin, midi_ch_cmds
+      }
     });
     this.port.onmessageerror = (e) => alert("adfasfd", e.message); // e; // e.message;
   }
-
-  keyOn(channel, zone, key, vel) {
-    this.port.postMessage([
-      0x90,
-      channel,
-      zone.ref,
-      zone.calcPitchRatio(key, this.context.sampleRate),
-      vel,
-    ]);
-  }
-  keyOff(channel, key, vel) {
-    this.port.postMessage([0x80, channel, key, vel]);
-  }
-
   async shipProgram(sf2program, presetId) {
     await sf2program.fetch_drop_ship_to(this.port);
     await this.postZoneAttributes(sf2program, presetId);

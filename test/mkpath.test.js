@@ -22,7 +22,9 @@ describe("mkpath", function () {
   it("Spin Node can fetch audio buffer on main thread and dropship it to audio thrad via shared read stream", async () => {
     const program = sd2.loadProgram(0, 128);
     await path.spinner.requestDownload(program);
-    const smpldIds = Object.entries(rogram.shdrMap).map((shdr) => shdr.SampleId);
+    const smpldIds = Object.entries(rogram.shdrMap).map(
+      (shdr) => shdr.SampleId
+    );
     path.spinner.postMessage({ pcmCheck: smpldIds[0] });
     const received = await new Promise((r, rej) => {
       spinner.port.onmesage = ({ data: { shdr } }) => {
