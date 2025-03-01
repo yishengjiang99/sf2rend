@@ -1,14 +1,14 @@
-import {mkdiv, mkdiv2} from "../mkdiv/mkdiv.js";
+import { mkdiv, mkdiv2 } from "../mkdiv/mkdiv.js";
 import {
   midi_ch_cmds,
   midi_effects as effects,
   DRUMSCHANNEL,
 } from "./constants.js";
-import {fa_switch_btn, grid_tbl} from "./btns.js";
-import {attributeKeys, defZone, newSFZone} from "../sf2-service/zoneProxy.js";
-import {baseOctave} from "./sequence/constants.js";
-import {mkcanvas} from "../chart/chart.js";
-import {juk} from "./juk.js";
+import { fa_switch_btn, grid_tbl } from "./btns.js";
+import { attributeKeys, defZone, newSFZone } from "../sf2-service/zoneProxy.js";
+import { baseOctave } from "./sequence/constants.js";
+import { mkcanvas } from "../chart/chart.js";
+import { juk } from "./juk.js";
 
 const rowheight = 40;
 const pixelPerSec = 12;
@@ -17,7 +17,7 @@ const [W, H] = [(visualViewport.width / 3) * 2, 120];
 export function mkui(
   eventPipe,
   container,
-  {onTrackClick, onTrackDoubleClick, onEditZone, onAddChannel, programNames}
+  { onTrackClick, onTrackDoubleClick, onEditZone, onAddChannel, programNames }
 ) {
   class TrackUI {
     constructor(idx, cb) {
@@ -49,7 +49,7 @@ export function mkui(
           },
         },
         programNames.map((name, presetIdx) =>
-          mkdiv2({tag: "option", value: presetIdx, children: name})
+          mkdiv2({ tag: "option", value: presetIdx, children: name })
         )
       );
       this.led = mkdiv("input", {
@@ -64,7 +64,7 @@ export function mkui(
         `<div> <label for="modal-control${idx}" class="modal-close" >Close Modal</label>
         <p class='editTable'></p>`,
       ]);
-      const ctslsDiv = mkdiv("div", {class: "ctrls"}, [
+      const ctslsDiv = mkdiv("div", { class: "ctrls" }, [
         fa_switch_btn({
           id: "mute" + idx,
           icons: ["fa-volume-mute", "fa-volume-up"],
@@ -123,12 +123,12 @@ export function mkui(
       this.timeline = [];
       this.open_notes = {};
 
-      const sequencer = mkdiv("div", {style: "flex-grow:1;"});
-      this.cctx = mkcanvas({width: W, height: H, container: sequencer});
+      const sequencer = mkdiv("div", { style: "flex-grow:1;" });
+      this.cctx = mkcanvas({ width: W, height: H, container: sequencer });
       this.cctx.fillStyle = "red";
       this.container = mkdiv(
         "div",
-        {style: "width:100%; display:grid; grid-template-columns:1fr 5fr"},
+        { style: "width:100%; display:grid; grid-template-columns:1fr 5fr" },
         [inst_header_section, sequencer]
       );
       this.container.append(
@@ -256,7 +256,7 @@ export function mkui(
   let _activeChannel = 0;
   const tb = mkdiv("div");
 
-  for (let i = 0;i < 16;i++) {
+  for (let i = 1; i < 16; i++) {
     const trackrow = new TrackUI(i, eventPipe.postMessage);
     controllers.push(trackrow);
     tb.append(trackrow.container);
