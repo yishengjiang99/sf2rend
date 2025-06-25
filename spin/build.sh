@@ -3,14 +3,9 @@ docker run \
 -v $(pwd):/src \
 -u $(id -u):$(id -g) \
 emscripten/emsdk \
-emcc src/spin.c -Oz -o spin.wasm \
--s EXPORTED_FUNCTIONS=['_spin','_midi_cc_vals','_pcms','_get_available_spinner','_gm_reset','_newSpinner','_spRef','_pcmRef','_zoneRef','_set_spinner_zone','_trigger_attack'] \
---no-entry \
--s INITIAL_MEMORY=1024mb              \
--s ENVIRONMENT=web \
--s EXPORT_ES6=1 \
--s MODULARIZE=1 \
--s SINGLE_FILE=1 \
--s EXPORT_ES6=1;
-
-cat spin.wasm |npx encode-wasm-uint8 > spin.wasm.js
+emcc src/sf2r/pdta.spec.c --pre-js pmod.js -o spin.test.html \
+-sFORCE_FILESYSTEM \
+-s EXPORTED_RUNTIME_METHODS="['FS', 'ccall', 'UTF8ToString', 'lengthBytesUTF8', 'stringToUTF8', 'getValue']" \
+-s ALLOW_MEMORY_GROWTH=1 \
+-s STACK_SIZE=1048576 \
+--preload-file assets
