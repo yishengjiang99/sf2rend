@@ -21,23 +21,9 @@ export function fetchmidilist(
   url = "https://grep32bit.blob.core.windows.net/midi?resttype=container&comp=list"
 ) {
   return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("GET", url);
-    xhr.responseType = "document";
-    xhr.send();
-    xhr.onload = function () {
-      if (!xhr.responseXML) return [];
-      const taglist = xhr.responseXML.querySelectorAll("Blob");
-      resolve(Array.from(taglist).map(b =>
-        new Proxy(b, {
-          get(t, attr) {
-            return t.querySelector(attr).textContent;
-          }
-        })
-      ));
-    };
-    xhr.onerror = reject;
-    xhr.ontimeout = reject;
+    resolve([{
+      url: "song.mid", name: "song.mid"
+    }])
   });
 }
 
