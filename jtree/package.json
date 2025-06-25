@@ -1,0 +1,19 @@
+{
+  "name": "jtree",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "merge": "^2.1.1",
+    "sf2-service": "file:../sf2-service",
+    "sort": "^0.0.3",
+    "ssr-bach": "^3.0.0",
+    "tree-model": "^1.0.7"
+  }
+}

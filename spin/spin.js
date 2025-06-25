@@ -1,38 +1,29 @@
-import { requestDownload } from "./fetch-drop-ship.js";
-let k;
 
+let k, lpfmod;
 export class SpinNode extends AudioWorkletNode {
+  static lpfmod;
   static async init(ctx) {
-    await ctx.audioWorklet.addModule("./spin/ssp-proc.js");
+    try {
+      await ctx.audioWorklet.addModule("./spin/spin-proc.js");
+      //lpfmod = await WebAssembly.compile(lpfModule.wasmbin);
+    } catch (e) {
+      console.trace(e);
+    }
   }
   static alloc(ctx) {
     if (!k) k = new SpinNode(ctx);
     return k;
   }
-  constructor(ctx, numberOfOutputs = 1) {
+  constructor(ctx) {
     super(ctx, "spin-proc", {
-      numberOfInputs: 0,
-      numberOfOutputs,
-      outputChannelCount: new Array(16).fill(2),
+      numberOfInputs: 1,
+      numberOfOutputs: 20,
+      outputChannelCount: [...Array(18).fill(2), 1, 1]
     });
     this.port.onmessageerror = (e) => alert("adfasfd", e.message); // e; // e.message;
   }
-
-  keyOn(channel, zone, key, vel) {
-    this.port.postMessage([
-      0x0090,
-      channel,
-      zone.ref,
-      zone.calcPitchRatio(key, this.context.sampleRate),
-      vel,
-    ]);
-  }
-  keyOff(channel, key, vel) {
-    this.port.postMessage([0x80, channel, key, vel]);
-  }
-
   async shipProgram(sf2program, presetId) {
-    await requestDownload(sf2program, this.port);
+    await sf2program.fetch_drop_ship_to(this.port);
     await this.postZoneAttributes(sf2program, presetId);
   }
   async postZoneAttributes(sf2program, presetId) {

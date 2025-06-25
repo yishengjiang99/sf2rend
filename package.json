@@ -3,21 +3,29 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "build": "webpack"
+    "build": "webpack",
+    "test": "npm run deploy",
+    "deploy": "npm run build; ls main.js; git add -A; git commit -m 'prog'; git submodule.sync; git push"
   },
   "keywords": [],
   "author": "Yisheng Jiang",
-  "license": "ISC",
+  "license": "do-not-use",
   "devDependencies": {
-    "eslint": "^8.36.0",
+    "eslint": "^8.40.0",
+    "eslint-plugin-chai": "^0.0.1",
+    "eslint-plugin-mocha": "^10.1.0",
     "eslint-plugin-react": "^7.32.2",
-    "typescript": "^4.9.5",
-    "webpack": "^5.50.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "webpack": "^5.78.0",
     "webpack-cli": "^4.10.0"
   },
   "dependencies": {
-    "mk-60fps": "^1.1.0",
-    "pupeteer": "^0.0.1",
-    "puppeteer": "^19.7.5"
+    "@babel/preset-env": "^7.21.4",
+    "@babel/preset-react": "^7.18.6",
+    "babel-loader": "^9.1.2",
+    "css-loader": "^6.7.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "style-loader": "^3.3.2"
   }
 }

@@ -1,10 +1,10 @@
-import { mkcanvas, chart } from "./node_modules/mk-60fps/chart.js";
+import {mkcanvas, chart} from "./chart/chart.js";
 import { mkdiv } from "https://unpkg.com/mkdiv@3.1.0/mkdiv.js";
 import { mkpath } from "./src/mkpath.js";
 import SF2Service from "./sf2-service/index.js";
 import { newSFZone } from "./sf2-service/zoneProxy.js";
 
-const sf2url = "file.sf2";
+const sf2url = "static/GeneralUserGS.sf2";
 
 const sf2file = new SF2Service(sf2url);
 const loadWait = sf2file.load();
@@ -20,13 +20,19 @@ let program,
   audioPath,
   volMeters;
 
-renderMain();
+renderMain().then(() => {
+  if (document.hash != "") rendProgram();
+});
+
 window.addEventListener("hashchange", rendProgram);
+
 async function renderMain() {
   await loadWait;
+  await startSpinner();
+
   document.body.innerHTML = "";
   mkdiv("nav", [
-    (volMeters = mkdiv("div", { id: "volmeter", style: "min-height:2em" })),
+    (volMeters = mkdiv("div", {id: "volmeter", style: "min-height:2em"})),
     mkdiv("div", [
       mkdiv(
         "button",
@@ -40,7 +46,7 @@ async function renderMain() {
       mkdiv(
         "button",
         {
-          onclick: () => spinner.port.postMessage({ cmd: "panic" }),
+          onclick: () => audioPath.silenceAll(),
         },
         "panick"
       ),
@@ -48,16 +54,16 @@ async function renderMain() {
   ]).attachTo(document.body);
   const progList = mkdiv(
     "ul",
-    { class: "notes-list" },
+    {class: "notes-list"},
     sf2file.programNames.map((n, presetId) =>
       mkdiv(
         "div",
-        { class: "menu-link" },
-        mkdiv("a", { href: `#${presetId}` }, n)
+        {class: "menu-link"},
+        mkdiv("a", {href: `#${presetId}`}, n)
       )
     )
   );
-  rightPanel = mkdiv("div", { class: "col note-viewer" }, []);
+  rightPanel = mkdiv("div", {class: "col note-viewer"}, []);
   const leftNav = mkdiv(
     "section",
     {
@@ -66,53 +72,55 @@ async function renderMain() {
     [
       mkdiv(
         "section",
-        { class: "sidebar-header" },
+        {class: "sidebar-header"},
         sf2file.url.split("/").pop()
       ),
       mkdiv("nav", {}, progList),
     ]
   );
-  const vrPanel = mkdiv("div", { class: "col" });
-  main = mkdiv("div", { class: "main" }, [leftNav, rightPanel, vrPanel]);
+  const vrPanel = mkdiv("div", {class: "col"});
+  main = mkdiv("div", {class: "main"}, [leftNav, rightPanel, vrPanel]);
   document.body.append(main);
 }
 
 async function rendProgram() {
-  const presetId = document.location.hash.substring(1).split("|");
-  const intpre = parseInt(presetId);
+  const hashId = document.location.hash.substring(1).split("|");
+  const intpre = parseInt(hashId[0]);
   const pid = intpre;
   const bid = 0;
+  const zoneRef = hashId[1];
 
   program = sf2file.loadProgram(pid, bid);
-
-  if (!zone) zone = program.filterKV(55, 98)[0];
+  if (!zone)
+    zone = zoneRef
+      ? program.zMap.find((z) => z.ref == zoneRef)[0]
+      : program.filterKV(55, 98)[0];
 
   const kRangeList = program.zMap.map(
     (z) =>
-      `<option value=${z.ref} ${z.ref + "" == zone.ref ? "selected" : ""}>${
-        z.Unused1 + "|" + z.Unused2
-      } ${
-        "key " +
+      `<option value=${z.ref} ${z.ref + "" == zone?.ref ? "selected" : ""}>${z.Unused1 + "|" + z.Unused2
+      } ${"key " +
         [z.KeyRange.lo, z.KeyRange.hi].join("-") +
         " vel " +
         [z.VelRange.lo, z.VelRange.hi].join("-")
       }</option>`
   );
-  const articleHeader = mkdiv("div", { class: "note-header" }, [
+  const articleHeader = mkdiv(
+    "div",
+    {class: "note-header"},
+
     mkdiv(
-      "div",
-      { class: "note-menu" },
-      mkdiv(
-        "select",
-        {
-          oninput: (e) =>
-            renderZ(program.zMap.filter((z) => e.target.value)[0]),
+      "select",
+      {
+        oninput: (e) => {
+          renderZ(program.zMap.filter((z) => z.ref == e.target.value)[0]);
+          window.location.hash = "#" + pid + "|" + e.target.value;
         },
-        kRangeList
-      )
-    ),
-  ]);
-  articleMain = mkdiv("div", { class: "note-preview" }, [
+      },
+      kRangeList
+    )
+  );
+  articleMain = mkdiv("div", {class: "note-preview"}, [
     mkdiv(
       "div",
       {
@@ -122,16 +130,15 @@ async function rendProgram() {
       []
     ),
   ]);
-  const mainRight = mkdiv("div", { class: "note" }, [
-    mkdiv("div", { class: "note-title" }, [sf2file.programNames[presetId]]),
+  const mainRight = mkdiv("div", {class: "note"}, [
+    mkdiv("div", {class: "note-title"}, [sf2file.programNames[hashId]]),
     articleHeader,
   ]);
   rightPanel.replaceChildren(mainRight, articleMain);
 
-  canvas = mkcanvas({ container: articleHeader });
-  await startSpinner();
+  canvas = mkcanvas({container: articleHeader});
   await spinner.shipProgram(program);
-  renderZ(zone);
+  if (zone) renderZ(zone);
 }
 async function renderZ(zoneSelect) {
   if (!zoneSelect) {
@@ -176,7 +183,7 @@ function renderSampleView(zoneSelect) {
 //drawEV(zone.arr.slice(33, 39), volEGCanvas);
 function min_max_vals(k) {
   if (k.includes("Sustain")) {
-    return { min: 0, max: 1000, step: 10 };
+    return {min: 0, max: 1000, step: 10};
   } else
     return {
       min: -12000,
@@ -184,7 +191,7 @@ function min_max_vals(k) {
       step: 10,
     };
 }
-function renderLPFView(zone) {}
+function renderLPFView(zone) { }
 function renderArticle(keyword, zone) {
   let canvas;
   const zoneObj = newSFZone(zone);
@@ -195,13 +202,13 @@ function renderArticle(keyword, zone) {
     zattrs.map(([k, v]) =>
       mkdiv("li", [
         mkdiv("label", [k, ":"]),
-        mkdiv("label", [v]),
+        mkdiv("code", [v]),
         mkdiv("input", {
           type: "range",
           ...min_max_vals(k),
           value: v,
           oninput: (e) => {
-            e.target.parentElement.querySelector("label").textContent =
+            e.target.parentElement.querySelector("code").textContent =
               e.target.value;
             zoneObj[k] = e.target.value;
             if (canvas) drawEV(zoneObj, canvas);
@@ -211,9 +218,9 @@ function renderArticle(keyword, zone) {
     )
   );
   const details = mkdiv("div");
-  const article = mkdiv("article", { class: "article" }, [attrVals, details]);
+  const article = mkdiv("article", {class: "article"}, [attrVals, details]);
   if (keyword === "VolEnv") {
-    canvas = mkcanvas({ container: details, title: "amp eg" });
+    canvas = mkcanvas({container: details, title: "amp eg"});
     drawEV(zoneObj, canvas);
   }
   return article;
@@ -221,12 +228,11 @@ function renderArticle(keyword, zone) {
 let ctx;
 async function startSpinner() {
   ctx = new AudioContext();
-  const audioPath = await mkpath(ctx);
+  audioPath = await mkpath(ctx);
   await audioPath.startAudio();
   spinner = audioPath.spinner;
-  if (program) await spinner.shipProgram(program);
 
-  spinner.port.onmessage = ({ data }) => {
+  spinner.port.onmessage = ({data}) => {
     if (data.currentFrame) {
       volMeters.innerHTML = data.currentFrame;
     }
@@ -242,11 +248,11 @@ async function rendSample(e, zoneObj) {
   if (ctx.state !== "running") await ctx.resume();
   if (!zoneObj) return;
   if (!spinner) startSpinner();
-  const { arr, ref } = zoneObj;
+  const {arr, ref} = zoneObj;
   if (zoneObj.isDirty) {
     spinner.port.postMessage({
       cmd: "newZone",
-      zone: { arr, ref },
+      zone: {arr, ref},
     });
     zoneObj.lastSync = new Date();
   }
@@ -255,9 +261,9 @@ async function rendSample(e, zoneObj) {
   spinner.port.postMessage([
     0x90,
     0,
-    zoneObj.ref,
     zoneObj.calcPitchRatio(55, spinner.context.sampleRate),
     122,
+    [program.presetId, ref],
   ]);
   e.target.addEventListener(
     "mouseup",
@@ -265,7 +271,7 @@ async function rendSample(e, zoneObj) {
       spinner.port.postMessage([0x80, 0, 123]);
       e.target.innerText = "play";
     },
-    { once: true }
+    {once: true}
   );
 }
 const drawEV = async (zone, target) => {
