@@ -193,6 +193,7 @@ void advanceStage(EG* eg) {
 
 void _eg_release(EG* e) {
   e->nsteps = 0;
+  e->hasReleased = 1;
   e->stage = sustain;
   advanceStage(e);
 }
