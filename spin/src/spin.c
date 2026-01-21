@@ -92,7 +92,7 @@ float trigger_attack(spinner *x, uint32_t key, uint32_t velocity) {
                     : z->VolEnvRelease * scaleFactor;
   eg->sustain = (ccval(VCA_SUSTAIN_LEVEL) > 0)
                     ? (short)(ccval(VCA_SUSTAIN_LEVEL) / 128.f * 1000.f)
-                    : z->VolEnvRelease * scaleFactor;
+                    : z->VolEnvSustain;
 
   eg->delay = z->VolEnvDelay * scaleFactor;
   eg->hold = z->VolEnvHold * scaleFactor;
@@ -105,7 +105,7 @@ float trigger_attack(spinner *x, uint32_t key, uint32_t velocity) {
     x->is_looping = 0;
   }
 
-  eg->delay = z->ModEnvDecay * scaleFactor;
+  eg->delay = z->ModEnvDelay * scaleFactor;
   eg->hold = z->ModEnvHold * scaleFactor;
   eg->attack = (ccval(VCF_ATTACK_TIME) > 0)
                    ? midi_p1200[ccval(VCF_ATTACK_TIME) | 0]
@@ -118,7 +118,7 @@ float trigger_attack(spinner *x, uint32_t key, uint32_t velocity) {
                     : z->ModEnvRelease * scaleFactor;
   eg->sustain = (ccval(VCF_SUSTAIN_LEVEL) > 0)
                     ? (short)(ccval(VCF_SUSTAIN_LEVEL) / 128.f * 1000.f)
-                    : z->ModEnvRelease * scaleFactor;
+                    : z->ModEnvSustain;
 
   x->pitch_dff_log = calc_pitch_diff_log(x->zone, x->pcm, x->key);
 

@@ -6,7 +6,7 @@
   "main": "spin.js",
   "scripts": {
     "build": "sh build.sh",
-    "test": "gcc src/eg.test.c; ./a.out"
+    "test": "gcc src/eg.test.c -lm; ./a.out"
   },
   "keywords": [],
   "author": "Yisheng Jiang",
