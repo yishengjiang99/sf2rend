@@ -279,7 +279,8 @@ const drawEV = async (zone, target) => {
   const [delay, att, hold, decay, sustain, release] = zone.arr.slice(33, 39);
   console.log(delay, att, hold, decay, sustain, release);
   const tc2time = (t) => Math.pow(2, t / 1200);
-  const ctx = new OfflineAudioContext(1, 6000, 3000);
+  const OfflineAudioContextClass = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  const ctx = new OfflineAudioContextClass(1, 6000, 3000);
   const amp = new GainNode(ctx, { gain: 0 });
   const o = new ConstantSourceNode(ctx, { offset: 0.2 });
   o.connect(new DelayNode(ctx, { delayTime: tc2time(delay) }));

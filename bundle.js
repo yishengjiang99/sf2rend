@@ -1469,7 +1469,8 @@ async function main(sf2file) {
   };
   const {mkpath} = await import('./mkpath-ee34b563.js');
 
-  ctx = new AudioContext();
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  ctx = new AudioContextClass();
   const apath = await mkpath(ctx);
   const spinner = apath.spinner;
   sf2select.value = sf2file;
