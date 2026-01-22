@@ -138,12 +138,14 @@ body {
 
 /* Left Sidebar - Tracks */
 .gb-sidebar {
-  width: 250px;
+  width: 280px;
+  min-width: 250px;
   background: linear-gradient(180deg, #2d2d2d 0%, #252525 100%);
   border-right: 1px solid #000;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
 }
 
 .gb-sidebar-header {
@@ -232,9 +234,8 @@ body {
 main {
   display: flex;
   flex-grow: 1;
-  min-height: 600px;
-  height: auto !important;
-  height: 600px;
+  min-height: 0;
+  height: auto;
 }
 
 .fixed-top-right {
@@ -256,12 +257,15 @@ main {
 }
 
 .knob-set {
-  background-color: #323233;
+  background: linear-gradient(180deg, #323233 0%, #2a2a2a 100%);
   color: white;
   margin-top: 2em;
   padding: 20px;
   display: flex;
   max-width: fit-content;
+  border-radius: 8px;
+  border: 1px solid #444;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .ctrls {
@@ -294,8 +298,9 @@ main {
 }
 
 #stdout {
-  position: absolute;
-  right: 0;
+  font-size: 12px;
+  color: #999;
+  font-family: 'Monaco', 'Menlo', monospace;
 }
 
 .amp-indicate {
