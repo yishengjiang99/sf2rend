@@ -227,7 +227,8 @@ function renderArticle(keyword, zone) {
 }
 let ctx;
 async function startSpinner() {
-  ctx = new AudioContext();
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  ctx = new AudioContextClass();
   audioPath = await mkpath(ctx);
   await audioPath.startAudio();
   spinner = audioPath.spinner;
