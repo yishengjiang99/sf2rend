@@ -106,7 +106,10 @@ const midiSelect = mkdiv2({
 
 midiSelect.attachTo($("#midilist"));
 midiSelect.addEventListener("input", (e) => onMidionURLSelect(e.target.value));
-ctx = new AudioContext({
+
+// Cross-browser AudioContext support for Safari and other browsers
+const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+ctx = new AudioContextClass({
   sampleRate: 44100,
 });
 
