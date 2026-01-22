@@ -10,7 +10,9 @@ describe("mkpath", function () {
     sf.loadProgram(0, 128);
   });
   beforeEach(async () => {
-    ctx = new OfflineAudioContext(1, 4800, 4800);
+    // Cross-browser OfflineAudioContext support for Safari and other browsers
+    const OfflineAudioContextClass = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    ctx = new OfflineAudioContextClass(1, 4800, 4800);
     path = await mkpath();
   }),
     it("makes audio path from sf2file to hardward thread", async () => {

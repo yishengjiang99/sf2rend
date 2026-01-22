@@ -6,7 +6,9 @@ import {
   chart,
 } from "https://unpkg.com/mk-60fps@1.1.0/chart.js";
 async function m() {
-  const ctx = new OfflineAudioContext(1, 2300, 48000);
+  // Cross-browser OfflineAudioContext support for Safari and other browsers
+  const OfflineAudioContextClass = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  const ctx = new OfflineAudioContextClass(1, 2300, 48000);
   await LowPassFilterNode.init(ctx);
   const lp = new LowPassFilterNode(ctx);
   const [op1, op2] = [

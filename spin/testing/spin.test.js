@@ -3,7 +3,9 @@ import SF2Service from "../../sf2-service/sf2.js";
 import {subScribeEvent} from '../../src/subScribeEvent.js';
 
 apromise_test(async () => {
-  const ctx = new AudioContext();
+  // Cross-browser AudioContext support for Safari and other browsers
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  const ctx = new AudioContextClass();
   await SpinNode.init(ctx).catch(console.trace);
 
   const spinner = new SpinNode(ctx, "../../static/file.sf2");

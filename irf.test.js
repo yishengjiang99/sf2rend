@@ -5,7 +5,9 @@ import {mkpath2} from './src/mkpath.js';
 
 
 async function zone() {
-    const ctx = new AudioContext();
+    // Cross-browser AudioContext support for Safari and other browsers
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AudioContextClass();
     const apath = await mkpath2(ctx, {sf2File: "file.sf2"});
 
     const program = await apath.loadProgram(0, 0);
