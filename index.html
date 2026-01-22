@@ -20,43 +20,77 @@
   <link href="fontawesome/css/all.min.css" rel="stylesheet" />
 </head>
 
-<body class="sans-serif space-between" style="height:auto !important">
-  <header>
-    <i class="fa-regular fa-user"></i>
-    <select id="sf2select" aria-placeholder="dafds">
-      <option>Select SF2 File</option>
-    </select> 
-    <span id="midilist"></span>
-   <span id="ctrls"> </span>
-    <input type="file" tabindex="0" value="send file" id="file-btn" accept=".mid" />
-    <div id="ch_ctrl_bar"></div> 
+<body class="sans-serif" style="height:100vh !important">
+  <!-- Top Toolbar -->
+  <header class="gb-toolbar">
+    <div class="gb-toolbar-left">
+      <i class="fa-regular fa-user"></i>
+      <select id="sf2select" class="gb-select">
+        <option>Select SF2 File</option>
+      </select>
+    </div>
+    <div class="gb-toolbar-center">
+      <span id="midilist"></span>
+      <span id="ctrls"></span>
+    </div>
+    <div class="gb-toolbar-right">
+      <input type="file" tabindex="0" value="send file" id="file-btn" accept=".mid" class="gb-file-btn" />
+    </div>
   </header>
-  <section>    <span id="sequenceroot"></span>
-  </section>
-  <div id="channelContainer"></div>
 
-  <div id="analyze"></div>
-  <div id="debug"></div>
-  <footer class="">
-    <div id="stdout"></div>
+  <!-- Main Content Area -->
+  <div class="gb-main-container">
+    <!-- Left Sidebar - Track Controls -->
+    <aside class="gb-sidebar">
+      <div class="gb-sidebar-header">
+        <h3>Tracks</h3>
+      </div>
+      <div id="channelContainer" class="gb-tracks"></div>
+    </aside>
+
+    <!-- Center Workspace -->
+    <main class="gb-workspace">
+      <div class="gb-workspace-header">
+        <h3>Timeline</h3>
+      </div>
+      <section class="gb-timeline">
+        <span id="sequenceroot"></span>
+      </section>
+      <div id="ch_ctrl_bar"></div>
+      <div id="analyze"></div>
+      <div id="debug"></div>
+    </main>
+  </div>
+
+  <!-- Bottom Control Bar -->
+  <footer class="gb-footer">
+    <div class="gb-footer-left">
+      <div id="eq"></div>
+    </div>
+    <div class="gb-footer-center">
+      <div id="stdout"></div>
+    </div>
+    <div class="gb-footer-right">
+      <a href="https://github.com/yishengjiang99/sf2rend" class="gb-link">GitHub</a>
+    </div>
     <datalist id="programs"></datalist>
     <datalist id="drums"></datalist>
-    <div><a href="https://github.com/yishengjiang99/sf2rend">https://github.com/yishengjiang99/sf2rend</a></div>
-    <div id="eq"></div>
-
   </footer>
+
   <script type="module" src="./src/index.js"></script>
-  <template> <svg width="2200" height="1600">
+  <template>
+    <svg width="2200" height="1600">
       <defs>
         <pattern id="tenthGrid" width="100" height="110" patternUnits="userSpaceOnUse">
-          <rect width="10" height="20" stroke='gold' fill="yellow" />
+          <rect width="10" height="20" stroke="gold" fill="yellow" />
         </pattern>
         <pattern id="grid" width="500" height="1001" patternUnits="userSpaceOnUse">
           <rect width="500" height="100" stroke="gold" fill="url(#tenthGrid)" />
         </pattern>
       </defs>
       <rect width="100%" height="100%" fill="url(#grid)" />
-    </svg></template>
+    </svg>
+  </template>
 </body>
 
 </html>
