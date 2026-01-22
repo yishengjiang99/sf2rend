@@ -55,17 +55,187 @@ body {
   padding: 0;
   max-width: 100vw;
   overflow-x: hidden;
-  height: 100%;
+  height: 100vh;
   display: flex;
   flex-direction: column;
+  background: #1a1a1a;
+  color: #e0e0e0;
+}
+
+/* GarageBand-Style Toolbar */
+.gb-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(180deg, #3a3a3a 0%, #2a2a2a 100%);
+  border-bottom: 1px solid #000;
+  padding: 8px 16px;
+  height: 50px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.gb-toolbar-left,
+.gb-toolbar-center,
+.gb-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gb-toolbar i {
+  color: #ddd;
+  font-size: 20px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.gb-toolbar i:hover {
+  color: #fff;
+}
+
+.gb-select {
+  background: #222;
+  color: #ddd;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.gb-select:hover {
+  border-color: #666;
+}
+
+.gb-select:focus {
+  border-color: #0a84ff;
+}
+
+.gb-file-btn {
+  background: #0a84ff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.2s;
+}
+
+.gb-file-btn:hover {
+  background: #0070e0;
+}
+
+/* Main Container */
+.gb-main-container {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  background: #1a1a1a;
+}
+
+/* Left Sidebar - Tracks */
+.gb-sidebar {
+  width: 280px;
+  min-width: 250px;
+  background: linear-gradient(180deg, #2d2d2d 0%, #252525 100%);
+  border-right: 1px solid #000;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+}
+
+.gb-sidebar-header {
+  background: #1f1f1f;
+  padding: 12px 16px;
+  border-bottom: 1px solid #000;
+}
+
+.gb-sidebar-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ddd;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.gb-tracks {
+  flex: 1;
+  padding: 8px;
+}
+
+/* Center Workspace */
+.gb-workspace {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #1a1a1a;
+  overflow: hidden;
+}
+
+.gb-workspace-header {
+  background: #1f1f1f;
+  padding: 12px 16px;
+  border-bottom: 1px solid #000;
+}
+
+.gb-workspace-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ddd;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.gb-timeline {
+  flex: 1;
+  background: #222;
+  overflow: auto;
+  padding: 16px;
+}
+
+/* Footer Control Bar */
+.gb-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(180deg, #2a2a2a 0%, #1f1f1f 100%);
+  border-top: 1px solid #000;
+  padding: 8px 16px;
+  height: 50px;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.gb-footer-left,
+.gb-footer-center,
+.gb-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gb-link {
+  color: #0a84ff;
+  text-decoration: none;
+  font-size: 12px;
+  transition: color 0.2s;
+}
+
+.gb-link:hover {
+  color: #409cff;
+  text-decoration: underline;
 }
 
 main {
   display: flex;
   flex-grow: 1;
-  min-height: 600px;
-  height: auto !important;
-  height: 600px;
+  min-height: 0;
+  height: auto;
 }
 
 .fixed-top-right {
@@ -87,12 +257,15 @@ main {
 }
 
 .knob-set {
-  background-color: #323233;
+  background: linear-gradient(180deg, #323233 0%, #2a2a2a 100%);
   color: white;
   margin-top: 2em;
   padding: 20px;
   display: flex;
   max-width: fit-content;
+  border-radius: 8px;
+  border: 1px solid #444;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .ctrls {
@@ -101,27 +274,33 @@ main {
 }
 
 .onoff_indicate::after {
-  content: "(" + attr(name) + ")";
+  content: "(" attr(name) ")";
 }
 
 .channelCard {
   position: relative;
-  border: 1px;
-  padding: 3px;
-  border: black solid 1px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 8px;
+  transition: all 0.2s;
 }
 
 .channelCard:nth-child(2n) {
-  background-color: #222;
+  background: #252525;
 }
 
 .channelCard:hover {
- // background-color: #333333;
+  background: #333;
+  border-color: #555;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 #stdout {
-  position: absolute;
-  right: 0;
+  font-size: 12px;
+  color: #999;
+  font-family: 'Monaco', 'Menlo', monospace;
 }
 
 .amp-indicate {
@@ -138,8 +317,13 @@ main {
 }
 #ch_ctrl_bar {
   position: absolute;
-  top: 20vh;
-  right:10em;
+  top: 16px;
+  right: 16px;
+  background: rgba(42, 42, 42, 0.95);
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
 
 .keyboard {
