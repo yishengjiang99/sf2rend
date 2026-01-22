@@ -1,91 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WASM MIDI Synth/Player</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="minidark.css" />
-  <link rel="stylesheet" href="src/collapsible.css" />
-  <script src="https://kit.fontawesome.com/d43066eba1.js" crossorigin="anonymous"></script>
-
-  <script src="dist/sequence.js"></script>
-  <link href="fontawesome/css/all.min.css" rel="stylesheet" />
-</head>
-
-<body class="sans-serif" style="height:100vh !important">
-  <!-- Top Toolbar -->
-  <header class="gb-toolbar">
-    <div class="gb-toolbar-left">
-      <i class="fa-regular fa-user"></i>
-      <select id="sf2select" class="gb-select">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MIDI Rendering with SoundFont2</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="minidark.css" />
+    <script defer="defer" src="sequence/build/static/js/bundle.js"></script>
+    <link href="sequence/build/static/css/main.css" rel="stylesheet" />
+    <link rel="stylesheet" href="src/collapsible.css" />
+    </head>
+    <body class="sans-serif" style="padding: 0 30px">
+    <header class="sticky" style="display: flex; justify-content: space-between">
+      <span> Rendering MIDI with Javascript/WebAssembly </span>
+      <div id="midilist"></div>
+      <select class="antd-select" id="sf2select">
         <option>Select SF2 File</option>
       </select>
-    </div>
-    <div class="gb-toolbar-center">
-      <span id="midilist"></span>
-      <span id="ctrls"></span>
-    </div>
-    <div class="gb-toolbar-right">
-      <input type="file" tabindex="0" value="send file" id="file-btn" accept=".mid" class="gb-file-btn" />
-    </div>
-  </header>
-
-  <!-- Main Content Area -->
-  <div class="gb-main-container">
-    <!-- Left Sidebar - Track Controls -->
-    <aside class="gb-sidebar">
-      <div class="gb-sidebar-header">
-        <h3>Tracks</h3>
-      </div>
-      <div id="channelContainer" class="gb-tracks"></div>
-    </aside>
-
-    <!-- Center Workspace -->
-    <main class="gb-workspace">
-      <div class="gb-workspace-header">
-        <h3>Timeline</h3>
-      </div>
-      <section class="gb-timeline">
-        <span id="sequenceroot"></span>
-      </section>
-      <div id="ch_ctrl_bar"></div>
-      <div id="analyze"></div>
-      <div id="debug"></div>
+      <span id="ctrls"> </span>
+    </header>
+    <main class="hidden main container">
+      <div class="row">
+        <div class="col-md-6">
+          <div id="channelContainer"></div>
+          <div id="sequenceroot"></div>
+        </div>
+        <div class="col-md-6">
+          <div id="stdout"></div>
+          <div id="analyze"></div>
+        </div>
+        </div>
     </main>
-  </div>
-
-  <!-- Bottom Control Bar -->
-  <footer class="gb-footer">
-    <div class="gb-footer-left">
-      <div id="eq"></div>
-    </div>
-    <div class="gb-footer-center">
-      <div id="stdout"></div>
-    </div>
-    <div class="gb-footer-right">
-      <a href="https://github.com/yishengjiang99/sf2rend" class="gb-link">GitHub</a>
-    </div>
+    <footer></footer>
     <datalist id="programs"></datalist>
     <datalist id="drums"></datalist>
-  </footer>
-
-  <script type="module" src="./src/index.js"></script>
-  <template>
-    <svg width="2200" height="1600">
-      <defs>
-        <pattern id="tenthGrid" width="100" height="110" patternUnits="userSpaceOnUse">
-          <rect width="10" height="20" stroke="gold" fill="yellow" />
-        </pattern>
-        <pattern id="grid" width="500" height="1001" patternUnits="userSpaceOnUse">
-          <rect width="500" height="100" stroke="gold" fill="url(#tenthGrid)" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#grid)" />
-    </svg>
-  </template>
-</body>
-
+    <script type="module" src="./src/index.js"></script>
+    </body>
 </html>
