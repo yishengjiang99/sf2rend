@@ -138,8 +138,8 @@ body {
 
 /* Left Sidebar - Tracks */
 .gb-sidebar {
-  width: 66.67%;
-  min-width: 66.67%;
+  width: 66.67%; /* 2/3 of screen width */
+  min-width: 400px; /* Ensure usability on smaller screens */
   background: linear-gradient(180deg, #2d2d2d 0%, #252525 100%);
   border-right: 1px solid #000;
   display: flex;

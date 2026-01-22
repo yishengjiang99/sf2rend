@@ -16,6 +16,7 @@ body{
   position: fixed;
   right: 0;
   top: 70px;
+  /* Height accounts for header (50px) + footer (50px) + padding (20px) */
   height: calc(100vh - 120px);
   overflow-x: hidden;
   overflow-y: scroll;
