@@ -280,10 +280,10 @@ export function mkui(
                   }),
                   ...(index == 43 || index == 44
                     ? [
-                        zmap[attributeKeys[index]].lo,
-                        "-",
-                        zmap[attributeKeys[index]].hi,
-                      ]
+                      zmap[attributeKeys[index]].lo,
+                      "-",
+                      zmap[attributeKeys[index]].hi,
+                    ]
                     : []),
                 ]),
               ])
@@ -391,6 +391,7 @@ export function mkui(
 
   const mkKeyboard = mkdiv("piano-keyboard", {
     props: {
+      style: "display:none",
       eventPipe,
       get_active_channel_fn: () => _activeChannel,
     },
@@ -399,7 +400,7 @@ export function mkui(
   tb.attachTo(container);
 
   return {
-    mkKeyboard,
+    // mkKeyboard,
     controllers,
     get activeChannel() {
       return _activeChannel;

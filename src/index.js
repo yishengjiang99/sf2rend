@@ -133,7 +133,7 @@ export const ui = mkui(eventPipe, $("#channelContainer"), {
       return data.zack == "update" && data.ref == editData.update[1];
     });
   },
-  onTrackClick: (tt) => {},
+  onTrackClick: (tt) => { },
   onAddChannel: () => channels[nextChannel++].setProgram(0, nextChannel << 3),
 });
 
