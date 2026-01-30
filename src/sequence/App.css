@@ -1,0 +1,25 @@
+body{
+  margin:0;
+  padding:0;
+}
+:root{
+  --timer-ticks:0;
+  --ppqn: 240;
+  --pxqn: 20;
+  --canvas-width: 70;
+}
+.canvas_container {
+  transform: translateX(calc(var(--timer-ticks)/var(--ppqn)*var(--pxqn) * -1px));
+}
+.canvas_window {
+  width: calc(var(--canvas-width) * 1vw);
+  position: fixed;
+  right: 0;
+  top: 70px;
+  /* Height accounts for header (50px) + footer (50px) + padding (20px) */
+  height: calc(100vh - 120px);
+  overflow-x: hidden;
+  overflow-y: scroll;
+  z-index: -1;
+  pointer-events: none;
+}

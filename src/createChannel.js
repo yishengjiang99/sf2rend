@@ -1,73 +1,58 @@
-import { midi_ch_cmds } from "./constants.js";
+import { DRUMSCHANNEL, midi_ch_cmds, midi_effects, nvpc } from "./constants.js";
 
-export function createChannel(uiController, channelId, sf2, spinner) {
+export function createChannel(uiController, channelId, sf2, apath) {
   let _sf2 = sf2;
   let program;
-  const key_on_map = [];
+  let bankId = channelId == DRUMSCHANNEL ? 128 : 0;
 
+  const spinner = apath.spinner;
+  const kd_map = Array(nvpc).fill(0);
+  let ct_cnt = 0;
   return {
     setSF2(sf2) {
       _sf2 = sf2;
     },
     async setProgram(pid, bid) {
+      this.presetId = pid | bid;
       program = _sf2.loadProgram(pid, bid);
+      if (!program) {
+        alert(bid + " " + pid + " no found");
+        uiController.hidden = true;
+        return;
+      }
       await spinner.shipProgram(program, pid | bid);
+      uiController.hidden = false;
       uiController.name = program.name;
-      uiController.presetId = pid;
+      uiController.presetId = this.presetId;
+      uiController.zone = program.filterKV(60, 60)[0];
+      return program;
     },
-    setCC({ key, vel }) {
-      spinner.port.postMessage([0xb0, channelId, key, vel]);
-      uiController.CC = { key, value: vel };
+    setCC({ cc, val }) {
+      if (cc === midi_effects.bankselectcoarse) {
+        alert("bank seleec to " + val);
+        bankId |= val << 7;
+      } else if (cc === midi_effects.bankselectfine) {
+        bankId |= val;
+      }
+      uiController.CC = {key: cc, value: val};
     },
     keyOn(key, vel) {
-      console.log("ch chan ", channelId);
       const zones = program.filterKV(key, vel);
-      zones.slice(0, 2).map((zone, i) => {
-        console.log("zone", i);
-        key_on_map[key] = channelId * 2 + i;
+      zones.map((zone, i) => {
         spinner.port.postMessage([
           midi_ch_cmds.note_on,
-          channelId * 2 + i,
-          zone.ref,
-          zone.calcPitchRatio(key, spinner.context.sampleRate),
+          channelId,
+          key,
           vel,
+          zone.arr,
         ]);
       });
 
-      // zones[0].shdr.data().then((pcm) => {
-      //   const abc = new AudioBufferSourceNode(spinner.context, {
-      //     buffer: spinner.context.createBuffer(1, pcm.length, 48000),
-      //     playbackRate: zones[0].calcPitchRatio(
-      //       key,
-      //       spinner.context.sampleRate
-      //     ),
-      //     loop: true,
-      //     gain: 1,
-      //   });
-      //   abc.connect(spinner.context.destination);
-      //   abc.start(0);
-      //   abc.stop(3);
-      // });
-      // zones.slice(2, 2).map((zone, i) => {
-      //   spinner.keyOn(channelId * 2 + 2 + i, zone, key, vel);
-      // });
-
       if (!zones[0]) return;
-      requestAnimationFrame(() => {
-        uiController.active = true;
-        uiController.velocity = vel;
-        uiController.midi = key;
-        //  uiController.zone = zones[0];
-      });
       return zones[0];
     },
     keyOff(key, vel) {
-      if (!key_on_map[key]) return;
-      while (key_on_map[key].length) {
-        spinner.keyOff(key_on_map[key].shift(), key, vel);
-      }
-      //      spinner.keyOff(channelId * 2 + 1, key, vel);
-
+      spinner.port.postMessage([midi_ch_cmds.note_off, channelId, key, vel]);
       requestAnimationFrame(() => (uiController.active = false));
     },
   };

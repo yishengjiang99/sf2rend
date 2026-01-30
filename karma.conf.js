@@ -13,6 +13,10 @@ module.exports = function (config) {
     // list of files / patterns to load in the browser
     files: [
       {
+        pattern: "node_modules/mkspin/spin.js",
+        type: "module", include: false, served: true
+      },
+      {
         pattern: "test/**/*.js",
         type: "module",
       },

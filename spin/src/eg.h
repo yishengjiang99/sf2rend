@@ -1,8 +1,12 @@
 #ifndef EG_H
 #define EG_H
-
 #include "calc.h"
-#include "sf2.h"
+#include "fix_point_12.h"
+#if !defined(maxeg)
+#define maxeg
+#define MAX_EG -1440.f
+
+#endif  // maxeg
 
 enum eg_stages {
   inactive = 0,  //
@@ -19,11 +23,27 @@ typedef struct {
   float egval, egIncrement;
   int hasReleased, stage, nsteps;
   short delay, attack, hold, decay, sustain, release, pad1, pad2;
+  int progress, progressInc;  // add prog scale to use LUT
 } EG;
 
 void advanceStage(EG* eg);
 float update_eg(EG* eg, int n);
 
+void eg_roll(EG* eg, int n, float* output) {
+  while (n-- && eg->nsteps--) {
+    if (eg->stage == attack) {
+      int lut_index = fixed_floor(eg->progress);
+      double frag = get_fraction(eg->progress);
+      double f1 = att_db_levels[lut_index], f2 = att_db_levels[lut_index + 1];
+      eg->egval = lerpd(f1, f2, frag);
+    } else {
+      eg->egval += eg->egIncrement;
+    }
+    *output++ = eg->egval;
+  }
+  if (eg->egval > 0) eg->egval = 0.0f;
+  if (eg->nsteps <= 7) advanceStage(eg);
+}
 /**
  * advances envelope generator by n steps..
  * shift to next stage and advance the remaining n steps
@@ -31,83 +51,52 @@ float update_eg(EG* eg, int n);
  *
  */
 float update_eg(EG* eg, int n) {
-  if (eg->stage == done) return 0.0f;  // should not occur
-  if (eg->egval < -1360.0f) {
-    eg->stage = done;
-    return eg->egval;
+  while (n--) {
+    eg->egval += eg->egIncrement;
+    eg->nsteps--;
   }
-  int n1 = n > eg->nsteps ? eg->nsteps : n;
-  if (eg->nsteps != 0xffff) {
-    eg->nsteps -= n1;
-
-    eg->egval += eg->egIncrement * n1;
-  }
-
-  if (n1 == n) return eg->egval;
-
-  int leftover = n - n1 - 1;
-  advanceStage(eg);
-  if (leftover > 0) return update_eg(eg, leftover);
+  if (eg->nsteps <= 7) advanceStage(eg);
+  if (eg->egval > 0) eg->egval = 0.0f;
   return eg->egval;
 }
+
 void advanceStage(EG* eg) {
   switch (eg->stage) {
-    case inactive:  // cannot advance
+    case inactive:
       eg->stage++;
       return;
     case init:
-      eg->egval = -960.0f;
-      eg->stage++;
-      if (eg->delay > -11500) {
+      eg->stage = delay;
+      if (eg->delay > -12000) {
+        eg->egval = MAX_EG;
         eg->nsteps = timecent2sample(eg->delay);
-        eg->egval = -960.0f;
         eg->egIncrement = 0.0f;
         break;
       }
     case delay:
-      eg->egval = -960.0f;
-      eg->stage++;
-      if (eg->attack > -11500) {
-        eg->egval = -960.0f;
+      eg->stage = attack;
+      if (eg->attack > -12000) {
+        eg->egval = MAX_EG;
         eg->nsteps = timecent2sample(eg->attack);
-        eg->egIncrement = 960.0f / eg->nsteps;
+        eg->progress = double2fixed(0);
+        eg->progressInc = double2fixed(255.0 / (double)eg->nsteps);
         break;
       }
     case attack:
+      eg->stage = hold;
       eg->egval = 0.0f;
-      eg->stage++;
-      if (eg->hold > -11500) {
-        eg->egval = 0.0f;
-        eg->nsteps = timecent2sample(eg->hold);
-        eg->egIncrement = 0.0f;
-        break;
-      }
+      eg->nsteps = timecent2sample(eg->hold);
+      eg->egIncrement = 0.0f;
+
+      break;
     case hold: /** TO DECAY */
-      eg->stage++;
-      /*
-       * This is the time, in absolute timecents, for a 100% change in the
-  Volume Envelope value during decay phase. */
-      // velopcity required to travel full 960db
-      eg->egIncrement = -960.f / timecent2sample(eg->decay);
-
-      // but it's timeslice by sustain percentage?
-      eg->nsteps = eg->sustain / 1000.0f * timecent2sample(eg->decay);
-
-      /*For the Volume
-      Envelope, the decay phase linearly ramps toward the sustain level,
-      causing a constant dB change for each time unit. If the sustain level
-      were -100dB, the Volume Envelope Decay Time would be the time
-      spent in decay phase. A value of 0 indicates a 1-second decay time for
-      a zero-sustain level. A negative value indicates a time less than one
-      second; a positive value a time longer than one second. For example, a
-      decay time of 10 msec would be 1200log2(.01) = -7973.*/
+      eg->stage = decay;
+      eg->nsteps = timecent2sample(eg->decay) + timecent2sample(eg->release);
+      eg->egIncrement = MAX_EG / eg->nsteps;
+      eg->nsteps = timecent2sample(eg->decay);
       break;
+
     case decay:  // headsing to released;
-      // sustain pedal .. for not going to ignore..
-      eg->stage++;
-      break;
-
-      // sustain = % decreased during decay
 
       /*
       37 sustainVolEnv This is the decrease in level, expressed in centibels,
@@ -120,75 +109,33 @@ void advanceStage(EG* eg) {
       conventionally 1000 indicates full attenuation. For example, a sustain
       level which corresponds to an absolute value 12dB below of peak would be
       120.*/
-
-    case sustain:
-      eg->stage++;
-      int stepsFull = timecent2sample(eg->release); /*8 nsteps for full 960*/
-
-      eg->egIncrement = -960.f / timecent2sample(eg->release);
-      eg->nsteps = (-960 - eg->egval) / -960.0f * stepsFull;
+      eg->stage = sustain;
+      eg->egIncrement = 0.0f;
+      eg->nsteps = 48000;
       break;
 
-      /*This is the time, in absolute timecents, for a 100% change in
-the Volume Envelope value during release phase. For the Volume Envelope,
-the release phase linearly ramps toward zero from the current level,
-causing a constant dB change for each time unit. If the current level were
-full scale, the Volume Envelope Release Time would be the time spent in
-release phase until 100dB attenuation were reached. A value of 0 indicates
-a 1-second decay time for a release from full level. SoundFont 2.01
-Technical Specification - Page 45 - 08/05/98 12:43 PM A negative value
-indicates a time less than one second; a positive value a time longer than
-one second. For example, a release time of 10 msec would be 1200log2(.01) =
--7973. 39 keynumToVolEnvHold This is the degree, in timecents per K**/
+      // sustain = % decreased during decay
+
+    case sustain:{
+      int stepsFull = timecent2sample(eg->release + eg->decay);
+      eg->egIncrement = MAX_EG / stepsFull;
+      eg->nsteps = stepsFull * (eg->egval / MAX_EG);
+    }
+      break;
     case release:
-      eg->stage++;
-      eg->nsteps = 0;
-      eg->egval = -1000;
+      eg->stage = done;
       break;
     case done:
       break;
   }
 }
 
-void* gmemcpy(char* dest, const char* src, unsigned long n) {
-  for (int i = 0; i < n; i++) *(dest + i) = src[i];
-  return (void*)dest;
-}
-void scaleTc(EG* eg, unsigned int pcmSampleRate) {
-  float scaleFactor = SAMPLE_RATE / (float)pcmSampleRate;
-  eg->attack *= scaleFactor;
-  eg->delay *= scaleFactor;
-  eg->decay *= scaleFactor;
-  eg->release *= scaleFactor;
-  eg->hold *= scaleFactor;
-}
-void init_vol_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
-  char* sz = (char*)&z->VolEnvDelay;
-  gmemcpy((char*)&eg->delay, sz, 12);
-  scaleTc(eg, pcmSampleRate);
-
-  eg->stage = init;
-  if (eg->attack >= 0) eg->attack = 0;
-  advanceStage(eg);
-}
-void init_mod_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
-  char* sz = (char*)&z->ModEnvDelay;
-  gmemcpy((char*)&eg->delay, sz, 12);
-  scaleTc(eg, pcmSampleRate);
-  eg->stage = init;
-  eg->hasReleased = 0;
-  advanceStage(eg);
-}
-
-void _eg_set_stage(EG* e, int n) {
-  e->stage = n - 1;
-  e->nsteps = 0;
-  advanceStage(e);
-}
 void _eg_release(EG* e) {
-  if (e->stage >= release || e->stage <= attack) return;
   e->nsteps = 0;
   e->hasReleased = 1;
   e->stage = sustain;
+  advanceStage(e);
 }
+
+void eg_init(EG* e) { e->attack = -12000; }
 #endif
