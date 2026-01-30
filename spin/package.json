@@ -5,13 +5,14 @@
   "type": "module",
   "main": "spin.js",
   "scripts": {
-    "build": "make",
-    "test": "gcc src/spin.test.c; ./a.out"
+    "build": "sh build.sh",
+    "test": "gcc src/eg.test.c -lm; ./a.out"
   },
   "keywords": [],
   "author": "Yisheng Jiang",
   "license": "do-not-use",
   "dependencies": {
-    "midiread": "^2.0.14"
+    "midiread": "^2.0.14",
+    "puppeteer": "^19.11.1"
   }
 }

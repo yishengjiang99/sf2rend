@@ -1,7 +1,8 @@
 /*
 typedef struct {
   float *inputf, *outputf;
-  uint32_t position, loopStart, loopEnd, channelId, key, velocity;
+  uint32_t channelId, key, vel,
+    position, loopStart, loopEnd, channelId, key, velocity;
   zone_t* zone;
   EG *voleg, *modeg;
   LFO *modlfo, *vibrlfo;
@@ -12,30 +13,36 @@ typedef struct {
 export function spRef2json(heap, ref) {
   const [
     inputRef,
-    outputRef,
-    channelId,
+    outputRef
+  ] = new Uint32Array(heap, ref, 2); // 8*4
+
+  const [channelId,
     key,
-    velocity,
+    velocity] = new Uint8Array(heap, ref + 8, 3);
+
+  const [
     position,
     loopStart,
     loopEnd,
-  ] = new Uint32Array(heap, ref, 8); // 8*4
-  const [fract, stride] = new Float32Array(heap, ref + 32, 3); // 8*3
+  ] = new Uint32Array(heap, ref + 8 + 8, 8); // 8*4
+
+  const [fract, stride, pdiff] = new Float32Array(heap, ref + 8 + 8 + 12, 3); // 8*3
 
   const [zoneRef, volEGRef, modEGRef, modflo, vibrlfo, pcmRef] =
-    new Uint32Array(heap, ref + 44, 6);
+    new Uint32Array(heap, ref + 8 + 8 + 12 + 12, 6);
   return {
     fract,
-    stride,
+    stride, 
+    pdiff,
     inputRef,
     outputRef,
     position,
     loopStart,
     loopEnd,
     zoneRef,
-    volEGRef,
-    modflo,
-    vibrlfo,
+    // volEGRef,
+    // modflo,
+    // vibrlfo,
     channelId,
     key,
     velocity,
@@ -56,7 +63,7 @@ typedef struct {
 
 export function egStruct(heap, ref) {
   const [egval, egIncrement] = new Float32Array(heap, ref, 2);
-  const [hasRelease, stage, nsamples] = new Int32Array(heap, ref + 4, 3);
+  const [hasRelease, stage, nsteps] = new Int32Array(heap, ref + 8, 3);
   const [delay, attack, hold, decay, sustain, release] = new Int16Array(
     heap,
     ref + 20,
@@ -68,12 +75,12 @@ export function egStruct(heap, ref) {
     egIncrement,
     hasRelease,
     stage,
-    nsamples,
-    delay,
-    attack,
-    hold,
-    decay,
-    sustain,
-    release,
+    nsteps,
+    adsr: [delay,
+      attack,
+      hold,
+      decay,
+      sustain,
+      release].join(",")
   };
 }

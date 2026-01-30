@@ -1,11 +1,12 @@
-import {mkdiv} from "../mkdiv/mkdiv.js";
-const WIDTH = 960, HEIGHT = 420;
+import { mkdiv } from "../mkdiv/mkdiv.js";
+const WIDTH = 960,
+  HEIGHT = 420;
 export function chart(canvasCtx, dataArray) {
   resetCanvas(canvasCtx);
   const slider = canvasCtx.canvas.parentElement.querySelector(
     "input[type='range']"
   );
-  slider.oninput = () => chart(canvasCtx, dataArray);
+  if (slider) slider.oninput = () => chart(canvasCtx, dataArray);
   const [_width, _height] = get_w_h(canvasCtx);
   let max = 0,
     x = 0;
@@ -18,16 +19,30 @@ export function chart(canvasCtx, dataArray) {
   canvasCtx.lineWidth = 1;
   canvasCtx.strokeStyle = "white";
   canvasCtx.moveTo(0, _height / 2);
-  const zoomY = Math.log(slider.value / 128) / Math.LN2
+  const zoomY = (slider && Math.log2(slider.value / 128)) || 1;
   for (let i = 1; i < dataArray.length; i++) {
     x += iWIDTH;
-    canvasCtx.lineTo(x, _height / 2 + zoomY * dataArray[i]);
+    canvasCtx.lineTo(x, _height / 2 + ((zoomY * _height) / 2) * dataArray[i]);
   }
   canvasCtx.stroke();
   canvasCtx.font = "1em Arial";
 }
+export function chartRect(canvasCtx, dataArray, markers) {
+  resetCanvas(canvasCtx);
+  const [_width, _height] = get_w_h(canvasCtx);
+  let iWIDTH = _width / dataArray.length;
+  canvasCtx.fillStyle = "black";
+  canvasCtx.fillRect(0, 0, _width, _height);
+  canvasCtx.clearRect(0, 0, _width, _height);
+  canvasCtx.fillStyle = "red";
+  let x = 0;
+  for (let i = 0; i < dataArray.length; i++) {
+    x += iWIDTH + 1;
+    canvasCtx.fillRect(x, _height - 10, iWIDTH, dataArray[i] * _height);
+  }
+}
 export function mkcanvas(params = {}) {
-  const { width, height, container, title } = Object.assign(
+  let { width, height, container, title } = Object.assign(
     {
       container: document.body,
       title: "",
@@ -37,27 +52,35 @@ export function mkcanvas(params = {}) {
     params
   );
   const canvas = document.createElement("canvas");
-  canvas.setAttribute("width", `${width}`);
-  canvas.setAttribute("height", `${height}`);
+  // container.ondblclick = (e) => {
+  //   container.style =
+  //     "display:fixed; width:100vw;height:100vh;text-align:center";
+  // };
+  function on_resize() {
+    canvas.setAttribute("width", `${width}`);
+    canvas.setAttribute("height", `${height}`);
+  }
+  on_resize();
   const canvasCtx = canvas.getContext("2d");
   canvasCtx.lineWidth = 1;
   canvasCtx.strokeStyle = "white";
   canvasCtx.fillStyle = "black";
   canvasCtx.font = "2em";
-  const wrap = mkdiv("div", {style: "position:relative;padding:2px"}, [
-    title ? mkdiv("h5", {}, title) : "",
-    mkdiv("div", { class: "cp", style: "position:absolute" }, [
-      "y-zoom",
-      mkdiv("input", {
-        type: "range",
-        value: 64,
-        max: 128,
-        min: 1,
-      }),
-    ]),
-    canvas,
-  ]);
-  container.append(wrap);
+  // const wrap = mkdiv("div", {style: "position:relative;padding:2px"}, [
+  //   title ? mkdiv("h5", {}, title) : "",
+  //   mkdiv("div", { class: "cp", style: "position:absolute" }, [
+  //     "y-zoom",
+  //     mkdiv("input", {
+  //       type: "range",
+  //       value: 64,
+  //       max: 128,
+  //       min: 1,
+  //       step: "1"
+  //     }),
+  //   ]),
+  //   canvas,
+  // ]);
+  container.append(canvas);
   canvas.ondblclick = () => resetCanvas(canvasCtx);
   return canvasCtx;
 }
@@ -83,7 +106,7 @@ export async function renderFrames(
     const existingSlider = canvsCtx.canvas?.parentElement?.querySelector(
       "input[type='range']"
     );
-      existingSlider ||
+    existingSlider ||
       mkdiv("input", {
         type: "range",
         min: -10,
