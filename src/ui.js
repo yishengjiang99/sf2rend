@@ -280,10 +280,10 @@ export function mkui(
                   }),
                   ...(index == 43 || index == 44
                     ? [
-                        zmap[attributeKeys[index]].lo,
-                        "-",
-                        zmap[attributeKeys[index]].hi,
-                      ]
+                      zmap[attributeKeys[index]].lo,
+                      "-",
+                      zmap[attributeKeys[index]].hi,
+                    ]
                     : []),
                 ]),
               ])
@@ -389,7 +389,7 @@ export function mkui(
   }
   window.customElements.define("piano-keyboard", PianoKeyboard);
 
-  const mkKeyboard = mkdiv("piano-keyboard", {
+  const mkKeyboard = mkdiv("div", {
     props: {
       eventPipe,
       get_active_channel_fn: () => _activeChannel,
