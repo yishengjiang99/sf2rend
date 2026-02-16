@@ -133,7 +133,7 @@ export const ui = mkui(eventPipe, $("#channelContainer"), {
       return data.zack == "update" && data.ref == editData.update[1];
     });
   },
-  onTrackClick: (tt) => {},
+  onTrackClick: (tt) => { },
   onAddChannel: () => channels[nextChannel++].setProgram(0, nextChannel << 3),
 });
 
@@ -275,13 +275,12 @@ async function loadSF2File(sf2url) {
   drumList.innerHTML = "";
   sf2.programNames.forEach((n, presetIdx) => {
     if (presetIdx < 128) {
-      mkdiv2({ tag: "option", value: presetIdx, children: n }).attachTo(
-        programList
-      );
+      mkdiv('option', { value: presetIdx }, n).attachTo(programList);
+
+
     } else {
-      mkdiv2({ tag: "option", value: presetIdx, children: n }).attachTo(
-        drumList
-      );
+      mkdiv('option', { value: presetIdx }, n).attachTo(drumList);
+
     }
   });
   channels.forEach((c, i) => {

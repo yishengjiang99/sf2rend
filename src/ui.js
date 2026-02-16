@@ -17,7 +17,7 @@ const [W, H] = [(visualViewport.width / 3) * 2, 120];
 export function mkui(
   eventPipe,
   container,
-  { onTrackClick, onTrackDoubleClick, onEditZone, onAddChannel }
+  { onTrackClick, onTrackDoubleClick, onEditZone, onAddChannel, programList, drum }
 ) {
   class TrackUI {
     constructor(idx, cb) {
@@ -39,7 +39,7 @@ export function mkui(
       this.idx = idx;
       this.nameLabel = mkdiv2({
         tag: "input",
-        type: "text",
+        type: "search",
         autocomplete: "off",
         onfocus: (e) => (e.target.value = ""),
         list: idx == DRUMSCHANNEL ? "drums" : "programs",
@@ -148,17 +148,7 @@ export function mkui(
             },
             "vol"
           ),
-          "expression",
-          mkdiv("input", {
-            min: 1,
-            max: 128,
-            value: 100,
-            step: 1,
-            id: "vol",
-            type: "range",
-            oninput: (e) =>
-              cb([0xb0 | idx, effects.expressioncoarse, e.target.value]),
-          }),
+          mkdiv('br'),
           "pan",
           mkdiv("input", {
             min: 1,
