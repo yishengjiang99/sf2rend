@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 	<meta charset="UTF-8" />
 	<title>Add React in One Minute</title>
@@ -11,58 +12,21 @@
 			background-color: black;
 			color: white;
 		}
-
-		@for $i from 1 through 20 {
-			.blue:nth-of-type(#{$i}) {
-				transform: translateY(-20px * $i);
-			}
-		}
-
-		.note {
-			display: inline-block;
-			--track: 0;
-		}
-		.track-event {
-			top: calc(var(--track)*30px);
-		}
-
-		.note {
-			margin-left: calc(var(--delay) * 3px);
-			transform: translateY(calc(var(--midi)*3px));
-		}
-
-		.noteoff {
-			display: inline-block;
-			width: calc(var(--delay) * 3px);
-			background-color: red;
-			transform: translateY(calc(var(--midi)*3px));
-		}
-
-		.blue {
-			height: 20px;
-			width: 20px;
-			background-color: blue;
-			left: 10px;
-		}
-
 	</style>
 </head>
+
 <body>
 
 	<!-- We will put our React component inside this div. -->
 	<div id="root"></div>
-	<div class="blue"></div>
-
 
 	<!-- Load React. -->
 	<!-- Note: when deploying, replace "development.js" with "production.min.js". -->
-	<script type="module">
-		import {midi_ch_cmds} from "./src/midilist.js";
-		import {readMidi} from "./src/midiread.js";
-		import Sf2Service from "./sf2-service/sf2.js";
-		import {mkdiv} from "./mkdiv/mkdiv.js";
+	<script type="module">import { midi_ch_cmds } from "./src/midilist.js";
+		import { readMidi } from "https://unpkg.com/midiread";
+		import Sf2Service from "https://unpkg.com/sf2-service"; import { mkdiv } from "https://unpkg.com/mkdiv";
 
-		const {change_program, continuous_change, keyaftertouch} = midi_ch_cmds;
+		const { change_program, continuous_change, keyaftertouch } = midi_ch_cmds;
 		const default_cc = {
 			7: 100,
 			10: 120,
@@ -71,37 +35,17 @@
 		async function main(url) {
 			let f1samp;
 			const bar = document.querySelector(".blue");
-			const sf2 = new Sf2Service("./static/FluidR3_GM.sf2");
+			const sf2 = new Sf2Service("./static/GeneralUserGS.sf2");
 			const sf2Loaded = sf2.load();
-			const {presets, tracks, division, tempos, meta} = await readMidi(
+			const { presets, tracks, division, tempos, meta } = await readMidi(
 				new Uint8Array(await (await fetch(url)).arrayBuffer())
 			);
-			const worker = new Worker(`./src/sequence/timer.js?mspqn=${tempos[0].tempo}&ppqn=${division}`)
+			const worker = new Worker(`./src/timer.js?mspqn=${tempos[0].tempo}&ppqn=${division}`)
 
 
-			document.body.innerHTML += JSON.stringify(tempos) + JSON.stringify(division) + JSON.stringify(meta)
-			tracks.forEach(track => {
-				const div = document.createElement('div');
-				let c = 0;
-				for (let i = 0;i < track.length & c < 5000;i++) {
-					const e = track[i];
-					if (e.cmd == '9' || e.cmd == '8') {
-						const cc = e.cmd !== '8' && e.channel[2] ? "note track-event" : "noteoff track-event";
-						const pmk = mkdiv('label', {class: cc}, "|");
-						pmk.style.setProperty("--midi", e.channel[1]);
-						pmk.style.setProperty("--delay", e.delay);
-						pmk.style.setProperty("--track", i);
 
-						div.append(pmk);
-
-						c += e.delay;
-					}
-				}
-				document.body.append(div)
-			});
-			const ppqn = division;
-			let msqn = tempos && tempos.length ? tempos[0].tempo : 500000;
-			//let interval = msQn / 1000 / division;
+			let msQn = tempos && tempos.length ? tempos[0].tempo : 500000;
+			let interval = msQn / 1000 / division;
 			await sf2Loaded;
 			const programsLoaded = Promise.all(
 				presets.map(async (preset) => {
@@ -150,7 +94,7 @@
 									z.VolEnvDecay,
 									z.VolEnvRelease,
 								].map((t) => (t < -11000 ? 0 : Math.pow(2, t / 1200)));
-								const gain = new GainNode(ctx, {gain: 0});
+								const gain = new GainNode(ctx, { gain: 0 });
 								abs.connect(gain);
 								let c = gain;
 								if (z.FilterFc < 13500) {
@@ -165,7 +109,7 @@
 									(960 - z.Attenuation) / 960 - (vel * vel) / 128 / 128;
 								if (this.volEnv[0] > 0) {
 									let tc = c;
-									c = new DelayNode(ctx, {delay: this.volEnv[0]});
+									c = new DelayNode(ctx, { delay: this.volEnv[0] });
 									tc.connect(c);
 								}
 								if (this.volEnv[1] > 0) {
@@ -173,13 +117,13 @@
 								} else {
 									gain.gain.setValueAtTime(krateGaiin, this.volEnv[2]);
 								}
-								if (z.VolEnvSustain < 1000) {
-									gain.gain.setTargetAtTime(
-										0.01,
-										this.volEnv[1] + this.volEnv[2],
-										z.VolEnvDecay
-									);
-								}
+								// if (z.VolEnvSustain < 1000) {
+								// 	gain.gain.setTargetAtTime(
+								// 		0.01,
+								// 		this.volEnv[1] + this.volEnv[2],
+								// 		z.VolEnvDecay
+								// 	);
+								// }
 
 								c.connect(dest);
 								abs.start(ctx.currentTime);
@@ -213,17 +157,18 @@
 			btn1.innerText = "stop";
 			root.append(btn);
 			root.append(btn1);
+			btn.onclick = () => worker.postMessage({ start: 1 });
 
 			await new Promise((r) => btn.addEventListener("click", r));
 			btn.disabled = true;
 			const ctx = new AudioContext();
 
-			btn1.onclick = () => worker.postMessage({stop: 1});
+			btn1.onclick = () => worker.postMessage({ stop: 1 });
 			const soundtracks = tracks.map((track) =>
 				track.filter((event) => event.t && event.channel)
 			);
 
-			function onEvent({channel, t}, sysTick) {
+			function onEvent({ channel, t }, sysTick) {
 				const [a, b, c] = channel;
 				const cmd = a & 0xf0;
 				let ch = a & 0x0f;
@@ -257,10 +202,9 @@
 				}
 			}
 			worker.onmessage = (e) => {
-				const sysTick = e.data.ticks;
-				console.log(e.data)
+				const sysTick = e.data;
 
-				for (let i = 0;i < soundtracks.length;i++) {
+				for (let i = 0; i < soundtracks.length; i++) {
 					const track = soundtracks[i];
 					while (track.length && track[0].t <= sysTick) {
 						const e = track.shift();
@@ -270,17 +214,17 @@
 
 				if (e.data % 1000 < 1) console.log(e.data);
 
-				bar.style.setProperty("--timer-bar", ctx.currentTime);
 			};
-			worker.postMessage({tm: {msqn, ppqn}});
-			worker.postMessage({cmd: "start"});
+			worker.postMessage({ interval });
+			worker.postMessage({ start: 1 });
 		}
 
 		main(
-			"https://grep32bit.blob.core.windows.net/midi/Blink_182_-_All_The_Small_Things_.mid"
+			"song.mid"
 		);
 	</script>
 
 
 </body>
+
 </html>
