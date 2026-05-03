@@ -1,54 +1,83 @@
+import { mfilelist } from "../mfilelist.js";
+import { sf2list } from "../sflist.js";
+
 export const midi_ch_cmds = {
   change_program: 0xc0,
   continuous_change: 0xb0,
   note_on: 0x90,
   note_off: 0x80,
-  keyaftertouch: 0xa0, // 10
-  pitchbend: 0xe0, // 14
+  keyaftertouch: 0xa0,
+  pitchbend: 0xe0,
 };
-var xml_attr = [
-  "Name",
-  "Url",
-  "LastModified",
-  "Etag",
-  "Size",
-  "ContentType",
-  "ContentEncoding",
-  "ContentLanguage",
-];
 
-export function fetchmidilist(
+export async function fetchmidilist(
   url = "https://grep32bit.blob.core.windows.net/midi?resttype=container&comp=list"
 ) {
-  return new Promise((resolve, reject) => {
-    resolve([{
-      url: "song.mid", name: "song.mid"
-    }])
-  });
+  const localEntries = mfilelist.map((item) => ({
+    Name: decodeURI(item.split("/").pop() ?? item),
+    Url: item,
+  }));
+
+  if (globalThis.location?.hostname === "127.0.0.1" || globalThis.location?.hostname === "localhost") {
+    return localEntries;
+  }
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      return localEntries;
+    }
+    const xml = await response.text();
+    const document = new DOMParser().parseFromString(xml, "application/xml");
+    const remoteEntries = Array.from(document.querySelectorAll("Blob"))
+      .map((blob) => ({
+        Name: blob.querySelector("Name")?.textContent ?? "",
+        Url: blob.querySelector("Url")?.textContent ?? "",
+      }))
+      .filter((item) => item.Name && item.Url);
+    return dedupeEntries(localEntries, remoteEntries);
+  } catch {
+    return localEntries;
+  }
 }
 
-export function fetchSF2List(
+export async function fetchSF2List(
   url = "https://grep32bit.blob.core.windows.net/sf2?resttype=container&comp=list"
 ) {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("GET", url);
-    xhr.responseType = "document";
-    xhr.send();
-    xhr.onload = function () {
-      if (xhr.responseXML) {
-        const blobs = Array.from(xhr.responseXML.querySelectorAll("Blob"));
-        resolve(
-          blobs.map((b) => {
-            return {
-              url: b.querySelector("Url").textContent,
-              name: b.querySelector("Name").textContent,
-            };
-          })
-        );
-      }
-    };
-    xhr.onerror = reject;
-    xhr.ontimeout = reject;
+  const localEntries = sf2list.map((item) => ({
+    Name: decodeURI(item.split("/").pop() ?? item),
+    Url: item,
+  }));
+
+  if (globalThis.location?.hostname === "127.0.0.1" || globalThis.location?.hostname === "localhost") {
+    return localEntries;
+  }
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      return localEntries;
+    }
+    const xml = await response.text();
+    const document = new DOMParser().parseFromString(xml, "application/xml");
+    const remoteEntries = Array.from(document.querySelectorAll("Blob"))
+      .map((blob) => ({
+        Name: blob.querySelector("Name")?.textContent ?? "",
+        Url: blob.querySelector("Url")?.textContent ?? "",
+      }))
+      .filter((item) => item.Name && item.Url);
+    return dedupeEntries(localEntries, remoteEntries);
+  } catch {
+    return localEntries;
+  }
+}
+
+function dedupeEntries(...entryLists) {
+  const byUrl = new Map();
+  entryLists.flat().forEach((entry) => {
+    if (entry?.Url && !byUrl.has(entry.Url)) {
+      byUrl.set(entry.Url, entry);
+    }
   });
+  return Array.from(byUrl.values());
 }

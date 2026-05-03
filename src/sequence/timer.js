@@ -20,17 +20,18 @@ clocktime = ticks = lastTick = 0;
 
 onmessage = handleMsg;
 
-function handleMsg({data: {cmd, tick, tm, processorPort}}) {
+function handleMsg({data: {cmd, tick, tm}}) {
 	if (tm) {
 		tmParams = {...tmParams, ...tm};
 	}
-	if (tick) {
+	if (typeof tick === "number") {
 		ticks = tick;
 	}
 	if (cmd) switch (cmd) {
 		case "start":
 			lastTick = performance.now();
-			ticks = 0;	
+			clocktime = 0;
+			ticks = 0;
 			clearTimeout(timer);
 			lastTick = performance.now();
 			timer = setTimeout(ontick, tmParams.waittime);
@@ -41,21 +42,22 @@ function handleMsg({data: {cmd, tick, tm, processorPort}}) {
 			timer = setTimeout(ontick, tmParams.waittime);
 			break;
 		case "reset":
-			clearInterval(timer);
-			postMessage({ticks});
+			clearTimeout(timer);
+			clocktime = 0;
 			ticks = 0;
+			postMessage({ticks, clock: clocktime});
 			break;
 		case "stop":
 		case "pause":
-			clearInterval(timer);
+			clearTimeout(timer);
 			break;
 		case "fwd":
 			ticks += tmParams.ppqn * 8;
-			postMessage({ticks, clocktime});
+			postMessage({ticks, clock: clocktime});
 			break;
 		case "rwd":
-			ticks -= tmParams.ppqn * 8;
-			postMessage({ticks});
+			ticks = Math.max(0, ticks - tmParams.ppqn * 8);
+			postMessage({ticks, clock: clocktime});
 			break;
 		default: break;
 	}

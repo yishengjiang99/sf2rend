@@ -124,11 +124,16 @@ class SpinProcessor extends AudioWorkletProcessor {
           if (this.lastRan) this.respondQuery(this.lastRan);
           break;
         case midi_ch_cmds.note_off: {
-          if (!this.sp_map[channel * 128 + key]) throw "unexpected emty sp_map";
-          for (const sp of this.sp_map[channel * 128 + key]) {
+          const voices = this.sp_map[channel * 128 + key];
+          if (!voices?.length) {
+            this.port.postMessage({ ack: [0x80, channel], ignored: true });
+            break;
+          }
+          for (const sp of voices) {
             this.inst.exports.trigger_release(sp);
             this.respondQuery(sp);
           }
+          delete this.sp_map[channel * 128 + key];
 
           this.port.postMessage({ ack: [0x80, channel] });
           break;

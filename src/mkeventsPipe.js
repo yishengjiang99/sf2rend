@@ -1,16 +1,31 @@
 export function mkeventsPipe() {
-    const _arr = [];
-    let _fn;
-    return {
-        onmessage(fn) {
-            if (_fn)
-                throw "SINGLETON LISTEN";
-            _fn = fn;
-        },
-        postMessage(item) {
-            _arr.push(item);
-            if (_fn)
-                _fn(_arr.shift());
-        },
-    };
+  const queue = [];
+  let listener = null;
+  let draining = false;
+
+  async function drain() {
+    if (draining || !listener) {
+      return;
+    }
+    draining = true;
+    while (queue.length) {
+      const next = queue.shift();
+      await listener(next);
+    }
+    draining = false;
+  }
+
+  return {
+    onmessage(fn) {
+      if (listener) {
+        throw new Error("Event pipe only supports a single listener.");
+      }
+      listener = fn;
+      void drain();
+    },
+    postMessage(item) {
+      queue.push(item);
+      void drain();
+    },
+  };
 }

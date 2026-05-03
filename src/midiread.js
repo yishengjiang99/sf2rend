@@ -24,7 +24,10 @@ export function readMidi(buffer) {
   const tempos = [];
   let time_base = null;
   while (reader.offset < limit) {
-    console.log(fgetc(), fgetc(), fgetc(), fgetc());
+    fgetc();
+    fgetc();
+    fgetc();
+    fgetc();
     let t = 0;
     const mhrkLength = read32();
     const endofTrack = reader.offset + mhrkLength;

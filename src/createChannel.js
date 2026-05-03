@@ -1,59 +1,93 @@
-import { DRUMSCHANNEL, midi_ch_cmds, midi_effects, nvpc } from "./constants.js";
+import { DRUMSCHANNEL, midi_ch_cmds, midi_effects } from "./constants.js";
 
-export function createChannel(uiController, channelId, sf2, apath) {
-  let _sf2 = sf2;
-  let program;
-  let bankId = channelId == DRUMSCHANNEL ? 128 : 0;
-
+export function createChannel(channelId, sf2, apath, hooks = {}) {
+  let currentSf2 = sf2;
+  let program = null;
+  let bankId = channelId === DRUMSCHANNEL ? 128 : 0;
   const spinner = apath.spinner;
-  const kd_map = Array(nvpc).fill(0);
-  let ct_cnt = 0;
+  const activeNotes = new Set();
+
+  function notify(name, payload) {
+    hooks[name]?.(payload);
+  }
+
   return {
-    setSF2(sf2) {
-      _sf2 = sf2;
+    getBankId() {
+      return bankId;
     },
-    async setProgram(pid, bid) {
-      this.presetId = pid | bid;
-      program = _sf2.loadProgram(pid, bid);
-      if (!program) {
-        alert(bid + " " + pid + " no found");
-        uiController.hidden = true;
-        return;
+    setSF2(nextSf2) {
+      currentSf2 = nextSf2;
+    },
+    async setProgram(pid, nextBankId = bankId) {
+      bankId = nextBankId;
+      if (!currentSf2) {
+        notify("onProgramMissing", { pid, bankId });
+        return null;
       }
-      await spinner.shipProgram(program, pid | bid);
-      uiController.hidden = false;
-      uiController.name = program.name;
-      uiController.presetId = this.presetId;
-      uiController.zone = program.filterKV(60, 60)[0];
-      return program;
+
+      const nextProgram = currentSf2.loadProgram(pid, bankId);
+      if (!nextProgram) {
+        notify("onProgramMissing", { pid, bankId });
+        return null;
+      }
+
+      await spinner.shipProgram(nextProgram, pid | bankId);
+      program = nextProgram;
+      notify("onProgramLoaded", {
+        bankId,
+        name: nextProgram.name,
+        pid,
+        presetId: pid | bankId,
+        zone: nextProgram.filterKV(-1, -1)[0] ?? null,
+      });
+      return nextProgram;
     },
-    setCC({ cc, val }) {
+    setCC({ cc, value }) {
       if (cc === midi_effects.bankselectcoarse) {
-        alert("bank seleec to " + val);
-        bankId |= val << 7;
+        bankId = value << 7;
       } else if (cc === midi_effects.bankselectfine) {
-        bankId |= val;
+        bankId |= value;
       }
-      uiController.CC = {key: cc, value: val};
+      notify("onCCChange", { bankId, cc, value });
     },
-    keyOn(key, vel) {
-      const zones = program.filterKV(key, vel);
-      zones.map((zone, i) => {
+    keyOn(key, velocity) {
+      if (!program) {
+        return null;
+      }
+      const zones = program.filterKV(key, velocity);
+      if (!zones.length) {
+        return null;
+      }
+      zones.forEach((zone) => {
         spinner.port.postMessage([
           midi_ch_cmds.note_on,
           channelId,
           key,
-          vel,
+          velocity,
           zone.arr,
         ]);
       });
-
-      if (!zones[0]) return;
-      return zones[0];
+      const zone = zones[0] ?? null;
+      activeNotes.add(key);
+      notify("onKeyOn", {
+        activeNotes: activeNotes.size,
+        key,
+        velocity,
+        zone,
+      });
+      return zone;
     },
-    keyOff(key, vel) {
-      spinner.port.postMessage([midi_ch_cmds.note_off, channelId, key, vel]);
-      requestAnimationFrame(() => (uiController.active = false));
+    keyOff(key, velocity) {
+      if (!activeNotes.has(key)) {
+        return;
+      }
+      spinner.port.postMessage([midi_ch_cmds.note_off, channelId, key, velocity]);
+      activeNotes.delete(key);
+      notify("onKeyOff", {
+        activeNotes: activeNotes.size,
+        key,
+        velocity,
+      });
     },
   };
 }
