@@ -37,7 +37,6 @@ module.exports = {
   mode: "production",
   entry: {
     main: "./src/index.js",
-    sequence: "./src/sequence/index.js",
     timer: "./src/sequence/timer.js",
   },
   module: {
