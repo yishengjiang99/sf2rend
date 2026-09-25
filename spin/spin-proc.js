@@ -41,7 +41,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.debug = false;
     this.ringbus = ring_bus();
     const zonePtr = this.malololc(120);
-    this.zoneAttr = new Int16Array(this.memory.buffer, zonePtr, 60);
+    this.zoneAttr = zonePtr;
 
   }
   setup_wasm() {
@@ -286,30 +286,24 @@ function now() {
 async function downloadData(stream, fl) {
   const reader = stream.getReader();
   let writeOffset = 0;
-  let leftover;
-  const decode = function (s1, s2) {
-    const int = s1 + (s2 << 8);
-    return int > 0x8000 ? -(0x10000 - int) / 0x8000 : int / 0x7fff;
+  let leftover = -1;
+  const decode = (lo, hi) => {
+    const int = lo | (hi << 8);
+    return int & 0x8000 ? (int - 0x10000) / 0x8000 : int / 0x7fff;
   };
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const { done, value } = await reader.read();
-    if (done) {
-      await stream.closed;
-      break;
-    }
-    if (!value) continue;
+    if (done) break;
+    if (!value || !value.length) continue;
     let readIndex = 0;
-
-    if (leftover != null) {
+    if (leftover >= 0) {
       fl[writeOffset++] = decode(leftover, value[readIndex++]);
-      leftover = null;
+      leftover = -1;
     }
-    const n = ~~value.length;
-    while (readIndex < n - 2) {
+    const pairs = readIndex + (((value.length - readIndex) >> 1) << 1);
+    while (readIndex < pairs) {
       fl[writeOffset++] = decode(value[readIndex++], value[readIndex++]);
     }
-    if (readIndex < value.length - 1) leftover = value[value.length - 1];
-    console.assert(readIndex + 1 == value.length || leftover != null);
+    if (readIndex < value.length) leftover = value[readIndex];
   }
 }

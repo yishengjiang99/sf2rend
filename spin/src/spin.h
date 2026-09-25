@@ -226,9 +226,9 @@ typedef struct {
   rangesType KeyRange, VelRange;
   unsigned short StartLoopAddrCoarseOfs;
   short Keynum, Velocity, Attenuation, Reserved2;
-  unsigned short EndLoopAddrCoarseOfs, CoarseTune;
-  short FineTune, SampleId, SampleModes, Reserved3, ScaleTune, ExclusiveClass,
-      OverrideRootKey, Dummy;
+  unsigned short EndLoopAddrCoarseOfs;
+  short CoarseTune, FineTune, SampleId, SampleModes, Reserved3, ScaleTune,
+      ExclusiveClass, OverrideRootKey, Dummy;
 } zone_t;
 
 enum grntypes {
