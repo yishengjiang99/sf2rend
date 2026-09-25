@@ -1,6 +1,6 @@
 import FFTNode from "../fft-64bit/fft-node.js";
 import { LowPassFilterNode } from "../lpf/lpf.js";
-import SF2Service from "../sf2-service/sf2.js";
+import SF2Service from "../sf2-service/index.js";
 import { SpinNode } from "../spin/spin.js";
 import { midi_ch_cmds, midi_effects } from "./constants.js";
 import { anti_denom_dither, delay } from "./misc.js";

@@ -1,5 +1,5 @@
 import {SpinNode} from '../spin.js';
-import SF2Service from "../../sf2-service/sf2.js";
+import SF2Service from "../../sf2-service/index.js";
 import {subScribeEvent} from '../../src/subScribeEvent.js';
 
 apromise_test(async () => {
