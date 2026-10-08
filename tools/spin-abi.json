@@ -1,0 +1,329 @@
+{
+  "note": "Import/export ABI of spin.wasm at f2403f3 (before the hermetic rebuild). make check-spin-abi fails if a rebuild changes it.",
+  "imports": [
+    {
+      "module": "env",
+      "name": "memory",
+      "kind": "memory"
+    },
+    {
+      "module": "env",
+      "name": "tanf",
+      "kind": "function"
+    }
+  ],
+  "exports": [
+    {
+      "name": "__wasm_call_ctors",
+      "kind": "function"
+    },
+    {
+      "name": "lerp",
+      "kind": "function"
+    },
+    {
+      "name": "lerpd",
+      "kind": "function"
+    },
+    {
+      "name": "calcp2over1200",
+      "kind": "function"
+    },
+    {
+      "name": "p2over1200",
+      "kind": "global"
+    },
+    {
+      "name": "timecent2second",
+      "kind": "function"
+    },
+    {
+      "name": "timecent2hertz",
+      "kind": "function"
+    },
+    {
+      "name": "timecent2sample",
+      "kind": "function"
+    },
+    {
+      "name": "applyCentible",
+      "kind": "function"
+    },
+    {
+      "name": "p10over200",
+      "kind": "global"
+    },
+    {
+      "name": "hermite4",
+      "kind": "function"
+    },
+    {
+      "name": "midi_volume_log10",
+      "kind": "function"
+    },
+    {
+      "name": "midi_log_10",
+      "kind": "global"
+    },
+    {
+      "name": "LFO_roll_out",
+      "kind": "function"
+    },
+    {
+      "name": "set_frequency",
+      "kind": "function"
+    },
+    {
+      "name": "centdb_val",
+      "kind": "function"
+    },
+    {
+      "name": "roll",
+      "kind": "function"
+    },
+    {
+      "name": "eg_roll",
+      "kind": "function"
+    },
+    {
+      "name": "att_db_levels",
+      "kind": "global"
+    },
+    {
+      "name": "advanceStage",
+      "kind": "function"
+    },
+    {
+      "name": "update_eg",
+      "kind": "function"
+    },
+    {
+      "name": "_eg_release",
+      "kind": "function"
+    },
+    {
+      "name": "eg_init",
+      "kind": "function"
+    },
+    {
+      "name": "scaleTc",
+      "kind": "function"
+    },
+    {
+      "name": "init_vol_eg",
+      "kind": "function"
+    },
+    {
+      "name": "init_mod_eg",
+      "kind": "function"
+    },
+    {
+      "name": "new_lpf",
+      "kind": "function"
+    },
+    {
+      "name": "calc_lpf",
+      "kind": "function"
+    },
+    {
+      "name": "sp_wipe_output_tab",
+      "kind": "function"
+    },
+    {
+      "name": "output_arr_len",
+      "kind": "global"
+    },
+    {
+      "name": "outputs",
+      "kind": "global"
+    },
+    {
+      "name": "spRef",
+      "kind": "function"
+    },
+    {
+      "name": "sps",
+      "kind": "global"
+    },
+    {
+      "name": "pcmRef",
+      "kind": "function"
+    },
+    {
+      "name": "pcms",
+      "kind": "global"
+    },
+    {
+      "name": "allocate_sp",
+      "kind": "function"
+    },
+    {
+      "name": "sp_idx",
+      "kind": "global"
+    },
+    {
+      "name": "newSpinner",
+      "kind": "function"
+    },
+    {
+      "name": "silence",
+      "kind": "global"
+    },
+    {
+      "name": "trigger_release",
+      "kind": "function"
+    },
+    {
+      "name": "reset",
+      "kind": "function"
+    },
+    {
+      "name": "set_midi_cc_val",
+      "kind": "function"
+    },
+    {
+      "name": "midi_cc_vals",
+      "kind": "global"
+    },
+    {
+      "name": "trigger_attack",
+      "kind": "function"
+    },
+    {
+      "name": "midi_p1200",
+      "kind": "global"
+    },
+    {
+      "name": "calc_pitch_diff_log",
+      "kind": "function"
+    },
+    {
+      "name": "set_spinner_input",
+      "kind": "function"
+    },
+    {
+      "name": "set_spinner_zone",
+      "kind": "function"
+    },
+    {
+      "name": "_spinblock",
+      "kind": "function"
+    },
+    {
+      "name": "modEgOut",
+      "kind": "global"
+    },
+    {
+      "name": "volEgOut",
+      "kind": "global"
+    },
+    {
+      "name": "lfo1Out",
+      "kind": "global"
+    },
+    {
+      "name": "lfo2Out",
+      "kind": "global"
+    },
+    {
+      "name": "panleftLUT",
+      "kind": "global"
+    },
+    {
+      "name": "panrightLUT",
+      "kind": "global"
+    },
+    {
+      "name": "spin",
+      "kind": "function"
+    },
+    {
+      "name": "sp_byte_len",
+      "kind": "function"
+    },
+    {
+      "name": "get_vol_eg",
+      "kind": "function"
+    },
+    {
+      "name": "get_mod_eg",
+      "kind": "function"
+    },
+    {
+      "name": "get_sp_output",
+      "kind": "function"
+    },
+    {
+      "name": "get_sp_channel_id",
+      "kind": "function"
+    },
+    {
+      "name": "gm_reset",
+      "kind": "function"
+    },
+    {
+      "name": "midi_log_10_convex",
+      "kind": "global"
+    },
+    {
+      "name": "ln2",
+      "kind": "global"
+    },
+    {
+      "name": "scale",
+      "kind": "global"
+    },
+    {
+      "name": "fraction_mask",
+      "kind": "global"
+    },
+    {
+      "name": "whole_mask",
+      "kind": "global"
+    },
+    {
+      "name": "scalar_multiple",
+      "kind": "global"
+    },
+    {
+      "name": "dummy",
+      "kind": "global"
+    },
+    {
+      "name": "__dso_handle",
+      "kind": "global"
+    },
+    {
+      "name": "__data_end",
+      "kind": "global"
+    },
+    {
+      "name": "__stack_low",
+      "kind": "global"
+    },
+    {
+      "name": "__stack_high",
+      "kind": "global"
+    },
+    {
+      "name": "__global_base",
+      "kind": "global"
+    },
+    {
+      "name": "__heap_base",
+      "kind": "global"
+    },
+    {
+      "name": "__heap_end",
+      "kind": "global"
+    },
+    {
+      "name": "__memory_base",
+      "kind": "global"
+    },
+    {
+      "name": "__table_base",
+      "kind": "global"
+    }
+  ]
+}

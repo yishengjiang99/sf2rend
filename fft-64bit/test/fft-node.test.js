@@ -29,6 +29,7 @@ describe('FFTNode', () => {
     };
     global.URL = {
       createObjectURL: () => 'blob:mock',
+      revokeObjectURL: () => {},
     };
     global.Blob = class Blob {
       constructor(parts, options) {
@@ -88,8 +89,8 @@ describe('FFTNode', () => {
     
     it('should initialize without errors', async () => {
       await FFTNode.init(mockContext);
-      expect(self.wasmModule).to.exist;
-      expect(self.wasmModule.mock).to.equal('module');
+      expect(FFTNode.wasmModule).to.exist;
+      expect(FFTNode.wasmModule.mock).to.equal('module');
     });
   });
   
@@ -202,7 +203,7 @@ describe('FFTNode', () => {
     
     it('should have inputPCM function', () => {
       const content = fs.readFileSync('./fft-node.js', 'utf-8');
-      expect(content).to.include('const inputPCM');
+      expect(content).to.include('function inputPCM(');
       expect(content).to.include('inputPCM');
     });
     
@@ -219,13 +220,13 @@ describe('FFTNode', () => {
     it('should call FFT and bit_reverse in getFloatFrequencyData', () => {
       const content = fs.readFileSync('./fft-node.js', 'utf-8');
       expect(content).to.include('FFT(complexRef');
-      expect(content).to.include('bit_reverse(complexRef');
+      expect(content).to.include('bitReverse(complexRef');
     });
     
     it('should call iFFT and bit_reverse in getWaveForm', () => {
       const content = fs.readFileSync('./fft-node.js', 'utf-8');
       expect(content).to.include('iFFT(complexRef');
-      expect(content).to.include('bit_reverse(complexRef');
+      expect(content).to.include('bitReverse(complexRef');
     });
   });
   

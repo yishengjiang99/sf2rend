@@ -55,7 +55,7 @@ biquad *setLPF(float omega, float bandwidth) {
   biquad *b = lpfs;
 
   float a0, a1, a2, b0, b1, b2;
-  float A, sn, cs, alpha, beta;
+  float sn, cs, alpha;
   sn = sinf(omega);
   cs = cosf(omega);
   alpha = sn * sinhf(M_LN2 / 2 * bandwidth * omega / sn);
