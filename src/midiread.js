@@ -23,6 +23,11 @@ export function readMidi(buffer) {
   const presets = [];
   const tempos = [];
   let time_base = null;
+  // Bank-select state per channel while scanning (CC0 = MSB, CC32 = LSB).
+  // Channel 10 (index 9) defaults to the drum bank 128.
+  const bankMSB = new Array(16).fill(0);
+  const bankLSB = new Array(16).fill(0);
+  bankMSB[9] = 1;
   while (reader.offset < limit) {
     fgetc();
     fgetc();
@@ -52,11 +57,23 @@ export function readMidi(buffer) {
         const evtObj = {offset: reader.offset, t, delay, ...nextEvent};
         track.push(evtObj);
       } else if (nextEvent.channel && nextEvent.channel[0] >> 4 === 0x0c) {
+        const ch = nextEvent.channel[0] & 0x0f;
         presets.push({
           t,
-          channel: nextEvent.channel[0] & 0x0f,
+          channel: ch,
           pid: nextEvent.channel[1] & 0x7f,
+          bank: bankMSB[ch] * 128 + bankLSB[ch],
         });
+        const evtObj = {offset: reader.offset, t, delay, ...nextEvent};
+        track.push(evtObj);
+      } else if (nextEvent.channel && nextEvent.channel[0] >> 4 === 0x0b) {
+        // Bank select: remember per channel so program changes below
+        // carry the right bank (the event itself still plays through).
+        const ch = nextEvent.channel[0] & 0x0f;
+        const cc = nextEvent.channel[1];
+        const val = nextEvent.channel[2] & 0x7f;
+        if (cc === 0) bankMSB[ch] = val;
+        else if (cc === 32) bankLSB[ch] = val;
         const evtObj = {offset: reader.offset, t, delay, ...nextEvent};
         track.push(evtObj);
       } else {

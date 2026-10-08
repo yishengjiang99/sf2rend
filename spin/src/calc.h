@@ -12,6 +12,9 @@ float lerpd(double f1, double f2, double frac) { return f1 + (f2 - f1) * frac; }
 
 float calcp2over1200(float tc) {
   float m = 1.0f;
+  if (tc != tc) return 1.0f; /* NaN: no pitch shift */
+  if (tc < -96000.f) tc = -96000.f;
+  if (tc > 96000.f) tc = 96000.f;
   while (tc >= 1200.f) {
     tc -= 1200;
     m *= 2;

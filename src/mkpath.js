@@ -1,12 +1,12 @@
 import FFTNode from "../fft-64bit/fft-node.js";
-import { LowPassFilterNode } from "../lpf/lpf.js";
-import SF2Service from "../sf2-service/index.js";
 import { SpinNode } from "../spin/spin.js";
 import { midi_ch_cmds, midi_effects } from "./constants.js";
 import { anti_denom_dither, delay } from "./misc.js";
 
-let initialized = false;
-const sf2Cache = new Map();
+// audioWorklet.addModule is per AudioContext: track initialized contexts,
+// not a module-level boolean (StrictMode remount / HMR / re-init after
+// close would otherwise fail with "node name not defined").
+const initializedContexts = new WeakSet();
 
 export async function mkpath(ctx, eventPipe) {
   const audioContext = ctx ?? new AudioContext();
@@ -15,12 +15,18 @@ export async function mkpath(ctx, eventPipe) {
   });
 }
 
-export async function mkpath2(ctx, { midi_input = { postMessage() {} }, sf2File } = {}) {
-  if (!initialized) {
+function rampParam(ctx, param, value, timeConstant = 0.03) {
+  const now = ctx.currentTime;
+  param.cancelScheduledValues(now);
+  param.setValueAtTime(param.value, now);
+  param.linearRampToValueAtTime(value, now + timeConstant);
+}
+
+export async function mkpath2(ctx, { midi_input = { postMessage() {} } } = {}) {
+  if (!initializedContexts.has(ctx)) {
     await SpinNode.init(ctx).catch(console.trace);
     await FFTNode.init(ctx).catch(console.trace);
-    await LowPassFilterNode.init(ctx).catch(console.trace);
-    initialized = true;
+    initializedContexts.add(ctx);
     // Debug hook for the smoke test (tools/smoke-test.mjs): there is no API
     // to list registered AudioWorklet processors, so record the expected set.
     globalThis.__sf2rendWorklets = ["spin-proc", "lpf-proc", "proc-fft"];
@@ -28,7 +34,8 @@ export async function mkpath2(ctx, { midi_input = { postMessage() {} }, sf2File 
 
   const channelIds = Array.from({ length: 16 }, (_, index) => index);
   const spinner = new SpinNode(ctx);
-  const lpfs = channelIds.map(() => new LowPassFilterNode(ctx));
+  // Per-channel mute gain (mute/solo live here, never by ramping CC7).
+  const muteGains = channelIds.map(() => new GainNode(ctx, { gain: 1 }));
   const mastGain = new GainNode(ctx, { gain: 1 });
   const whitenoise = anti_denom_dither(ctx);
   const observers = new Set();
@@ -41,9 +48,10 @@ export async function mkpath2(ctx, { midi_input = { postMessage() {} }, sf2File 
   whitenoise.connect(spinner);
   whitenoise.start();
 
+  // Per-voice SF2 filtering happens inside the worklet; no post-mix LPF.
   for (const channelId of channelIds) {
-    spinner.connect(lpfs[channelId], channelId);
-    lpfs[channelId].connect(mastGain);
+    spinner.connect(muteGains[channelId], channelId);
+    muteGains[channelId].connect(mastGain);
   }
 
   try {
@@ -65,18 +73,6 @@ export async function mkpath2(ctx, { midi_input = { postMessage() {} }, sf2File 
     observers.forEach((observer) => observer(data));
   };
 
-  async function ensureSf2Loaded() {
-    if (!sf2File) {
-      return null;
-    }
-    if (!sf2Cache.has(sf2File)) {
-      const sf2 = new SF2Service(sf2File);
-      await sf2.load();
-      sf2Cache.set(sf2File, sf2);
-    }
-    return sf2Cache.get(sf2File);
-  }
-
   function waitFor(predicate, timeoutMs = 2000) {
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => {
@@ -91,15 +87,6 @@ export async function mkpath2(ctx, { midi_input = { postMessage() {} }, sf2File 
   return {
     spinner,
     channelState,
-    async loadProgram(pid, bankId) {
-      const sf2 = await ensureSf2Loaded();
-      if (!sf2) {
-        return null;
-      }
-      const program = sf2.loadProgram(pid, bankId);
-      await spinner.shipProgram(program, pid | bankId);
-      return program;
-    },
     connect(destination, outputNumber, destinationInputNumber) {
       spinner.connect(destination, outputNumber, destinationInputNumber);
     },
@@ -127,33 +114,40 @@ export async function mkpath2(ctx, { midi_input = { postMessage() {} }, sf2File 
     async subscribeNextMsg(predicate) {
       return waitFor(predicate);
     },
+    /** Per-channel generator override (inspector sliders); absolute mode. */
+    setChannelGen(channelId, gen, value) {
+      spinner.port.postMessage({ cmd: "setGen", channel: channelId, gen, value });
+      return waitFor(
+        (data) =>
+          data.ack === "setGen" &&
+          data.channel === channelId &&
+          data.gen === gen,
+        500
+      ).catch(() => null);
+    },
+    clearChannelGen(channelId, gen) {
+      spinner.port.postMessage({ cmd: "clearGen", channel: channelId, gen });
+    },
+    /** Zone editor write: same WASM memory the voices read. */
+    setZone(presetId, ref, arr) {
+      spinner.port.postMessage({ cmd: "setZone", presetId, ref, arr });
+      return waitFor(
+        (data) =>
+          data.ack === "setZone" &&
+          data.presetId === presetId &&
+          data.ref === ref,
+        2000
+      );
+    },
     setMasterGain(value) {
-      mastGain.gain.linearRampToValueAtTime(value, ctx.currentTime + 0.05);
+      rampParam(ctx, mastGain.gain, value);
     },
-    lowPassFilter_set_q(channelId, q) {
-      lpfs[channelId].parameters
-        .get("FilterQ_Cb")
-        .linearRampToValueAtTime(q, ctx.currentTime + 0.05);
-    },
-    lowPassFilter_set_fc(channelId, fc) {
-      lpfs[channelId].parameters
-        .get("FilterFC")
-        .linearRampToValueAtTime(fc, ctx.currentTime + 0.05);
+    /** Mute by gain, not by ramping CC7: the volume slider is untouched. */
+    setMuted(channelId, muted) {
+      rampParam(ctx, muteGains[channelId].gain, muted ? 0 : 1, 0.01);
     },
     silenceAll() {
-      mastGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.05);
-    },
-    async mute(channelId, muted) {
-      await this.startAudio();
-      const ramp = muted ? [80, 40, 0] : [40, 80, 110];
-      while (ramp.length) {
-        midi_input.postMessage([
-          midi_ch_cmds.continuous_change | channelId,
-          midi_effects.volumecoarse,
-          ramp.shift(),
-        ]);
-        await delay(8);
-      }
+      rampParam(ctx, mastGain.gain, 0, 0.05);
     },
     async startAudio() {
       if (ctx.state !== "running") {

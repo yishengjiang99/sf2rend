@@ -2,6 +2,10 @@
 // two typedefs conflict; the wasm build only uses spin.h, so test that.
 #include "spin.h"
 
+/* spin.h declares SAMPLE_RATE extern (defined in spin.c, which the test does
+   not link); provide the test-local definition with the engine default. */
+float SAMPLE_RATE = 44100.0f;
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>

@@ -8,11 +8,19 @@ export function mkeventsPipe() {
       return;
     }
     draining = true;
-    while (queue.length) {
-      const next = queue.shift();
-      await listener(next);
+    try {
+      while (queue.length) {
+        const next = queue.shift();
+        try {
+          await listener(next);
+        } catch (error) {
+          // A throwing listener must never wedge the pipe: log and continue.
+          console.error("[eventsPipe] listener threw:", error);
+        }
+      }
+    } finally {
+      draining = false;
     }
-    draining = false;
   }
 
   return {
