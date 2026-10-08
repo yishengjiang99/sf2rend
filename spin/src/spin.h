@@ -12,13 +12,17 @@ typedef unsigned int uint32_t;
 #define nmidiChannels 16
 #define num_cc_list 128
 #define MAX_EG -1440.f
-#define SAMPLE_RATE 44100.0f
+/* Runtime sample rate (set from the AudioContext via set_sample_rate);
+ * defaults to 44100 until the worklet reports the real rate. */
+extern float SAMPLE_RATE;
+void set_sample_rate(float sr);
 #include "calc.h"
 #define def_drum_c 9
 
 #define modulo_s16f_inverse 1.0f / 32767.1f
 #define modulo_u16f (float)(((1 << 16) + .1f))
 extern float tanf(float t);
+extern float log2f(float t);
 
 typedef struct {
   unsigned short phase, delay;
@@ -93,25 +97,59 @@ typedef struct {
   int hasReleased, stage, nsteps;
   short delay, attack, hold, decay, sustain, release, pad1, pad2;
   int progress, progressInc;  // add prog scale to use LUT
+  int is_mod;                 // 1 = modulation envelope (0..1 scale), 0 = volume (cB)
 } EG;
 
 void advanceStage(EG* eg);
 float update_eg(EG* eg, int n);
 
+/*
+ * Roll one envelope forward n samples, always filling all n outputs.
+ * Attack uses the att_db_levels LUT (volume) or a linear 0..1 ramp (mod).
+ * Stages advance inside the loop so no stale samples are left behind.
+ */
 void eg_roll(EG* eg, int n, float* output) {
-  while (n-- && eg->nsteps--) {
-    if (eg->stage == attack) {
-      int lut_index = fixed_floor(eg->progress);
-      double frag = get_fraction(eg->progress);
-      double f1 = att_db_levels[lut_index], f2 = att_db_levels[lut_index + 1];
-      eg->egval = lerpd(f1, f2, frag);
+  for (int i = 0; i < n; i++) {
+    /* Skip zero-length stages so a stage that is entered with nsteps == 0
+     * never applies a stray increment before advancing. */
+    while (eg->nsteps <= 0 && eg->stage != done && eg->stage != inactive) {
+      int prev = eg->stage;
+      advanceStage(eg);
+      if (eg->stage == prev) break;
+    }
+    if (eg->stage == done || eg->stage == inactive) {
+      eg->egval = eg->is_mod ? 0.0f : MAX_EG;
+    } else if (eg->stage == attack) {
+      eg->progress += eg->progressInc;
+      if (eg->is_mod) {
+        double p = fixed2double(eg->progress) / 255.0;
+        if (p < 0) p = 0;
+        if (p > 1) p = 1;
+        eg->egval = (float)p;
+      } else {
+        int lut_index = fixed_floor(eg->progress);
+        if (lut_index < 0) lut_index = 0;
+        if (lut_index > 254) lut_index = 254;
+        double frag = get_fraction(eg->progress);
+        if (frag < 0) frag = 0;
+        if (frag > 1) frag = 1;
+        eg->egval =
+            lerpd(att_db_levels[lut_index], att_db_levels[lut_index + 1], frag);
+      }
+      eg->nsteps--;
     } else {
       eg->egval += eg->egIncrement;
+      eg->nsteps--;
     }
-    *output++ = eg->egval;
+    if (eg->is_mod) {
+      if (eg->egval < 0) eg->egval = 0;
+      if (eg->egval > 1) eg->egval = 1;
+    } else {
+      if (eg->egval > 0) eg->egval = 0.0f;
+      if (eg->egval < MAX_EG) eg->egval = MAX_EG;
+    }
+    output[i] = eg->egval;
   }
-  if (eg->egval > 0) eg->egval = 0.0f;
-  if (eg->nsteps <= 7) advanceStage(eg);
 }
 /**
  * advances envelope generator by n steps..
@@ -125,66 +163,95 @@ float update_eg(EG* eg, int n) {
     eg->nsteps--;
   }
   if (eg->nsteps <= 7) advanceStage(eg);
-  if (eg->egval > 0) eg->egval = 0.0f;
+  if (!eg->is_mod) {
+    if (eg->egval > 0) eg->egval = 0.0f;
+    if (eg->egval < MAX_EG) eg->egval = MAX_EG;
+  }
   return eg->egval;
 }
 
+/*
+ * Move to the next stage and initialize its increment / step count.
+ * Volume envelope works in centibels (0..MAX_EG); the mod envelope is
+ * normalized 0..1 (sustain in 0.1% units per the SF2 spec).
+ * Decay ramps toward the sustain level and stops; sustain holds
+ * indefinitely (nsteps = INT_MAX) until _eg_release moves to release.
+ */
 void advanceStage(EG* eg) {
+  int isMod = eg->is_mod;
   switch (eg->stage) {
     case inactive:
-      eg->stage++;
+      eg->stage = init;
       return;
     case init:
       eg->stage = delay;
       if (eg->delay > -12000) {
-        eg->egval = MAX_EG;
+        eg->egval = isMod ? 0.0f : MAX_EG;
         eg->nsteps = timecent2sample(eg->delay);
         eg->egIncrement = 0.0f;
         break;
       }
+    /* fallthrough: no delay stage */
     case delay:
       eg->stage = attack;
       if (eg->attack > -12000) {
-        eg->egval = MAX_EG;
+        eg->egval = isMod ? 0.0f : MAX_EG;
         eg->nsteps = timecent2sample(eg->attack);
+        if (eg->nsteps < 1) eg->nsteps = 1;
         eg->progress = double2fixed(0);
         eg->progressInc = double2fixed(255.0 / (double)eg->nsteps);
+        eg->egIncrement = 0.0f;
         break;
       }
+    /* fallthrough: no attack stage */
     case attack:
       eg->stage = hold;
-      eg->egval = 0.0f;
+      eg->egval = isMod ? 1.0f : 0.0f;
       eg->nsteps = timecent2sample(eg->hold);
       eg->egIncrement = 0.0f;
       break;
     case hold: /** TO DECAY */
       eg->stage = decay;
       /*
-       * This is the time, in absolute timecents, for a 100% change in the
-  Volume Envelope value during decay phase. */
-      // velopcity required to travel full 960db
-      eg->nsteps = timecent2sample(eg->decay) + timecent2sample(eg->release);
-      eg->egIncrement = MAX_EG / eg->nsteps;
-
-      // but it's timeslice by sustain percentage?
-      eg->nsteps = timecent2sample(eg->decay);
+       * Decay/release times are for a 100% change, so nsteps is the fraction
+       * of the full time needed to reach the sustain level; the increment is
+       * derived from nsteps so the stage lands exactly on target.
+       */
+      if (isMod) {
+        float sus = eg->sustain / 1000.0f; /* 0.1% units -> 0..1 */
+        if (sus < 0) sus = 0;
+        if (sus > 1) sus = 1;
+        int full = timecent2sample(eg->decay);
+        if (full < 1) full = 1;
+        eg->nsteps = (int)(full * (1.0f - sus));
+        eg->egIncrement =
+            eg->nsteps > 0 ? -(1.0f - sus) / (float)eg->nsteps : 0.0f;
+      } else {
+        float susAtt = (float)eg->sustain; /* cB attenuation, 0..1440 */
+        if (susAtt < 0) susAtt = 0;
+        if (susAtt > 1440) susAtt = 1440;
+        int full = timecent2sample(eg->decay);
+        if (full < 1) full = 1;
+        eg->nsteps = (int)(full * (susAtt / 1440.0f));
+        eg->egIncrement = eg->nsteps > 0 ? -susAtt / (float)eg->nsteps : 0.0f;
+      }
       break;
 
-    case decay:  // headsing to released;
+    case decay: /* reached sustain level: hold indefinitely */
       eg->stage = sustain;
       eg->egIncrement = 0.0f;
-      eg->nsteps = 48000;
+      eg->nsteps = 2147483647;
       break;
 
-      // sustain = % decreased during decay
-
-    case sustain: {
-      int stepsFull = timecent2sample(eg->release + eg->decay);
-      eg->egIncrement = MAX_EG / stepsFull;
-      eg->nsteps = stepsFull * (eg->egval / MAX_EG);
-    } break;
+    case sustain: /* re-hold (e.g. after a sustain-level glide) */
+      eg->stage = sustain;
+      eg->egIncrement = 0.0f;
+      eg->nsteps = 2147483647;
+      break;
     case release:
       eg->stage = done;
+      eg->egIncrement = 0.0f;
+      eg->nsteps = 0;
       break;
     case done:
       break;
@@ -192,16 +259,38 @@ void advanceStage(EG* eg) {
 }
 
 void _eg_release(EG* e) {
-  e->nsteps = 0;
+  if (e->stage == done || e->stage == inactive) return;
   e->hasReleased = 1;
-  e->stage = sustain;
-  advanceStage(e);
+  e->stage = release;
+  if (e->is_mod) {
+    int full = timecent2sample(e->release);
+    if (full < 1) full = 1;
+    float cur = e->egval;
+    if (cur < 0) cur = 0;
+    if (cur > 1) cur = 1;
+    e->nsteps = (int)(full * cur);
+    e->egIncrement = e->nsteps > 0 ? -cur / (float)e->nsteps : 0.0f;
+  } else {
+    int full = timecent2sample(e->release);
+    if (full < 1) full = 1;
+    float cur = e->egval;
+    if (cur > 0) cur = 0;
+    if (cur < MAX_EG) cur = MAX_EG;
+    e->nsteps = (int)(full * (1.0f - cur / MAX_EG));
+    e->egIncrement =
+        e->nsteps > 0 ? (MAX_EG - cur) / (float)e->nsteps : 0.0f;
+  }
+  if (e->nsteps < 1) {
+    e->stage = done;
+    e->nsteps = 0;
+  }
 }
 
 void eg_init(EG* e) { e->attack = -12000; }
 
 typedef struct {
-  uint32_t loopstart, loopend, length, sampleRate, originalPitch;
+  uint32_t loopstart, loopend, length, sampleRate;
+  int originalPitch, pitchCorrection;
   float* data;
 } pcm_t;
 
@@ -213,7 +302,7 @@ typedef struct {
   uint8_t lo, hi;
 } rangesType;  //  Four-character code
 typedef struct {
-  unsigned short StartAddrOfs, EndAddrOfs, StartLoopAddrOfs, EndLoopAddrOfs,
+  short StartAddrOfs, EndAddrOfs, StartLoopAddrOfs, EndLoopAddrOfs,
       StartAddrCoarseOfs;
   short ModLFO2Pitch, VibLFO2Pitch, ModEnv2Pitch, FilterFc, FilterQ,
       ModLFO2FilterFc, ModEnv2FilterFc, EndAddrCoarseOfs, ModLFO2Vol, Unused1,
@@ -224,9 +313,9 @@ typedef struct {
       VolEnvSustain, VolEnvRelease, Key2VolEnvHold, Key2VolEnvDecay, Instrument,
       Reserved1;
   rangesType KeyRange, VelRange;
-  unsigned short StartLoopAddrCoarseOfs;
+  short StartLoopAddrCoarseOfs;
   short Keynum, Velocity, Attenuation, Reserved2;
-  unsigned short EndLoopAddrCoarseOfs;
+  short EndLoopAddrCoarseOfs;
   short CoarseTune, FineTune, SampleId, SampleModes, Reserved3, ScaleTune,
       ExclusiveClass, OverrideRootKey, Dummy;
 } zone_t;
@@ -299,6 +388,8 @@ typedef struct {
 } Biquad;
 
 typedef struct {
+  /* NOTE: the field order up to `pcm` is read by spin-structs.js; do not
+   * reorder. New fields must be appended after `pright`. */
   float *inputf, *outputf;
   unsigned char channelId, key, velocity, p1, p2, p3, p4, p5;
   uint32_t position, loopStart, loopEnd;
@@ -311,45 +402,44 @@ typedef struct {
   uint32_t sampleLength;
   uint32_t active_dynamics_flag;
   int is_looping;
-  float initialFc, initialQ;
-  short lfo1_pitch, lfo1_volume, lfo2_pitch, modeg_pitch, modeg_fc, modeg_vol,
-      lfo1_fc, pleft, pright;
-
+  /* --- appended fields (private to C) --- */
+  float lfo1_pitch_c;  /* ModLFO2Pitch, cents */
+  float lfo1_vol_cb;   /* ModLFO2Vol, centibels */
+  float lfo2_pitch_c;  /* VibLFO2Pitch, cents */
+  float modeg_pitch_c; /* ModEnv2Pitch, cents */
+  float modeg_fc_c;    /* ModEnv2FilterFc, cents */
+  float lfo1_fc_c;     /* ModLFO2FilterFc, cents */
+  float filter_fc_cents; /* effective FilterFc, absolute cents */
+  float filter_q_linear;
+  int exclusiveClass;
+  int preset_id;
+  int zone_ref;
+  int active; /* 1 = slot in use */
 } spinner;
 
 void set_spinner_zone(spinner* x, zone_t* z);
 spinner* newSpinner(int ch);
+spinner* alloc_voice(int ch);
+void free_voice(spinner* x);
+int sp_active(spinner* x);
 void reset(spinner* x);
+void reset_tables(void);
 int spin(spinner* x, int n);
 float* spOutput(spinner* x);
 
-void scaleTc(EG* eg, unsigned int pcmSampleRate) {
-  float scaleFactor = SAMPLE_RATE / (float)pcmSampleRate;
-  eg->attack *= scaleFactor;
-  eg->delay *= scaleFactor;
-  eg->decay *= scaleFactor;
-  eg->release *= scaleFactor;
-  eg->hold *= scaleFactor;
-}
-void init_vol_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
-  float scaleFactor = SAMPLE_RATE / (float)pcmSampleRate;
-  eg->attack = z->VolEnvAttack * scaleFactor;
-  eg->delay = z->VolEnvDelay * scaleFactor;
-  eg->decay = z->VolEnvDecay * scaleFactor;
-  eg->release = z->VolEnvRelease * scaleFactor;
-  eg->hold = z->VolEnvHold * scaleFactor;
-  eg->sustain = z->VolEnvSustain * scaleFactor;
-  eg->stage = init;
-  eg->nsteps = 0;
-}
-void init_mod_eg(EG* eg, zone_t* z, unsigned int pcmSampleRate) {
-  eg->attack = z->ModEnvAttack;
-  eg->delay = z->ModEnvDelay;
-  eg->decay = z->ModEnvDecay;
-  eg->release = z->ModEnvRelease;
-  eg->hold = z->ModEnvHold;
-  eg->sustain = z->ModEnvSustain;
-}
+/* Per-channel generator overrides (inspector sliders / zone editor).
+ * mode 0 = untouched (zone value), 1 = relative offset added to the zone
+ * value (SF2 "relative" semantics), 2 = absolute override. */
+void set_channel_gen(int ch, int gen, short value);
+void clear_channel_gen(int ch, int gen);
+short effective_gen(spinner* x, int gen);
+short voice_gen(spinner* x, int gen);
+spinner* sp_for_channel(int ch);
+void voice_refresh_zone(spinner* x);
+void ch_set_bend(int ch, int msb, int lsb);
+void trigger_release(spinner* x);
+void gm_reset(void);
+
 // Midi controller numbers
 enum TMLController {
   TML_BANK_SELECT_MSB,

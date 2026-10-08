@@ -20,12 +20,15 @@ clocktime = ticks = lastTick = 0;
 
 onmessage = handleMsg;
 
-function handleMsg({data: {cmd, tick, tm}}) {
+function handleMsg({data: {cmd, tick, clock, tm}}) {
 	if (tm) {
 		tmParams = {...tmParams, ...tm};
 	}
 	if (typeof tick === "number") {
 		ticks = tick;
+	}
+	if (typeof clock === "number") {
+		clocktime = clock;
 	}
 	if (cmd) switch (cmd) {
 		case "start":
@@ -50,14 +53,6 @@ function handleMsg({data: {cmd, tick, tm}}) {
 		case "stop":
 		case "pause":
 			clearTimeout(timer);
-			break;
-		case "fwd":
-			ticks += tmParams.ppqn * 8;
-			postMessage({ticks, clock: clocktime});
-			break;
-		case "rwd":
-			ticks = Math.max(0, ticks - tmParams.ppqn * 8);
-			postMessage({ticks, clock: clocktime});
 			break;
 		default: break;
 	}

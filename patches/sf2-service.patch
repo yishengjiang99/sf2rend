@@ -1,0 +1,307 @@
+diff --git a/index.js b/index.js
+index ce403fc..8a5289a 100644
+--- a/index.js
++++ b/index.js
+@@ -7,19 +7,100 @@ function s16ArrayBuffer2f32(ab) {
+ 
+   const f32 = new Float32Array(ab.byteLength / 2);
+   for (let i = 0; i < b16.length; i++) {
+-    f32[i] = b16[i] / 0xffff;
++    f32[i] = b16[i] / 32768;
+   }
+   return f32;
+ }
+ 
++// --- range-fetch helpers -------------------------------------------------
++// Full-file fallback cache: servers that ignore Range return 200 with the
++// whole file, so we download once and slice locally.
++const fullBufferCache = new Map(); // url -> Promise<ArrayBuffer>
++async function fetchFull(url) {
++  let pending = fullBufferCache.get(url);
++  if (!pending) {
++    pending = fetch(url).then((res) => {
++      if (!res.ok)
++        throw new Error(`SoundFont fetch failed: ${url} (status ${res.status})`);
++      return res.arrayBuffer();
++    });
++    fullBufferCache.set(url, pending);
++  }
++  return pending;
++}
++
++/** Fetch bytes [start, end]; validates the 206 status, else slices a cached full download. */
++async function fetchRange(url, start, end) {
++  const res = await fetch(url, {
++    headers: { Range: `bytes=${start}-${end}` },
++  }).catch((e) => {
++    throw new Error(`SoundFont fetch failed: ${url}: ${e?.message ?? e}`);
++  });
++  if (res.status === 206) return res.arrayBuffer();
++  const full = await fetchFull(url);
++  return full.slice(start, Math.min(end + 1, full.byteLength));
++}
++
++let _streamsTransferable = null;
++/** Feature-detect whether a ReadableStream can be transferred (Safari throws DataCloneError). */
++function streamsTransferable() {
++  if (_streamsTransferable == null) {
++    try {
++      const rs = new ReadableStream();
++      const mc = new MessageChannel();
++      mc.port1.postMessage({ s: rs }, [rs]);
++      mc.port1.close();
++      mc.port2.close();
++      _streamsTransferable = true;
++    } catch (e) {
++      _streamsTransferable = false;
++    }
++  }
++  return _streamsTransferable;
++}
++
++// Reuse one emscripten module across SoundFont loads instead of
++// instantiating (and leaking) a new heap per load().
++let sharedModulePromise = null;
++function getModule() {
++  if (!sharedModulePromise) sharedModulePromise = Module();
++  return sharedModulePromise;
++}
++
+ // sfbkstream function (from sfbk-stream.js)
+ async function sfbkstream(url) {
+-  const res = await fetch(url, {headers: {Range: "bytes=0-6400"}}).catch(e => console.trace(e));
+-  if (!res.ok) return false;
++  // Probe the head of the file; retry with a larger window if the INFO/sdta
++  // headers don't fit, and fall back to a full download when the server
++  // ignores Range requests.
++  let headAb = null;
++  let fullAb = null;
++  const probeRes = await fetch(url, { headers: { Range: "bytes=0-65535" } }).catch(
++    (e) => {
++      throw new Error(`SoundFont fetch failed: ${url}: ${e?.message ?? e}`);
++    }
++  );
++  if (!probeRes.ok)
++    throw new Error(`SoundFont fetch failed: ${url} (status ${probeRes.status})`);
++  if (probeRes.status === 206) {
++    headAb = await probeRes.arrayBuffer();
++  } else {
++    fullAb = await fetchFull(url);
++    headAb = fullAb.slice(0, 65536);
++  }
+ 
+-  const ab = await res.arrayBuffer();
++  let parsed = null;
++  for (const size of [65536, 1048576]) {
++    const ab = size <= headAb.byteLength ? headAb : fullAb ? fullAb.slice(0, size) : (await fetchRange(url, 0, size - 1));
++    try {
++      parsed = parseHead(ab);
++      if (parsed) break;
++    } catch (e) {
++      parsed = null;
++    }
++  }
++  if (!parsed) throw new Error(`Could not locate the sdta chunk in ${url}`);
++  const { infos, readOffset, meta, filesize } = parsed;
+ 
+-  const [infos, readOffset, meta, filesize] = readInfoSection(ab);
+   const sdtaSize = readOffset.get32();
+   if (bytesToString(readOffset.readNString(4)) !== "sdta")
+     throw new Error("read failed " + url);
+@@ -27,24 +108,25 @@ async function sfbkstream(url) {
+ 
+   const sdtaStart = readOffset.offset;
+   const pdtastart = sdtaStart + sdtaSize + 4;
+-  // RIFF's size field is fileLength-8, so `filesize-1` stops 8 bytes early and
+-  // the parser rejects the truncated shdr. Read through EOF.
+-  const pdtaHeader = {
+-    headers: {Range: "bytes=" + pdtastart + "-"},
+-  };
++  // RIFF's size field is fileLength-8, so the last byte index is filesize+7;
++  // reading short of EOF makes the parser reject the truncated shdr.
++  const pdtaBuffer = new Uint8Array(await fetchRange(url, pdtastart, filesize + 7));
+ 
+   return {
+     nsamples: (pdtastart - sdtaStart) / 2,
+     sdtaStart,
+     infos,
+     meta,
+-    pdtaBuffer: new Uint8Array(
+-      await (await fetch(url, pdtaHeader)).arrayBuffer()
+-    ),
+-    fullUrl: res.url,
++    pdtaBuffer,
++    fullUrl: url,
+   };
+ }
+ 
++function parseHead(ab) {
++  const [infos, readOffset, meta, filesize] = readInfoSection(ab);
++  return { infos, readOffset, meta, filesize };
++}
++
+ function readInfoSection(ab) {
+   const infosection = new Uint8Array(ab);
+   const r = readAB(infosection);
+@@ -148,7 +230,15 @@ export default class SF2Service {
+     this.url = url;
+   }
+   async load({onHeader, onSample, onZone} = {}) {
+-    const module = await Module();
++    const module = await getModule();
++    // Free the previous SoundFont's pdta heap allocation (module is shared).
++    if (this.state?.pdtaRef) {
++      try {
++        module._free(this.state.pdtaRef);
++      } catch (e) {
++        /* ignore */
++      }
++    }
+     const {pdtaBuffer, sdtaStart, infos} = await sfbkstream(this.url);
+     const programNames = [];
+ 
+@@ -156,7 +246,7 @@ export default class SF2Service {
+     const pdtaRef = module._malloc(pdtaBuffer.byteLength);
+ 
+     module.onHeader = (pid, bid, name) => {
+-      programNames[pid | bid] = name;
++      programNames[bid * 128 + pid] = name;
+       if (onHeader) onHeader(pid, bid, name);
+     };
+     module.onSample = (...args) => {
+@@ -171,10 +261,11 @@ export default class SF2Service {
+     }
+     const instRef = (instid) => module._instRef(instid);
+     const shdrref = module._shdrref(pdtaRef);
++    // Copy the gm slot table: the module is shared, so a later load() would
++    // otherwise rewrite the view held by this service instance.
++    const gmPtr = module._presetRef();
+     const presetRefs = new Uint32Array(
+-      module.HEAPU32.buffer,
+-      module._presetRef(),
+-      256
++      module.HEAPU32.buffer.slice(gmPtr, gmPtr + 256 * 4)
+     );
+     const heap = module.HEAPU8.buffer.slice(0, memend);
+     const heapref = new WeakRef(heap);
+@@ -219,7 +310,6 @@ export default class SF2Service {
+       zone && zone.SampleId != -1 && zone.Dummy >= 0;
+       zone = zref2Zone((zref += 120))
+     ) {
+-      if (zone.SampleId < 0) continue; 
+       const mapKey = zone.SampleId;
+       if (!shdrMap[mapKey]) {
+         shdrMap[mapKey] = getShdr(zone.SampleId);
+@@ -270,11 +360,14 @@ export default class SF2Service {
+         20, 
+         5
+       );
+-      const [originalPitch, pitchCorrection] = new Uint8Array(
++      const [originalPitch, pitchCorrectionU8] = new Uint8Array(
+         dv,
+         20 + 5 * 4,
+         2
+       );
++      // pitchCorrection is a signed char per the SF2 spec
++      const pitchCorrection =
++        pitchCorrectionU8 > 127 ? pitchCorrectionU8 - 256 : pitchCorrectionU8;
+       const range = [sdtaStart + start * 2, sdtaStart + end * 2 + 1];
+       const loops = [startloop - start, endloop - start];
+       return {
+@@ -284,16 +377,16 @@ export default class SF2Service {
+         SampleId,
+         sampleRate,
+         originalPitch,
++        pitchCorrection,
+         url,
+         name: nameStr,
+         data: async () => {
+           if (shdrMap[SampleId].pcm) return shdrMap[SampleId].pcm;
+-          const res = await fetch(url, {
+-            headers: {
+-              Range: `bytes=${shdrMap[SampleId].range.join("-")}`,
+-            },
+-          });
+-          const ab = await res.arrayBuffer();
++          const ab = await fetchRange(
++            url,
++            shdrMap[SampleId].range[0],
++            shdrMap[SampleId].range[1]
++          );
+           shdrMap[SampleId].pcm = s16ArrayBuffer2f32(ab);
+           return shdrMap[SampleId].pcm;
+         },
+@@ -310,24 +403,43 @@ export default class SF2Service {
+       get sampleSet() {
+         return new Set(zMap.map((z) => z.SampleId));
+       },
+-      fetch_drop_ship_to(port) {
++      fetch_drop_ship_to(port, { skipSampleIds } = {}) {
++        const sampleIds = Array.from(new Set(zMap.map((z) => z.SampleId))).filter(
++          (sampleId) => !skipSampleIds?.has(sampleId)
++        );
+         return Promise.all(
+-          Array.from(new Set(zMap.map((z) => z.SampleId)))
++          sampleIds
+             .map((sampleId) => this.shdrMap[sampleId])
+             .map((shdr) =>
+               fetch(url, {
+                 headers: {
+                   Range: `bytes=${shdr.range.join("-")}`,
+                 },
+-              }).then((res) => {
+-                port.postMessage(
+-                  {
+-                    segments: shdrSegment(),
+-                    stream: res.body,
+-                  },
+-                  [res.body]
+-                );
+-                return res.body.closed;
++              }).then(async (res) => {
++                const segments = shdrSegment();
++                if (
++                  res.status === 206 &&
++                  streamsTransferable() &&
++                  res.body
++                ) {
++                  port.postMessage(
++                    {
++                      segments,
++                      stream: res.body,
++                      sf2url: url,
++                    },
++                    [res.body]
++                  );
++                  return res.body.closed;
++                }
++                // Safari can't transfer streams, or the server ignored Range:
++                // ship an ArrayBuffer the worklet converts to Float32.
++                const ab =
++                  res.status === 206
++                    ? await res.arrayBuffer()
++                    : (await fetchFull(url)).slice(shdr.range[0], shdr.range[1] + 1);
++                port.postMessage({ segments, buffer: ab, sf2url: url }, [ab]);
++                return true;
+ 
+                 function shdrSegment() {
+                   return {
+@@ -335,7 +447,8 @@ export default class SF2Service {
+                     nSamples: (shdr.range[1] + 1 - shdr.range[0]) / 2,
+                     loops: shdr.loops,
+                     sampleRate: shdr.sampleRate,
+-                    originalPitch: shdr.originalPitch
++                    originalPitch: shdr.originalPitch,
++                    pitchCorrection: shdr.pitchCorrection,
+                   };
+                 }
+               })
+@@ -343,7 +456,7 @@ export default class SF2Service {
+         );
+       },
+       get name() {
+-        return programNames[pid | bkid];
++        return programNames[bkid * 128 + pid];
+       },
+       filterKV: function (key, vel) {
+         const f = zMap.filter(
