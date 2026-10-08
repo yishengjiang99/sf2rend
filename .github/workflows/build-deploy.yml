@@ -60,6 +60,7 @@ jobs:
         # docker run uses the image ENTRYPOINT, which sets up the emsdk
         # environment correctly.
         run: |
+          docker run --rm "$TOOLCHAIN_IMAGE" emcc --version
           docker run --rm \
             -v "$GITHUB_WORKSPACE:/src" -w /src \
             "$TOOLCHAIN_IMAGE" \
