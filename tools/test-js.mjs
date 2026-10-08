@@ -71,6 +71,13 @@ try {
     cwd: root,
     env,
   });
+  // Node render test for spin.wasm: envelope stages, pitch accuracy,
+  // voice allocation. Pure node, no network; needs spin/spin.wasm.js
+  // built (make wasm runs before this in CI).
+  run("spin render test", process.execPath, ["spin/render.test.js"], {
+    cwd: root,
+    env,
+  });
   run(
     "fft-64bit mocha",
     "npx",

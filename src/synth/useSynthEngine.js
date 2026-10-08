@@ -849,7 +849,11 @@ export function useSynthEngine() {
   // --- init ---------------------------------------------------------------
   useEffect(() => {
     let cancelled = false;
-    const timerWorker = new Worker("dist/timer.js");
+    // webpack emits the timer module as a content-hashed chunk and resolves
+    // this URL relative to the page, so it works under /sf2rend/ too.
+    const timerWorker = new Worker(
+      new URL("../sequence/timer.js", import.meta.url)
+    );
     runtimeRef.current.timerWorker = timerWorker;
 
     const handleWindowError = (event) => {
