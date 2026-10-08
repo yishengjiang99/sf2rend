@@ -234,7 +234,7 @@
       row.dataset.ch = n;
       const opts = programs.map(p => `<option ${ch[0] && p.includes(ch[0]) ? "selected" : ""}>${p}</option>`).join("");
       const dots = Array.from({length: 7}, (_, k) => `<b style="left:${8+k*12}%;top:${28+(k%3)*16}%"></b>`).join("");
-      const clip = ch[2] ? `<div class="clip">${dots}</div>` : `<div class="empty"></div>`;
+      const clip = `<div class="clip">${ch[2] ? dots : ""}</div>`;
       row.innerHTML = `<div class="head"><div class="head-line"><div class="ch">CH ${n}</div><select aria-label="Instrument">${opts}</select></div><div class="meta">${ch[3]} · Ready · Preset ${ch[1] == null ? "None" : String(ch[1]).padStart(3,"0")} · ${ch[2]} notes</div><div class="head-line"><div class="pills"><button class="chip icon" type="button" data-mute aria-label="Mute" title="Mute"><i class="fa-solid fa-volume-xmark"></i></button><button class="chip icon" type="button" data-solo aria-label="Solo" title="Solo"><i class="fa-solid fa-headphones"></i></button><button class="chip icon" type="button" data-edit aria-label="Edit" title="Edit"><i class="fa-solid fa-pen"></i></button></div></div><input class="vol" type="range" min="0" max="127" value="${ch[2] ? 80 : 40}" aria-label="Volume" /></div><div class="lane"><span class="needle"></span>${clip}</div>`;
       stage.appendChild(row);
     });
