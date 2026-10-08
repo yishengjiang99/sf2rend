@@ -37,3 +37,6 @@ playbtn
 spin/test.html
 spin2
 spin/src/tinysp.c
+
+# npm cache kept inside the workspace for the container build job
+.npm-cache/
