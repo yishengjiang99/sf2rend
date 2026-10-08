@@ -61,7 +61,7 @@ jobs:
           docker run --rm \
             -v "$GITHUB_WORKSPACE:/src" -w /src \
             "$TOOLCHAIN_IMAGE" \
-            bash -c 'source /emsdk/emsdk_env.sh >/dev/null && nb=$(command -v node) && chmod a+x "$nb" && make wasm'
+            bash -c 'source /emsdk/emsdk_env.sh >/dev/null && cp -L "$(command -v node)" /tmp/node && chmod a+x /tmp/node && export PATH="/tmp:$PATH" && make wasm'
           # Fix ownership: files created as root in the container.
           sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE"
 
@@ -76,7 +76,7 @@ jobs:
           docker run --rm \
             -v "$GITHUB_WORKSPACE:/src" -w /src \
             "$TOOLCHAIN_IMAGE" \
-            bash -c 'source /emsdk/emsdk_env.sh >/dev/null && nb=$(command -v node) && chmod a+x "$nb" && make verify-reproducible'
+            bash -c 'source /emsdk/emsdk_env.sh >/dev/null && cp -L "$(command -v node)" /tmp/node && chmod a+x /tmp/node && export PATH="/tmp:$PATH" && make verify-reproducible'
           sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE"
 
       - name: Assemble site

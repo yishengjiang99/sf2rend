@@ -34,7 +34,7 @@ exec docker run --rm \
   "$EMSDK_IMAGE" \
   bash -c 'source /emsdk/emsdk_env.sh >/dev/null || true
     nb=$(command -v node || true)
-    if [ -n "$nb" ] && [ ! -x "$nb" ]; then chmod a+x "$nb" || true; fi
+    if [ -n "$nb" ]; then cp -L "$nb" /tmp/node && chmod a+x /tmp/node && export PATH="/tmp:$PATH"; fi
     if [ "$(id -u)" = 0 ] && command -v setpriv >/dev/null 2>&1; then
       exec setpriv --reuid="${HOST_UID}" --regid="${HOST_GID}" --clear-groups -- "$@"
     fi
