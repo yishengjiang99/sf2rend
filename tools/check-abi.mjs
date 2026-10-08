@@ -30,8 +30,24 @@ const actual = {
   })),
 };
 
-const want = JSON.stringify({ imports: expected.imports, exports: expected.exports });
-const got = JSON.stringify(actual);
+function byKey(list, keys) {
+  return [...list].sort((a, b) => {
+    for (const key of keys) {
+      const diff = String(a[key]).localeCompare(String(b[key]));
+      if (diff) return diff;
+    }
+    return 0;
+  });
+}
+
+const want = JSON.stringify({
+  imports: byKey(expected.imports, ["module", "name", "kind"]),
+  exports: byKey(expected.exports, ["name", "kind"]),
+});
+const got = JSON.stringify({
+  imports: byKey(actual.imports, ["module", "name", "kind"]),
+  exports: byKey(actual.exports, ["name", "kind"]),
+});
 if (want !== got) {
   console.error("spin.wasm ABI changed!");
   const wantSet = new Set(

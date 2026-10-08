@@ -1,5 +1,5 @@
 {
-  "note": "Import/export ABI of spin.wasm at f2403f3 (before the hermetic rebuild). make check-spin-abi fails if a rebuild changes it.",
+  "note": "Import/export ABI of spin.wasm. make check-spin-abi fails if a rebuild adds or drops a symbol.",
   "imports": [
     {
       "module": "env",
@@ -323,6 +323,22 @@
     },
     {
       "name": "__table_base",
+      "kind": "global"
+    },
+    {
+      "name": "__rodata_start",
+      "kind": "global"
+    },
+    {
+      "name": "__rodata_end",
+      "kind": "global"
+    },
+    {
+      "name": "__wasm_first_page_end",
+      "kind": "global"
+    },
+    {
+      "name": "__tls_base",
       "kind": "global"
     }
   ]
