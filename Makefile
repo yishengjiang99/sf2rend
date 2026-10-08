@@ -92,7 +92,7 @@ saturation/saturate.wasm.js: $(BUILD)/saturation/saturate.wasm
 FFT_EXPORTS := '["_FFT","_iFFT","_bit_reverse","_malloc"]'
 
 $(BUILD)/fft-64bit/fft.wasm: fft-64bit/src/fft.c | $(BUILD)/fft-64bit $(TOOLCHAIN_OK)
-	emcc $< -O3 -nostartfiles -o $@ --no-entry -s EXPORTED_FUNCTIONS=$(FFT_EXPORTS) -ffile-prefix-map=$(ROOT)=.
+	emcc $< -O3 -nostartfiles -o $@ -s EXPORTED_FUNCTIONS=$(FFT_EXPORTS) -Wl,--no-entry -ffile-prefix-map=$(ROOT)=.
 
 fft-64bit/build/fft.wasm.js: $(BUILD)/fft-64bit/fft.wasm | fft-64bit/build
 	$(WASM2JS) $< $@
