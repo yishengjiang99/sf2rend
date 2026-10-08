@@ -25,11 +25,13 @@ const root = arg("--root");
 const require = createRequire(join(root, "package.json"));
 
 const httpServerBin = require.resolve("http-server/bin/http-server");
-// NOTE: the root dir must come before --silent; http-server's arg parser
-// consumes the positional after --silent as the flag's value.
+// --silent must NOT be used: it suppresses the startup banner this script
+// parses for the port, and http-server's arg parser consumes the positional
+// root dir when it follows --silent. Request logs go to the piped stdout
+// and are ignored after the URL is found.
 const server = spawn(
   process.execPath,
-  [httpServerBin, root, "-p", "0", "-a", "127.0.0.1", "--silent"],
+  [httpServerBin, root, "-p", "0", "-a", "127.0.0.1"],
   { stdio: ["ignore", "pipe", "inherit"] },
 );
 

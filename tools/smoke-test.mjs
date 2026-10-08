@@ -6,11 +6,15 @@
 // Checks:
 // - no console errors, no page errors
 // - no 404s or failed requests (fail on any)
-// - "Engine ready." status appears (audio engine initialized)
-// - a "<name>.sf2 is ready." status appears (default SoundFont loaded;
-//   exercises Range requests against static/)
 // - spin-proc, lpf-proc and the FFT worklet all registered
-//   (via the window.__sf2rendWorklets hook set in src/mkpath.js)
+//   (via the window.__sf2rendWorklets hook set in src/mkpath.js;
+//   the "Engine ready." status is batched away by React, so the
+//   durable hook is the reliable engine-init signal)
+// - a "Loaded <n> presets from <name>.sf2." session-log entry appears
+//   (default SoundFont loaded; exercises Range requests against static/.
+//   The "<name>.sf2 is ready." status is transient — the default MIDI
+//   starts loading immediately after — so the durable log entry is the
+//   reliable signal.)
 //
 // Usage: node tools/smoke-test.mjs --site <_site dir> [--port <port>]
 import { spawn, spawnSync } from "node:child_process";
@@ -29,7 +33,7 @@ if (!site) {
   process.exit(1);
 }
 const port = Number(arg("--port", "0")) || 0;
-const root = resolve(join(new URL(".", import.meta.url).pathname, "..", ".."));
+const root = resolve(join(new URL(".", import.meta.url).pathname, ".."));
 const require = createRequire(join(root, "package.json"));
 
 function findChrome() {
@@ -53,11 +57,13 @@ const serveRoot = mkdtempSync(join(tmpdir(), "sf2rend-smoke-"));
 symlinkSync(site, join(serveRoot, "sf2rend"));
 
 const httpServerBin = require.resolve("http-server/bin/http-server");
-// NOTE: the root dir must come before --silent; http-server's arg parser
-// consumes the positional after --silent as the flag's value.
+// --silent must NOT be used: it suppresses the startup banner this script
+// parses for the port, and http-server's arg parser consumes the positional
+// root dir when it follows --silent. Request logs go to the piped stdout
+// and are ignored after the URL is found.
 const server = spawn(
   process.execPath,
-  [httpServerBin, serveRoot, "-p", String(port), "-a", "127.0.0.1", "--silent"],
+  [httpServerBin, serveRoot, "-p", String(port), "-a", "127.0.0.1"],
   { stdio: ["ignore", "pipe", "inherit"] },
 );
 
@@ -102,24 +108,27 @@ try {
 
   await page.goto(`${baseUrl}/sf2rend/index.html`, { waitUntil: "load", timeout: 60000 });
 
-  console.log("waiting for Engine ready...");
+  // NOTE: the "Engine ready." status is immediately replaced by the
+  // SoundFont loading status (React batches the two setStatus calls), so
+  // it is not a reliable signal. The worklet registration hook is set
+  // once during engine init and never cleared, making it durable.
+  console.log("waiting for worklets to register (engine init)...");
   await page.waitForFunction(
-    () => document.body.innerText.includes("Engine ready."),
+    () =>
+      JSON.stringify(window.__sf2rendWorklets) ===
+      JSON.stringify(["spin-proc", "lpf-proc", "proc-fft"]),
     { timeout: 90000 },
   );
-
-  const worklets = await page.evaluate(() => window.__sf2rendWorklets);
-  const expected = ["spin-proc", "lpf-proc", "proc-fft"];
-  if (JSON.stringify(worklets) !== JSON.stringify(expected)) {
-    failures.push(`worklets registered: ${JSON.stringify(worklets)}, want ${JSON.stringify(expected)}`);
-  } else {
-    console.log(`worklets registered: ${worklets.join(", ")}`);
-  }
+  console.log("worklets registered: spin-proc, lpf-proc, proc-fft");
 
   console.log("waiting for default SoundFont...");
-  await page.waitForFunction(() => /\.sf2 is ready\./.test(document.body.innerText), {
-    timeout: 180000,
-  });
+  // NOTE: the "<name>.sf2 is ready." status is transient (the default MIDI
+  // starts loading immediately after), so wait for the durable session-log
+  // entry instead. It also proves the Range-request SF2 fetch worked.
+  await page.waitForFunction(
+    () => /Loaded \d+ presets from .+\.sf2\./.test(document.body.innerText),
+    { timeout: 180000 },
+  );
   console.log("default SoundFont loaded");
 } catch (err) {
   failures.push(`exception: ${err.message}`);

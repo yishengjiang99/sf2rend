@@ -31,10 +31,18 @@ BUILD_ID := $(shell git rev-parse --short HEAD 2>/dev/null || echo $(SOURCE_DATE
 
 # --- toolchain guard -------------------------------------------------------
 # wasm targets need emcc/clang/llc/wasm-ld from the pinned image on PATH.
-.PHONY: check-toolchain
-check-toolchain:
+# A sentinel file records the check so up-to-date outputs are not rebuilt
+# just to re-run it; the check re-runs when toolchain.env changes.
+TOOLCHAIN_OK := $(BUILD)/.toolchain-ok
+
+$(TOOLCHAIN_OK): toolchain.env
 	@command -v emcc >/dev/null 2>&1 || { \
 	  echo "error: emcc not on PATH; run via scripts/in-toolchain.sh" >&2; exit 1; }
+	@command -v clang >/dev/null 2>&1 || { \
+	  echo "error: clang not on PATH; run via scripts/in-toolchain.sh" >&2; exit 1; }
+	@command -v wasm-ld >/dev/null 2>&1 || { \
+	  echo "error: wasm-ld not on PATH; run via scripts/in-toolchain.sh" >&2; exit 1; }
+	@mkdir -p $(BUILD) && touch $@
 
 # --- spin ------------------------------------------------------------------
 SPIN_SRCS := spin/src/spin.c
@@ -44,7 +52,7 @@ SPIN_WASM := $(BUILD)/spin/spin.wasm
 $(BUILD)/spin $(BUILD)/lpf $(BUILD)/saturation $(BUILD)/fft-64bit $(CTEST):
 	mkdir -p $@
 
-$(SPIN_WASM): $(SPIN_SRCS) $(SPIN_HDRS) | $(BUILD)/spin check-toolchain
+$(SPIN_WASM): $(SPIN_SRCS) $(SPIN_HDRS) | $(BUILD)/spin $(TOOLCHAIN_OK)
 	clang --target=wasm32 -O2 -emit-llvm -c -S $(SPIN_SRCS) -o $(BUILD)/spin/spin.ll -ffile-prefix-map=$(ROOT)=.
 	llc -march=wasm32 -filetype=obj $(BUILD)/spin/spin.ll -o $(BUILD)/spin/spin.o
 	wasm-ld --features=atomics,mutable-global --no-check-features --allow-undefined \
@@ -57,7 +65,7 @@ spin/spin.wasm.js: $(SPIN_WASM)
 LPF_SRCS := lpf/biquad.c
 LPF_HDRS := lpf/biquad.h
 
-$(BUILD)/lpf/lpf.wasm: $(LPF_SRCS) $(LPF_HDRS) | $(BUILD)/lpf check-toolchain
+$(BUILD)/lpf/lpf.wasm: $(LPF_SRCS) $(LPF_HDRS) | $(BUILD)/lpf $(TOOLCHAIN_OK)
 	clang --target=wasm32 -O2 -nostdlib \
 	  -Wl,--no-entry -Wl,--allow-undefined -Wl,--export-all \
 	  $(LPF_SRCS) -o $@ -ffile-prefix-map=$(ROOT)=.
@@ -66,7 +74,7 @@ lpf/lpf.wasm.js: $(BUILD)/lpf/lpf.wasm
 	$(WASM2JS) $< $@
 
 # --- saturation ------------------------------------------------------------
-$(BUILD)/saturation/saturate.wasm: saturation/saturate.c | $(BUILD)/saturation check-toolchain
+$(BUILD)/saturation/saturate.wasm: saturation/saturate.c | $(BUILD)/saturation $(TOOLCHAIN_OK)
 	clang --target=wasm32 -O3 -flto -nostdlib \
 	  -Wl,--no-entry -Wl,--export-all -Wl,--import-memory \
 	  -o $@ $< -ffile-prefix-map=$(ROOT)=.
@@ -77,7 +85,7 @@ saturation/saturate.wasm.js: $(BUILD)/saturation/saturate.wasm
 # --- fft-64bit (emcc) ------------------------------------------------------
 FFT_EXPORTS := '["_FFT","_iFFT","_bit_reverse","_malloc"]'
 
-$(BUILD)/fft-64bit/fft.wasm: fft-64bit/src/fft.c | $(BUILD)/fft-64bit check-toolchain
+$(BUILD)/fft-64bit/fft.wasm: fft-64bit/src/fft.c | $(BUILD)/fft-64bit $(TOOLCHAIN_OK)
 	emcc $< -O3 -o $@ --no-entry -s EXPORTED_FUNCTIONS=$(FFT_EXPORTS) -ffile-prefix-map=$(ROOT)=.
 
 fft-64bit/build/fft.wasm.js: $(BUILD)/fft-64bit/fft.wasm | fft-64bit/build
@@ -89,7 +97,7 @@ fft-64bit/build:
 # --- sf2-service pdta (emcc) -----------------------------------------------
 PDTA_SRCS := sf2-service/sf2.c sf2-service/sf2.h sf2-service/lib.js
 
-sf2-service/build/pdta.js: $(PDTA_SRCS) | sf2-service/build check-toolchain
+sf2-service/build/pdta.js: $(PDTA_SRCS) | sf2-service/build $(TOOLCHAIN_OK)
 	emcc sf2-service/sf2.c -O3 -o $@ \
 	  -s EXPORTED_RUNTIME_METHODS=['ccall','AsciiToString','HEAPU8','HEAPU32'] \
 	  -s EXPORTED_FUNCTIONS=['_malloc','_free','_loadpdta','_shdrref','_instRef','_presetRef','_findPreset','_sf2_zones_for'] \
@@ -183,7 +191,7 @@ check-spin-abi: spin/spin.wasm.js
 	node tools/check-abi.mjs spin/spin.wasm.js tools/spin-abi.json
 
 .PHONY: verify-reproducible
-verify-reproducible: check-toolchain
+verify-reproducible: $(TOOLCHAIN_OK)
 	rm -rf $(BUILD) $(WASM_JS)
 	$(MAKE) wasm
 	find $(WASM_JS) -type f | sort | xargs sha256sum > /tmp/sf2rend-hashes-1.txt

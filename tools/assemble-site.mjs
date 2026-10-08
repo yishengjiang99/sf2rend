@@ -70,9 +70,15 @@ mkdirSync(out, { recursive: true });
 
 // webpack output (whatever it emitted: hashed or plain names)
 copyInto("dist");
-// index.html: prefer the HtmlWebpackPlugin output, fall back to the template
+// index.html: prefer the HtmlWebpackPlugin output, fall back to the template.
+// The plugin emits asset URLs relative to dist/ (e.g. src="main.<hash>.js"),
+// so when the file moves to the site root they must be rewritten to dist/.
 if (existsSync(join(root, "dist", "index.html"))) {
-  cpSync(join(root, "dist", "index.html"), join(out, "index.html"));
+  const html = readFileSync(join(root, "dist", "index.html"), "utf8").replace(
+    /(src|href)="((?!https?:\/\/|\/|dist\/)[^"]+)"/g,
+    '$1="dist/$2"',
+  );
+  writeFileSync(join(out, "index.html"), html);
 } else {
   copyInto("index.html");
 }

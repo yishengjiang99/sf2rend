@@ -10,6 +10,17 @@ export const midi_ch_cmds = {
   pitchbend: 0xe0,
 };
 
+// The Azure blob listings are opt-in via ?remoteMidi=1. By default the
+// deployed site depends only on the files it ships (static/), so it works
+// fully offline / on a fresh Pages deploy.
+function remoteMidiEnabled() {
+  try {
+    return new URLSearchParams(globalThis.location?.search ?? "").get("remoteMidi") === "1";
+  } catch {
+    return false;
+  }
+}
+
 export async function fetchmidilist(
   url = "https://grep32bit.blob.core.windows.net/midi?resttype=container&comp=list"
 ) {
@@ -18,7 +29,7 @@ export async function fetchmidilist(
     Url: item,
   }));
 
-  if (globalThis.location?.hostname === "127.0.0.1" || globalThis.location?.hostname === "localhost") {
+  if (!remoteMidiEnabled()) {
     return localEntries;
   }
 
@@ -49,7 +60,7 @@ export async function fetchSF2List(
     Url: item,
   }));
 
-  if (globalThis.location?.hostname === "127.0.0.1" || globalThis.location?.hostname === "localhost") {
+  if (!remoteMidiEnabled()) {
     return localEntries;
   }
 
