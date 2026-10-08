@@ -39,11 +39,17 @@ jobs:
 
       - name: Toolchain check
         run: |
-          # Source the emsdk environment the same way the image ENTRYPOINT does.
-          # Use bash explicitly; the script requires BASH_SOURCE.
-          bash -c 'EMSDK_QUIET=1 source /emsdk/emsdk_env.sh && emcc --version | head -1 && node --version && command -v clang && command -v llc && command -v wasm-ld'
-          # Persist the env for subsequent steps.
-          bash -c 'EMSDK_QUIET=1 source /emsdk/emsdk_env.sh && echo "$PATH"' >> "$GITHUB_PATH"
+          export EMSDK=/emsdk
+          export EMSCRIPTEN=/emsdk/upstream/emscripten
+          export PATH="/emsdk:/emsdk/upstream/emscripten:/emsdk/upstream/bin:/emsdk/node/24.19.0_64bit/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+          echo "$PATH" >> "$GITHUB_PATH"
+          echo "EMSDK=$EMSDK" >> "$GITHUB_ENV"
+          echo "EMSCRIPTEN=$EMSCRIPTEN" >> "$GITHUB_ENV"
+          emcc --version | head -1
+          node --version
+          clang --version | head -1
+          llc --version | head -1
+          wasm-ld --version | head -1
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Toolchain pin matches toolchain.env
