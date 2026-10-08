@@ -38,12 +38,6 @@ TOOLCHAIN_OK := $(BUILD)/.toolchain-ok
 $(TOOLCHAIN_OK): toolchain.env
 	@command -v emcc >/dev/null 2>&1 || { \
 	  echo "error: emcc not on PATH; run via scripts/in-toolchain.sh" >&2; exit 1; }
-	@command -v clang >/dev/null 2>&1 || { \
-	  echo "error: clang not on PATH; run via scripts/in-toolchain.sh" >&2; exit 1; }
-	@command -v llc >/dev/null 2>&1 || { \
-	  echo "error: llc not on PATH; run via scripts/in-toolchain.sh" >&2; exit 1; }
-	@command -v wasm-ld >/dev/null 2>&1 || { \
-	  echo "error: wasm-ld not on PATH; run via scripts/in-toolchain.sh" >&2; exit 1; }
 	@mkdir -p $(BUILD) && touch $@
 
 # --- spin ------------------------------------------------------------------
@@ -54,10 +48,16 @@ SPIN_WASM := $(BUILD)/spin/spin.wasm
 $(BUILD)/spin $(BUILD)/lpf $(BUILD)/saturation $(BUILD)/fft-64bit $(CTEST):
 	mkdir -p $@
 
+# Locate LLVM tools via emcc (they're bundled with emsdk but not on PATH
+# in the Docker image). Fall back to PATH if emcc can't locate them.
+CLANG := $(shell emcc --print-prog-name=clang 2>/dev/null || echo clang)
+LLC := $(shell emcc --print-prog-name=llc 2>/dev/null || echo llc)
+WASM_LD := $(shell emcc --print-prog-name=wasm-ld 2>/dev/null || echo wasm-ld)
+
 $(SPIN_WASM): $(SPIN_SRCS) $(SPIN_HDRS) | $(BUILD)/spin $(TOOLCHAIN_OK)
-	clang --target=wasm32 -O2 -emit-llvm -c -S $(SPIN_SRCS) -o $(BUILD)/spin/spin.ll -ffile-prefix-map=$(ROOT)=.
-	llc -march=wasm32 -filetype=obj $(BUILD)/spin/spin.ll -o $(BUILD)/spin/spin.o
-	wasm-ld --features=atomics,mutable-global --no-check-features --allow-undefined \
+	$(CLANG) --target=wasm32 -O2 -emit-llvm -c -S $(SPIN_SRCS) -o $(BUILD)/spin/spin.ll -ffile-prefix-map=$(ROOT)=.
+	$(LLC) -march=wasm32 -filetype=obj $(BUILD)/spin/spin.ll -o $(BUILD)/spin/spin.o
+	$(WASM_LD) --features=atomics,mutable-global --no-check-features --allow-undefined \
 	  --import-memory --no-entry --export-all -o $@ $(BUILD)/spin/spin.o
 
 spin/spin.wasm.js: $(SPIN_WASM)
@@ -68,7 +68,7 @@ LPF_SRCS := lpf/biquad.c
 LPF_HDRS := lpf/biquad.h
 
 $(BUILD)/lpf/lpf.wasm: $(LPF_SRCS) $(LPF_HDRS) | $(BUILD)/lpf $(TOOLCHAIN_OK)
-	clang --target=wasm32 -O2 -nostdlib \
+	$(CLANG) --target=wasm32 -O2 -nostdlib \
 	  -Wl,--no-entry -Wl,--allow-undefined -Wl,--export-all \
 	  $(LPF_SRCS) -o $@ -ffile-prefix-map=$(ROOT)=.
 
@@ -77,7 +77,7 @@ lpf/lpf.wasm.js: $(BUILD)/lpf/lpf.wasm
 
 # --- saturation ------------------------------------------------------------
 $(BUILD)/saturation/saturate.wasm: saturation/saturate.c | $(BUILD)/saturation $(TOOLCHAIN_OK)
-	clang --target=wasm32 -O3 -flto -nostdlib \
+	$(CLANG) --target=wasm32 -O3 -flto -nostdlib \
 	  -Wl,--no-entry -Wl,--export-all -Wl,--import-memory \
 	  -o $@ $< -ffile-prefix-map=$(ROOT)=.
 
