@@ -12,9 +12,9 @@ name: build-deploy
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
-    branches: [main]
+    branches: [master]
   workflow_dispatch:
 
 permissions:
@@ -105,7 +105,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload Pages artifact
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: _site
@@ -157,7 +157,7 @@ jobs:
 
   deploy:
     needs: [build, test]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     permissions:
       contents: read
