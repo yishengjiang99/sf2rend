@@ -986,6 +986,7 @@ export default function App() {
                       key={index}
                       style={{
                         left: `${(note.t / channelNotes.maxT) * 100}%`,
+                        width: `${Math.max((note.dur / channelNotes.maxT) * 100, 0.35)}%`,
                         top: `${((127 - note.pitch) / 127) * 100}%`,
                       }}
                     />
@@ -1579,20 +1580,43 @@ function buildLocalMidiChoices() {
 function getChannelNotes(midiInfo) {
   const byChannel = Array.from({ length: 16 }, () => []);
   let maxT = 0;
+  const noteEvents = [];
   midiInfo?.tracks?.forEach((track) => {
     track.forEach((event) => {
       if (!event.channel) {
         return;
       }
       const [status, pitch, velocity] = event.channel;
-      if ((status & 0xf0) === midi_ch_cmds.note_on && velocity > 0) {
-        const channelId = status & 0x0f;
-        byChannel[channelId].push({ t: event.t ?? 0, pitch });
-        if (event.t > maxT) {
-          maxT = event.t;
+      const cmd = status & 0xf0;
+      if (cmd === midi_ch_cmds.note_on || cmd === midi_ch_cmds.note_off) {
+        const t = event.t ?? 0;
+        noteEvents.push({ t, cmd, channelId: status & 0x0f, pitch, velocity });
+        if (t > maxT) {
+          maxT = t;
         }
       }
     });
+  });
+  noteEvents.sort((x, y) => x.t - y.t);
+  const pending = new Map();
+  noteEvents.forEach((event) => {
+    const key = event.channelId * 128 + event.pitch;
+    if (event.cmd === midi_ch_cmds.note_on && event.velocity > 0) {
+      pending.set(key, event.t);
+    } else {
+      const start = pending.get(key);
+      if (start != null) {
+        pending.delete(key);
+        byChannel[event.channelId].push({
+          t: start,
+          pitch: event.pitch,
+          dur: Math.max(event.t - start, 1),
+        });
+      }
+    }
+  });
+  pending.forEach((start, key) => {
+    byChannel[Math.floor(key / 128)].push({ t: start, pitch: key % 128, dur: 24 });
   });
   return { byChannel, maxT: maxT || 1 };
 }

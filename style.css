@@ -80,8 +80,8 @@ select { max-width: 220px; }
   .head { border-bottom: 0; border-right: 1px solid var(--line); }
 }
 .clip, .empty { position: absolute; inset: 0; }
-.clip { background: linear-gradient(90deg, rgba(124,107,255,.22), rgba(124,107,255,.08)); }
-.clip b { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,.8); }
+.clip { background: rgba(246,241,234,.045); }
+.clip b { position: absolute; height: 8px; transform: translateY(-50%); border-radius: 2px; background: linear-gradient(180deg, rgba(124,107,255,.95), rgba(56,189,214,.85)); box-shadow: 0 0 6px rgba(124,107,255,.35); }
 .empty { border: 1px dashed rgba(246,241,234,.16); }
 .keys { border-top: 1px solid var(--line); padding: 8px 14px 12px; display: flex; align-items: end; gap: 8px; }
 .keys p { margin: 0; color: var(--muted); font-size: 11px; width: 180px; }
