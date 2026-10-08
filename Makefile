@@ -55,9 +55,9 @@ $(SPIN_WASM): $(SPIN_SRCS) $(SPIN_HDRS) | $(BUILD)/spin $(TOOLCHAIN_OK)
 	# NOTE: emcc bundles the LLVM tools; the standalone clang/llc/wasm-ld
 	# binaries are not shipped in the Docker image.
 	emcc -O2 $(SPIN_SRCS) -o $@ \
-	  -nostdlib -nostartfiles \
+	  -s STANDALONE_WASM=1 -s IMPORTED_MEMORY=1 \
 	  -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
-	  -Wl,--export-all -Wl,--no-entry -Wl,--allow-undefined -Wl,--import-memory \
+	  -Wl,--export-all -Wl,--no-entry \
 	  -matomics -mmutable-globals \
 	  -ffile-prefix-map=$(ROOT)=.
 
@@ -92,7 +92,7 @@ saturation/saturate.wasm.js: $(BUILD)/saturation/saturate.wasm
 FFT_EXPORTS := '["_FFT","_iFFT","_bit_reverse","_malloc"]'
 
 $(BUILD)/fft-64bit/fft.wasm: fft-64bit/src/fft.c | $(BUILD)/fft-64bit $(TOOLCHAIN_OK)
-	emcc $< -O3 -nostartfiles -o $@ -s EXPORTED_FUNCTIONS=$(FFT_EXPORTS) -Wl,--no-entry -ffile-prefix-map=$(ROOT)=.
+	emcc $< -O3 -nostartfiles -o $@ -Wl,--no-entry -s EXPORTED_FUNCTIONS=$(FFT_EXPORTS) -ffile-prefix-map=$(ROOT)=.
 
 fft-64bit/build/fft.wasm.js: $(BUILD)/fft-64bit/fft.wasm | fft-64bit/build
 	$(WASM2JS) $< $@
