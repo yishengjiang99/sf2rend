@@ -23,11 +23,10 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container:
-      # NOTE: the `env` context is not available in `container.image`, so the
-      # image is hardcoded here. The "toolchain pin" step below fails if it
-      # drifts from toolchain.env.
-      image: emscripten/emsdk:6.0.10@sha256:e077d54e2b8970575ebc4f185ac1de0b95c05f2b266134d4ba27449af7aebf65
+    # Pinned toolchain image (also in toolchain.env; the pin-check step fails
+    # if they differ). The `env` context is not available in `container.image`,
+    # so docker run is used directly instead of a container job.
+    # image: emscripten/emsdk:6.0.10@sha256:e077d54e2b8970575ebc4f185ac1de0b95c05f2b266134d4ba27449af7aebf65
     concurrency:
       group: pages-${{ github.ref }}
       cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -37,64 +36,49 @@ jobs:
           submodules: false
           fetch-depth: 1
 
-      - name: Toolchain check
-        run: |
-          export EMSDK=/emsdk
-          export EMSCRIPTEN=/emsdk/upstream/emscripten
-          export PATH="/emsdk:/emsdk/upstream/emscripten:/emsdk/upstream/bin:/emsdk/node/24.19.0_64bit/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-          echo "$PATH" >> "$GITHUB_PATH"
-          echo "EMSDK=$EMSDK" >> "$GITHUB_ENV"
-          echo "EMSCRIPTEN=$EMSCRIPTEN" >> "$GITHUB_ENV"
-          emcc --version | head -1
-          node --version
-          clang --version | head -1
-          llc --version | head -1
-          wasm-ld --version | head -1
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-
       - name: Toolchain pin matches toolchain.env
         run: |
           pinned="$(grep '^EMSDK_IMAGE=' toolchain.env | cut -d= -f2-)"
-          # the container.image is hardcoded (the env context is not available
-          # there); extract it from this workflow file and compare
-          wf_image="$(grep '^      image: emscripten/emsdk:' .github/workflows/build-deploy.yml | sed 's/.*image: //')"
+          wf_image="$(grep 'image: emscripten/emsdk:6.0.10' .github/workflows/build-deploy.yml | head -1 | sed 's/.*image: //')"
           if [ "$pinned" != "$wf_image" ]; then
             echo "toolchain.env pins: $pinned"
             echo "workflow pins:      $wf_image"
             echo "update one of them so they agree"
             exit 1
           fi
+          echo "TOOLCHAIN_IMAGE=$pinned" >> "$GITHUB_ENV"
 
-      - name: Node matches .nvmrc
-        run: |
-          want="v$(cat .nvmrc)"
-          got="$(node --version)"
-          [ "$got" = "$want" ] || { echo "node $got != .nvmrc $want"; exit 1; }
-
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          # The cache action runs on the host; the container sees the same
-          # directory through the workspace mount, so keep the npm cache
-          # inside the workspace and point npm at it.
-          path: .npm-cache
-          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: npm-${{ runner.os }}-
+          node-version-file: .nvmrc
+          cache: npm
 
       - name: Install dependencies
-        env:
-          NPM_CONFIG_CACHE: /github/workspace/.npm-cache
         run: npm ci --no-audit --no-fund
 
-      - name: Build WebAssembly modules and bundle
-        env:
-          NPM_CONFIG_CACHE: /github/workspace/.npm-cache
-        run: make wasm bundle
+      - name: Build WebAssembly modules in the pinned toolchain
+        # docker run uses the image ENTRYPOINT, which sets up the emsdk
+        # environment correctly. User-mapping keeps files owned by the runner.
+        run: |
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -v "$GITHUB_WORKSPACE:/src" -w /src \
+            "$TOOLCHAIN_IMAGE" \
+            make wasm
+
+      - name: Webpack bundle
+        run: make bundle
 
       - name: Policy checks
         run: make check-artifacts check-spin-abi
 
       - name: Reproducibility check
-        run: make verify-reproducible
+        run: |
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -v "$GITHUB_WORKSPACE:/src" -w /src \
+            "$TOOLCHAIN_IMAGE" \
+            make verify-reproducible
 
       - name: Assemble site
         run: make site
