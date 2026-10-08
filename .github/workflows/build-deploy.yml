@@ -37,16 +37,13 @@ jobs:
           submodules: false
           fetch-depth: 1
 
-      - name: Toolchain PATH
-        # The runner bypasses the image ENTRYPOINT, which is what normally
-        # sources emsdk_env.sh, so set up PATH explicitly and verify.
+      - name: Toolchain check
+        # The image Dockerfile bakes PATH via ENV, which persists even though
+        # the runner bypasses the ENTRYPOINT. Just verify the tools are there.
         run: |
-          EMSDK_QUIET=1 source /emsdk/emsdk_env.sh
-          echo "/emsdk" >> "$GITHUB_PATH"
-          echo "/emsdk/upstream/emscripten" >> "$GITHUB_PATH"
-          echo "/emsdk/upstream/bin" >> "$GITHUB_PATH"
-          echo "$(echo /emsdk/node/*_64bit/bin)" >> "$GITHUB_PATH"
-          emcc --version | head -1
+          command -v emcc && emcc --version | head -1
+          command -v clang && clang --version | head -1
+          command -v wasm-ld
           node --version
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
