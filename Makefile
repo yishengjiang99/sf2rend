@@ -49,10 +49,11 @@ $(BUILD)/spin $(BUILD)/lpf $(BUILD)/saturation $(BUILD)/fft-64bit $(CTEST):
 	mkdir -p $@
 
 # Locate LLVM tools via emcc (they're bundled with emsdk but not on PATH
-# in the Docker image). Fall back to PATH if emcc can't locate them.
+# in the Docker image). Derive llc/wasm-ld from the clang directory.
 CLANG := $(shell emcc --print-prog-name=clang 2>/dev/null || echo clang)
-LLC := $(shell emcc --print-prog-name=llc 2>/dev/null || echo llc)
-WASM_LD := $(shell emcc --print-prog-name=wasm-ld 2>/dev/null || echo wasm-ld)
+LLVM_BIN := $(dir $(CLANG))
+LLC := $(LLVM_BIN)llc
+WASM_LD := $(LLVM_BIN)wasm-ld
 
 $(SPIN_WASM): $(SPIN_SRCS) $(SPIN_HDRS) | $(BUILD)/spin $(TOOLCHAIN_OK)
 	$(CLANG) --target=wasm32 -O2 -emit-llvm -c -S $(SPIN_SRCS) -o $(BUILD)/spin/spin.ll -ffile-prefix-map=$(ROOT)=.
