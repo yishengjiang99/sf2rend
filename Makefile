@@ -48,18 +48,18 @@ SPIN_WASM := $(BUILD)/spin/spin.wasm
 $(BUILD)/spin $(BUILD)/lpf $(BUILD)/saturation $(BUILD)/fft-64bit $(CTEST):
 	mkdir -p $@
 
-# Locate LLVM tools via emcc (they're bundled with emsdk but not on PATH
-# in the Docker image). Derive llc/wasm-ld from the clang directory.
-CLANG := $(shell emcc --print-prog-name=clang 2>/dev/null || echo clang)
-LLVM_BIN := $(dir $(CLANG))
-LLC := $(LLVM_BIN)llc
-WASM_LD := $(LLVM_BIN)wasm-ld
+# All wasm targets use emcc from the pinned image (the standalone LLVM
+# binaries are not shipped in the Docker image).
 
 $(SPIN_WASM): $(SPIN_SRCS) $(SPIN_HDRS) | $(BUILD)/spin $(TOOLCHAIN_OK)
-	$(CLANG) --target=wasm32 -O2 -emit-llvm -c -S $(SPIN_SRCS) -o $(BUILD)/spin/spin.ll -ffile-prefix-map=$(ROOT)=.
-	$(LLC) -march=wasm32 -filetype=obj $(BUILD)/spin/spin.ll -o $(BUILD)/spin/spin.o
-	$(WASM_LD) --features=atomics,mutable-global --no-check-features --allow-undefined \
-	  --import-memory --no-entry --export-all -o $@ $(BUILD)/spin/spin.o
+	# NOTE: emcc bundles the LLVM tools; the standalone clang/llc/wasm-ld
+	# binaries are not shipped in the Docker image.
+	emcc -O2 $(SPIN_SRCS) -o $@ \
+	  -s STANDALONE_WASM=1 -s IMPORTED_MEMORY=1 \
+	  -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
+	  -Wl,--export-all -Wl,--no-entry \
+	  -Wl,--features=atomics,mutable-global \
+	  -ffile-prefix-map=$(ROOT)=.
 
 spin/spin.wasm.js: $(SPIN_WASM)
 	$(WASM2JS) $< $@
@@ -69,18 +69,20 @@ LPF_SRCS := lpf/biquad.c
 LPF_HDRS := lpf/biquad.h
 
 $(BUILD)/lpf/lpf.wasm: $(LPF_SRCS) $(LPF_HDRS) | $(BUILD)/lpf $(TOOLCHAIN_OK)
-	$(CLANG) --target=wasm32 -O2 -nostdlib \
-	  -Wl,--no-entry -Wl,--allow-undefined -Wl,--export-all \
-	  $(LPF_SRCS) -o $@ -ffile-prefix-map=$(ROOT)=.
+	emcc -O2 $(LPF_SRCS) -o $@ \
+	  -s STANDALONE_WASM=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
+	  -Wl,--export-all -Wl,--no-entry \
+	  -ffile-prefix-map=$(ROOT)=.
 
 lpf/lpf.wasm.js: $(BUILD)/lpf/lpf.wasm
 	$(WASM2JS) $< $@
 
 # --- saturation ------------------------------------------------------------
 $(BUILD)/saturation/saturate.wasm: saturation/saturate.c | $(BUILD)/saturation $(TOOLCHAIN_OK)
-	$(CLANG) --target=wasm32 -O3 -flto -nostdlib \
-	  -Wl,--no-entry -Wl,--export-all -Wl,--import-memory \
-	  -o $@ $< -ffile-prefix-map=$(ROOT)=.
+	emcc -O3 $< -o $@ \
+	  -s STANDALONE_WASM=1 -s IMPORTED_MEMORY=1 \
+	  -Wl,--export-all -Wl,--no-entry \
+	  -ffile-prefix-map=$(ROOT)=.
 
 saturation/saturate.wasm.js: $(BUILD)/saturation/saturate.wasm
 	$(WASM2JS) $< $@
