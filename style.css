@@ -80,7 +80,7 @@ select { max-width: 220px; }
   .head { border-bottom: 0; border-right: 1px solid var(--line); }
 }
 .clip, .empty { position: absolute; inset: 0; }
-.clip { background: linear-gradient(90deg, rgba(124,107,255,.92), rgba(56,189,214,.88)); }
+.clip { background: linear-gradient(90deg, rgba(124,107,255,.22), rgba(124,107,255,.08)); }
 .clip b { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,.8); }
 .empty { border: 1px dashed rgba(246,241,234,.16); }
 .keys { border-top: 1px solid var(--line); padding: 8px 14px 12px; display: flex; align-items: end; gap: 8px; }
