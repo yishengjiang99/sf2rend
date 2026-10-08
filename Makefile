@@ -40,6 +40,8 @@ $(TOOLCHAIN_OK): toolchain.env
 	  echo "error: emcc not on PATH; run via scripts/in-toolchain.sh" >&2; exit 1; }
 	@command -v clang >/dev/null 2>&1 || { \
 	  echo "error: clang not on PATH; run via scripts/in-toolchain.sh" >&2; exit 1; }
+	@command -v llc >/dev/null 2>&1 || { \
+	  echo "error: llc not on PATH; run via scripts/in-toolchain.sh" >&2; exit 1; }
 	@command -v wasm-ld >/dev/null 2>&1 || { \
 	  echo "error: wasm-ld not on PATH; run via scripts/in-toolchain.sh" >&2; exit 1; }
 	@mkdir -p $(BUILD) && touch $@

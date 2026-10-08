@@ -41,7 +41,7 @@ jobs:
         run: |
           # Source the emsdk environment the same way the image ENTRYPOINT does.
           # Use bash explicitly; the script requires BASH_SOURCE.
-          bash -c 'EMSDK_QUIET=1 source /emsdk/emsdk_env.sh && emcc --version | head -1 && node --version'
+          bash -c 'EMSDK_QUIET=1 source /emsdk/emsdk_env.sh && emcc --version | head -1 && node --version && command -v clang && command -v llc && command -v wasm-ld'
           # Persist the env for subsequent steps.
           bash -c 'EMSDK_QUIET=1 source /emsdk/emsdk_env.sh && echo "$PATH"' >> "$GITHUB_PATH"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
