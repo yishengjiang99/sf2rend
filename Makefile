@@ -58,7 +58,7 @@ $(SPIN_WASM): $(SPIN_SRCS) $(SPIN_HDRS) | $(BUILD)/spin $(TOOLCHAIN_OK)
 	  -s STANDALONE_WASM=1 -s IMPORTED_MEMORY=1 \
 	  -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
 	  -Wl,--export-all -Wl,--no-entry \
-	  -Wl,--features=atomics,mutable-global \
+	  -matomics -mmutable-global \
 	  -ffile-prefix-map=$(ROOT)=.
 
 spin/spin.wasm.js: $(SPIN_WASM)
