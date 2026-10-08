@@ -1,20 +1,42 @@
+# dependencies
 node_modules
 */node_modules
+
+# editors
 */.vscode
-**/*/a.out
-*/a.out
-cert.pem
-.gitignore
-bin/key.pem
-key.pem
-playbtn
-static
-sf2-service
-spin/*wasm
+.vscode
+
+# build intermediates
+build/
 **/*ll
 **/*o
+**/*/a.out
+*/a.out
+
+# build outputs: NOT committed (see readme.md "Artifact policy").
+# CI builds them; local dev runs `make` once.
+dist/
+spin/spin.wasm
+spin/spin.wasm.js
+lpf/lpf.wasm.js
+saturation/saturate.wasm
+saturation/saturate.wasm.js
+fft-64bit/build/
+sf2-service/build/
+sflist.js
+mfilelist.js
+_site/
+
+# local secrets / misc
+cert.pem
+bin/key.pem
+key.pem
+
+# legacy
+playbtn
 spin/test.html
-static/GeneralUserGS.sf2
-.vscode
 spin2
 spin/src/tinysp.c
+
+# npm cache kept inside the workspace for the container build job
+.npm-cache/

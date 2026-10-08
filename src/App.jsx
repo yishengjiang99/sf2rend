@@ -77,7 +77,9 @@ export default function App() {
     soundFont: false,
     midi: false,
   });
-  const [timerWorker] = useState(() => new Worker("dist/timer.js"));
+  // webpack emits the timer module as a content-hashed chunk and resolves
+  // this URL relative to the page, so it works under /sf2rend/ too.
+  const [timerWorker] = useState(() => new Worker(new URL("./sequence/timer.js", import.meta.url)));
   const runtimeRef = useRef({
     apath: null,
     channels: [],

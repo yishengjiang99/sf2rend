@@ -1,10 +1,11 @@
 
 let k, lpfmod;
+/* global __BUILD_ID__ */
 export class SpinNode extends AudioWorkletNode {
   static lpfmod;
   static async init(ctx) {
     try {
-      await ctx.audioWorklet.addModule("./spin/spin-proc.js?v=5");
+      await ctx.audioWorklet.addModule(`./spin/spin-proc.js?v=${__BUILD_ID__}`);
       //lpfmod = await WebAssembly.compile(lpfModule.wasmbin);
     } catch (e) {
       console.trace(e);

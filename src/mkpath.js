@@ -21,6 +21,9 @@ export async function mkpath2(ctx, { midi_input = { postMessage() {} }, sf2File 
     await FFTNode.init(ctx).catch(console.trace);
     await LowPassFilterNode.init(ctx).catch(console.trace);
     initialized = true;
+    // Debug hook for the smoke test (tools/smoke-test.mjs): there is no API
+    // to list registered AudioWorklet processors, so record the expected set.
+    globalThis.__sf2rendWorklets = ["spin-proc", "lpf-proc", "proc-fft"];
   }
 
   const channelIds = Array.from({ length: 16 }, (_, index) => index);

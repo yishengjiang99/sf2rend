@@ -1,0 +1,160 @@
+name: build-deploy
+
+# Hermetic build + test on every push/PR; deploy to GitHub Pages on push to main.
+#
+# The build job runs inside the pinned emsdk container (see toolchain.env),
+# so `make` uses exactly the toolchain developers get via
+# scripts/in-toolchain.sh. A step fails the job if the image pinned here
+# drifts from toolchain.env.
+#
+# One manual repo setting is required: Settings -> Pages -> Source =
+# GitHub Actions.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # Pinned toolchain image (also in toolchain.env; the pin-check step fails
+    # if they differ). The `env` context is not available in `container.image`,
+    # so docker run is used directly instead of a container job.
+    # image: emscripten/emsdk:6.0.10@sha256:e077d54e2b8970575ebc4f185ac1de0b95c05f2b266134d4ba27449af7aebf65
+    concurrency:
+      group: pages-${{ github.ref }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: false
+          fetch-depth: 1
+
+      - name: Toolchain pin matches toolchain.env
+        run: |
+          pinned="$(grep '^EMSDK_IMAGE=' toolchain.env | cut -d= -f2-)"
+          wf_image="$(grep 'image: emscripten/emsdk:6.0.10' .github/workflows/build-deploy.yml | head -1 | sed 's/.*image: //')"
+          if [ "$pinned" != "$wf_image" ]; then
+            echo "toolchain.env pins: $pinned"
+            echo "workflow pins:      $wf_image"
+            echo "update one of them so they agree"
+            exit 1
+          fi
+          echo "TOOLCHAIN_IMAGE=$pinned" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build WebAssembly modules in the pinned toolchain
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/src" -w /src \
+            "$TOOLCHAIN_IMAGE" \
+            bash -c 'export PATH="/emsdk:/emsdk/upstream/emscripten:/emsdk/upstream/bin:/emsdk/node/24.19.0_64bit/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" && make wasm'
+          # Fix ownership: files created as root in the container.
+          sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE"
+
+      - name: Webpack bundle
+        run: make bundle
+
+      - name: Policy checks
+        run: make check-artifacts check-spin-abi
+
+      - name: Reproducibility check
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/src" -w /src \
+            "$TOOLCHAIN_IMAGE" \
+            bash -c 'source /emsdk/emsdk_env.sh && make verify-reproducible'
+          sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE"
+
+      - name: Assemble site
+        run: make site
+
+      - name: Upload preview artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: site-preview
+          path: _site
+          if-no-files-found: error
+
+      - name: Upload Pages artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: _site
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pages-${{ github.ref }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: false
+          fetch-depth: 1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build WebAssembly modules in the pinned toolchain
+        run: scripts/in-toolchain.sh make wasm
+
+      - name: C unit tests
+        run: make test-c
+
+      - uses: browser-actions/setup-chrome@48ad923757ca74d66703209fe939badbdf80f2f4 # v2.2.0
+        id: setup-chrome
+
+      - name: JS test suites
+        env:
+          CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
+        run: node tools/test-js.mjs --root "$GITHUB_WORKSPACE"
+
+      - name: Download assembled site
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: site-preview
+          path: _site
+
+      - name: Smoke test
+        env:
+          CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
+        run: node tools/smoke-test.mjs --site "$GITHUB_WORKSPACE/_site"
+
+  deploy:
+    needs: [build, test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+        id: deploy
