@@ -1,4 +1,6 @@
-#include "LFO.h"
+// NOTE: LFO.h duplicates the LFO struct/functions already in spin.h and the
+// two typedefs conflict; the wasm build only uses spin.h, so test that.
+#include "spin.h"
 
 #include <assert.h>
 #include <stdio.h>
