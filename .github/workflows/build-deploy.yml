@@ -37,6 +37,12 @@ jobs:
           submodules: false
           fetch-depth: 1
 
+      - name: Sanity check
+        run: |
+          echo "hello from container"
+          pwd
+          ls /
+
       - name: Toolchain check
         run: |
           # Source the emsdk environment the same way the image ENTRYPOINT does.
