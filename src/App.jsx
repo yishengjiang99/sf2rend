@@ -1,4 +1,4 @@
-import React, { startTransition, useEffect, useRef, useState } from "react";
+import React, { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import SF2Service from "../sf2-service/index.js";
 import { attributeKeys } from "../sf2-service/zoneProxy.js";
 import { mfilelist } from "../mfilelist.js";
@@ -103,6 +103,8 @@ export default function App() {
 
   channelsStateRef.current = channels;
 
+  const channelNotes = useMemo(() => getChannelNotes(midiInfo), [midiInfo]);
+
   const appendLog = (message) => {
     const stamp = new Date().toLocaleTimeString([], {
       hour: "2-digit",
@@ -182,6 +184,7 @@ export default function App() {
       setProgramOptions(nextPrograms);
       setSf2Meta(service.meta ?? []);
       appendLog(`Loaded ${nextPrograms.length} presets from ${labelFromPath(nextUrl)}.`);
+
       // Test hook: signal that the default SoundFont is ready (used by tools/audio-check.mjs)
       window.__sf2rendSfLoaded = true;
 
@@ -976,7 +979,21 @@ export default function App() {
             </div>
             <div className="lane">
               <span className="needle"></span>
-              {track.loaded ? <div className="clip"></div> : <div className="empty"></div>}
+              {track.loaded ? (
+                <div className="clip">
+                  {(channelNotes.byChannel[track.id] ?? []).map((note, index) => (
+                    <b
+                      key={index}
+                      style={{
+                        left: `${(note.t / channelNotes.maxT) * 100}%`,
+                        top: `${((127 - note.pitch) / 127) * 100}%`,
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="empty"></div>
+              )}
             </div>
           </article>
         ))}
@@ -1557,6 +1574,27 @@ function buildLocalMidiChoices() {
     Name: labelFromPath(url),
     Url: url,
   }));
+}
+
+function getChannelNotes(midiInfo) {
+  const byChannel = Array.from({ length: 16 }, () => []);
+  let maxT = 0;
+  midiInfo?.tracks?.forEach((track) => {
+    track.forEach((event) => {
+      if (!event.channel) {
+        return;
+      }
+      const [status, pitch, velocity] = event.channel;
+      if ((status & 0xf0) === midi_ch_cmds.note_on && velocity > 0) {
+        const channelId = status & 0x0f;
+        byChannel[channelId].push({ t: event.t ?? 0, pitch });
+        if (event.t > maxT) {
+          maxT = event.t;
+        }
+      }
+    });
+  });
+  return { byChannel, maxT: maxT || 1 };
 }
 
 function getNoteChannels(midiInfo) {
