@@ -7,17 +7,17 @@
   <title>sf2rend</title>
   <style>
     :root {
-      --bg: #0c0c0e;
-      --panel: #141416;
-      --line: rgba(255, 255, 255, 0.08);
-      --text: #f4f4f5;
-      --muted: #9a9aa3;
-      --chip: #232328;
+      --bg: #171410;
+      --panel: #221e19;
+      --line: #3d362e;
+      --text: #f6f1ea;
+      --muted: #b3a89c;
+      --chip: #2c271f;
       --chip-line: rgba(255, 255, 255, 0.1);
       --violet: #7c6bff;
     }
     * { box-sizing: border-box; }
-    html, body { margin: 0; height: 100%; background: #050506; color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif; }
+    html, body { margin: 0; height: 100%; background: #0e0c0a; color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif; }
     body { display: grid; place-items: center; min-height: 100%; padding: 22px; }
     button, select, input { font: inherit; color: inherit; }
     button { cursor: pointer; }
@@ -48,8 +48,8 @@
     .row.selected .head { background: #16141f; }
     .ruler { position: relative; color: var(--muted); font-size: 11px; }
     .ruler i { position: absolute; top: 11px; font-style: normal; transform: translateX(-50%); }
-    .lane { grid-area: lane; position: relative; z-index: 0; display: flex; align-items: center; min-height: 52px; padding: 10px 14px; min-width: 0; overflow: hidden; }
-    .needle { position: absolute; top: 0; bottom: 0; left: 18%; width: 1px; background: rgba(255,255,255,.72); pointer-events: none; }
+    .lane { grid-area: lane; position: relative; z-index: 0; display: flex; align-items: stretch; min-height: 76px; padding: 0; min-width: 0; overflow: hidden; }
+    .needle { position: absolute; top: 0; bottom: 0; left: 18%; width: 1px; background: rgba(246,241,234,.72); pointer-events: none; z-index: 2; }
     .ruler .needle::before { content: ""; position: absolute; top: 8px; left: 50%; width: 8px; height: 8px; border-radius: 50%; background: #fff; transform: translateX(-50%); }
     .ch { color: var(--muted); font-size: 11px; width: 36px; }
     .head select { width: 100%; min-width: 0; max-width: none; }
@@ -59,12 +59,14 @@
     @container stage (min-width: 720px) {
       .row { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); grid-template-areas: "head lane"; }
       .ruler-row { height: 34px; }
+      .ruler-row .lane { min-height: 34px; }
       .ruler-row .head { display: block; padding: 0; border: 0; }
       .head { border-bottom: 0; border-right: 1px solid var(--line); }
     }
-    .clip { height: 56px; border-radius: 12px; background: linear-gradient(90deg, rgba(124,107,255,.92), rgba(56,189,214,.88)); position: relative; }
+    .clip, .empty { position: absolute; inset: 0; }
+    .clip { background: linear-gradient(90deg, rgba(124,107,255,.92), rgba(56,189,214,.88)); }
     .clip b { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,.8); }
-    .empty { height: 56px; width: 100%; border-radius: 12px; border: 1px dashed rgba(255,255,255,.12); }
+    .empty { border: 1px dashed rgba(246,241,234,.16); }
     .keys { border-top: 1px solid var(--line); padding: 8px 14px 12px; display: flex; align-items: end; gap: 8px; }
     .keys p { margin: 0; color: var(--muted); font-size: 11px; width: 180px; }
     .board { display: flex; gap: 3px; flex: 1; }
@@ -231,9 +233,8 @@
       row.className = "row track" + (n === 1 ? " selected" : "");
       row.dataset.ch = n;
       const opts = programs.map(p => `<option ${ch[0] && p.includes(ch[0]) ? "selected" : ""}>${p}</option>`).join("");
-      const w = ch[2] ? Math.round(Math.max(28, Math.min(96, 24 + Math.log10(ch[2]) * 22))) : 0;
       const dots = Array.from({length: 7}, (_, k) => `<b style="left:${8+k*12}%;top:${28+(k%3)*16}%"></b>`).join("");
-      const clip = w ? `<div class="clip" style="width:${w}%">${dots}</div>` : `<div class="empty"></div>`;
+      const clip = ch[2] ? `<div class="clip">${dots}</div>` : `<div class="empty"></div>`;
       row.innerHTML = `<div class="head"><div class="head-line"><div class="ch">CH ${n}</div><select aria-label="Instrument">${opts}</select></div><div class="meta">${ch[3]} · Ready · Preset ${ch[1] == null ? "None" : String(ch[1]).padStart(3,"0")} · ${ch[2]} notes</div><div class="head-line"><div class="pills"><button class="chip icon" type="button" data-mute aria-label="Mute" title="Mute"><i class="fa-solid fa-volume-xmark"></i></button><button class="chip icon" type="button" data-solo aria-label="Solo" title="Solo"><i class="fa-solid fa-headphones"></i></button><button class="chip icon" type="button" data-edit aria-label="Edit" title="Edit"><i class="fa-solid fa-pen"></i></button></div></div><input class="vol" type="range" min="0" max="127" value="${ch[2] ? 80 : 40}" aria-label="Volume" /></div><div class="lane"><span class="needle"></span>${clip}</div>`;
       stage.appendChild(row);
     });
