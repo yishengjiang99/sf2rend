@@ -132,13 +132,19 @@ try {
   });
   page.on("pageerror", (err) => failures.push(`pageerror: ${err.message}`));
   page.on("console", (msg) => {
-    if (msg.type() === "error") failures.push(`console.error: ${msg.text()}`);
+    if (msg.type() !== "error") return;
+    // Resource 404s are recorded from the response, with the URL. The
+    // matching console line has no URL, so it cannot be filtered there.
+    if (msg.text().includes("status of 404")) return;
+    failures.push(`console.error: ${msg.text()}`);
   });
   page.on("requestfailed", (req) =>
     failures.push(`requestfailed: ${req.url()} ${req.failure()?.errorText}`),
   );
   page.on("response", (res) => {
-    if (res.status() === 404) failures.push(`404: ${res.url()}`);
+    if (res.status() === 404 && !res.url().endsWith("/favicon.ico")) {
+      failures.push(`404: ${res.url()}`);
+    }
   });
 
   await page.goto(`${baseUrl}/sf2rend/index.html`, { waitUntil: "load", timeout: 60000 });
