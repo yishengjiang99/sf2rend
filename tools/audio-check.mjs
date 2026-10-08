@@ -85,9 +85,14 @@ try {
   page.on("pageerror", (err) => failures.push(`pageerror: ${err.message.slice(0, 200)}`));
   page.on("console", (msg) => {
     if (msg.type() !== "error") return;
-    // favicon.ico 404s are benign (browsers request it automatically)
-    if (msg.text().includes("favicon.ico")) return;
-    failures.push(`console.error: ${msg.text().slice(0, 200)}`);
+    const text = msg.text();
+    // Chromium reports a failed subresource load as a URL-less console error
+    // ("Failed to load resource: ..."), so a favicon filter can never match
+    // here. The response handler below already records each failed request
+    // WITH its URL (and excludes favicon.ico), so skip these to avoid
+    // double-reporting the benign favicon 404.
+    if (text.startsWith("Failed to load resource")) return;
+    failures.push(`console.error: ${text.slice(0, 200)}`);
   });
   page.on("requestfailed", (req) =>
     failures.push(`requestfailed: ${req.url().slice(-80)}`),
