@@ -78,7 +78,7 @@
     .ch { color: var(--muted); font-size: 11px; width: 36px; }
     .head select { width: 100%; min-width: 0; max-width: none; }
     .meta { color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .pills { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+    .pills { display: flex; flex-wrap: nowrap; gap: 6px; min-width: 0; }
     .vol { width: 100%; accent-color: #fff; }
     @container stage (min-width: 720px) {
       .row { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); grid-template-areas: "head lane"; }
@@ -104,8 +104,8 @@
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     .block { background: #101013; border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
     .block h3 { margin: 0 0 10px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-    .row { display: grid; grid-template-columns: 92px 1fr 36px; gap: 8px; align-items: center; margin-bottom: 8px; font-size: 13px; }
-    .row input[type=range] { width: 100%; accent-color: var(--violet); }
+    .mix { display: grid; grid-template-columns: 92px 1fr 36px; gap: 8px; align-items: center; margin-bottom: 8px; font-size: 13px; }
+    .mix input[type=range] { width: 100%; accent-color: var(--violet); }
     .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
     .primary { background: #fff; color: #111; border-color: #fff; }
     .gens { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
@@ -209,28 +209,28 @@
       <div class="grid">
         <div class="block">
           <h3>Mix</h3>
-          <div class="row"><span>Volume</span><input type="range" min="0" max="127" value="100" /><b>100</b></div>
-          <div class="row"><span>Pan</span><input type="range" min="0" max="127" value="64" /><b>64</b></div>
-          <div class="row"><span>Expression</span><input type="range" min="0" max="127" value="127" /><b>127</b></div>
+          <div class="mix"><span>Volume</span><input type="range" min="0" max="127" value="100" /><b>100</b></div>
+          <div class="mix"><span>Pan</span><input type="range" min="0" max="127" value="64" /><b>64</b></div>
+          <div class="mix"><span>Expression</span><input type="range" min="0" max="127" value="127" /><b>127</b></div>
         </div>
         <div class="block">
           <h3>Filter</h3>
-          <div class="row"><span>Cutoff</span><input type="range" min="0" max="12000" value="6000" /><b>6000</b></div>
-          <div class="row"><span>Resonance</span><input type="range" min="0" max="120" value="0" /><b>0</b></div>
+          <div class="mix"><span>Cutoff</span><input type="range" min="0" max="12000" value="6000" /><b>6000</b></div>
+          <div class="mix"><span>Resonance</span><input type="range" min="0" max="120" value="0" /><b>0</b></div>
         </div>
         <div class="block">
           <h3>Amplitude envelope</h3>
-          <div class="row"><span>Attack</span><input type="range" min="0" max="127" value="9" /><b>9</b></div>
-          <div class="row"><span>Decay</span><input type="range" min="0" max="127" value="33" /><b>33</b></div>
-          <div class="row"><span>Sustain</span><input type="range" min="0" max="127" value="66" /><b>66</b></div>
-          <div class="row"><span>Release</span><input type="range" min="0" max="127" value="88" /><b>88</b></div>
+          <div class="mix"><span>Attack</span><input type="range" min="0" max="127" value="9" /><b>9</b></div>
+          <div class="mix"><span>Decay</span><input type="range" min="0" max="127" value="33" /><b>33</b></div>
+          <div class="mix"><span>Sustain</span><input type="range" min="0" max="127" value="66" /><b>66</b></div>
+          <div class="mix"><span>Release</span><input type="range" min="0" max="127" value="88" /><b>88</b></div>
         </div>
         <div class="block">
           <h3>Filter envelope</h3>
-          <div class="row"><span>Attack</span><input type="range" min="0" max="127" value="9" /><b>9</b></div>
-          <div class="row"><span>Decay</span><input type="range" min="0" max="127" value="33" /><b>33</b></div>
-          <div class="row"><span>Sustain</span><input type="range" min="0" max="127" value="66" /><b>66</b></div>
-          <div class="row"><span>Release</span><input type="range" min="0" max="127" value="88" /><b>88</b></div>
+          <div class="mix"><span>Attack</span><input type="range" min="0" max="127" value="9" /><b>9</b></div>
+          <div class="mix"><span>Decay</span><input type="range" min="0" max="127" value="33" /><b>33</b></div>
+          <div class="mix"><span>Sustain</span><input type="range" min="0" max="127" value="66" /><b>66</b></div>
+          <div class="mix"><span>Release</span><input type="range" min="0" max="127" value="88" /><b>88</b></div>
         </div>
       </div>
       <div class="actions">
@@ -363,7 +363,7 @@
       btn.dataset.tip = btn.title;
       btn.setAttribute("aria-label", btn.title);
     };
-    document.querySelectorAll(".row input").forEach(r => r.oninput = () => r.nextElementSibling.textContent = r.value);
+    document.querySelectorAll(".mix input").forEach(r => r.oninput = () => r.nextElementSibling.textContent = r.value);
     const tabs = {
       log: "[06:10:50 PM] Audio engine initialized.\n[06:10:50 PM] Loading SoundFont GeneralUserGS.sf2.\n[06:10:50 PM] Loaded 139 presets from GeneralUserGS.sf2.\n[06:10:51 PM] Loading MIDI Jazz Castle.\n[06:10:53 PM] Parsed 15 tracks and 14 program changes.",
       meta: "SoundFont GeneralUserGS.sf2\nPresets 139\nSamples stereo GM\nEngine ready",
