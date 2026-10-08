@@ -66,7 +66,7 @@ void test_eg_stage_transitions() {
   advanceStage(eg);
   assert(eg->stage == sustain);
   assert(eg->egIncrement == 0.0f);  // Sustain should hold
-  assert(eg->nsteps == 48000);
+  assert(eg->nsteps == 2147483647);  // new engine holds sustain indefinitely (INT_MAX)
   printf("✓ decay -> sustain transition passed\n");
   
   // Set egval to simulate being partway through decay
