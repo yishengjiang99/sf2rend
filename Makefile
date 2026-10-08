@@ -191,6 +191,10 @@ check-artifacts:
 check-spin-abi: spin/spin.wasm.js
 	node tools/check-abi.mjs spin/spin.wasm.js tools/spin-abi.json
 
+.PHONY: check-no-wasi
+check-no-wasi: $(WASM_JS)
+	node tools/check-no-wasi.mjs spin/spin.wasm.js lpf/lpf.wasm.js saturation/saturate.wasm.js fft-64bit/build/fft.wasm.js
+
 .PHONY: verify-reproducible
 verify-reproducible: $(TOOLCHAIN_OK)
 	rm -rf $(BUILD) $(WASM_JS)

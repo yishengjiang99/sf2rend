@@ -69,7 +69,7 @@ jobs:
         run: make bundle
 
       - name: Policy checks
-        run: make check-artifacts check-spin-abi
+        run: make check-artifacts check-spin-abi check-no-wasi
 
       - name: Reproducibility check
         run: |
