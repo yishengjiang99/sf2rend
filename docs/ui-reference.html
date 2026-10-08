@@ -22,10 +22,10 @@
     button, select, input { font: inherit; color: inherit; }
     button { cursor: pointer; }
     .device { width: min(1280px, 100%); height: min(860px, calc(100vh - 44px)); background: var(--bg); border: 1px solid rgba(255,255,255,.08); border-radius: 22px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 30px 80px rgba(0,0,0,.45); }
-    .transport { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+    .transport { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); overflow-x: auto; position: relative; }
     .side { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; min-width: max-content; }
     .side.end { margin-left: auto; }
-    .play { display: flex; flex: none; align-items: center; gap: 5px; padding: 3px 10px 3px 4px; border: 1px solid var(--line); border-radius: 999px; background: rgba(246,241,234,.05); }
+    .play { display: flex; flex: none; align-items: center; gap: 5px; padding: 3px 10px 3px 4px; border: 1px solid var(--line); border-radius: 999px; background: rgba(246,241,234,.05); position: absolute; left: 50%; transform: translateX(-50%); }
     .readout { display: flex; flex-direction: column; margin-left: 6px; line-height: 1.05; font-variant-numeric: tabular-nums; }
     .readout b { font-size: 15px; font-weight: 640; }
     .readout span { color: var(--muted); font-size: 10px; }
@@ -36,7 +36,9 @@
     .sf-btn { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .num { width: 52px; text-align: center; }
     .midi-select { max-width: 150px; }
+    .gain-wrap { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
     .gain { width: 68px; accent-color: var(--violet); }
+    .slash { color: var(--muted); }
     .pick-list { display: grid; gap: 6px; }
     .pick-list .chip { width: 100%; text-align: left; height: auto; min-height: 32px; }
     .brand { font-weight: 620; letter-spacing: -0.02em; margin-right: 6px; }
@@ -111,24 +113,12 @@
     <header class="transport">
       <div class="side">
       <div class="brand">sf2rend</div>
-      <label class="field"><span>SoundFont</span>
-        <button class="chip sf-btn" id="sf-open" type="button">GeneralUserGS.sf2</button>
-      </label>
-      <label class="field"><span>MIDI library</span>
-        <select id="midi" class="midi-select">
-          <option>Jazz Jackrabbit 2 - Jazz Castle.mid</option>
-          <option>Jazz Jackrabbit - Bonus Stage.mid</option>
-          <option>Lemmings - Lemmings Medley.mid</option>
-          <option>Dire Straits - Sultans of Swing.mid</option>
-          <option>Killer Instinct - The Instinct.mid</option>
-        </select>
-      </label>
-      <label class="chip file">Import MIDI<input id="import" type="file" accept=".mid,.midi" /></label>
-      <label class="field"><span>MIDI input</span>
-        <select id="input"><option>No input</option><option>IAC Driver</option><option>USB MIDI</option></select>
-      </label>
-      <button class="chip" id="refresh" type="button">Refresh</button>
-      <label class="field"><span>Master gain</span><input class="gain" id="gain" type="range" min="0" max="160" value="100" /></label>
+      <button class="chip icon" id="sf-open" type="button" title="SoundFont" aria-label="SoundFont"><i class="fa-solid fa-compact-disc"></i></button>
+      <button class="chip icon" id="midi-open" type="button" title="MIDI library" aria-label="MIDI library"><i class="fa-solid fa-list"></i></button>
+      <label class="chip icon file" title="Import MIDI" aria-label="Import MIDI"><i class="fa-solid fa-file-import"></i><input id="import" type="file" accept=".mid,.midi" /></label>
+      <button class="chip icon" id="input-open" type="button" title="MIDI input" aria-label="MIDI input"><i class="fa-solid fa-plug"></i></button>
+      <button class="chip icon" id="refresh" type="button" title="Refresh" aria-label="Refresh"><i class="fa-solid fa-rotate"></i></button>
+      <label class="gain-wrap" title="Master gain"><i class="fa-solid fa-volume-high"></i><input class="gain" id="gain" type="range" min="0" max="160" value="100" aria-label="Master gain" /></label>
       </div>
       <div class="play">
       <button class="chip icon" id="rwd" type="button" aria-label="Rewind" title="Rewind"><i class="fa-solid fa-backward"></i></button>
@@ -137,10 +127,10 @@
       <div class="readout"><b id="clock">0:00</b><span id="bar">Bar 0.0</span></div>
       </div>
       <div class="side end">
-      <label class="field"><span>BPM</span><input class="num" id="bpm" type="number" value="200" /></label>
-      <label class="field"><span>TS num</span><input class="num" id="num" type="number" value="4" /></label>
-      <label class="field"><span>TS den</span><input class="num" id="den" type="number" value="4" /></label>
-      <div class="clock" id="tempo">200 BPM</div>
+      <input class="num" id="bpm" type="number" value="200" aria-label="BPM" title="BPM" />
+      <input class="num" id="num" type="number" value="4" aria-label="Beats per bar" title="Beats per bar" />
+      <span class="slash">/</span>
+      <input class="num" id="den" type="number" value="4" aria-label="Beat unit" title="Beat unit" />
       </div>
     </header>
 
@@ -162,6 +152,33 @@
       <button class="chip" id="inspect" type="button">Inspect State</button>
     </footer>
   </main>
+
+  <div class="modal" id="midi-modal">
+    <div class="sheet">
+      <h2>MIDI library</h2>
+      <p>Choose a file.</p>
+      <div class="pick-list" id="midi-list">
+        <button class="chip on" type="button">Jazz Jackrabbit 2 - Jazz Castle.mid</button>
+        <button class="chip" type="button">Jazz Jackrabbit - Bonus Stage.mid</button>
+        <button class="chip" type="button">Lemmings - Lemmings Medley.mid</button>
+        <button class="chip" type="button">Dire Straits - Sultans of Swing.mid</button>
+        <button class="chip" type="button">Killer Instinct - The Instinct.mid</button>
+      </div>
+      <div class="actions"><button class="chip" data-close type="button">Close</button></div>
+    </div>
+  </div>
+  <div class="modal" id="input-modal">
+    <div class="sheet">
+      <h2>MIDI input</h2>
+      <p>Choose a device.</p>
+      <div class="pick-list" id="input-list">
+        <button class="chip on" type="button">No input</button>
+        <button class="chip" type="button">IAC Driver</button>
+        <button class="chip" type="button">USB MIDI</button>
+      </div>
+      <div class="actions"><button class="chip" data-close type="button">Close</button></div>
+    </div>
+  </div>
 
   <div class="modal" id="sf-modal">
     <div class="sheet">
@@ -300,13 +317,31 @@
     document.getElementById("open-zone").onclick = () => open("zone-modal");
     document.getElementById("inspect").onclick = () => { showTab("log"); open("state-modal"); };
     document.getElementById("preview").onclick = () => { const k = [...document.querySelectorAll(".key")].find(b => b.textContent === "C4"); k.classList.add("on"); setTimeout(() => k.classList.remove("on"), 180); };
+    function pick(listId, buttonId, label) {
+      document.getElementById(listId).onclick = e => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+        document.querySelectorAll("#" + listId + " button").forEach(b => b.classList.toggle("on", b === btn));
+        const opener = document.getElementById(buttonId);
+        opener.title = label + " · " + btn.textContent;
+        closeAll();
+      };
+    }
     document.getElementById("sf-open").onclick = () => open("sf-modal");
-    document.getElementById("sf-list").onclick = e => {
-      const btn = e.target.closest("button");
-      if (!btn) return;
-      document.querySelectorAll("#sf-list button").forEach(b => b.classList.toggle("on", b === btn));
-      document.getElementById("sf-open").textContent = btn.textContent;
-      closeAll();
+    document.getElementById("midi-open").onclick = () => open("midi-modal");
+    document.getElementById("input-open").onclick = () => open("input-modal");
+    pick("sf-list", "sf-open", "SoundFont");
+    pick("midi-list", "midi-open", "MIDI");
+    pick("input-list", "input-open", "MIDI input");
+    document.getElementById("refresh").onclick = () => {
+      document.querySelectorAll("#input-list button").forEach((b, i) => b.classList.toggle("on", i === 0));
+      document.getElementById("input-open").title = "MIDI input · No input";
+    };
+    document.getElementById("import").onchange = e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      document.getElementById("midi-list").insertAdjacentHTML("afterbegin", `<button class="chip" type="button">${file.name}</button>`);
+      document.querySelector("#midi-list button").click();
     };
     document.getElementById("start").onclick = e => {
       const btn = e.target.closest("button");
@@ -316,9 +351,6 @@
       btn.title = on ? "Pause" : "Start";
       btn.setAttribute("aria-label", btn.title);
     };
-    document.getElementById("refresh").onclick = () => { document.getElementById("input").selectedIndex = 0; };
-    document.getElementById("bpm").oninput = e => document.getElementById("tempo").textContent = e.target.value + " BPM";
-    document.getElementById("import").onchange = e => { if (e.target.files[0]) document.getElementById("midi").insertAdjacentHTML("afterbegin", `<option selected>${e.target.files[0].name}</option>`); };
     document.querySelectorAll(".row input").forEach(r => r.oninput = () => r.nextElementSibling.textContent = r.value);
     const tabs = {
       log: "[06:10:50 PM] Audio engine initialized.\n[06:10:50 PM] Loading SoundFont GeneralUserGS.sf2.\n[06:10:50 PM] Loaded 139 presets from GeneralUserGS.sf2.\n[06:10:51 PM] Loading MIDI Jazz Castle.\n[06:10:53 PM] Parsed 15 tracks and 14 program changes.",
