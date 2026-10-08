@@ -39,12 +39,13 @@ jobs:
 
       - name: Toolchain check
         run: |
+          export EMSDK=/emsdk
           export PATH="/emsdk:/emsdk/upstream/emscripten:/emsdk/node/24.19.0_64bit/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
           echo "$PATH" >> "$GITHUB_PATH"
-          command -v emcc && emcc --version | head -1
-          command -v clang && clang --version | head -1
-          command -v wasm-ld
-          node --version
+          echo "EMSDK=$EMSDK" >> "$GITHUB_ENV"
+          ls /emsdk/upstream/emscripten/emcc || echo "no emcc at expected path"
+          /emsdk/upstream/emscripten/emcc --version | head -1
+          /emsdk/node/24.19.0_64bit/bin/node --version
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Toolchain pin matches toolchain.env
