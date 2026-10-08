@@ -22,7 +22,15 @@
     button, select, input { font: inherit; color: inherit; }
     button { cursor: pointer; }
     .device { width: min(1280px, 100%); height: min(860px, calc(100vh - 44px)); background: var(--bg); border: 1px solid rgba(255,255,255,.08); border-radius: 22px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 30px 80px rgba(0,0,0,.45); }
-    .transport { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); overflow-x: auto; position: relative; }
+    .tip { position: relative; }
+    .tip:hover::after, .tip:focus-visible::after {
+      content: attr(data-tip); position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+      z-index: 8; padding: 3px 7px; border-radius: 6px; background: var(--text); color: var(--bg);
+      font-size: 11px; line-height: 1.2; white-space: nowrap; pointer-events: none;
+    }
+    .side .tip:hover::after, .side .tip:focus-visible::after { left: 0; transform: none; }
+    .side.end .tip:hover::after, .side.end .tip:focus-visible::after { left: auto; right: 0; }
+    .transport { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); position: relative; z-index: 6; overflow: visible; }
     .side { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; min-width: max-content; }
     .side.end { margin-left: auto; }
     .play { display: flex; flex: none; align-items: center; gap: 5px; padding: 3px 10px 3px 4px; border: 1px solid var(--line); border-radius: 999px; background: rgba(246,241,234,.05); position: absolute; left: 50%; transform: translateX(-50%); }
@@ -113,24 +121,24 @@
     <header class="transport">
       <div class="side">
       <div class="brand">sf2rend</div>
-      <button class="chip icon" id="sf-open" type="button" title="SoundFont" aria-label="SoundFont"><i class="fa-solid fa-compact-disc"></i></button>
-      <button class="chip icon" id="midi-open" type="button" title="MIDI library" aria-label="MIDI library"><i class="fa-solid fa-list"></i></button>
-      <label class="chip icon file" title="Import MIDI" aria-label="Import MIDI"><i class="fa-solid fa-file-import"></i><input id="import" type="file" accept=".mid,.midi" /></label>
-      <button class="chip icon" id="input-open" type="button" title="MIDI input" aria-label="MIDI input"><i class="fa-solid fa-plug"></i></button>
-      <button class="chip icon" id="refresh" type="button" title="Refresh" aria-label="Refresh"><i class="fa-solid fa-rotate"></i></button>
-      <label class="gain-wrap" title="Master gain"><i class="fa-solid fa-volume-high"></i><input class="gain" id="gain" type="range" min="0" max="160" value="100" aria-label="Master gain" /></label>
+      <button class="chip icon tip" id="sf-open" type="button" data-tip="Choose SoundFont" title="Choose SoundFont" aria-label="Choose SoundFont"><i class="fa-solid fa-compact-disc"></i></button>
+      <button class="chip icon tip" id="midi-open" type="button" data-tip="Choose MIDI file" title="Choose MIDI file" aria-label="Choose MIDI file"><i class="fa-solid fa-list"></i></button>
+      <label class="chip icon file tip" data-tip="Import a MIDI file" title="Import a MIDI file" aria-label="Import a MIDI file"><i class="fa-solid fa-file-import"></i><input id="import" type="file" accept=".mid,.midi" aria-label="Import a MIDI file" title="Import a MIDI file" /></label>
+      <button class="chip icon tip" id="input-open" type="button" data-tip="Choose MIDI input" title="Choose MIDI input" aria-label="Choose MIDI input"><i class="fa-solid fa-plug"></i></button>
+      <button class="chip icon tip" id="refresh" type="button" data-tip="Refresh MIDI inputs" title="Refresh MIDI inputs" aria-label="Refresh MIDI inputs"><i class="fa-solid fa-rotate"></i></button>
+      <label class="gain-wrap tip" data-tip="Master gain" title="Master gain"><i class="fa-solid fa-volume-high"></i><input class="gain" id="gain" type="range" min="0" max="160" value="100" aria-label="Master gain" title="Master gain" /></label>
       </div>
       <div class="play">
-      <button class="chip icon" id="rwd" type="button" aria-label="Rewind" title="Rewind"><i class="fa-solid fa-backward"></i></button>
-      <button class="chip icon on" id="start" type="button" aria-label="Pause" title="Pause"><i class="fa-solid fa-pause"></i></button>
-      <button class="chip icon" id="fwd" type="button" aria-label="Forward" title="Forward"><i class="fa-solid fa-forward"></i></button>
+      <button class="chip icon tip" id="rwd" type="button" data-tip="Rewind" aria-label="Rewind" title="Rewind"><i class="fa-solid fa-backward"></i></button>
+      <button class="chip icon tip on" id="start" type="button" data-tip="Pause playback" aria-label="Pause playback" title="Pause playback"><i class="fa-solid fa-pause"></i></button>
+      <button class="chip icon tip" id="fwd" type="button" data-tip="Fast forward" aria-label="Fast forward" title="Fast forward"><i class="fa-solid fa-forward"></i></button>
       <div class="readout"><b id="clock">0:00</b><span id="bar">Bar 0.0</span></div>
       </div>
       <div class="side end">
-      <input class="num" id="bpm" type="number" value="200" aria-label="BPM" title="BPM" />
-      <input class="num" id="num" type="number" value="4" aria-label="Beats per bar" title="Beats per bar" />
+      <input class="num tip" id="bpm" type="number" value="200" data-tip="Tempo in BPM" aria-label="Tempo in BPM" title="Tempo in BPM" />
+      <input class="num tip" id="num" type="number" value="4" data-tip="Beats per bar" aria-label="Beats per bar" title="Beats per bar" />
       <span class="slash">/</span>
-      <input class="num" id="den" type="number" value="4" aria-label="Beat unit" title="Beat unit" />
+      <input class="num tip" id="den" type="number" value="4" data-tip="Beat unit" aria-label="Beat unit" title="Beat unit" />
       </div>
     </header>
 
@@ -324,18 +332,21 @@
         document.querySelectorAll("#" + listId + " button").forEach(b => b.classList.toggle("on", b === btn));
         const opener = document.getElementById(buttonId);
         opener.title = label + " · " + btn.textContent;
+        opener.dataset.tip = opener.title;
+        opener.setAttribute("aria-label", opener.title);
         closeAll();
       };
     }
     document.getElementById("sf-open").onclick = () => open("sf-modal");
     document.getElementById("midi-open").onclick = () => open("midi-modal");
     document.getElementById("input-open").onclick = () => open("input-modal");
-    pick("sf-list", "sf-open", "SoundFont");
-    pick("midi-list", "midi-open", "MIDI");
-    pick("input-list", "input-open", "MIDI input");
+    pick("sf-list", "sf-open", "Choose SoundFont");
+    pick("midi-list", "midi-open", "Choose MIDI file");
+    pick("input-list", "input-open", "Choose MIDI input");
     document.getElementById("refresh").onclick = () => {
       document.querySelectorAll("#input-list button").forEach((b, i) => b.classList.toggle("on", i === 0));
-      document.getElementById("input-open").title = "MIDI input · No input";
+      document.getElementById("input-open").title = "Choose MIDI input · No input";
+      document.getElementById("input-open").dataset.tip = "Choose MIDI input · No input";
     };
     document.getElementById("import").onchange = e => {
       const file = e.target.files[0];
@@ -348,7 +359,8 @@
       btn.classList.toggle("on");
       const on = btn.classList.contains("on");
       btn.querySelector("i").className = on ? "fa-solid fa-pause" : "fa-solid fa-play";
-      btn.title = on ? "Pause" : "Start";
+      btn.title = on ? "Pause playback" : "Start playback";
+      btn.dataset.tip = btn.title;
       btn.setAttribute("aria-label", btn.title);
     };
     document.querySelectorAll(".row input").forEach(r => r.oninput = () => r.nextElementSibling.textContent = r.value);
