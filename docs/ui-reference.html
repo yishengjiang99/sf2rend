@@ -22,7 +22,15 @@
     button, select, input { font: inherit; color: inherit; }
     button { cursor: pointer; }
     .device { width: min(1280px, 100%); height: min(860px, calc(100vh - 44px)); background: var(--bg); border: 1px solid rgba(255,255,255,.08); border-radius: 22px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 30px 80px rgba(0,0,0,.45); }
-    .transport { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+    .transport { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+    .transport select, .transport .chip, .transport .num { height: 26px; font-size: 12px; padding: 0 8px; }
+    .transport .icon { width: 26px; padding: 0; }
+    .transport .field span { font-size: 9px; }
+    .sf-btn { max-width: 136px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .num { width: 52px; text-align: center; }
+    .midi-select { max-width: 176px; }
+    .pick-list { display: grid; gap: 6px; }
+    .pick-list .chip { width: 100%; text-align: left; height: auto; min-height: 32px; }
     .brand { font-weight: 620; letter-spacing: -0.02em; margin-right: 6px; }
     .field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
     .field span, .lab { color: var(--muted); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
@@ -30,7 +38,6 @@
       height: 32px; border-radius: 9px; border: 1px solid var(--chip-line); background: var(--chip); color: var(--text); padding: 0 10px;
     }
     select { max-width: 220px; }
-    .midi-select { max-width: 280px; }
     .chip { color: var(--muted); font-size: 12px; }
     .chip.on, .key.on { color: #111; background: #fff; border-color: #fff; }
     .icon { width: 28px; padding: 0; display: inline-grid; place-items: center; font-size: 12px; }
@@ -97,12 +104,7 @@
     <header class="transport">
       <div class="brand">sf2rend</div>
       <label class="field"><span>SoundFont</span>
-        <select id="sf">
-          <option>GeneralUserGS.sf2</option>
-          <option>file.sf2</option>
-          <option>SoundBlasterOld.sf2</option>
-          <option>VintageDreamsWaves-v2.sf2</option>
-        </select>
+        <button class="chip sf-btn" id="sf-open" type="button">GeneralUserGS.sf2</button>
       </label>
       <label class="field"><span>MIDI library</span>
         <select id="midi" class="midi-select">
@@ -119,9 +121,9 @@
       </label>
       <button class="chip" id="refresh" type="button">Refresh</button>
       <label class="field"><span>Master gain</span><input class="gain" id="gain" type="range" min="0" max="160" value="100" /></label>
-      <button class="chip" id="rwd" type="button">Rwd</button>
-      <button class="chip on" id="start" type="button">Start</button>
-      <button class="chip" id="fwd" type="button">Fwd</button>
+      <button class="chip icon" id="rwd" type="button" aria-label="Rewind" title="Rewind"><i class="fa-solid fa-backward"></i></button>
+      <button class="chip icon on" id="start" type="button" aria-label="Pause" title="Pause"><i class="fa-solid fa-pause"></i></button>
+      <button class="chip icon" id="fwd" type="button" aria-label="Forward" title="Forward"><i class="fa-solid fa-forward"></i></button>
       <label class="field"><span>BPM</span><input class="num" id="bpm" type="number" value="200" /></label>
       <label class="field"><span>TS num</span><input class="num" id="num" type="number" value="4" /></label>
       <label class="field"><span>TS den</span><input class="num" id="den" type="number" value="4" /></label>
@@ -146,6 +148,20 @@
       <button class="chip" id="inspect" type="button">Inspect State</button>
     </footer>
   </main>
+
+  <div class="modal" id="sf-modal">
+    <div class="sheet">
+      <h2>SoundFont</h2>
+      <p>Choose a loaded bank.</p>
+      <div class="pick-list" id="sf-list">
+        <button class="chip on" type="button">GeneralUserGS.sf2</button>
+        <button class="chip" type="button">file.sf2</button>
+        <button class="chip" type="button">SoundBlasterOld.sf2</button>
+        <button class="chip" type="button">VintageDreamsWaves-v2.sf2</button>
+      </div>
+      <div class="actions"><button class="chip" data-close type="button">Close</button></div>
+    </div>
+  </div>
 
   <div class="modal" id="edit-modal">
     <div class="sheet">
@@ -270,7 +286,22 @@
     document.getElementById("open-zone").onclick = () => open("zone-modal");
     document.getElementById("inspect").onclick = () => { showTab("log"); open("state-modal"); };
     document.getElementById("preview").onclick = () => { const k = [...document.querySelectorAll(".key")].find(b => b.textContent === "C4"); k.classList.add("on"); setTimeout(() => k.classList.remove("on"), 180); };
-    document.getElementById("start").onclick = e => e.target.classList.toggle("on");
+    document.getElementById("sf-open").onclick = () => open("sf-modal");
+    document.getElementById("sf-list").onclick = e => {
+      const btn = e.target.closest("button");
+      if (!btn) return;
+      document.querySelectorAll("#sf-list button").forEach(b => b.classList.toggle("on", b === btn));
+      document.getElementById("sf-open").textContent = btn.textContent;
+      closeAll();
+    };
+    document.getElementById("start").onclick = e => {
+      const btn = e.target.closest("button");
+      btn.classList.toggle("on");
+      const on = btn.classList.contains("on");
+      btn.querySelector("i").className = on ? "fa-solid fa-pause" : "fa-solid fa-play";
+      btn.title = on ? "Pause" : "Start";
+      btn.setAttribute("aria-label", btn.title);
+    };
     document.getElementById("refresh").onclick = () => { document.getElementById("input").selectedIndex = 0; };
     document.getElementById("bpm").oninput = e => document.getElementById("tempo").textContent = e.target.value + " BPM";
     document.getElementById("import").onchange = e => { if (e.target.files[0]) document.getElementById("midi").insertAdjacentHTML("afterbegin", `<option selected>${e.target.files[0].name}</option>`); };
