@@ -58,13 +58,14 @@ jobs:
 
       - name: Build WebAssembly modules in the pinned toolchain
         # docker run uses the image ENTRYPOINT, which sets up the emsdk
-        # environment correctly. User-mapping keeps files owned by the runner.
+        # environment correctly.
         run: |
           docker run --rm \
-            --user "$(id -u):$(id -g)" \
             -v "$GITHUB_WORKSPACE:/src" -w /src \
             "$TOOLCHAIN_IMAGE" \
             make wasm
+          # Fix ownership: files created as root in the container.
+          sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE"
 
       - name: Webpack bundle
         run: make bundle
@@ -75,10 +76,10 @@ jobs:
       - name: Reproducibility check
         run: |
           docker run --rm \
-            --user "$(id -u):$(id -g)" \
             -v "$GITHUB_WORKSPACE:/src" -w /src \
             "$TOOLCHAIN_IMAGE" \
             make verify-reproducible
+          sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE"
 
       - name: Assemble site
         run: make site
