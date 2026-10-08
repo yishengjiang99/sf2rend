@@ -690,6 +690,8 @@ export default function App() {
       if (defaultMidis[0]) {
         await loadMidiFromUrl(defaultMidis[0].Url, defaultMidis[0].Name);
       }
+      // Test hook: default MIDI is loaded and sequencer tracks are ready
+      window.__sf2rendMidiLoaded = true;
     }
 
     init().catch((initError) => {

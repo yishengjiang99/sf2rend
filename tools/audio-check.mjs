@@ -114,6 +114,14 @@ try {
   });
   console.log("soundfont loaded");
 
+  // Wait for the default MIDI to finish loading/parsing before clicking play.
+  // (Without this, play starts while the sequencer has no tracks -> silence.)
+  console.log("waiting for default MIDI...");
+  await page.waitForFunction(() => window.__sf2rendMidiLoaded === true, {
+    timeout: 180000,
+  });
+  console.log("midi loaded");
+
   // Click the transport play button.
   console.log("clicking play...");
   const playBtn = await page.waitForSelector('[aria-label="Start playback"]', {
