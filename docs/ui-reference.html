@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
   <title>sf2rend</title>
   <style>
     :root {
@@ -32,6 +33,7 @@
     .midi-select { max-width: 280px; }
     .chip { color: var(--muted); font-size: 12px; }
     .chip.on, .key.on { color: #111; background: #fff; border-color: #fff; }
+    .icon { width: 28px; padding: 0; display: inline-grid; place-items: center; font-size: 12px; }
     .file { position: relative; overflow: hidden; }
     .file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
     .gain { width: 88px; accent-color: var(--violet); }
@@ -232,7 +234,7 @@
       const w = ch[2] ? Math.round(Math.max(28, Math.min(96, 24 + Math.log10(ch[2]) * 22))) : 0;
       const dots = Array.from({length: 7}, (_, k) => `<b style="left:${8+k*12}%;top:${28+(k%3)*16}%"></b>`).join("");
       const clip = w ? `<div class="clip" style="width:${w}%">${dots}</div>` : `<div class="empty"></div>`;
-      row.innerHTML = `<div class="head"><div class="head-line"><div class="ch">CH ${n}</div><select aria-label="Instrument">${opts}</select></div><div class="meta">${ch[3]} · Ready · Preset ${ch[1] == null ? "None" : String(ch[1]).padStart(3,"0")} · ${ch[2]} notes</div><div class="head-line"><div class="pills"><button class="chip" type="button" data-mute>Mute</button><button class="chip" type="button" data-solo>Solo</button><button class="chip" type="button" data-edit>Edit</button></div></div><input class="vol" type="range" min="0" max="127" value="${ch[2] ? 80 : 40}" aria-label="Volume" /></div><div class="lane"><span class="needle"></span>${clip}</div>`;
+      row.innerHTML = `<div class="head"><div class="head-line"><div class="ch">CH ${n}</div><select aria-label="Instrument">${opts}</select></div><div class="meta">${ch[3]} · Ready · Preset ${ch[1] == null ? "None" : String(ch[1]).padStart(3,"0")} · ${ch[2]} notes</div><div class="head-line"><div class="pills"><button class="chip icon" type="button" data-mute aria-label="Mute" title="Mute"><i class="fa-solid fa-volume-xmark"></i></button><button class="chip icon" type="button" data-solo aria-label="Solo" title="Solo"><i class="fa-solid fa-headphones"></i></button><button class="chip icon" type="button" data-edit aria-label="Edit" title="Edit"><i class="fa-solid fa-pen"></i></button></div></div><input class="vol" type="range" min="0" max="127" value="${ch[2] ? 80 : 40}" aria-label="Volume" /></div><div class="lane"><span class="needle"></span>${clip}</div>`;
       stage.appendChild(row);
     });
 
