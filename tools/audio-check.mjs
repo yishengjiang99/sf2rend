@@ -90,7 +90,10 @@ try {
     failures.push(`requestfailed: ${req.url().slice(-80)}`),
   );
   page.on("response", (res) => {
-    if (res.status() >= 400) failures.push(`HTTP ${res.status()}: ${res.url().slice(-80)}`);
+    const url = res.url();
+    // favicon.ico 404s are benign (browsers request it automatically)
+    if (url.endsWith("/favicon.ico")) return;
+    if (res.status() >= 400) failures.push(`HTTP ${res.status()}: ${url.slice(-80)}`);
   });
 
   console.log(`loading ${url} ...`);
@@ -106,10 +109,9 @@ try {
   console.log("worklets registered");
 
   console.log("waiting for default SoundFont...");
-  await page.waitForFunction(
-    () => /Loaded \d+ presets from .+\.sf2\./.test(document.body.innerText),
-    { timeout: 180000 },
-  );
+  await page.waitForFunction(() => window.__sf2rendSfLoaded === true, {
+    timeout: 180000,
+  });
   console.log("soundfont loaded");
 
   // Click the transport play button.

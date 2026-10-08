@@ -182,6 +182,8 @@ export default function App() {
       setProgramOptions(nextPrograms);
       setSf2Meta(service.meta ?? []);
       appendLog(`Loaded ${nextPrograms.length} presets from ${labelFromPath(nextUrl)}.`);
+      // Test hook: signal that the default SoundFont is ready (used by tools/audio-check.mjs)
+      window.__sf2rendSfLoaded = true;
 
       const loadedTracks = channelsStateRef.current.filter(
         (track) => track.loaded && track.presetId != null
