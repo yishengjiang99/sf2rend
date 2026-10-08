@@ -84,7 +84,10 @@ try {
   });
   page.on("pageerror", (err) => failures.push(`pageerror: ${err.message.slice(0, 200)}`));
   page.on("console", (msg) => {
-    if (msg.type() === "error") failures.push(`console.error: ${msg.text().slice(0, 200)}`);
+    if (msg.type() !== "error") return;
+    // favicon.ico 404s are benign (browsers request it automatically)
+    if (msg.text().includes("favicon.ico")) return;
+    failures.push(`console.error: ${msg.text().slice(0, 200)}`);
   });
   page.on("requestfailed", (req) =>
     failures.push(`requestfailed: ${req.url().slice(-80)}`),
