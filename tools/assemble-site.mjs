@@ -16,6 +16,7 @@
 //   lpf/lpf-proc.js       unbundled worklet
 //   lpf/lpf.wasm.js       passed to lpf-proc.js via processorOptions
 //   static/**             SoundFonts, MIDI, served with Range requests
+//   docs/ui-reference.html  static layout reference
 //   .nojekyll             GitHub Pages: don't run Jekyll
 //
 // Cache-busting: relative import specifiers inside the copied unbundled .js
@@ -84,6 +85,9 @@ if (existsSync(join(root, "dist", "index.html"))) {
 }
 for (const rel of UNBUNDLED_JS) copyInto(rel);
 copyInto("static");
+if (existsSync(join(root, "docs", "ui-reference.html"))) {
+  copyInto("docs/ui-reference.html");
+}
 writeFileSync(join(out, ".nojekyll"), "");
 
 // Cache-bust relative imports inside the unbundled JS (not dist/**).
