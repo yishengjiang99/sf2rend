@@ -79,11 +79,8 @@ lpf/lpf.wasm.js: $(BUILD)/lpf/lpf.wasm
 
 # --- saturation ------------------------------------------------------------
 $(BUILD)/saturation/saturate.wasm: saturation/saturate.c | $(BUILD)/saturation $(TOOLCHAIN_OK)
-	emcc -O3 $< -o $@ \
-	  -nostartfiles \
-	  -s STANDALONE_WASM=1 -s IMPORTED_MEMORY=1 \
-	  -Wl,--export-all -Wl,--no-entry \
-	  -ffile-prefix-map=$(ROOT)=.
+	$(CLANG) --target=wasm32 -O3 -c $< -o $(BUILD)/saturation/saturate.o -ffile-prefix-map=$(ROOT)=.
+	$(WASM_LD) --no-entry --export-all -o $@ $(BUILD)/saturation/saturate.o
 
 saturation/saturate.wasm.js: $(BUILD)/saturation/saturate.wasm
 	$(WASM2JS) $< $@
