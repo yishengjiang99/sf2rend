@@ -69,10 +69,8 @@ LPF_SRCS := lpf/biquad.c
 LPF_HDRS := lpf/biquad.h
 
 $(BUILD)/lpf/lpf.wasm: $(LPF_SRCS) $(LPF_HDRS) | $(BUILD)/lpf $(TOOLCHAIN_OK)
-	emcc -O2 $(LPF_SRCS) -o $@ \
-	  -s STANDALONE_WASM=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
-	  -Wl,--export-all -Wl,--no-entry \
-	  -ffile-prefix-map=$(ROOT)=.
+	$(CLANG) --target=wasm32 -O2 -c $(LPF_SRCS) -o $(BUILD)/lpf/lpf.o -ffile-prefix-map=$(ROOT)=.
+	$(WASM_LD) --no-entry --allow-undefined --export-all -o $@ $(BUILD)/lpf/lpf.o
 
 lpf/lpf.wasm.js: $(BUILD)/lpf/lpf.wasm
 	$(WASM2JS) $< $@
