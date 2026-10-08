@@ -57,14 +57,11 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Build WebAssembly modules in the pinned toolchain
-        # Use the image ENTRYPOINT explicitly; it sources emsdk_env.sh which
-        # sets up PATH and all required variables correctly.
         run: |
           docker run --rm \
             -v "$GITHUB_WORKSPACE:/src" -w /src \
-            --entrypoint /emsdk/docker/entrypoint.sh \
             "$TOOLCHAIN_IMAGE" \
-            make wasm
+            bash -c 'source /emsdk/emsdk_env.sh && make wasm'
           # Fix ownership: files created as root in the container.
           sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE"
 
@@ -78,9 +75,8 @@ jobs:
         run: |
           docker run --rm \
             -v "$GITHUB_WORKSPACE:/src" -w /src \
-            --entrypoint /emsdk/docker/entrypoint.sh \
             "$TOOLCHAIN_IMAGE" \
-            make verify-reproducible
+            bash -c 'source /emsdk/emsdk_env.sh && make verify-reproducible'
           sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE"
 
       - name: Assemble site
