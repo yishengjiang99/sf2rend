@@ -121,6 +121,15 @@ try {
   });
   await playBtn.click();
 
+  // Verify the button toggled to "Pause" (proves the click registered)
+  await new Promise((r) => setTimeout(r, 1000));
+  const pauseBtn = await page.$('[aria-label="Pause playback"]');
+  if (!pauseBtn) {
+    failures.push("play button did not toggle to Pause after click");
+  } else {
+    console.log("play button toggled to Pause (playing)");
+  }
+
   // Let the MIDI play, then sample the tapped destination buffer.
   await new Promise((r) => setTimeout(r, playMs));
   const peak = await page.evaluate(() => {

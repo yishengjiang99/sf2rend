@@ -725,6 +725,16 @@ export default function App() {
     );
     tempoEventsRef.current = (midiInfo.tempos || []).map((t) => ({ ...t }));
     timerWorker.postMessage({ cmd: "reset" });
+    // Send time base to timer worker (ppqn, tempo, time signature)
+    timerWorker.postMessage({
+      tm: {
+        ppqn: midiInfo.division,
+        msqn: midiInfo.tempos?.[0]?.tempo || 500000,
+        ts: midiInfo.time_base?.relative_ts,
+        ts1: midiInfo.time_base?.numerator,
+        ts2: midiInfo.time_base?.denum,
+      },
+    });
 
     const onMessage = ({ data }) => {
       if (typeof data.ticks !== "number") {
