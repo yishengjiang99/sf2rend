@@ -37,22 +37,23 @@
     .gain { width: 88px; accent-color: var(--violet); }
     .clock { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; display: flex; gap: 12px; }
     .stage { flex: 1; min-height: 0; overflow: auto; position: relative; }
-    .row { display: grid; grid-template-columns: 1fr 2fr; border-bottom: 1px solid var(--line); min-height: 96px; }
+    .row { display: grid; grid-template-columns: minmax(256px, 33.333%) minmax(0, 1fr); border-bottom: 1px solid var(--line); min-height: 96px; }
     .ruler-row { position: sticky; top: 0; z-index: 4; background: var(--bg); min-height: 34px; }
-    .head { display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 8px 12px; border-right: 1px solid var(--line); min-width: 0; }
+    .head { position: relative; z-index: 1; display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 8px 12px; border-right: 1px solid var(--line); min-width: 0; overflow: hidden; background: var(--bg); }
     .ruler-row .head { padding: 0; }
     .head-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
-    .row.selected .head { background: rgba(124, 107, 255, .1); }
+    .row.selected .head { background: #16141f; }
     .ruler { position: relative; color: var(--muted); font-size: 11px; }
     .ruler i { position: absolute; top: 11px; font-style: normal; transform: translateX(-50%); }
-    .playhead { position: absolute; top: 0; bottom: 0; left: calc(33.333% + 66.667% * 0.18); width: 1px; background: rgba(255,255,255,.72); pointer-events: none; z-index: 3; }
-    .playhead::before { content: ""; position: absolute; top: 8px; left: 50%; width: 8px; height: 8px; border-radius: 50%; background: #fff; transform: translateX(-50%); }
+    .lane { position: relative; z-index: 0; display: flex; align-items: center; padding: 12px 14px; min-width: 0; overflow: hidden; }
+    .needle { position: absolute; top: 0; bottom: 0; left: 18%; width: 1px; background: rgba(255,255,255,.72); pointer-events: none; }
+    .ruler .needle::before { content: ""; position: absolute; top: 8px; left: 50%; width: 8px; height: 8px; border-radius: 50%; background: #fff; transform: translateX(-50%); }
     .ch { color: var(--muted); font-size: 11px; flex: none; width: 36px; }
     .head select { flex: 1; width: auto; min-width: 0; max-width: none; }
     .meta { color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .pills { display: flex; gap: 6px; flex: none; }
-    .vol { flex: 1; width: auto; min-width: 0; accent-color: #fff; }
-    .lane { position: relative; display: flex; align-items: center; padding: 12px 14px; min-width: 0; }
+    .pills { display: flex; gap: 6px; flex-wrap: wrap; min-width: 0; }
+    .vol { width: 100%; accent-color: #fff; }
+    .lane { position: relative; z-index: 0; display: flex; align-items: center; padding: 12px 14px; min-width: 0; overflow: hidden; }
     .clip { height: 56px; border-radius: 12px; background: linear-gradient(90deg, rgba(124,107,255,.92), rgba(56,189,214,.88)); position: relative; }
     .clip b { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,.8); }
     .empty { height: 56px; width: 100%; border-radius: 12px; border: 1px dashed rgba(255,255,255,.12); }
@@ -118,10 +119,10 @@
     </header>
 
     <section class="stage" id="stage">
-      <div class="playhead"></div>
       <div class="row ruler-row">
         <div class="head"></div>
         <div class="lane ruler">
+          <span class="needle"></span>
           <i style="left:8%">1</i><i style="left:20%">2</i><i style="left:32%">3</i><i style="left:44%">4</i>
           <i style="left:56%">5</i><i style="left:68%">6</i><i style="left:80%">7</i><i style="left:92%">8</i>
         </div>
@@ -225,7 +226,7 @@
       const w = ch[2] ? Math.round(Math.max(28, Math.min(96, 24 + Math.log10(ch[2]) * 22))) : 0;
       const dots = Array.from({length: 7}, (_, k) => `<b style="left:${8+k*12}%;top:${28+(k%3)*16}%"></b>`).join("");
       const clip = w ? `<div class="clip" style="width:${w}%">${dots}</div>` : `<div class="empty"></div>`;
-      row.innerHTML = `<div class="head"><div class="head-line"><div class="ch">CH ${n}</div><select aria-label="Instrument">${opts}</select></div><div class="meta">${ch[3]} · Ready · Preset ${ch[1] == null ? "None" : String(ch[1]).padStart(3,"0")} · ${ch[2]} notes</div><div class="head-line"><div class="pills"><button class="chip" type="button" data-mute>Mute</button><button class="chip" type="button" data-solo>Solo</button><button class="chip" type="button" data-edit>Edit</button></div><input class="vol" type="range" min="0" max="127" value="${ch[2] ? 80 : 40}" aria-label="Volume" /></div></div><div class="lane">${clip}</div>`;
+      row.innerHTML = `<div class="head"><div class="head-line"><div class="ch">CH ${n}</div><select aria-label="Instrument">${opts}</select></div><div class="meta">${ch[3]} · Ready · Preset ${ch[1] == null ? "None" : String(ch[1]).padStart(3,"0")} · ${ch[2]} notes</div><div class="head-line"><div class="pills"><button class="chip" type="button" data-mute>Mute</button><button class="chip" type="button" data-solo>Solo</button><button class="chip" type="button" data-edit>Edit</button></div></div><input class="vol" type="range" min="0" max="127" value="${ch[2] ? 80 : 40}" aria-label="Volume" /></div><div class="lane"><span class="needle"></span>${clip}</div>`;
       stage.appendChild(row);
     });
 
