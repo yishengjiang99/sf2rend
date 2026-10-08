@@ -48,15 +48,16 @@ SPIN_WASM := $(BUILD)/spin/spin.wasm
 $(BUILD)/spin $(BUILD)/lpf $(BUILD)/saturation $(BUILD)/fft-64bit $(CTEST):
 	mkdir -p $@
 
-# Locate LLVM tools via emcc (they're bundled with emsdk but not on PATH
-# in the Docker image). Fall back to PATH if emcc can't locate them.
+# All wasm targets use emcc from the pinned image (the standalone LLVM
+# binaries are not shipped in the Docker image).
+
+# emcc ships clang and wasm-ld beside it. llc is not in the image.
 CLANG := $(shell emcc --print-prog-name=clang 2>/dev/null || echo clang)
-LLC := $(shell emcc --print-prog-name=llc 2>/dev/null || echo llc)
-WASM_LD := $(shell emcc --print-prog-name=wasm-ld 2>/dev/null || echo wasm-ld)
+LLVM_BIN := $(dir $(CLANG))
+WASM_LD := $(LLVM_BIN)wasm-ld
 
 $(SPIN_WASM): $(SPIN_SRCS) $(SPIN_HDRS) | $(BUILD)/spin $(TOOLCHAIN_OK)
-	$(CLANG) --target=wasm32 -O2 -emit-llvm -c -S $(SPIN_SRCS) -o $(BUILD)/spin/spin.ll -ffile-prefix-map=$(ROOT)=.
-	$(LLC) -march=wasm32 -filetype=obj $(BUILD)/spin/spin.ll -o $(BUILD)/spin/spin.o
+	$(CLANG) --target=wasm32 -O2 -c $(SPIN_SRCS) -o $(BUILD)/spin/spin.o -ffile-prefix-map=$(ROOT)=.
 	$(WASM_LD) --features=atomics,mutable-global --no-check-features --allow-undefined \
 	  --import-memory --no-entry --export-all -o $@ $(BUILD)/spin/spin.o
 
@@ -68,18 +69,16 @@ LPF_SRCS := lpf/biquad.c
 LPF_HDRS := lpf/biquad.h
 
 $(BUILD)/lpf/lpf.wasm: $(LPF_SRCS) $(LPF_HDRS) | $(BUILD)/lpf $(TOOLCHAIN_OK)
-	$(CLANG) --target=wasm32 -O2 -nostdlib \
-	  -Wl,--no-entry -Wl,--allow-undefined -Wl,--export-all \
-	  $(LPF_SRCS) -o $@ -ffile-prefix-map=$(ROOT)=.
+	$(CLANG) --target=wasm32 -O2 -c $(LPF_SRCS) -o $(BUILD)/lpf/lpf.o -ffile-prefix-map=$(ROOT)=.
+	$(WASM_LD) --no-entry --allow-undefined --export-all -o $@ $(BUILD)/lpf/lpf.o
 
 lpf/lpf.wasm.js: $(BUILD)/lpf/lpf.wasm
 	$(WASM2JS) $< $@
 
 # --- saturation ------------------------------------------------------------
 $(BUILD)/saturation/saturate.wasm: saturation/saturate.c | $(BUILD)/saturation $(TOOLCHAIN_OK)
-	$(CLANG) --target=wasm32 -O3 -flto -nostdlib \
-	  -Wl,--no-entry -Wl,--export-all -Wl,--import-memory \
-	  -o $@ $< -ffile-prefix-map=$(ROOT)=.
+	$(CLANG) --target=wasm32 -O3 -c $< -o $(BUILD)/saturation/saturate.o -ffile-prefix-map=$(ROOT)=.
+	$(WASM_LD) --no-entry --export-all -o $@ $(BUILD)/saturation/saturate.o
 
 saturation/saturate.wasm.js: $(BUILD)/saturation/saturate.wasm
 	$(WASM2JS) $< $@
@@ -88,7 +87,7 @@ saturation/saturate.wasm.js: $(BUILD)/saturation/saturate.wasm
 FFT_EXPORTS := '["_FFT","_iFFT","_bit_reverse","_malloc"]'
 
 $(BUILD)/fft-64bit/fft.wasm: fft-64bit/src/fft.c | $(BUILD)/fft-64bit $(TOOLCHAIN_OK)
-	emcc $< -O3 -o $@ --no-entry -s EXPORTED_FUNCTIONS=$(FFT_EXPORTS) -ffile-prefix-map=$(ROOT)=.
+	emcc $< -O3 -nostartfiles -o $@ -Wl,--no-entry -s EXPORTED_FUNCTIONS=$(FFT_EXPORTS) -ffile-prefix-map=$(ROOT)=.
 
 fft-64bit/build/fft.wasm.js: $(BUILD)/fft-64bit/fft.wasm | fft-64bit/build
 	$(WASM2JS) $< $@
@@ -191,6 +190,10 @@ check-artifacts:
 .PHONY: check-spin-abi
 check-spin-abi: spin/spin.wasm.js
 	node tools/check-abi.mjs spin/spin.wasm.js tools/spin-abi.json
+
+.PHONY: check-no-wasi
+check-no-wasi: $(WASM_JS)
+	node tools/check-no-wasi.mjs spin/spin.wasm.js lpf/lpf.wasm.js saturation/saturate.wasm.js fft-64bit/build/fft.wasm.js
 
 .PHONY: verify-reproducible
 verify-reproducible: $(TOOLCHAIN_OK)
