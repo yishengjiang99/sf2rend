@@ -100,6 +100,9 @@ export default function App() {
   });
   const channelsStateRef = useRef(channels);
   const lastMeterUpdateRef = useRef(0);
+  // Playback state for timer-worker-driven MIDI sequencing (restored from old Sequencer)
+  const playbackTracksRef = useRef([]);
+  const tempoEventsRef = useRef([]);
 
   channelsStateRef.current = channels;
 
@@ -707,6 +710,48 @@ export default function App() {
       }
     };
   }, []);
+
+  // Timer-worker-driven MIDI playback (restored from old Sequencer):
+  // when the timer ticks, dispatch due MIDI events to the worklet via eventPipe.
+  useEffect(() => {
+    if (!midiInfo?.tracks) {
+      playbackTracksRef.current = [];
+      tempoEventsRef.current = [];
+      return;
+    }
+    // Deep-clone tracks for playback (so we can shift events off)
+    playbackTracksRef.current = midiInfo.tracks.map((track) =>
+      track.map((event) => ({ ...event }))
+    );
+    tempoEventsRef.current = (midiInfo.tempos || []).map((t) => ({ ...t }));
+    timerWorker.postMessage({ cmd: "reset" });
+
+    const onMessage = ({ data }) => {
+      if (typeof data.ticks !== "number") {
+        // Update clock display
+        if (typeof data.clock === "number") {
+          const totalSecs = Math.floor(data.clock / 1000);
+          const mins = Math.floor(totalSecs / 60);
+          const secs = totalSecs % 60;
+          setClockText(`${mins}:${String(secs).padStart(2, "0")}`);
+        }
+        return;
+      }
+      const eventPipe = runtimeRef.current.eventPipe;
+      playbackTracksRef.current.forEach((track) => {
+        while (track.length && track[0].t <= data.ticks) {
+          const event = track.shift();
+          if (event.channel) {
+            eventPipe?.postMessage(event.channel);
+          }
+        }
+      });
+    };
+    timerWorker.onmessage = onMessage;
+    return () => {
+      timerWorker.onmessage = null;
+    };
+  }, [midiInfo, timerWorker]);
 
   useEffect(() => {
     fetchmidilist()
