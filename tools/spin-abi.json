@@ -1,5 +1,5 @@
 {
-  "note": "Import/export ABI of spin.wasm at f2403f3 (before the hermetic rebuild). make check-spin-abi fails if a rebuild changes it.",
+  "note": "Import/export ABI of spin.wasm with the engine-ui-fixes engine build. Regenerate from a pinned-toolchain build (make wasm) if the engine changes: node -e with WebAssembly.Module imports/exports.",
   "imports": [
     {
       "module": "env",
@@ -9,6 +9,11 @@
     {
       "module": "env",
       "name": "tanf",
+      "kind": "function"
+    },
+    {
+      "module": "env",
+      "name": "log2f",
       "kind": "function"
     }
   ],
@@ -44,6 +49,10 @@
     {
       "name": "timecent2sample",
       "kind": "function"
+    },
+    {
+      "name": "SAMPLE_RATE",
+      "kind": "global"
     },
     {
       "name": "applyCentible",
@@ -86,12 +95,12 @@
       "kind": "function"
     },
     {
-      "name": "att_db_levels",
-      "kind": "global"
-    },
-    {
       "name": "advanceStage",
       "kind": "function"
+    },
+    {
+      "name": "att_db_levels",
+      "kind": "global"
     },
     {
       "name": "update_eg",
@@ -106,23 +115,31 @@
       "kind": "function"
     },
     {
-      "name": "scaleTc",
-      "kind": "function"
-    },
-    {
-      "name": "init_vol_eg",
-      "kind": "function"
-    },
-    {
-      "name": "init_mod_eg",
-      "kind": "function"
-    },
-    {
       "name": "new_lpf",
       "kind": "function"
     },
     {
       "name": "calc_lpf",
+      "kind": "function"
+    },
+    {
+      "name": "set_sample_rate",
+      "kind": "function"
+    },
+    {
+      "name": "effective_gen",
+      "kind": "function"
+    },
+    {
+      "name": "ch_gen_set",
+      "kind": "global"
+    },
+    {
+      "name": "ch_gen_offset",
+      "kind": "global"
+    },
+    {
+      "name": "voice_gen",
       "kind": "function"
     },
     {
@@ -154,20 +171,36 @@
       "kind": "global"
     },
     {
-      "name": "allocate_sp",
+      "name": "sp_for_channel",
       "kind": "function"
     },
     {
-      "name": "sp_idx",
+      "name": "last_voice",
       "kind": "global"
+    },
+    {
+      "name": "alloc_voice",
+      "kind": "function"
+    },
+    {
+      "name": "silence",
+      "kind": "global"
+    },
+    {
+      "name": "free_voice",
+      "kind": "function"
+    },
+    {
+      "name": "sp_active",
+      "kind": "function"
     },
     {
       "name": "newSpinner",
       "kind": "function"
     },
     {
-      "name": "silence",
-      "kind": "global"
+      "name": "silence_all",
+      "kind": "function"
     },
     {
       "name": "trigger_release",
@@ -178,7 +211,27 @@
       "kind": "function"
     },
     {
-      "name": "set_midi_cc_val",
+      "name": "reset_tables",
+      "kind": "function"
+    },
+    {
+      "name": "ch_bend_cents",
+      "kind": "global"
+    },
+    {
+      "name": "ch_bend_range",
+      "kind": "global"
+    },
+    {
+      "name": "ch_rpn_msb",
+      "kind": "global"
+    },
+    {
+      "name": "ch_rpn_lsb",
+      "kind": "global"
+    },
+    {
+      "name": "gm_reset",
       "kind": "function"
     },
     {
@@ -186,12 +239,16 @@
       "kind": "global"
     },
     {
-      "name": "trigger_attack",
+      "name": "set_midi_cc_val",
       "kind": "function"
     },
     {
-      "name": "midi_p1200",
-      "kind": "global"
+      "name": "ch_set_bend",
+      "kind": "function"
+    },
+    {
+      "name": "trigger_attack",
+      "kind": "function"
     },
     {
       "name": "calc_pitch_diff_log",
@@ -203,6 +260,18 @@
     },
     {
       "name": "set_spinner_zone",
+      "kind": "function"
+    },
+    {
+      "name": "voice_refresh_zone",
+      "kind": "function"
+    },
+    {
+      "name": "set_channel_gen",
+      "kind": "function"
+    },
+    {
+      "name": "clear_channel_gen",
       "kind": "function"
     },
     {
@@ -258,8 +327,8 @@
       "kind": "function"
     },
     {
-      "name": "gm_reset",
-      "kind": "function"
+      "name": "midi_p1200",
+      "kind": "global"
     },
     {
       "name": "midi_log_10_convex",
