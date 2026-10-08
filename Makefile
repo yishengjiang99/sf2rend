@@ -58,21 +58,10 @@ LLC := $(LLVM_BIN)llc
 WASM_LD := $(LLVM_BIN)wasm-ld
 
 $(SPIN_WASM): $(SPIN_SRCS) $(SPIN_HDRS) | $(BUILD)/spin $(TOOLCHAIN_OK)
-<<<<<<< Updated upstream
-	# NOTE: emcc bundles the LLVM tools; the standalone clang/llc/wasm-ld
-	# binaries are not shipped in the Docker image.
-	emcc -O2 $(SPIN_SRCS) -o $@ \
-	  -s STANDALONE_WASM=1 -s IMPORTED_MEMORY=1 \
-	  -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
-	  -Wl,--export-all -Wl,--no-entry \
-	  -matomics -mmutable-globals \
-	  -ffile-prefix-map=$(ROOT)=.
-=======
 	$(CLANG) --target=wasm32 -O2 -emit-llvm -c -S $(SPIN_SRCS) -o $(BUILD)/spin/spin.ll -ffile-prefix-map=$(ROOT)=.
 	$(LLC) -march=wasm32 -filetype=obj $(BUILD)/spin/spin.ll -o $(BUILD)/spin/spin.o
 	$(WASM_LD) --features=atomics,mutable-global --no-check-features --allow-undefined \
 	  --import-memory --no-entry --export-all -o $@ $(BUILD)/spin/spin.o
->>>>>>> Stashed changes
 
 spin/spin.wasm.js: $(SPIN_WASM)
 	$(WASM2JS) $< $@
