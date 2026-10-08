@@ -160,8 +160,11 @@ export default function App() {
     if (!runtimeRef.current.channels.length) {
       return;
     }
-    await runtimeRef.current.channels[0].setProgram(0, 0);
-    await runtimeRef.current.channels[DRUMSCHANNEL].setProgram(0, 128);
+    // Load default programs in parallel (independent channels)
+    await Promise.all([
+      runtimeRef.current.channels[0].setProgram(0, 0),
+      runtimeRef.current.channels[DRUMSCHANNEL].setProgram(0, 128),
+    ]);
     runtimeRef.current.defaultProgramsLoaded = true;
   }
 
@@ -195,12 +198,15 @@ export default function App() {
         (track) => track.loaded && track.presetId != null
       );
       if (loadedTracks.length) {
-        for (const track of loadedTracks) {
-          await runtimeRef.current.channels[track.id].setProgram(
-            track.presetId & 0x7f,
-            track.bankId
-          );
-        }
+        // Load track programs in parallel (independent channels)
+        await Promise.all(
+          loadedTracks.map((track) =>
+            runtimeRef.current.channels[track.id].setProgram(
+              track.presetId & 0x7f,
+              track.bankId
+            )
+          )
+        );
       } else {
         await loadDefaultPrograms();
       }
@@ -235,25 +241,29 @@ export default function App() {
       return;
     }
 
+    // Load all channel programs in parallel (independent channels).
+    // Channels are disjoint between the fallback set and preset set.
+    const programLoads = [];
     for (const channelId of noteChannels) {
       if (initialPresetPerChannel.has(channelId)) {
         continue;
       }
       const channel = runtimeRef.current.channels[channelId];
       const fallbackBank = channelId === DRUMSCHANNEL ? 128 : 0;
-      await channel.setProgram(0, fallbackBank);
+      programLoads.push(channel.setProgram(0, fallbackBank));
     }
 
     for (const [channelId, preset] of initialPresetPerChannel) {
       const channel = runtimeRef.current.channels[channelId];
       const fallbackBank = channelId === DRUMSCHANNEL ? 128 : 0;
       const bankId = channel.getBankId() || fallbackBank;
-      await channel.setProgram(preset.pid, bankId);
+      programLoads.push(channel.setProgram(preset.pid, bankId));
     }
 
     if (noteChannels.includes(DRUMSCHANNEL) && !initialPresetPerChannel.has(DRUMSCHANNEL)) {
-      await runtimeRef.current.channels[DRUMSCHANNEL].setProgram(0, 128);
+      programLoads.push(runtimeRef.current.channels[DRUMSCHANNEL].setProgram(0, 128));
     }
+    await Promise.all(programLoads);
   }
 
   async function ensureChannelProgramLoaded(channelId) {

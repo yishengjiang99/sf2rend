@@ -10,10 +10,10 @@
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: #0e0c0a; color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif; }
-body { display: grid; place-items: center; min-height: 100%; padding: 22px; }
+body { min-height: 100%; padding: 0; }
 button, select, input { font: inherit; color: inherit; }
 button { cursor: pointer; }
-.device { width: min(1280px, 100%); height: min(860px, calc(100vh - 44px)); background: var(--bg); border: 1px solid rgba(255,255,255,.08); border-radius: 22px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 30px 80px rgba(0,0,0,.45); }
+.device { width: 100%; min-height: 100vh; background: var(--bg); border: 1px solid rgba(255,255,255,.08); border-radius: 0; overflow: hidden; display: flex; flex-direction: column; }
 .tip { position: relative; }
 .tip:hover::after, .tip:focus-visible::after {
   content: attr(data-tip); position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%);
