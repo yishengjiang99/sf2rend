@@ -15,6 +15,12 @@
 //   The "<name>.sf2 is ready." status is transient — the default MIDI
 //   starts loading immediately after — so the durable log entry is the
 //   reliable signal.)
+// - MIDI input: pressing a computer-keyboard key plays a note through the
+//   app's normal key handler (App.jsx maps a,w,s,e,d,f... to notes).
+// - Audio output: an AnalyserNode tapped to the AudioContext destination
+//   (via evaluateOnNewDocument interception — no app changes) must show
+//   a non-silent signal while the note plays, and near-silence after
+//   release. This proves the worklet actually renders audio.
 //
 // Usage: node tools/smoke-test.mjs --site <_site dir> [--port <port>]
 import { spawn, spawnSync } from "node:child_process";
@@ -95,6 +101,35 @@ try {
     ],
   });
   const page = await browser.newPage();
+  // Intercept AudioContext creation to tap the output for verification.
+  // When the app connects any node to ctx.destination, also connect it to
+  // our AnalyserNode. This is test-only instrumentation; the app is not
+  // modified.
+  await page.evaluateOnNewDocument(() => {
+    window.__testAudio = { ctx: null, analyser: null };
+    const OrigAudioContext = window.AudioContext;
+    const origConnect = AudioNode.prototype.connect;
+    window.AudioContext = function (...args) {
+      const ctx = new OrigAudioContext(...args);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 2048;
+      window.__testAudio.ctx = ctx;
+      window.__testAudio.analyser = analyser;
+      AudioNode.prototype.connect = function (dest, ...rest) {
+        const r = origConnect.call(this, dest, ...rest);
+        if (dest === ctx.destination) {
+          try {
+            origConnect.call(this, analyser);
+          } catch (e) {
+            /* already connected */
+          }
+        }
+        return r;
+      };
+      return ctx;
+    };
+    window.AudioContext.prototype = OrigAudioContext.prototype;
+  });
   page.on("pageerror", (err) => failures.push(`pageerror: ${err.message}`));
   page.on("console", (msg) => {
     if (msg.type() === "error") failures.push(`console.error: ${msg.text()}`);
@@ -130,6 +165,41 @@ try {
     { timeout: 180000 },
   );
   console.log("default SoundFont loaded");
+
+  // MIDI input + audio output: press a computer-keyboard key ('a' maps to
+  // a note in App.jsx's key handler), then verify the tapped analyser sees
+  // a non-silent signal. Release and verify it goes quiet.
+  console.log("playing MIDI note (keyboard 'a') and checking audio output...");
+  async function audioPeak() {
+    return page.evaluate(() => {
+      const analyser = window.__testAudio?.analyser;
+      if (!analyser) return -1;
+      const data = new Float32Array(analyser.fftSize);
+      analyser.getFloatTimeDomainData(data);
+      let peak = 0;
+      for (let i = 0; i < data.length; i++) {
+        const v = Math.abs(data[i]);
+        if (v > peak) peak = v;
+      }
+      return peak;
+    });
+  }
+  await page.keyboard.down("a");
+  await new Promise((r) => setTimeout(r, 800));
+  const peakPlaying = await audioPeak();
+  console.log(`audio peak while note held: ${peakPlaying.toFixed(4)}`);
+  if (peakPlaying < 0) {
+    failures.push("audio tap not installed (no AnalyserNode)");
+  } else if (peakPlaying < 0.001) {
+    failures.push(`audio output silent after MIDI note_on (peak=${peakPlaying})`);
+  }
+  await page.keyboard.up("a");
+  await new Promise((r) => setTimeout(r, 1500));
+  const peakReleased = await audioPeak();
+  console.log(`audio peak after note release: ${peakReleased.toFixed(4)}`);
+  if (peakReleased >= 0 && peakReleased > 0.05) {
+    failures.push(`audio did not decay after note_off (peak=${peakReleased})`);
+  }
 } catch (err) {
   failures.push(`exception: ${err.message}`);
 } finally {
@@ -142,4 +212,4 @@ if (failures.length > 0) {
   for (const f of failures) console.error(`  - ${f}`);
   process.exit(1);
 }
-console.log("smoke test passed: no console errors, no 404s, engine + SoundFont ready");
+console.log("smoke test passed: no console errors, no 404s, engine + SoundFont ready, MIDI note produced audio");
