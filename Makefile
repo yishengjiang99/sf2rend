@@ -55,9 +55,9 @@ $(SPIN_WASM): $(SPIN_SRCS) $(SPIN_HDRS) | $(BUILD)/spin $(TOOLCHAIN_OK)
 	# NOTE: emcc bundles the LLVM tools; the standalone clang/llc/wasm-ld
 	# binaries are not shipped in the Docker image.
 	emcc -O2 $(SPIN_SRCS) -o $@ \
-	  -s STANDALONE_WASM=1 -s IMPORTED_MEMORY=1 \
+	  -nostdlib -nostartfiles \
 	  -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
-	  -Wl,--export-all -Wl,--no-entry \
+	  -Wl,--export-all -Wl,--no-entry -Wl,--allow-undefined -Wl,--import-memory \
 	  -matomics -mmutable-globals \
 	  -ffile-prefix-map=$(ROOT)=.
 
