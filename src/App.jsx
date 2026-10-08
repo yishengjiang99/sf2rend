@@ -80,6 +80,15 @@ export default function App() {
   // webpack emits the timer module as a content-hashed chunk and resolves
   // this URL relative to the page, so it works under /sf2rend/ too.
   const [timerWorker] = useState(() => new Worker(new URL("./sequence/timer.js", import.meta.url)));
+  // UI revamp state (matches docs/ui-reference.html)
+  const [openModal, setOpenModal] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [bpm, setBpm] = useState(120);
+  const [beatsPerBar, setBeatsPerBar] = useState(4);
+  const [beatUnit, setBeatUnit] = useState(4);
+  const [clockText, setClockText] = useState("0:00");
+  const [barText, setBarText] = useState("Bar 0.0");
+  const [stateTab, setStateTab] = useState("log");
   const runtimeRef = useRef({
     apath: null,
     channels: [],
@@ -118,6 +127,14 @@ export default function App() {
     }
     await ctx.resume();
     setAudioState(ctx.state);
+  }
+
+  // Transport controls (wired to the timer worker, same as Sequencer)
+  async function transportCommand(cmd) {
+    await ensureAudioRunning();
+    timerWorker.postMessage({ cmd });
+    if (cmd === "start" || cmd === "resume") setIsPlaying(true);
+    if (cmd === "stop" || cmd === "reset") setIsPlaying(false);
   }
 
   function sendRawMidi(message) {
@@ -711,466 +728,536 @@ export default function App() {
     editingZoneChannel == null ? null : channels[editingZoneChannel];
 
   return (
-    <div className="app-shell">
-      <div className="app-backdrop" />
-      <header className="topbar panel">
-        <div className="brand">
-          <div className="brand-kicker">SoundFont Workstation</div>
-          <h1>sf2rend</h1>
-          <p>
-            React-driven MIDI rendering, hardware input, and live SoundFont editing
-            in one workspace.
-          </p>
-        </div>
-        <div className="topbar-controls">
-          <label className="toolbar-field">
-            <span>SoundFont</span>
-            <select
-              className="toolbar-input"
-              value={selectedSf2}
-              onChange={(event) => loadSf2(event.target.value)}
-            >
-              {sf2list.map((item) => (
-                <option key={item} value={item}>
-                  {labelFromPath(item)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="toolbar-field">
-            <span>MIDI Library</span>
-            <select
-              className="toolbar-input"
-              value={selectedMidi}
-              onChange={(event) =>
-                loadMidiFromUrl(
-                  event.target.value,
-                  midiChoices.find((item) => item.Url === event.target.value)?.Name
-                )
-              }
-            >
-              {midiChoices.map((item) => (
-                <option key={item.Url} value={item.Url}>
-                  {item.Name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="toolbar-field file-picker">
-            <span>Import MIDI</span>
+    <main className="device">
+      <header className="transport">
+        <div className="side">
+          <div className="brand">sf2rend</div>
+          <button
+            className="chip icon tip"
+            type="button"
+            data-tip="Choose SoundFont"
+            title="Choose SoundFont"
+            aria-label="Choose SoundFont"
+            onClick={() => setOpenModal("sf-modal")}
+          >
+            <i className="fa-solid fa-compact-disc"></i>
+          </button>
+          <button
+            className="chip icon tip"
+            type="button"
+            data-tip="Choose MIDI file"
+            title="Choose MIDI file"
+            aria-label="Choose MIDI file"
+            onClick={() => setOpenModal("midi-modal")}
+          >
+            <i className="fa-solid fa-list"></i>
+          </button>
+          <label
+            className="chip icon file tip"
+            data-tip="Import a MIDI file"
+            title="Import a MIDI file"
+            aria-label="Import a MIDI file"
+          >
+            <i className="fa-solid fa-file-import"></i>
             <input
-              className="visually-hidden"
               type="file"
               accept=".mid,.midi"
+              aria-label="Import a MIDI file"
+              title="Import a MIDI file"
               onChange={(event) => loadMidiFromFile(event.target.files?.[0])}
             />
-            <span className="button button-secondary">Choose File</span>
           </label>
-          <label className="toolbar-field">
-            <span>MIDI Input</span>
-            <div className="toolbar-inline">
-              <select
-                className="toolbar-input"
-                value={selectedMidiInputId}
-                onChange={(event) => connectMidiInput(event.target.value)}
-              >
-                <option value="">No input</option>
-                {midiInputs.map((input) => (
-                  <option key={input.id} value={input.id}>
-                    {input.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                className="button button-ghost"
-                type="button"
-                onClick={() => refreshMidiInputs()}
-              >
-                Refresh
-              </button>
-            </div>
-          </label>
-          <label className="toolbar-field">
-            <span>Master Gain</span>
+          <button
+            className="chip icon tip"
+            type="button"
+            data-tip="Choose MIDI input"
+            title="Choose MIDI input"
+            aria-label="Choose MIDI input"
+            onClick={() => setOpenModal("input-modal")}
+          >
+            <i className="fa-solid fa-plug"></i>
+          </button>
+          <button
+            className="chip icon tip"
+            type="button"
+            data-tip="Refresh MIDI inputs"
+            title="Refresh MIDI inputs"
+            aria-label="Refresh MIDI inputs"
+            onClick={() => refreshMidiInputs()}
+          >
+            <i className="fa-solid fa-rotate"></i>
+          </button>
+          <label className="gain-wrap tip" data-tip="Master gain" title="Master gain">
+            <i className="fa-solid fa-volume-high"></i>
             <input
-              className="toolbar-range"
+              className="gain"
               type="range"
               min="0"
               max="160"
-              step="1"
               value={masterGain}
+              aria-label="Master gain"
+              title="Master gain"
               onChange={(event) => updateMasterGain(event.target.value)}
             />
-            <span className="toolbar-value">{masterGain}%</span>
           </label>
+        </div>
+        <div className="play">
+          <button
+            className="chip icon tip"
+            type="button"
+            data-tip="Rewind"
+            aria-label="Rewind"
+            title="Rewind"
+            onClick={() => transportCommand("rwd")}
+          >
+            <i className="fa-solid fa-backward"></i>
+          </button>
+          <button
+            className={`chip icon tip${isPlaying ? " on" : ""}`}
+            type="button"
+            data-tip={isPlaying ? "Pause playback" : "Start playback"}
+            aria-label={isPlaying ? "Pause playback" : "Start playback"}
+            title={isPlaying ? "Pause playback" : "Start playback"}
+            onClick={() => transportCommand(isPlaying ? "stop" : "start")}
+          >
+            <i className={isPlaying ? "fa-solid fa-pause" : "fa-solid fa-play"}></i>
+          </button>
+          <button
+            className="chip icon tip"
+            type="button"
+            data-tip="Fast forward"
+            aria-label="Fast forward"
+            title="Fast forward"
+            onClick={() => transportCommand("fwd")}
+          >
+            <i className="fa-solid fa-forward"></i>
+          </button>
+          <div className="readout">
+            <b>{clockText}</b>
+            <span>{barText}</span>
+          </div>
+        </div>
+        <div className="side end">
+          <input
+            className="num tip"
+            type="number"
+            value={bpm}
+            data-tip="Tempo in BPM"
+            aria-label="Tempo in BPM"
+            title="Tempo in BPM"
+            onChange={(event) => setBpm(event.target.value)}
+          />
+          <input
+            className="num tip"
+            type="number"
+            value={beatsPerBar}
+            data-tip="Beats per bar"
+            aria-label="Beats per bar"
+            title="Beats per bar"
+            onChange={(event) => setBeatsPerBar(event.target.value)}
+          />
+          <span className="slash">/</span>
+          <input
+            className="num tip"
+            type="number"
+            value={beatUnit}
+            data-tip="Beat unit"
+            aria-label="Beat unit"
+            title="Beat unit"
+            onChange={(event) => setBeatUnit(event.target.value)}
+          />
         </div>
       </header>
 
-      <section className="status-strip panel">
-        <div className="status-cluster">
-          <StatusPill label="Engine" value={status} tone={error ? "danger" : "ok"} />
-          <StatusPill label="Audio" value={audioState} tone={audioState === "running" ? "ok" : "muted"} />
-          <StatusPill
-            label="Build"
-            value={isReady ? "ready" : "loading"}
-            tone={isReady ? "ok" : "muted"}
-          />
-          {midiStats ? (
-            <StatusPill
-              label="MIDI"
-              value={`${midiStats.tracks} tracks · ${midiStats.ppqn} PPQN`}
-              tone="muted"
-            />
-          ) : null}
+      <section className="stage" id="stage">
+        <div className="row ruler-row">
+          <div className="head"></div>
+          <div className="lane ruler">
+            <span className="needle"></span>
+            <i style={{ left: "8%" }}>1</i>
+            <i style={{ left: "20%" }}>2</i>
+            <i style={{ left: "32%" }}>3</i>
+            <i style={{ left: "44%" }}>4</i>
+            <i style={{ left: "56%" }}>5</i>
+            <i style={{ left: "68%" }}>6</i>
+            <i style={{ left: "80%" }}>7</i>
+            <i style={{ left: "92%" }}>8</i>
+          </div>
         </div>
-        {error ? <div className="status-error">{error}</div> : null}
+        {channels.map((track) => (
+          <article
+            key={track.id}
+            className={`row track${track.id === activeChannel ? " selected" : ""}`}
+            data-ch={track.id + 1}
+            onClick={(event) => {
+              if (!event.target.closest("button, select, input")) {
+                setActiveChannel(track.id);
+              }
+            }}
+          >
+            <div className="head">
+              <div className="head-line">
+                <div className="ch">CH {track.id + 1}</div>
+                <select
+                  aria-label="Instrument"
+                  value={track.presetId ?? ""}
+                  onChange={(event) => {
+                    const presetId = event.target.value === "" ? null : Number(event.target.value);
+                    sendProgramChange(track.id, presetId);
+                  }}
+                >
+                  <option value="">--</option>
+                  {programOptions.map((p) => (
+                    <option key={p.presetId} value={p.presetId}>
+                      {String(p.presetId & 0x7f).padStart(3, "0")} · {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="meta">
+                {track.loaded ? "Loaded" : "Idle"} · Ready · Preset{" "}
+                {track.presetId == null ? "None" : String(track.presetId & 0x7f).padStart(3, "0")}
+              </div>
+              <div className="head-line">
+                <div className="pills">
+                  <button
+                    className="chip icon"
+                    type="button"
+                    data-mute
+                    aria-label="Mute"
+                    title="Mute"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      toggleMute(track.id);
+                    }}
+                  >
+                    <i className="fa-solid fa-volume-xmark"></i>
+                  </button>
+                  <button
+                    className="chip icon"
+                    type="button"
+                    data-solo
+                    aria-label="Solo"
+                    title="Solo"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      toggleSolo(track.id);
+                    }}
+                  >
+                    <i className="fa-solid fa-headphones"></i>
+                  </button>
+                  <button
+                    className="chip icon"
+                    type="button"
+                    data-edit
+                    aria-label="Edit"
+                    title="Edit"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setActiveChannel(track.id);
+                      setOpenModal("edit-modal");
+                    }}
+                  >
+                    <i className="fa-solid fa-pen"></i>
+                  </button>
+                </div>
+              </div>
+              <input
+                className="vol"
+                type="range"
+                min="0"
+                max="127"
+                value={track.volume ?? 80}
+                aria-label="Volume"
+                onChange={(event) => sendControlChange(track.id, 7, Number(event.target.value))}
+              />
+            </div>
+            <div className="lane">
+              <span className="needle"></span>
+              {track.loaded ? <div className="clip"></div> : <div className="empty"></div>}
+            </div>
+          </article>
+        ))}
       </section>
 
-      <div className="workspace-layout">
-        <aside className="sidebar panel">
-          <div className="panel-header">
-            <div>
-              <div className="panel-kicker">Mixer</div>
-              <h2>Channels</h2>
-            </div>
-            <p>{midiTitle}</p>
-          </div>
-          <div className="track-list">
-            {channels.map((track) => (
-              <TrackCard
-                key={track.id}
-                track={track}
-                accent={CHANNEL_ACCENTS[track.id]}
-                active={track.id === activeChannel}
-                onSelect={() => setActiveChannel(track.id)}
-                onMute={() => toggleMute(track.id)}
-                onSolo={() => toggleSolo(track.id)}
-              />
-            ))}
-          </div>
-        </aside>
-
-        <main className="workspace">
-          <section className="panel hero-panel">
-            <div className="panel-header">
-              <div>
-                <div className="panel-kicker">Timeline</div>
-                <h2>{midiTitle}</h2>
-              </div>
-              <p>
-                Play, scrub, and inspect the loaded MIDI arrangement without leaving
-                the main screen.
-              </p>
-            </div>
-            {midiInfo && runtimeRef.current.eventPipe ? (
-              <Sequencer
-                key={`${midiTitle}-${sequenceVersion}`}
-                activeChannel={activeChannel}
-                eventPipe={runtimeRef.current.eventPipe}
-                midiInfo={midiInfo}
-                onTransportGesture={ensureAudioRunning}
-                timerWorker={timerWorker}
-                title={midiTitle}
-              />
-            ) : (
-              <div className="empty-state">
-                Drop in a MIDI file or choose one from the library to light up the
-                transport.
-              </div>
-            )}
-          </section>
-
-          <div className="workspace-grid">
-            <section className="panel inspector-panel">
-              <div className="panel-header">
-                <div>
-                  <div className="panel-kicker">Inspector</div>
-                  <h2>
-                    Channel {activeTrack.id + 1}
-                    {activeTrack.id === DRUMSCHANNEL ? " · Drums" : ""}
-                  </h2>
-                </div>
-                <p>{activeTrack.name || "Choose a loaded channel to edit it."}</p>
-              </div>
-
-              <div className="inspector-grid">
-                <label className="toolbar-field">
-                  <span>Program</span>
-                  <select
-                    className="toolbar-input"
-                    value={activeTrack.presetId ?? ""}
-                    onChange={(event) =>
-                      sendProgramChange(activeTrack.id, Number(event.target.value))
-                    }
-                  >
-                    <option value="" disabled>
-                      Select a preset
-                    </option>
-                    {filteredPrograms.map((item) => (
-                      <option key={item.presetId} value={item.presetId}>
-                        {(item.presetId & 0x7f).toString().padStart(3, "0")} · {item.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <div className="control-actions">
-                  <button
-                    className="button"
-                    type="button"
-                    onClick={() => previewTrack(activeTrack.id)}
-                  >
-                    Preview C4
-                  </button>
-                  <button
-                    className="button button-secondary"
-                    type="button"
-                    disabled={!activeTrack.zone}
-                    onClick={() => setEditingZoneChannel(activeTrack.id)}
-                  >
-                    Edit Zone
-                  </button>
-                  <button
-                    className="button button-ghost"
-                    type="button"
-                    onClick={() => queryChannelState(activeTrack.id)}
-                  >
-                    Inspect State
-                  </button>
-                </div>
-
-                <ControlGroup title="Mix">
-                  <RangeControl
-                    label="Volume"
-                    min={0}
-                    max={127}
-                    step={1}
-                    value={activeTrack.volume}
-                    onChange={(value) => updateTrackControl(activeTrack.id, "volume", value)}
-                  />
-                  <RangeControl
-                    label="Pan"
-                    min={0}
-                    max={127}
-                    step={1}
-                    value={activeTrack.pan}
-                    onChange={(value) => updateTrackControl(activeTrack.id, "pan", value)}
-                  />
-                  <RangeControl
-                    label="Expression"
-                    min={0}
-                    max={127}
-                    step={1}
-                    value={activeTrack.expression}
-                    onChange={(value) =>
-                      updateTrackControl(activeTrack.id, "expression", value)
-                    }
-                  />
-                </ControlGroup>
-
-                <ControlGroup title="Filter">
-                  <RangeControl
-                    label="Cutoff"
-                    min={0}
-                    max={12000}
-                    step={10}
-                    value={activeTrack.filterFc}
-                    onChange={(value) => updateTrackControl(activeTrack.id, "filterFc", value)}
-                  />
-                  <RangeControl
-                    label="Resonance"
-                    min={0}
-                    max={120}
-                    step={1}
-                    value={activeTrack.filterQ}
-                    onChange={(value) => updateTrackControl(activeTrack.id, "filterQ", value)}
-                  />
-                </ControlGroup>
-
-                <ControlGroup title="Amplitude Envelope">
-                  <RangeControl
-                    label="Attack"
-                    min={0}
-                    max={127}
-                    step={1}
-                    value={activeTrack.vcaAttack}
-                    onChange={(value) => updateTrackControl(activeTrack.id, "vcaAttack", value)}
-                  />
-                  <RangeControl
-                    label="Decay"
-                    min={0}
-                    max={127}
-                    step={1}
-                    value={activeTrack.vcaDecay}
-                    onChange={(value) => updateTrackControl(activeTrack.id, "vcaDecay", value)}
-                  />
-                  <RangeControl
-                    label="Sustain"
-                    min={0}
-                    max={127}
-                    step={1}
-                    value={activeTrack.vcaSustain}
-                    onChange={(value) => updateTrackControl(activeTrack.id, "vcaSustain", value)}
-                  />
-                  <RangeControl
-                    label="Release"
-                    min={0}
-                    max={127}
-                    step={1}
-                    value={activeTrack.vcaRelease}
-                    onChange={(value) => updateTrackControl(activeTrack.id, "vcaRelease", value)}
-                  />
-                </ControlGroup>
-
-                <ControlGroup title="Filter Envelope">
-                  <RangeControl
-                    label="Attack"
-                    min={0}
-                    max={127}
-                    step={1}
-                    value={activeTrack.vcfAttack}
-                    onChange={(value) => updateTrackControl(activeTrack.id, "vcfAttack", value)}
-                  />
-                  <RangeControl
-                    label="Decay"
-                    min={0}
-                    max={127}
-                    step={1}
-                    value={activeTrack.vcfDecay}
-                    onChange={(value) => updateTrackControl(activeTrack.id, "vcfDecay", value)}
-                  />
-                  <RangeControl
-                    label="Sustain"
-                    min={0}
-                    max={127}
-                    step={1}
-                    value={activeTrack.vcfSustain}
-                    onChange={(value) => updateTrackControl(activeTrack.id, "vcfSustain", value)}
-                  />
-                  <RangeControl
-                    label="Release"
-                    min={0}
-                    max={127}
-                    step={1}
-                    value={activeTrack.vcfRelease}
-                    onChange={(value) => updateTrackControl(activeTrack.id, "vcfRelease", value)}
-                  />
-                </ControlGroup>
-              </div>
-            </section>
-
-            <section className="panel analysis-panel">
-              <div className="panel-header">
-                <div>
-                  <div className="panel-kicker">Output</div>
-                  <h2>Analysis</h2>
-                </div>
-                <p>Live waveform and spectrum views pulled straight from the synth graph.</p>
-              </div>
-              <div className="scope-grid">
-                <AudioScope
-                  kind="spectrum"
-                  title="Frequency"
-                  getData={() => runtimeRef.current.apath?.analysis.frequencyBins ?? []}
-                />
-                <AudioScope
-                  kind="waveform"
-                  title="Waveform"
-                  getData={() => runtimeRef.current.apath?.analysis.waveForm ?? []}
-                />
-              </div>
-              <div className="summary-grid">
-                <SummaryItem
-                  label="Active Notes"
-                  value={channels.reduce((sum, track) => sum + track.activeNotes, 0)}
-                />
-                <SummaryItem
-                  label="Loaded Programs"
-                  value={channels.filter((track) => track.loaded).length}
-                />
-                <SummaryItem
-                  label="SoundFont"
-                  value={labelFromPath(selectedSf2)}
-                />
-              </div>
-            </section>
-          </div>
-
-          <section className="panel console-panel">
-            <div className="panel-header">
-              <div>
-                <div className="panel-kicker">Diagnostics</div>
-                <h2>Logs, metadata, and synth state</h2>
-              </div>
-              <p>The old debug drawers are now folded into one React-managed console.</p>
-            </div>
-            <div className="console-grid">
-              <details className="panel-details" open>
-                <summary>Session Log</summary>
-                <pre className="console-pre">{logs.join("\n") || "No log messages yet."}</pre>
-              </details>
-              <details className="panel-details">
-                <summary>SoundFont Metadata</summary>
-                <div className="meta-list">
-                  {sf2Meta.length ? (
-                    sf2Meta.map(([section, text]) => (
-                      <div className="meta-row" key={`${section}-${text.slice(0, 12)}`}>
-                        <strong>{section}</strong>
-                        <span>{text}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <span className="muted-copy">No metadata loaded.</span>
-                  )}
-                </div>
-              </details>
-              <details className="panel-details">
-                <summary>Synth Summary</summary>
-                <pre className="console-pre">
-                  {summary ? JSON.stringify(summary, null, 2) : "No render summary yet."}
-                </pre>
-              </details>
-              <details className="panel-details">
-                <summary>Channel Query</summary>
-                <pre className="console-pre">
-                  {queryResponse
-                    ? JSON.stringify(queryResponse, null, 2)
-                    : "Run “Inspect State” on a channel to capture its current synth state."}
-                </pre>
-              </details>
-            </div>
-          </section>
-        </main>
-      </div>
-
-      <footer className="panel keyboard-panel">
-        <div className="panel-header">
-          <div>
-            <div className="panel-kicker">Performance</div>
-            <h2>Keyboard</h2>
-          </div>
-          <p>Click the keys or use the home row: A W S E D F T G Y H U J.</p>
+      <footer className="keys">
+        <p>
+          Keyboard · active channel <strong>{activeChannel + 1}</strong>
+          <br />
+          Home row A W S E D F T G Y H U J
+        </p>
+        <div className="board" id="board">
+          {Array.from({ length: 24 }, (_, i) => {
+            const midi = 48 + i;
+            const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+            const name = names[midi % 12] + (Math.floor(midi / 12) - 1);
+            const black = name.includes("#");
+            return (
+              <button
+                key={midi}
+                className={`key${black ? " black" : ""}`}
+                type="button"
+                onMouseDown={async () => {
+                  await ensureAudioRunning();
+                  await onHardwareKeyboardDown(activeChannel, midi);
+                }}
+                onMouseUp={() => onHardwareKeyboardUp(activeChannel, midi)}
+                onMouseLeave={(event) => {
+                  if (event.buttons === 1) onHardwareKeyboardUp(activeChannel, midi);
+                }}
+              >
+                {name}
+              </button>
+            );
+          })}
         </div>
-        <PianoKeyboard
-          activeChannel={activeChannel}
-          onNoteOn={async (note) => {
+        <button
+          className="chip"
+          id="preview"
+          type="button"
+          onClick={async () => {
             await ensureAudioRunning();
-            await onHardwareKeyboardDown(activeChannel, note);
+            await onHardwareKeyboardDown(activeChannel, 60, 100);
+            setTimeout(() => onHardwareKeyboardUp(activeChannel, 60), 300);
           }}
-          onNoteOff={(note) => onHardwareKeyboardUp(activeChannel, note)}
-        />
+        >
+          Preview C4
+        </button>
+        <button className="chip" id="inspect" type="button" onClick={() => setOpenModal("state-modal")}>
+          Inspect State
+        </button>
       </footer>
 
-      {editingTrack?.zone ? (
-        <ZoneEditorModal
-          track={editingTrack}
-          onClose={() => setEditingZoneChannel(null)}
-          onSave={(values) => saveZoneEdits(editingTrack.id, values)}
-        />
-      ) : null}
-    </div>
+      <div className={`modal${openModal === "midi-modal" ? " open" : ""}`} id="midi-modal">
+        <div className="sheet">
+          <h2>MIDI library</h2>
+          <p>Choose a file.</p>
+          <div className="pick-list" id="midi-list">
+            {midiChoices.map((item) => (
+              <button
+                key={item.Url}
+                className={`chip${item.Url === selectedMidi ? " on" : ""}`}
+                type="button"
+                onClick={() => {
+                  loadMidiFromUrl(item.Url, item.Name);
+                  setOpenModal(null);
+                }}
+              >
+                {item.Name}
+              </button>
+            ))}
+          </div>
+          <div className="actions">
+            <button className="chip" data-close type="button" onClick={() => setOpenModal(null)}>
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className={`modal${openModal === "input-modal" ? " open" : ""}`} id="input-modal">
+        <div className="sheet">
+          <h2>MIDI input</h2>
+          <p>Choose a device.</p>
+          <div className="pick-list" id="input-list">
+            <button
+              className={`chip${!selectedMidiInputId ? " on" : ""}`}
+              type="button"
+              onClick={() => {
+                connectMidiInput("");
+                setOpenModal(null);
+              }}
+            >
+              No input
+            </button>
+            {midiInputs.map((input) => (
+              <button
+                key={input.id}
+                className={`chip${input.id === selectedMidiInputId ? " on" : ""}`}
+                type="button"
+                onClick={() => {
+                  connectMidiInput(input.id);
+                  setOpenModal(null);
+                }}
+              >
+                {input.name}
+              </button>
+            ))}
+          </div>
+          <div className="actions">
+            <button className="chip" data-close type="button" onClick={() => setOpenModal(null)}>
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className={`modal${openModal === "sf-modal" ? " open" : ""}`} id="sf-modal">
+        <div className="sheet">
+          <h2>SoundFont</h2>
+          <p>Choose a loaded bank.</p>
+          <div className="pick-list" id="sf-list">
+            {sf2list.map((item) => (
+              <button
+                key={item}
+                className={`chip${item === selectedSf2 ? " on" : ""}`}
+                type="button"
+                onClick={() => {
+                  loadSf2(item);
+                  setOpenModal(null);
+                }}
+              >
+                {labelFromPath(item)}
+              </button>
+            ))}
+          </div>
+          <div className="actions">
+            <button className="chip" data-close type="button" onClick={() => setOpenModal(null)}>
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className={`modal${openModal === "edit-modal" ? " open" : ""}`} id="edit-modal">
+        <div className="sheet">
+          <h2>Channel {activeChannel + 1}</h2>
+          <p>
+            {channels[activeChannel]?.loaded ? "Loaded" : "Idle"} · Ready · Last note{" "}
+            {channels[activeChannel]?.lastNote == null ? "--" : midiNoteName(channels[activeChannel].lastNote)}
+          </p>
+          <div className="grid">
+            <div className="block">
+              <h3>Mix</h3>
+              {[
+                ["Volume", 7, channels[activeChannel]?.volume ?? 100],
+                ["Pan", 10, channels[activeChannel]?.pan ?? 64],
+                ["Expression", 11, channels[activeChannel]?.expression ?? 127],
+              ].map(([label, cc, value]) => (
+                <div className="mix" key={label}>
+                  <span>{label}</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="127"
+                    value={value}
+                    onChange={(event) => sendControlChange(activeChannel, cc, Number(event.target.value))}
+                  />
+                  <b>{value}</b>
+                </div>
+              ))}
+            </div>
+            <div className="block">
+              <h3>Filter</h3>
+              {[
+                ["Cutoff", 74, 6000, 12000],
+                ["Resonance", 71, 0, 120],
+              ].map(([label, cc, value, max]) => (
+                <div className="mix" key={label}>
+                  <span>{label}</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max={max}
+                    value={value}
+                    onChange={(event) => sendControlChange(activeChannel, cc, Number(event.target.value))}
+                  />
+                  <b>{value}</b>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="actions">
+            <button className="chip" data-close type="button" onClick={() => setOpenModal(null)}>
+              Cancel
+            </button>
+            <button
+              className="chip"
+              id="open-zone"
+              type="button"
+              onClick={() => {
+                setEditingZoneChannel(activeChannel);
+                setOpenModal("zone-modal");
+              }}
+            >
+              Edit Zone
+            </button>
+            <button className="chip primary" data-close type="button" onClick={() => setOpenModal(null)}>
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className={`modal${openModal === "zone-modal" ? " open" : ""}`} id="zone-modal">
+        <div className="sheet">
+          <h2>Zone editor</h2>
+          <p>
+            Channel {activeChannel + 1} ·{" "}
+            {channels[activeChannel]?.zone
+              ? `${channels[activeChannel].zone.arr.length} raw SoundFont generators`
+              : "No zone loaded"}
+          </p>
+          <div className="gens">
+            {channels[activeChannel]?.zone
+              ? Array.from(channels[activeChannel].zone.arr).map((v, i) => (
+                  <label key={i}>
+                    Gen {i}
+                    <input defaultValue={v} />
+                  </label>
+                ))
+              : null}
+          </div>
+          <div className="actions">
+            <button className="chip" data-close type="button" onClick={() => setOpenModal(null)}>
+              Cancel
+            </button>
+            <button className="chip primary" data-close type="button" onClick={() => setOpenModal(null)}>
+              Save Zone
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className={`modal${openModal === "state-modal" ? " open" : ""}`} id="state-modal">
+        <div className="sheet">
+          <h2>Inspect state</h2>
+          <p>Logs, metadata, and synth state for the active channel.</p>
+          <div className="tabs">
+            {[
+              ["log", "Session log"],
+              ["meta", "SoundFont metadata"],
+              ["sum", "Synth summary"],
+              ["query", "Channel query"],
+            ].map(([id, label]) => (
+              <button
+                key={id}
+                className={`chip${stateTab === id ? " on" : ""}`}
+                type="button"
+                data-tab={id}
+                onClick={() => setStateTab(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="log" id="state-body">
+            {stateTab === "log" && (logs.join("\n") || "No log messages yet.")}
+            {stateTab === "meta" && (sf2Meta.join("\n") || "No metadata loaded.")}
+            {stateTab === "sum" && (summary ? JSON.stringify(summary, null, 2) : "No summary.")}
+            {stateTab === "query" && (queryResponse ? JSON.stringify(queryResponse, null, 2) : "No query response.")}
+          </div>
+          <div className="actions">
+            <button className="chip primary" data-close type="button" onClick={() => setOpenModal(null)}>
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }
+
 
 function TrackCard({ accent, active, onMute, onSelect, onSolo, track }) {
   return (
