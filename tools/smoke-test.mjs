@@ -167,7 +167,7 @@ try {
   // starts loading immediately after), so wait for the durable session-log
   // entry instead. It also proves the Range-request SF2 fetch worked.
   await page.waitForFunction(
-    () => /Loaded \d+ presets from .+\.sf2\./.test(document.body.innerText),
+    () => window.__sf2rendSfLoaded === true,
     { timeout: 180000 },
   );
   console.log("default SoundFont loaded");
