@@ -27,8 +27,15 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 
 exec docker run --rm \
-  -u "$(id -u):$(id -g)" \
+  -e HOST_UID="$(id -u)" \
+  -e HOST_GID="$(id -g)" \
   -v "$PWD":/src \
   -w /src \
   "$EMSDK_IMAGE" \
-  "$@"
+  bash -c 'source /emsdk/emsdk_env.sh >/dev/null || true
+    nb=$(command -v node || true)
+    if [ -n "$nb" ] && [ ! -x "$nb" ]; then chmod a+x "$nb" || true; fi
+    if [ "$(id -u)" = 0 ] && command -v setpriv >/dev/null 2>&1; then
+      exec setpriv --reuid="${HOST_UID}" --regid="${HOST_GID}" --clear-groups -- "$@"
+    fi
+    exec "$@"' _ "$@"
