@@ -1,0 +1,290 @@
+<!-- Reference layout only. Not the live player. Same controls as the workstation: SoundFont, MIDI library, import, input, transport, channel edit, zone editor, inspect state. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>sf2rend</title>
+  <style>
+    :root {
+      --bg: #0c0c0e;
+      --panel: #141416;
+      --line: rgba(255, 255, 255, 0.08);
+      --text: #f4f4f5;
+      --muted: #9a9aa3;
+      --chip: #232328;
+      --chip-line: rgba(255, 255, 255, 0.1);
+      --violet: #7c6bff;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: #050506; color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif; }
+    body { display: grid; place-items: center; min-height: 100%; padding: 22px; }
+    button, select, input { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    .device { width: min(1280px, 100%); height: min(860px, calc(100vh - 44px)); background: var(--bg); border: 1px solid rgba(255,255,255,.08); border-radius: 22px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 30px 80px rgba(0,0,0,.45); }
+    .transport { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+    .brand { font-weight: 620; letter-spacing: -0.02em; margin-right: 6px; }
+    .field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .field span, .lab { color: var(--muted); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
+    select, .chip, .num {
+      height: 32px; border-radius: 9px; border: 1px solid var(--chip-line); background: var(--chip); color: var(--text); padding: 0 10px;
+    }
+    select { max-width: 220px; }
+    .midi-select { max-width: 280px; }
+    .chip { color: var(--muted); font-size: 12px; }
+    .chip.on, .key.on { color: #111; background: #fff; border-color: #fff; }
+    .file { position: relative; overflow: hidden; }
+    .file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .gain { width: 88px; accent-color: var(--violet); }
+    .clock { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; display: flex; gap: 12px; }
+    .stage { flex: 1; display: grid; grid-template-columns: 460px 1fr; min-height: 0; }
+    .headers, .timeline { min-height: 0; overflow: auto; }
+    .ruler-spacer, .ruler { height: 34px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--bg); z-index: 2; }
+    .ruler { color: var(--muted); font-size: 11px; }
+    .ruler i { position: absolute; top: 11px; font-style: normal; transform: translateX(-50%); }
+    .playhead { position: absolute; top: 0; bottom: 0; left: 18%; width: 1px; background: rgba(255,255,255,.72); }
+    .playhead::before { content: ""; position: absolute; top: 8px; left: 50%; width: 8px; height: 8px; border-radius: 50%; background: #fff; transform: translateX(-50%); }
+    .track { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; min-height: 78px; padding: 8px 12px; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); }
+    .track.selected { background: rgba(124, 107, 255, .08); }
+    .ch { color: var(--muted); font-size: 11px; }
+    .track select { width: 100%; max-width: none; }
+    .meta { margin-top: 4px; color: var(--muted); font-size: 11px; }
+    .controls { display: flex; flex-direction: column; align-items: flex-end; gap: 7px; }
+    .pills { display: flex; gap: 6px; }
+    .vol { width: 116px; accent-color: #fff; }
+    .lane { height: 78px; border-bottom: 1px solid var(--line); position: relative; padding: 16px 14px; }
+    .clip { height: 46px; border-radius: 10px; background: linear-gradient(90deg, rgba(124,107,255,.92), rgba(56,189,214,.88)); position: relative; }
+    .clip b { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,.8); }
+    .empty { height: 46px; border-radius: 10px; border: 1px dashed rgba(255,255,255,.12); }
+    .keys { border-top: 1px solid var(--line); padding: 8px 14px 12px; display: flex; align-items: end; gap: 8px; }
+    .keys p { margin: 0; color: var(--muted); font-size: 11px; width: 180px; }
+    .board { display: flex; gap: 3px; flex: 1; }
+    .key { flex: 1; height: 42px; border-radius: 7px; border: 1px solid var(--chip-line); background: #1b1b20; color: var(--muted); font-size: 10px; }
+    .key.black { background: #0a0a0c; height: 30px; }
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: none; place-items: center; padding: 24px; z-index: 5; }
+    .modal.open { display: grid; }
+    .sheet { width: min(760px, 100%); max-height: min(78vh, 720px); overflow: auto; background: #16161a; border: 1px solid rgba(255,255,255,.1); border-radius: 18px; padding: 18px; }
+    .sheet h2 { margin: 0 0 4px; font-size: 18px; }
+    .sheet p { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .block { background: #101013; border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+    .block h3 { margin: 0 0 10px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+    .row { display: grid; grid-template-columns: 92px 1fr 36px; gap: 8px; align-items: center; margin-bottom: 8px; font-size: 13px; }
+    .row input[type=range] { width: 100%; accent-color: var(--violet); }
+    .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+    .primary { background: #fff; color: #111; border-color: #fff; }
+    .gens { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .gens label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--muted); }
+    .gens input { height: 30px; border-radius: 8px; border: 1px solid var(--chip-line); background: var(--chip); padding: 0 8px; }
+    .log { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.55; color: #d5d5dc; background: #101013; border-radius: 12px; padding: 12px; }
+    .tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+    .tabs button.on { color: #111; background: #fff; }
+  </style>
+</head>
+<body>
+  <main class="device">
+    <header class="transport">
+      <div class="brand">sf2rend</div>
+      <label class="field"><span>SoundFont</span>
+        <select id="sf">
+          <option>GeneralUserGS.sf2</option>
+          <option>file.sf2</option>
+          <option>SoundBlasterOld.sf2</option>
+          <option>VintageDreamsWaves-v2.sf2</option>
+        </select>
+      </label>
+      <label class="field"><span>MIDI library</span>
+        <select id="midi" class="midi-select">
+          <option>Jazz Jackrabbit 2 - Jazz Castle.mid</option>
+          <option>Jazz Jackrabbit - Bonus Stage.mid</option>
+          <option>Lemmings - Lemmings Medley.mid</option>
+          <option>Dire Straits - Sultans of Swing.mid</option>
+          <option>Killer Instinct - The Instinct.mid</option>
+        </select>
+      </label>
+      <label class="chip file">Import MIDI<input id="import" type="file" accept=".mid,.midi" /></label>
+      <label class="field"><span>MIDI input</span>
+        <select id="input"><option>No input</option><option>IAC Driver</option><option>USB MIDI</option></select>
+      </label>
+      <button class="chip" id="refresh" type="button">Refresh</button>
+      <label class="field"><span>Master gain</span><input class="gain" id="gain" type="range" min="0" max="160" value="100" /></label>
+      <button class="chip" id="rwd" type="button">Rwd</button>
+      <button class="chip on" id="start" type="button">Start</button>
+      <button class="chip" id="fwd" type="button">Fwd</button>
+      <label class="field"><span>BPM</span><input class="num" id="bpm" type="number" value="200" /></label>
+      <label class="field"><span>TS num</span><input class="num" id="num" type="number" value="4" /></label>
+      <label class="field"><span>TS den</span><input class="num" id="den" type="number" value="4" /></label>
+      <div class="clock"><span id="clock">0:00</span><span id="bar">Bar 0.0</span><span id="tempo">200 BPM</span></div>
+    </header>
+
+    <section class="stage">
+      <div class="headers" id="headers">
+        <div class="ruler-spacer"></div>
+      </div>
+      <div class="timeline" id="timeline">
+        <div class="ruler">
+          <i style="left:8%">1</i><i style="left:20%">2</i><i style="left:32%">3</i><i style="left:44%">4</i>
+          <i style="left:56%">5</i><i style="left:68%">6</i><i style="left:80%">7</i><i style="left:92%">8</i>
+          <div class="playhead"></div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="keys">
+      <p>Keyboard · active channel <strong id="active">1</strong><br />Home row A W S E D F T G Y H U J</p>
+      <div class="board" id="board"></div>
+      <button class="chip" id="preview" type="button">Preview C4</button>
+      <button class="chip" id="inspect" type="button">Inspect State</button>
+    </footer>
+  </main>
+
+  <div class="modal" id="edit-modal">
+    <div class="sheet">
+      <h2 id="edit-title">Channel 1</h2>
+      <p id="edit-sub">Loaded · Ready · Last note --</p>
+      <div class="grid">
+        <div class="block">
+          <h3>Mix</h3>
+          <div class="row"><span>Volume</span><input type="range" min="0" max="127" value="100" /><b>100</b></div>
+          <div class="row"><span>Pan</span><input type="range" min="0" max="127" value="64" /><b>64</b></div>
+          <div class="row"><span>Expression</span><input type="range" min="0" max="127" value="127" /><b>127</b></div>
+        </div>
+        <div class="block">
+          <h3>Filter</h3>
+          <div class="row"><span>Cutoff</span><input type="range" min="0" max="12000" value="6000" /><b>6000</b></div>
+          <div class="row"><span>Resonance</span><input type="range" min="0" max="120" value="0" /><b>0</b></div>
+        </div>
+        <div class="block">
+          <h3>Amplitude envelope</h3>
+          <div class="row"><span>Attack</span><input type="range" min="0" max="127" value="9" /><b>9</b></div>
+          <div class="row"><span>Decay</span><input type="range" min="0" max="127" value="33" /><b>33</b></div>
+          <div class="row"><span>Sustain</span><input type="range" min="0" max="127" value="66" /><b>66</b></div>
+          <div class="row"><span>Release</span><input type="range" min="0" max="127" value="88" /><b>88</b></div>
+        </div>
+        <div class="block">
+          <h3>Filter envelope</h3>
+          <div class="row"><span>Attack</span><input type="range" min="0" max="127" value="9" /><b>9</b></div>
+          <div class="row"><span>Decay</span><input type="range" min="0" max="127" value="33" /><b>33</b></div>
+          <div class="row"><span>Sustain</span><input type="range" min="0" max="127" value="66" /><b>66</b></div>
+          <div class="row"><span>Release</span><input type="range" min="0" max="127" value="88" /><b>88</b></div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="chip" data-close type="button">Cancel</button>
+        <button class="chip" id="open-zone" type="button">Edit Zone</button>
+        <button class="chip primary" data-close type="button">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="zone-modal">
+    <div class="sheet">
+      <h2>Zone editor</h2>
+      <p id="zone-sub">Channel 1 · Zone 494632 · 60 raw SoundFont generators</p>
+      <div class="gens" id="gens"></div>
+      <div class="actions">
+        <button class="chip" data-close type="button">Cancel</button>
+        <button class="chip primary" data-close type="button">Save Zone</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="state-modal">
+    <div class="sheet">
+      <h2>Inspect state</h2>
+      <p>Logs, metadata, and synth state for the active channel.</p>
+      <div class="tabs">
+        <button class="chip on" type="button" data-tab="log">Session log</button>
+        <button class="chip" type="button" data-tab="meta">SoundFont metadata</button>
+        <button class="chip" type="button" data-tab="sum">Synth summary</button>
+        <button class="chip" type="button" data-tab="query">Channel query</button>
+      </div>
+      <div class="log" id="state-body"></div>
+      <div class="actions"><button class="chip primary" data-close type="button">Close</button></div>
+    </div>
+  </div>
+
+  <script>
+    const programs = ["000 · Stereo Grand","001 · Bright Grand","002 · Electric Grand","003 · Honky-Tonk","004 · Tine Electric Piano","005 · FM Electric Piano","016 · Tonewheel Organ","027 · Clean Guitar","030 · Distortion Guitar","034 · Pick Bass","035 · Fretless Bass","039 · Synth Bass 101","047 · Techno Bass","050 · Synth Strings 1","063 · Synth Brass 4","077 · Shakuhachi","080 · Square Lead","090 · Polysynth","108 · Kalimba","126 · Applause","127 · Laughing"];
+    const channels = [
+      ["Laughing", 127, 441, "Loaded"], ["Fretless Bass", 35, 1206, "Loaded"], ["Techno Bass", 47, 24, "Loaded"],
+      ["Square Lead", 80, 456, "Loaded"], ["Polysynth", 90, 2868, "Loaded"], ["Polysynth", 90, 2676, "Loaded"],
+      ["Square Lead", 80, 456, "Loaded"], ["Kalimba", 108, 306, "Loaded"], ["Synth Strings 1", 50, 882, "Loaded"],
+      ["Power", 16, 7023, "Loaded"], ["Synth Brass 4", 63, 480, "Loaded"], ["Applause", 126, 438, "Loaded"],
+      ["Synth Bass 101", 39, 1206, "Loaded"], ["Shakuhachi", 77, 306, "Loaded"], ["Channel 15", null, 0, "Idle"],
+      ["Channel 16", null, 0, "Idle"]
+    ];
+    const gens = ["StartAddrOfs","EndAddrOfs","StartLoopAddrOfs","EndLoopAddrOfs","StartAddrCoarseOfs","ModLFO2Pitch","VibLFO2Pitch","ModEnv2Pitch","FilterFc","FilterQ","ModLFO2FilterFc","ModEnv2FilterFc","EndAddrCoarseOfs","ModLFO2Vol","Unused1","ChorusSend","ReverbSend","Pan","IbagId","PBagId","Unused4","ModLFODelay","ModLFOFreq","VibLFODelay","VibLFOFreq","ModEnvDelay","ModEnvAttack","ModEnvHold","ModEnvDecay","ModEnvSustain","ModEnvRelease","Key2ModEnvHold","Key2ModEnvDecay","VolEnvDelay","VolEnvAttack","VolEnvHold","VolEnvDecay","VolEnvSustain","VolEnvRelease","Key2VolEnvHold","Key2VolEnvDecay","Instrument","Reserved1","KeyRange","VelRange","StartLoopAddrCoarseOfs","Keynum","Velocity","Attenuation","Reserved2","EndLoopAddrCoarseOfs","CoarseTune","FineTune","SampleId","SampleModes","Reserved3","ScaleTune","ExclusiveClass","OverrideRootKey","Dummy"];
+    const headers = document.getElementById("headers");
+    const timeline = document.getElementById("timeline");
+    let active = 1;
+
+    channels.forEach((ch, i) => {
+      const n = i + 1;
+      const art = document.createElement("article");
+      art.className = "track" + (n === 1 ? " selected" : "");
+      art.dataset.ch = n;
+      const opts = programs.map(p => `<option ${ch[0] && p.includes(ch[0]) ? "selected" : ""}>${p}</option>`).join("");
+      art.innerHTML = `<div class="ch">CH ${n}</div><div><select aria-label="Instrument">${opts}</select><div class="meta">${ch[3]} · Ready · Preset ${ch[1] == null ? "None" : String(ch[1]).padStart(3,"0")} · ${ch[2]} notes</div></div><div class="controls"><div class="pills"><button class="chip" type="button" data-mute>Mute</button><button class="chip" type="button" data-solo>Solo</button><button class="chip" type="button" data-edit>Edit</button></div><input class="vol" type="range" min="0" max="127" value="${ch[2] ? 80 : 40}" aria-label="Volume" /></div>`;
+      headers.appendChild(art);
+      const lane = document.createElement("div");
+      lane.className = "lane";
+      if (!ch[2]) lane.innerHTML = `<div class="empty"></div>`;
+      else {
+        const w = Math.max(28, Math.min(96, 24 + Math.log10(ch[2]) * 22));
+        const dots = Array.from({length: 7}, (_, k) => `<b style="left:${8+k*12}%;top:${28+(k%3)*16}%"></b>`).join("");
+        lane.innerHTML = `<div class="clip" style="width:${w}%">${dots}</div>`;
+      }
+      timeline.appendChild(lane);
+    });
+
+    document.getElementById("gens").innerHTML = gens.map((g, i) => `<label>${g}<input value="${(i * 17) % 128}" /></label>`).join("");
+    document.getElementById("board").innerHTML = ["C3","C#3","D3","D#3","E3","F3","F#3","G3","G#3","A3","A#3","B3","C4","C#4","D4","D#4","E4","F4","F#4","G4","G#4","A4","A#4","B4"].map(k => `<button class="key ${k.includes("#") ? "black" : ""}" type="button">${k}</button>`).join("");
+
+    const open = id => document.getElementById(id).classList.add("open");
+    const closeAll = () => document.querySelectorAll(".modal").forEach(m => m.classList.remove("open"));
+    document.body.addEventListener("click", e => {
+      const edit = e.target.closest("[data-edit]");
+      const track = e.target.closest(".track");
+      if (track && !e.target.closest("button, select, input")) {
+        document.querySelectorAll(".track").forEach(t => t.classList.remove("selected"));
+        track.classList.add("selected");
+        active = track.dataset.ch;
+        document.getElementById("active").textContent = active;
+      }
+      if (e.target.closest("[data-mute], [data-solo], .key")) e.target.closest("button").classList.toggle("on");
+      if (edit) {
+        const row = edit.closest(".track");
+        active = row.dataset.ch;
+        document.getElementById("active").textContent = active;
+        document.getElementById("edit-title").textContent = `Channel ${active}`;
+        document.getElementById("edit-sub").textContent = row.querySelector(".meta").textContent + " · Last note --";
+        document.getElementById("zone-sub").textContent = `Channel ${active} · Zone 494632 · 60 raw SoundFont generators`;
+        open("edit-modal");
+      }
+      if (e.target.closest("[data-close]")) closeAll();
+      if (e.target === e.currentTarget) {}
+    });
+    document.querySelectorAll(".modal").forEach(m => m.addEventListener("click", e => { if (e.target === m) closeAll(); }));
+    document.getElementById("open-zone").onclick = () => open("zone-modal");
+    document.getElementById("inspect").onclick = () => { showTab("log"); open("state-modal"); };
+    document.getElementById("preview").onclick = () => { const k = [...document.querySelectorAll(".key")].find(b => b.textContent === "C4"); k.classList.add("on"); setTimeout(() => k.classList.remove("on"), 180); };
+    document.getElementById("start").onclick = e => e.target.classList.toggle("on");
+    document.getElementById("refresh").onclick = () => { document.getElementById("input").selectedIndex = 0; };
+    document.getElementById("bpm").oninput = e => document.getElementById("tempo").textContent = e.target.value + " BPM";
+    document.getElementById("import").onchange = e => { if (e.target.files[0]) document.getElementById("midi").insertAdjacentHTML("afterbegin", `<option selected>${e.target.files[0].name}</option>`); };
+    document.querySelectorAll(".row input").forEach(r => r.oninput = () => r.nextElementSibling.textContent = r.value);
+    const tabs = {
+      log: "[06:10:50 PM] Audio engine initialized.\n[06:10:50 PM] Loading SoundFont GeneralUserGS.sf2.\n[06:10:50 PM] Loaded 139 presets from GeneralUserGS.sf2.\n[06:10:51 PM] Loading MIDI Jazz Castle.\n[06:10:53 PM] Parsed 15 tracks and 14 program changes.",
+      meta: "SoundFont GeneralUserGS.sf2\nPresets 139\nSamples stereo GM\nEngine ready",
+      sum: "Active notes 0\nLoaded programs 14\nVoices idle\nSample rate 44100",
+      query: "Channel query\nWaiting for synth response on the active channel."
+    };
+    function showTab(name) {
+      document.querySelectorAll("[data-tab]").forEach(b => b.classList.toggle("on", b.dataset.tab === name));
+      document.getElementById("state-body").textContent = tabs[name].replace("active channel", "channel " + active);
+    }
+    document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+  </script>
+</body>
+</html>
