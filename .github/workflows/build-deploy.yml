@@ -51,7 +51,7 @@ jobs:
           pinned="$(grep '^EMSDK_IMAGE=' toolchain.env | cut -d= -f2-)"
           # the container.image is hardcoded (the env context is not available
           # there); extract it from this workflow file and compare
-          wf_image="$(grep 'image: emscripten/emsdk:' .github/workflows/build-deploy.yml | sed 's/.*image: //')"
+          wf_image="$(grep '^      image: emscripten/emsdk:' .github/workflows/build-deploy.yml | sed 's/.*image: //')"
           if [ "$pinned" != "$wf_image" ]; then
             echo "toolchain.env pins: $pinned"
             echo "workflow pins:      $wf_image"
