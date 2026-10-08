@@ -32,7 +32,7 @@ Local dev runs `make` once after cloning.
 ## Build
 
 One pinned toolchain builds every WebAssembly module: see `toolchain.env`
-(`emscripten/emsdk:6.0.11` pinned by digest; ships emcc, clang/llc/wasm-ld
+(`emscripten/emsdk:6.0.10` pinned by digest; ships emcc, clang/llc/wasm-ld
 and node). `scripts/in-toolchain.sh make <target>` runs a target in that
 container; in CI the job already runs inside the container, so plain `make`
 works there.
