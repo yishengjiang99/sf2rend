@@ -125,18 +125,25 @@ export default function App() {
     );
   };
 
-  async function ensureAudioRunning() {
+  function ensureAudioRunning() {
     const ctx = runtimeRef.current.ctx;
     if (!ctx || ctx.state === "running") {
-      return;
+      return Promise.resolve();
     }
-    await ctx.resume();
-    setAudioState(ctx.state);
+    // iOS Safari requires resume() to be called synchronously in the user
+    // gesture handler (not in an async continuation), otherwise the
+    // AudioContext stays suspended and there is no audio.
+    // Also handles iOS "interrupted" state (e.g. after phone call/background).
+    const p = ctx.resume();
+    p.then(() => setAudioState(ctx.state)).catch(() => {});
+    return p;
   }
 
   // Transport controls (wired to the timer worker, same as Sequencer)
-  async function transportCommand(cmd) {
-    await ensureAudioRunning();
+  function transportCommand(cmd) {
+    // Kick off resume synchronously for iOS Safari gesture requirement.
+    // Do not await before this — the resume must be in the same task as the click.
+    ensureAudioRunning();
     timerWorker.postMessage({ cmd });
     if (cmd === "start" || cmd === "resume") setIsPlaying(true);
     if (cmd === "stop" || cmd === "reset") setIsPlaying(false);
@@ -467,8 +474,9 @@ export default function App() {
   }
 
   async function previewTrack(channelId) {
+    // Resume audio synchronously in the gesture (iOS Safari) before any awaits.
+    ensureAudioRunning();
     await ensureChannelProgramLoaded(channelId);
-    await ensureAudioRunning();
     sendRawMidi([midi_ch_cmds.note_on | channelId, DEFAULT_NOTE, 108]);
     setTimeout(() => {
       sendRawMidi([midi_ch_cmds.note_off | channelId, DEFAULT_NOTE, 0]);
@@ -582,7 +590,10 @@ export default function App() {
       runtimeRef.current.eventPipe = eventPipe;
       setAudioState(ctx.state);
       ctx.onstatechange = () => setAudioState(ctx.state);
-      await ctx.suspend();
+      // Note: do NOT call ctx.suspend() here. The context starts suspended
+      // automatically (no user gesture yet), and explicitly suspending on iOS
+      // Safari can leave it in a state where resume() doesn't work properly.
+      // It will be resumed synchronously on the first user gesture.
 
       const apath = await mkpath(ctx, eventPipe);
       if (cancelled) {
