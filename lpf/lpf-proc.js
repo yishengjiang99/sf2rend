@@ -52,8 +52,10 @@ class LowPassFilterProc extends AudioWorkletProcessor {
   process([inputs], [outputs], params) {
     if (!inputs.length) return true;
     if (params.FilterQ_Cb[0] <= 0) {
+      // Bypass: pass both channels. Copying only [0] left the right channel
+      // silent for every MIDI channel (the default Q is 0, so always bypass).
       outputs[0].set(inputs[0]);
-      //outputs[1].set(inputs[0]);
+      if (outputs[1]) outputs[1].set(inputs[1] ?? inputs[0]);
       return true;
     }
     if (
