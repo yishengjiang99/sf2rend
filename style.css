@@ -106,3 +106,14 @@ select { max-width: 220px; }
 .log { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.55; color: #d5d5dc; background: #101013; border-radius: 12px; padding: 12px; }
 .tabs { display: flex; gap: 6px; margin-bottom: 12px; }
 .tabs button.on { color: #111; background: #fff; }
+
+/* Mobile: the centered transport pill is absolutely positioned, which makes it
+   overlap the side buttons on narrow screens. Put it back in normal flow and
+   let the bar wrap instead. */
+@media (max-width: 700px) {
+  .transport { flex-wrap: wrap; row-gap: 6px; }
+  .side { flex-wrap: wrap; min-width: 0; }
+  .play { position: static; transform: none; }
+  .side.end { margin-left: auto; }
+  .gain { width: 48px; }
+}
