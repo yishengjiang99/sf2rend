@@ -9,6 +9,7 @@ import { fetchmidilist } from "./midilist.js";
 import { mkeventsPipe } from "./mkeventsPipe.js";
 import { readMidi } from "./midiread.js";
 import { mkpath } from "./mkpath.js";
+import LaneCanvas from "./sequence/LaneCanvas.jsx";
 import Sequencer from "./sequence/App.js";
 
 const CHANNEL_IDS = Array.from({ length: 16 }, (_, index) => index);
@@ -1065,18 +1066,10 @@ export default function App() {
             <div className="lane">
               <span className="needle"></span>
               {track.loaded ? (
-                <div className="clip">
-                  {(channelNotes.byChannel[track.id] ?? []).map((note, index) => (
-                    <b
-                      key={index}
-                      style={{
-                        left: `${(note.t / channelNotes.maxT) * 100}%`,
-                        width: `${Math.max((note.dur / channelNotes.maxT) * 100, 0.35)}%`,
-                        top: `${((127 - note.pitch) / 127) * 100}%`,
-                      }}
-                    />
-                  ))}
-                </div>
+                <LaneCanvas
+                  notes={channelNotes.byChannel[track.id]}
+                  maxT={channelNotes.maxT}
+                />
               ) : (
                 <div className="empty"></div>
               )}
