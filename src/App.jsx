@@ -760,16 +760,23 @@ export default function App() {
     });
 
     const onMessage = ({ data }) => {
+      // Update clock/bar display on every timing message. (The worker always
+      // sends numeric ticks, so the old `typeof data.ticks !== "number"` guard
+      // meant this never ran and the readout stayed frozen at 0:00 / Bar 0.0.)
+      if (typeof data.clock === "number") {
+        const totalSecs = Math.floor(data.clock / 1000);
+        const mins = Math.floor(totalSecs / 60);
+        const secs = totalSecs % 60;
+        setClockText(`${mins}:${String(secs).padStart(2, "0")}`);
+      }
       if (typeof data.ticks !== "number") {
-        // Update clock display
-        if (typeof data.clock === "number") {
-          const totalSecs = Math.floor(data.clock / 1000);
-          const mins = Math.floor(totalSecs / 60);
-          const secs = totalSecs % 60;
-          setClockText(`${mins}:${String(secs).padStart(2, "0")}`);
-        }
         return;
       }
+      const ppqn = midiInfo?.division || 480;
+      const beatsPerBar = midiInfo?.time_base?.numerator || 4;
+      const bar = Math.floor(data.ticks / (ppqn * beatsPerBar)) + 1;
+      const beat = Math.floor(data.ticks / ppqn) % beatsPerBar + 1;
+      setBarText(`Bar ${bar}.${beat}`);
       const eventPipe = runtimeRef.current.eventPipe;
       playbackTracksRef.current.forEach((track) => {
         while (track.length && track[0].t <= data.ticks) {
