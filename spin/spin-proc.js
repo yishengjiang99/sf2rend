@@ -40,9 +40,13 @@ class SpinProcessor extends AudioWorkletProcessor {
     this.port.postMessage({ init: 1 });
     this.debug = false;
     this.ringbus = ring_bus();
-    const zonePtr = this.malololc(120);
-    this.zoneAttr = zonePtr;
-
+    // One 60-short zone per voice slot (spin.c's MAX_VOICE_CNT = 256).
+    this.spBase = this.inst.exports.spRef(0);
+    this.spSize = this.inst.exports.sp_byte_len();
+    this.zonePool = this.malololc(120 * 256);
+  }
+  voiceSlot(sp) {
+    return ((sp - this.spBase) / this.spSize) & 255;
   }
   setup_wasm() {
     this.memory = new WebAssembly.Memory({
@@ -67,7 +71,10 @@ class SpinProcessor extends AudioWorkletProcessor {
   }
   async handleMsg(e) {
     const { data } = e;
-    if (data.stream && data.segments) {
+    // sf2-service ships PCM either as a transferred ReadableStream or, when
+    // streams aren't transferable (Safari) or the server ignored Range, as an
+    // ArrayBuffer of s16le samples. Both must load, or the voice is silent.
+    if ((data.stream || data.buffer) && data.segments) {
       await this.loadsdta(data);
       this.port.postMessage({ zack: 2 });
     } else if (data.zArr && data.presetId !== null) {
@@ -81,7 +88,7 @@ class SpinProcessor extends AudioWorkletProcessor {
           this.debug = true;
           break;
         case "reset":
-          this.brk = this.inst.exports.__heap_base;
+          this.brk = this.zonePool + 120 * 256; // keep the per-voice zone pool
           break;
         case "gm_reset":
           this.inst.exports.gm_reset();
@@ -141,11 +148,15 @@ class SpinProcessor extends AudioWorkletProcessor {
         case midi_ch_cmds.note_on:
           {
             const [cmd, ch, key, velocity, zoneArr] = data;
-            const atr = new Int16Array(this.memory.buffer, this.zoneAttr, 60);
-            atr.set(zoneArr);
             const sp = this.inst.exports.newSpinner(ch);
+            // The C voice keeps a pointer to its zone for its whole life, so
+            // each voice slot needs its own copy. A single shared buffer let
+            // every new note (e.g. a drum hit) rewrite the zone of all notes
+            // still sounding, cutting off looping instruments.
+            const zonePtr = this.zonePool + this.voiceSlot(sp) * 120;
+            new Int16Array(this.memory.buffer, zonePtr, 60).set(zoneArr);
             this.inst.exports.reset(sp);
-            this.inst.exports.set_spinner_zone(sp, this.zoneAttr);
+            this.inst.exports.set_spinner_zone(sp, zonePtr);
             this.inst.exports.trigger_attack(sp, key, velocity);
             if (!this.sp_map[ch * 128 + key]) this.sp_map[ch * 128 + key] = [];
             this.sp_map[ch * 128 + key].push(sp);
@@ -191,6 +202,7 @@ class SpinProcessor extends AudioWorkletProcessor {
     const {
       segments: { sampleId, nSamples, loops, originalPitch, sampleRate: sr },
       stream,
+      buffer,
     } = data;
     const offset = this.malololc(4 * nSamples);
     const fl = new Float32Array(this.memory.buffer, offset, nSamples);
@@ -199,7 +211,8 @@ class SpinProcessor extends AudioWorkletProcessor {
     const stdRef = this.inst.exports.pcmRef(sampleId);
     const pcmArr = new Uint32Array(this.memory.buffer, stdRef, 6);
     pcmArr.set([loops[0], loops[1], nSamples, sr, originalPitch, offset]);
-    await downloadData(stream, fl);
+    if (stream) await downloadData(stream, fl);
+    else decodeS16LE(new Uint8Array(buffer), fl);
   }
 
   process([noise_floor], outputs) {
@@ -282,6 +295,13 @@ registerProcessor("spin-proc", SpinProcessor);
 
 function now() {
   return globalThis.currentTime;
+}
+function decodeS16LE(bytes, fl) {
+  const n = Math.min(fl.length, bytes.length >> 1);
+  for (let i = 0; i < n; i++) {
+    const int = bytes[2 * i] | (bytes[2 * i + 1] << 8);
+    fl[i] = int & 0x8000 ? (int - 0x10000) / 0x8000 : int / 0x7fff;
+  }
 }
 async function downloadData(stream, fl) {
   const reader = stream.getReader();
