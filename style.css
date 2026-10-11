@@ -115,4 +115,10 @@ select { max-width: 220px; }
   .play { position: static; transform: none; }
   .side.end { margin-left: auto; }
   .gain { width: 48px; }
+  /* Footer: the Preview/Inspect buttons were pushed off the right edge on
+     narrow screens. Wrap the keyboard footer so they land on their own row. */
+  .keys { flex-wrap: wrap; }
+  .keys p { width: auto; }
+  .board { flex: 1 1 100%; overflow-x: auto; }
+  .key { min-width: 30px; }
 }
